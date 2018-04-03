@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	util.Notice("begin application")
+	util.Notice("start application")
 	db, err := gorm.Open("postgres", "host=172.29.0.3 port=5432 user=winston dbname=coincarry password=User@123 sslmode=disable")
 	if err != nil {
 		panic(err)
