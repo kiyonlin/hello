@@ -2,8 +2,8 @@ package api
 
 import (
 	"time"
-	"github.com/haoweizh/hello/model"
-	"github.com/haoweizh/hello/util"
+	"hello/model"
+	"hello/util"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {

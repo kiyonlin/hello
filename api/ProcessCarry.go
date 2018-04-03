@@ -4,8 +4,8 @@ import (
 	"strings"
 	"strconv"
 	"time"
-	"github.com/haoweizh/hello/model"
-	"github.com/haoweizh/hello/util"
+	"hello/model"
+	"hello/util"
 )
 
 type CarryHandler func(carry *model.Carry)

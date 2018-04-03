@@ -4,9 +4,9 @@ import (
 	"github.com/jinzhu/configor"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/haoweizh/hello/api"
-	"github.com/haoweizh/hello/util"
-	"github.com/haoweizh/hello/model"
+	"hello/util"
+	"hello/api"
+	"hello/model"
 )
 
 func main() {

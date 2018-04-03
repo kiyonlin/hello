@@ -5,7 +5,7 @@ import (
 	"math"
 	"strconv"
 	"github.com/jinzhu/gorm"
-	"github.com/haoweizh/hello/util"
+	"hello/util"
 )
 
 type Carry struct {

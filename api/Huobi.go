@@ -12,8 +12,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
-	"github.com/haoweizh/hello/util"
-	"github.com/haoweizh/hello/model"
+	"hello/util"
+	"hello/model"
 )
 
 type HuobiMessage struct {

@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"encoding/hex"
-	"github.com/haoweizh/hello/model"
-	"github.com/haoweizh/hello/util"
+	"hello/model"
+	"hello/util"
 )
 
 type OKEXMessage struct {

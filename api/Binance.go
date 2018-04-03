@@ -10,8 +10,8 @@ import (
 	"encoding/hex"
 	"crypto/hmac"
 	"crypto/sha256"
-	"github.com/haoweizh/hello/model"
-	"github.com/haoweizh/hello/util"
+	"hello/model"
+	"hello/util"
 )
 
 var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) error {

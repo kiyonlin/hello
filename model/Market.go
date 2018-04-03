@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 	"math"
-	"github.com/haoweizh/hello/util"
+	"hello/util"
 )
 
 type BidAsk struct {

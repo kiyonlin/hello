@@ -4,8 +4,8 @@ import (
 	"github.com/gorilla/websocket"
 	"time"
 	"fmt"
-	"github.com/haoweizh/hello/util"
-	"github.com/haoweizh/hello/model"
+	"hello/util"
+	"hello/model"
 )
 
 // WsHandler handle raw websocket message
