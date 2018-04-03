@@ -1,0 +1,25 @@
+markets:
+- huobi
+- okex
+- binance
+
+symbols:
+- xrp_btc
+- btc_usdt
+- eos_btc
+- eth_usdt
+- eth_btc
+
+margins: #差价乘数
+- 0.005
+- 0.005
+- 0.005
+- 0.005
+- 0.005
+
+delays: #按照毫秒计算时间差
+- 3000
+- 3000
+- 3000
+- 3000
+- 3000
