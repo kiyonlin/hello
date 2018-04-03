@@ -178,7 +178,6 @@ func GetAccountHuobi(accounts *model.Accounts) {
 	postData.Set("accountId-id", model.HuobiAccountId)
 	buildFormHuobi(postData, path, "GET")
 	requestUrl := model.ApplicationConfig.RestUrls[model.Huobi] + path + "?" + postData.Encode()
-	util.SocketInfo("huobi get account url" + requestUrl)
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)

@@ -51,7 +51,6 @@ func CarryProcessor() {
 			time.Sleep(time.Minute * 10)
 			index = 0
 		} else {
-			util.SocketInfo(carry.DealAskOrderId + carry.DealAskErrCode)
 			// cancel order if delay too long
 			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 3600000 {
 				orderId := carry.DealBidOrderId

@@ -124,7 +124,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 	signBinance(&postData, model.ApplicationConfig.ApiSecrets[model.Binance])
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.ApiKeys[model.Binance]}
 	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
-	responseBody, _ := util.HttpRequest("DELETE", requestUrl, "", headers)
+	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		dealAmount, _ = orderJson.Get("executedQty").Float64()

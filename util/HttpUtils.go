@@ -32,8 +32,8 @@ func HttpRequest(method string, reqUrl string, postData string, requestHeaders m
 	}
 
 	if resp.StatusCode != 200 {
-		SocketInfo(fmt.Sprintf("HttpStatusCode:%d ,Desc:%s", resp.StatusCode, string(bodyData)))
-		return nil, errors.New(fmt.Sprintf("HttpStatusCode:%d ,Desc:%s", resp.StatusCode, string(bodyData)))
+		SocketInfo(fmt.Sprintf("%sHttpStatusCode:%d ,Desc:%s", reqUrl, resp.StatusCode, string(bodyData)))
+		return nil, errors.New(fmt.Sprintf("%sHttpStatusCode:%d ,Desc:%s", reqUrl, resp.StatusCode, string(bodyData)))
 	}
 	return bodyData, nil
 }
