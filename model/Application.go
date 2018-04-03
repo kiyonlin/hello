@@ -15,7 +15,7 @@ const EosBtc = "eos_btc"
 const EthUsdt = "eth_usdt"
 const EthBtc = "eth_btc"
 
-var HuobiAccountId = "1449736"
+var HuobiAccountId = "1651065"
 
 var ApplicationConfig *Config
 
