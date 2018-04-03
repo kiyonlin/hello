@@ -106,7 +106,8 @@ func GetAccountId(config *model.Config) (accountId string, err error) {
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	accountJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
-		accountId, _ = accountJson.GetPath("data", "id").String()
+		intAccountId, _ := accountJson.GetPath("data", "id").Int()
+		accountId = strconv.Itoa(intAccountId)
 	}
 	util.Notice(accountId + "Get huobi account id" + string(responseBody))
 	return accountId, err
