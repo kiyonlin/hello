@@ -105,16 +105,13 @@ func GetSpotAccountId(config *model.Config) (accountId string, err error) {
 	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	accountJson, err := util.NewJSON([]byte(responseBody))
-	util.SocketInfo("huobi get account id" + string(responseBody))
 	if err == nil {
 		accounts, _ := accountJson.Get("data").Array()
 		for _, value := range accounts {
 			account := value.(map[string]interface{})
 			typeName := account["type"].(string)
-			util.SocketInfo("Huobi type " + typeName)
 			if typeName == "spot" {
 				accountId = account["id"].(json.Number).String()
-				util.SocketInfo("Huobi account " + accountId)
 			}
 		}
 	}

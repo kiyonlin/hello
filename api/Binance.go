@@ -90,6 +90,7 @@ func PlaceOrderBinance(symbol string, orderType string, price string, amount str
 	signBinance(&postData, model.ApplicationConfig.ApiSecrets[model.Binance])
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.ApiKeys[model.Binance]}
 	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.Binance]+"/api/v3/order?", postData.Encode(), headers)
+	util.Notice(symbol + "挂单binance:" + price + orderType + amount + "返回" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("orderId").Int()
@@ -104,6 +105,7 @@ func PlaceOrderBinance(symbol string, orderType string, price string, amount str
 	util.Notice(symbol + "挂单binance:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" + errCode + "orderId" + orderId)
 	return orderId, errCode
 }
+
 func CancelOrderBinance(symbol string, orderId string) {
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
@@ -112,7 +114,7 @@ func CancelOrderBinance(symbol string, orderId string) {
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.ApiKeys[model.Binance]}
 	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("DELETE", requestUrl, "", headers)
-	util.SocketInfo("binance cancel order" + string(responseBody))
+	util.Notice("binance cancel order" + string(responseBody))
 }
 
 func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, status string) {
@@ -129,7 +131,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 		status, _ = orderJson.Get("status").String()
 		status = model.OrderStatusMap[status]
 	}
-	util.SocketInfo(status + "binance query order" + orderId + string(responseBody))
+	util.Notice(status + "binance query order" + orderId + string(responseBody))
 	return dealAmount, status
 }
 
