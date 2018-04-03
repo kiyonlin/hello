@@ -26,7 +26,7 @@ func main() {
 		print(err)
 		return
 	}
-	model.HuobiAccountId, _ = api.GetAccountId(model.ApplicationConfig)
+	model.HuobiAccountId, _ = api.GetSpotAccountId(model.ApplicationConfig)
 	go api.CarryDBHandlerServe()
 	go api.AccountDBHandlerServe()
 	go api.CarryProcessor()

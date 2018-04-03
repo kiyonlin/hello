@@ -97,7 +97,7 @@ func buildFormHuobi(postData *url.Values, path string, method string) {
 	postData.Set("Signature", sign)
 }
 
-func GetAccountId(config *model.Config) (accountId string, err error) {
+func GetSpotAccountId(config *model.Config) (accountId string, err error) {
 	path := "/v1/account/accounts"
 	postData := &url.Values{}
 	buildFormHuobi(postData, path, "GET")
@@ -106,12 +106,14 @@ func GetAccountId(config *model.Config) (accountId string, err error) {
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	accountJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
-		accounts, _ := accountJson.GetPath("data").Array()
+		accounts, _ := accountJson.Get("data").Array()
 		for _, value := range accounts {
 			account := value.(map[string]interface{})
 			typeName := account["type"].(string)
+			util.SocketInfo("Huobi type " + typeName)
 			if typeName == "spot" {
 				accountId = account["id"].(json.Number).String()
+				util.SocketInfo("Huobi account " + accountId)
 			}
 		}
 	}
