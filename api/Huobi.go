@@ -107,7 +107,13 @@ func GetAccountId(config *model.Config) (accountId string, err error) {
 	accountJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		accounts, _ := accountJson.GetPath("data").Array()
-		accountId = accounts[0].(map[string]interface{})["id"].(json.Number).String()
+		for _, value := range accounts {
+			account := value.(map[string]interface{})
+			typeName := account["type"].(string)
+			if typeName == "spot" {
+				accountId = account["id"].(json.Number).String()
+			}
+		}
 	}
 	util.Notice(accountId + "Get huobi account id" + string(responseBody))
 	return accountId, err
