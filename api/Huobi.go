@@ -105,6 +105,7 @@ func GetSpotAccountId(config *model.Config) (accountId string, err error) {
 	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	accountJson, err := util.NewJSON([]byte(responseBody))
+	util.SocketInfo("huobi get account id" + string(responseBody))
 	if err == nil {
 		accounts, _ := accountJson.Get("data").Array()
 		for _, value := range accounts {
@@ -117,7 +118,6 @@ func GetSpotAccountId(config *model.Config) (accountId string, err error) {
 			}
 		}
 	}
-	util.Notice(accountId + "Get huobi account id" + string(responseBody))
 	return accountId, err
 }
 
