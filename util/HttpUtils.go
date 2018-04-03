@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"fmt"
 	"net/http"
-	"errors"
 )
 
 //	method: GET, POST, DELETE
@@ -30,10 +29,8 @@ func HttpRequest(method string, reqUrl string, postData string, requestHeaders m
 		panic(err)
 		return nil, err
 	}
-
 	if resp.StatusCode != 200 {
 		SocketInfo(fmt.Sprintf("%sHttpStatusCode:%d ,Desc:%s", reqUrl, resp.StatusCode, string(bodyData)))
-		return nil, errors.New(fmt.Sprintf("%sHttpStatusCode:%d ,Desc:%s", reqUrl, resp.StatusCode, string(bodyData)))
 	}
 	return bodyData, nil
 }
