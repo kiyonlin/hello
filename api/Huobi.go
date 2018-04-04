@@ -67,7 +67,8 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandler CarryHandler, errHan
 				util.SocketInfo("huobi server ping client error " + err.Error())
 			}
 		} else {
-			if symbol := model.SubscribeSymbol[message.Ch]; symbol != "" {
+			symbol := model.GetSymbol(model.Huobi, message.Ch)
+			if symbol != "" {
 				bidAsk := model.BidAsk{}
 				bidAsk.Asks = message.Tick.Asks
 				bidAsk.Bids = message.Tick.Bids

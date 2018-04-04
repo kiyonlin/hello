@@ -54,7 +54,8 @@ func WsDepthServeOkex(markets *model.Markets, carryHandler CarryHandler, errHand
 		messages := make([]OKEXMessage, 1)
 		if err := json.Unmarshal(event, &messages); err == nil {
 			for _, message := range messages {
-				if symbol := model.SubscribeSymbol[message.Channel]; symbol != "" {
+				symbol := model.GetSymbol(model.OKEX, message.Channel)
+				if symbol != "" {
 					bidAsk := model.BidAsk{}
 					bidAsk.Asks = make([][]float64, len(message.Data.Asks))
 					bidAsk.Bids = make([][]float64, len(message.Data.Bids))

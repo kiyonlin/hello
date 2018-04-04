@@ -4,6 +4,7 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
+	"strconv"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -70,6 +71,7 @@ func CarryProcessor() {
 func AccountDBHandlerServe() {
 	for true {
 		account := <-model.AccountChannel
+		util.SocketInfo(account.Market + account.Currency + strconv.FormatFloat(account.Free, 'f', -1, 64))
 		var accountInDb model.Account
 		model.ApplicationDB.Where("market = ? AND currency = ?", account.Market, account.Currency).Order("created_at desc").First(&accountInDb)
 		if model.ApplicationDB.NewRecord(&accountInDb) {

@@ -127,7 +127,8 @@ func (markets *Markets) GetChan(marketName string) chan struct{} {
 }
 
 func (markets *Markets) RequireChanReset(marketName string, subscribe string) bool {
-	market := markets.markets[SubscribeSymbol[subscribe]]
+	symbol := GetSymbol(marketName, subscribe)
+	market := markets.markets[symbol]
 	if market != nil {
 		bidAsk := market.Data[marketName]
 		if bidAsk != nil {

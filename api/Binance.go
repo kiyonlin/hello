@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gorilla/websocket"
 	"sort"
-	"fmt"
 	"strconv"
 	"strings"
 	"net/url"
@@ -29,14 +28,13 @@ func WsDepthServeBinance(markets *model.Markets, carryHandler CarryHandler, errH
 		if json == nil {
 			return
 		}
-		if symbol := model.SubscribeSymbol[json.Get("s").MustString()]; symbol != "" {
+		symbol := model.GetSymbol(model.Binance, json.Get("s").MustString())
+		if symbol != "" {
 			bidAsk := model.BidAsk{}
 			bidsLen := len(json.Get("b").MustArray())
 			bidAsk.Bids = make([][]float64, bidsLen)
 			for i := 0; i < bidsLen; i++ {
 				item := json.Get("b").GetIndex(i)
-				num, _ := item.GetIndex(0).Float64()
-				fmt.Println(num)
 				bidAsk.Bids[i] = make([]float64, 2)
 				strPrice, _ := item.GetIndex(0).String()
 				strAmount, _ := item.GetIndex(1).String()
