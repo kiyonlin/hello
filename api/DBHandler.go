@@ -72,12 +72,12 @@ func AccountDBHandlerServe() {
 	for true {
 		account := <-model.AccountChannel
 		var accountInDb model.Account
-		model.ApplicationDB.Where("market = ? AND currency = ?", account.Market, account.Currency).Order("created_at desc").First(&accountInDb)
+		nowYear, nowMonth, nowDay := util.GetNow().Date()
+		strDate := fmt.Sprintf("%d-%d-%d", nowYear, nowMonth, nowDay)
+		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date", account.Market, account.Currency, strDate).Order("created_at desc").First(&accountInDb)
 		if model.ApplicationDB.NewRecord(&accountInDb) {
 			model.ApplicationDB.Create(&account)
 		} else {
-			nowYear, nowMonth, nowDay := util.GetNow().Date()
-			strDate := fmt.Sprintf("%d-%d-%d", nowYear, nowMonth, nowDay)
 			if strDate == accountInDb.BelongDate {
 				accountInDb.Free = account.Free
 				accountInDb.Frozen = account.Frozen
