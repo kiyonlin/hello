@@ -79,6 +79,7 @@ func AccountDBHandlerServe() {
 		} else {
 			dbYear, dbMonth, dbDay := accountInDb.CreatedAt.Date()
 			nowYear, nowMonth, nowDay := time.Now().UTC().Date()
+			util.SocketInfo(account.Currency + "create" + strconv.Itoa(dbDay) + "update date " + strconv.Itoa(nowDay))
 			if dbYear == nowYear && dbMonth == nowMonth && dbDay == nowDay {
 				accountInDb.Free = account.Free
 				accountInDb.Frozen = account.Frozen
