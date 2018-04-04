@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/jinzhu/gorm"
 	"strings"
+	"errors"
 )
 
 const OKEX = "okex"
@@ -141,23 +142,27 @@ func (config *Config) GetSubscribes(marketName string) []string {
 }
 
 func (config *Config) GetMargin(symbol string) (float64, error) {
+	if len(config.Margins) == 1 {
+		// return first margin as default margin
+		return config.Margins[0], nil
+	}
 	for i, value := range config.Symbols {
 		if value == symbol {
 			return config.Margins[i], nil
 		}
 	}
-	// return first margin as default margin
-	return config.Margins[0], nil
-	//return 0, errors.New("no such symbol")
+	return 0, errors.New("no such symbol")
 }
 
 func (config *Config) GetDelay(symbol string) (float64, error) {
+	if len(config.Delays) == 1 {
+		// return first delay as default delay
+		return config.Delays[0], nil
+	}
 	for i, value := range config.Symbols {
 		if value == symbol {
 			return config.Delays[i], nil
 		}
 	}
-	// return first delay as default delay
-	return config.Delays[0], nil
-	//return 0, errors.New("no such symbol")
+	return 0, errors.New("no such symbol")
 }
