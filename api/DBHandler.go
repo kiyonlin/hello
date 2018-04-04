@@ -52,12 +52,12 @@ func CarryProcessor() {
 			time.Sleep(time.Minute * 10)
 			index = 0
 		} else {
-			// cancel order if delay too long
-			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 3600000 {
+			// cancel order if delay too long (5 minutes)
+			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 300000 {
 				orderId := carry.DealBidOrderId
 				cancelOrder(carry.BidWeb, carry.Symbol, orderId)
 			}
-			if carry.DealAskStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.AskTime > 3600000 {
+			if carry.DealAskStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.AskTime > 300000 {
 				orderId := carry.DealAskOrderId
 				cancelOrder(carry.AskWeb, carry.Symbol, orderId)
 			}
