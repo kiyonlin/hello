@@ -4,6 +4,7 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
+	"strconv"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -78,10 +79,12 @@ func AccountDBHandlerServe() {
 			dbYear, dbMonth, dbDay := accountInDb.CreatedAt.Date()
 			nowYear, nowMonth, nowDay := util.GetNow().Date()
 			if dbYear == nowYear && dbMonth == nowMonth && dbDay == nowDay {
+				util.SocketInfo(account.Currency + "update with db date" + strconv.Itoa(dbDay) + "now date " + strconv.Itoa(nowDay))
 				accountInDb.Free = account.Free
 				accountInDb.Frozen = account.Frozen
 				model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{"free": account.Free, "frozen": account.Frozen})
 			} else {
+				util.SocketInfo(account.Currency + "create with db date" + strconv.Itoa(dbDay) + "now date " + strconv.Itoa(nowDay))
 				model.ApplicationDB.Create(&account)
 			}
 		}
