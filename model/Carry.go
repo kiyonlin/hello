@@ -9,16 +9,16 @@ import (
 )
 
 type Carry struct {
-	Symbol string
-	BidWeb    string
-	AskWeb    string
-	BidAmount float64
-	AskAmount float64
-	Amount float64
+	Symbol         string
+	BidWeb         string
+	AskWeb         string
+	BidAmount      float64
+	AskAmount      float64
+	Amount         float64
 	DealBidAmount  float64
 	DealAskAmount  float64
-	BidPrice  float64
-	AskPrice  float64
+	BidPrice       float64
+	AskPrice       float64
 	DealBidErrCode string
 	DealBidOrderId string
 	DealAskErrCode string
@@ -26,8 +26,8 @@ type Carry struct {
 	DealBidStatus  string
 	DealAskStatus  string
 	// time_idx的设计有一定的冲突风险，但为了在发起挂单前减少一次db操作而不使用carry的id
-	BidTime   int64 `gorm:"unique_index:time_idx;"`
-	AskTime   int64 `gorm:"unique_index:time_idx;"`
+	BidTime int64 `gorm:"unique_index:time_idx;"`
+	AskTime int64 `gorm:"unique_index:time_idx;"`
 	gorm.Model
 }
 
