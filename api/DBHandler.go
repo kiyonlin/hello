@@ -72,14 +72,18 @@ func AccountDBHandlerServe() {
 		account := <-model.AccountChannel
 		var accountInDb model.Account
 		model.ApplicationDB.Where("market = ? AND currency = ?", account.Market, account.Currency).Order("created_at desc").First(&accountInDb)
-		dbYear, dbMonth, dbDay := accountInDb.CreatedAt.Date()
-		nowYear, nowMonth, nowDay := time.Now().UTC().Date()
-		if !model.ApplicationDB.NewRecord(&accountInDb) && dbYear == nowYear && dbMonth == nowMonth && dbDay == nowDay {
-			accountInDb.Free = account.Free
-			accountInDb.Frozen = account.Frozen
-			model.ApplicationDB.Save(accountInDb)
-		} else {
+		if model.ApplicationDB.NewRecord(&accountInDb) {
 			model.ApplicationDB.Create(&account)
+		} else {
+			dbYear, dbMonth, dbDay := accountInDb.CreatedAt.Date()
+			nowYear, nowMonth, nowDay := time.Now().UTC().Date()
+			if dbYear == nowYear && dbMonth == nowMonth && dbDay == nowDay {
+				accountInDb.Free = account.Free
+				accountInDb.Frozen = account.Frozen
+				model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{"free": account.Free, "frozen": account.Frozen})
+			} else {
+				model.ApplicationDB.Create(&account)
+			}
 		}
 	}
 }
