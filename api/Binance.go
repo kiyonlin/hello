@@ -114,7 +114,7 @@ func CancelOrderBinance(symbol string, orderId string) {
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.ApiKeys[model.Binance]}
 	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("DELETE", requestUrl, "", headers)
-	util.Notice("binance cancel order" + string(responseBody))
+	util.SocketInfo("binance cancel order" + string(responseBody))
 }
 
 func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, status string) {
