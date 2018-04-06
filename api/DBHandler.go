@@ -74,17 +74,13 @@ func AccountDBHandlerServe() {
 		var accountInDb model.Account
 		nowYear, nowMonth, nowDay := util.GetNow().Date()
 		account.BelongDate = fmt.Sprintf("%d-%d-%d", nowYear, nowMonth, nowDay)
-		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date", account.Market, account.Currency, account.BelongDate).Order("created_at desc").First(&accountInDb)
+		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate).Order("created_at desc").First(&accountInDb)
 		if model.ApplicationDB.NewRecord(&accountInDb) {
 			model.ApplicationDB.Create(&account)
 		} else {
-			if account.BelongDate == accountInDb.BelongDate {
-				accountInDb.Free = account.Free
-				accountInDb.Frozen = account.Frozen
-				model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{"free": account.Free, "frozen": account.Frozen})
-			} else {
-				model.ApplicationDB.Create(&account)
-			}
+			accountInDb.Free = account.Free
+			accountInDb.Frozen = account.Frozen
+			model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{"free": account.Free, "frozen": account.Frozen})
 		}
 	}
 }

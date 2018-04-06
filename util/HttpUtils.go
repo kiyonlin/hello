@@ -19,14 +19,14 @@ func HttpRequest(method string, reqUrl string, postData string, requestHeaders m
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(err)
+		SocketInfo("can not process request " + err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	bodyData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		SocketInfo("can not read message from request " + err.Error())
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
