@@ -116,12 +116,12 @@ func NewConfig() *Config {
 	config.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	config.RestUrls[Binance] = "https://api.binance.com"
 	config.ApiKeys = make(map[string]string)
-	config.ApiKeys[Huobi] = "40efea2f-d65e049a-1fe4c855-c7717"
-	config.ApiKeys[OKEX] = "a303f0c7-4d46-4b59-81ab-8b9a53de16fe"
+	config.ApiKeys[Huobi] = "05005ed9-befbbed5-263dcb1d-8d835"
+	config.ApiKeys[OKEX] = "f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c"
 	config.ApiKeys[Binance] = "SrIXmREkCSaVYiqutcUsQkP0z8srg4OMU9kKLODFtAiUgwbBlzebVIeXOrFWkZv0"
 	config.ApiSecrets = make(map[string]string)
-	config.ApiSecrets[Huobi] = "e3421043-f8fa52b1-bf026cef-6462f"
-	config.ApiSecrets[OKEX] = "6F967FCCFAB212A58DC8DA111CBAC2C6"
+	config.ApiSecrets[Huobi] = "a0e763f3-736408f9-5bca700b-8e51f"
+	config.ApiSecrets[OKEX] = "66786EDBC5F3230B7943DB520F86B492"
 	config.ApiSecrets[Binance] = "rUAAgJxzzSRlrHwhNFZOJtiVsxGQvXBeH1GJbzmy9E72pWX1UL9CxbVyRWGzzdgI"
 	return config
 }
