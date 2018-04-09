@@ -85,7 +85,11 @@ func AccountDBHandlerServe() {
 	for true {
 		account := <-model.AccountChannel
 		var accountInDb model.Account
-		account.PriceInUsdt, _ = getBuyPriceOkex(account.Currency + "_usdt")
+		if account.Currency == "usdt" {
+			account.PriceInUsdt = 1
+		} else {
+			account.PriceInUsdt, _ = getBuyPriceOkex(account.Currency + "_usdt")
+		}
 		nowYear, nowMonth, nowDay := util.GetNow().Date()
 		account.BelongDate = fmt.Sprintf("%d-%d-%d", nowYear, nowMonth, nowDay)
 		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate).Order("created_at desc").First(&accountInDb)
