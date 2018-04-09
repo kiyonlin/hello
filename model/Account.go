@@ -11,11 +11,12 @@ type Accounts struct {
 }
 
 type Account struct {
-	BelongDate string
-	Market     string
-	Currency   string
-	Free       float64
-	Frozen     float64
+	BelongDate  string
+	Market      string
+	Currency    string
+	Free        float64
+	Frozen      float64
+	PriceInUsdt float64
 	gorm.Model
 }
 

@@ -5,6 +5,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"fmt"
+	"strconv"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -68,10 +69,23 @@ func CarryProcessor() {
 	}
 }
 
+func getBuyPriceOkex(symbol string) (buy float64, err error) {
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+"/ticker.do?symbol="+symbol, "", headers)
+	tickerJson, err := util.NewJSON(responseBody)
+	if err == nil {
+		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
+		buy, err = strconv.ParseFloat(strBuy, 64)
+	}
+	return buy, err
+}
+
 func AccountDBHandlerServe() {
 	for true {
 		account := <-model.AccountChannel
 		var accountInDb model.Account
+		account.PriceInUsdt, _ = getBuyPriceOkex(account.Currency + "_usdt")
 		nowYear, nowMonth, nowDay := util.GetNow().Date()
 		account.BelongDate = fmt.Sprintf("%d-%d-%d", nowYear, nowMonth, nowDay)
 		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate).Order("created_at desc").First(&accountInDb)
@@ -80,7 +94,7 @@ func AccountDBHandlerServe() {
 		} else {
 			accountInDb.Free = account.Free
 			accountInDb.Frozen = account.Frozen
-			model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{"free": account.Free, "frozen": account.Frozen})
+			model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{"free": account.Free, "frozen": account.Frozen, "price_in_usdt": account.PriceInUsdt})
 		}
 	}
 }
