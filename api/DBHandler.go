@@ -4,7 +4,6 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
-	"fmt"
 	"strconv"
 )
 
@@ -90,8 +89,7 @@ func AccountDBHandlerServe() {
 		} else {
 			account.PriceInUsdt, _ = getBuyPriceOkex(account.Currency + "_usdt")
 		}
-		nowYear, nowMonth, nowDay := util.GetNow().Date()
-		account.BelongDate = fmt.Sprintf("%d-%d-%d", nowYear, nowMonth, nowDay)
+		account.BelongDate = util.GetNow().Format("2006-01-02")
 		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate).Order("created_at desc").First(&accountInDb)
 		if model.ApplicationDB.NewRecord(&accountInDb) {
 			model.ApplicationDB.Create(&account)
