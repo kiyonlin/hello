@@ -73,6 +73,9 @@ var currencyPrice = make(map[string]float64)
 var getBuyPriceOkexTime = make(map[string]int64)
 
 func GetBuyPriceOkex(symbol string) (buy float64, err error) {
+	if model.ApplicationConfig == nil {
+		model.ApplicationConfig = model.NewConfig()
+	}
 	buy = currencyPrice[symbol]
 	now := util.GetNowUnixMillion()
 	buy = currencyPrice[symbol]
