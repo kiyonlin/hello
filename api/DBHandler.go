@@ -69,8 +69,8 @@ func CarryProcessor() {
 	}
 }
 
-var currencyPrice map[string]float64
-var getBuyPriceOkexTime map[string]int64
+var currencyPrice = make(map[string]float64)
+var getBuyPriceOkexTime = make(map[string]int64)
 
 func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	buy = currencyPrice[symbol]
