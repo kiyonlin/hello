@@ -5,6 +5,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"strconv"
+	"strings"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -68,7 +69,21 @@ func CarryProcessor() {
 	}
 }
 
-func getBuyPriceOkex(symbol string) (buy float64, err error) {
+var currencyPrice map[string]float64
+var getBuyPriceOkexTime map[string]int64
+
+func GetBuyPriceOkex(symbol string) (buy float64, err error) {
+	buy = currencyPrice[symbol]
+	now := util.GetNowUnixMillion()
+	buy = currencyPrice[symbol]
+	if buy != 0 && now-getBuyPriceOkexTime[symbol] < 3000000 {
+		return buy, nil
+	}
+	getBuyPriceOkexTime[symbol] = now
+	strs := strings.Split(symbol, "_")
+	if strs[0] == strs[1] {
+		return 1, nil
+	}
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+"/ticker.do?symbol="+symbol, "", headers)
@@ -77,6 +92,7 @@ func getBuyPriceOkex(symbol string) (buy float64, err error) {
 		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
 		buy, err = strconv.ParseFloat(strBuy, 64)
 	}
+	currencyPrice[symbol] = buy
 	return buy, err
 }
 
@@ -84,11 +100,7 @@ func AccountDBHandlerServe() {
 	for true {
 		account := <-model.AccountChannel
 		var accountInDb model.Account
-		if account.Currency == "usdt" {
-			account.PriceInUsdt = 1
-		} else {
-			account.PriceInUsdt, _ = getBuyPriceOkex(account.Currency + "_usdt")
-		}
+		account.PriceInUsdt, _ = GetBuyPriceOkex(account.Currency + "_usdt")
 		account.BelongDate = util.GetNow().Format("2006-01-02")
 		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate).Order("created_at desc").First(&accountInDb)
 		if model.ApplicationDB.NewRecord(&accountInDb) {
