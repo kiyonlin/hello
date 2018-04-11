@@ -76,26 +76,24 @@ func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.ApplicationConfig = model.NewConfig()
 	}
-	buy = currencyPrice[symbol]
-	now := util.GetNowUnixMillion()
-	if getBuyPriceOkexTime[symbol] != 0 && now-getBuyPriceOkexTime[symbol] < 3000000 {
-		return buy, nil
+	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3000000 {
+		return currencyPrice[symbol], nil
 	}
-	getBuyPriceOkexTime[symbol] = now
+	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
 	strs := strings.Split(symbol, "_")
 	if strs[0] == strs[1] {
-		return 1, nil
+		currencyPrice[symbol] = 1
+	} else {
+		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+			"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+		responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+"/ticker.do?symbol="+symbol, "", headers)
+		tickerJson, err := util.NewJSON(responseBody)
+		if err == nil {
+			strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
+			currencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
+		}
 	}
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+"/ticker.do?symbol="+symbol, "", headers)
-	tickerJson, err := util.NewJSON(responseBody)
-	if err == nil {
-		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
-		buy, err = strconv.ParseFloat(strBuy, 64)
-	}
-	currencyPrice[symbol] = buy
-	return buy, err
+	return currencyPrice[symbol], err
 }
 
 func AccountDBHandlerServe() {
