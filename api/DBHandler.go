@@ -78,8 +78,7 @@ func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	}
 	buy = currencyPrice[symbol]
 	now := util.GetNowUnixMillion()
-	buy = currencyPrice[symbol]
-	if buy != 0 && now-getBuyPriceOkexTime[symbol] < 3000000 {
+	if getBuyPriceOkexTime[symbol] != 0 && now-getBuyPriceOkexTime[symbol] < 3000000 {
 		return buy, nil
 	}
 	getBuyPriceOkexTime[symbol] = now
