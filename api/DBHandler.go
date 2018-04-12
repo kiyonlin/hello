@@ -102,13 +102,15 @@ func AccountDBHandlerServe() {
 		var accountInDb model.Account
 		account.PriceInUsdt, _ = GetBuyPriceOkex(account.Currency + "_usdt")
 		account.BelongDate = util.GetNow().Format("2006-01-02")
-		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate).Order("created_at desc").First(&accountInDb)
+		db := model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate)
+		db.Order("created_at desc").First(&accountInDb)
 		if model.ApplicationDB.NewRecord(&accountInDb) {
 			model.ApplicationDB.Create(&account)
 		} else {
 			accountInDb.Free = account.Free
 			accountInDb.Frozen = account.Frozen
-			model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{"free": account.Free, "frozen": account.Frozen, "price_in_usdt": account.PriceInUsdt})
+			model.ApplicationDB.Model(&accountInDb).Updates(map[string]interface{}{
+				"free": account.Free, "frozen": account.Frozen, "price_in_usdt": account.PriceInUsdt})
 		}
 	}
 }

@@ -4,22 +4,19 @@ markets:
 - binance
 
 symbols:
-- xrp_btc
+#usdt:btc:eth:eos约4:2:1:1
 - btc_usdt
-- eos_btc
 - eth_usdt
-- eth_btc
+- eos_usdt
+#以下两个量很少
+- eos_eth
+- eos_btc
+#- xrp_usdt
+#- xrp_btc
+#- xrp_eth
 
 margins: #差价乘数
-- 0.005
-- 0.005
-- 0.005
-- 0.005
-- 0.005
+- 0.004
 
 delays: #按照毫秒计算时间差
-- 3000
-- 3000
-- 3000
-- 3000
 - 3000
