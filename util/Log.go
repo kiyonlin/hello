@@ -39,7 +39,7 @@ func SocketInfo(message string) {
 }
 
 func Info(message string) {
-	fmt.Println(message)
+	//fmt.Println(message)
 	if infoCount%10000 == 0 {
 		if infoFile != nil {
 			infoFile.Close()
