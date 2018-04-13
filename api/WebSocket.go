@@ -40,36 +40,28 @@ func newConnection(url string) (*websocket.Conn, error) {
 	return c, nil
 }
 
-func chanHandler(c *websocket.Conn, msgC chan []byte, stopC chan struct{}, errHandler ErrHandler, msgHandler MsgHandler) {
+func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, msgHandler MsgHandler) {
 	defer func() {
 		close(stopC)
-		close(msgC)
 		err := c.Close()
 		if err != nil {
 			errHandler(err)
 		}
 	}()
-	for true {
+	for {
 		select {
 		case <-stopC:
 			util.Info("get stop struct, return")
 			return
-		case message := <-msgC:
+		default:
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				util.Info("connection read error")
+				fmt.Println(err)
+				return
+			}
 			msgHandler(message, c)
 		}
-	}
-
-}
-
-func wsRead(c *websocket.Conn, msgC chan []byte) {
-	for true {
-		_, message, err := c.ReadMessage()
-		if err != nil {
-			util.Info("connection read error")
-			fmt.Println(err)
-			return
-		}
-		msgC <- message
 	}
 }
 
@@ -81,9 +73,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 	}
 	subHandler(subscribes, c)
 	stopC := make(chan struct{})
-	msgC := make(chan []byte)
-	go wsRead(c, msgC)
-	go chanHandler(c, msgC, stopC, errHandler, msgHandler)
+	go chanHandler(c, stopC, errHandler, msgHandler)
 	return stopC, err
 }
 
@@ -107,8 +97,8 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 		createServer(markets, marketName)
 	} else if markets.RequireChanReset(marketName, subscribe) {
 		util.SocketInfo(marketName + " need reset " + subscribe)
-		channel <- struct{}{}
 		createServer(markets, marketName)
+		channel <- struct{}{}
 	}
 }
 
