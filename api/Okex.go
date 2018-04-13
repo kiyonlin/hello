@@ -162,7 +162,6 @@ func GetAccountOkex(accounts *model.Accounts) {
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do", postData.Encode(), headers)
-	util.SocketInfo("okex account:" + string(responseBody))
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		free, _ := balanceJson.GetPath("info", "funds", "free").Map()
