@@ -46,7 +46,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 			errHandler(err)
 		}
 	}()
-	for {
+	for true {
 		select {
 		case <-stopC:
 			util.Info("get stop struct, return")
@@ -95,9 +95,9 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 		createServer(markets, marketName)
 	} else if markets.RequireChanReset(marketName, subscribe) {
 		util.SocketInfo(marketName + " need reset " + subscribe)
+		createServer(markets, marketName)
 		channel <- struct{}{}
 		close(channel)
-		createServer(markets, marketName)
 	}
 }
 
