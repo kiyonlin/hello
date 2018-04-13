@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gorilla/websocket"
 	"time"
-	"fmt"
 	"hello/util"
 	"hello/model"
 )
@@ -56,9 +55,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 		default:
 			_, message, err := c.ReadMessage()
 			if err != nil {
-				util.Info("connection read error")
-				fmt.Println(err)
-				return
+				util.SocketInfo("can not read from websocket: " + err.Error())
 			}
 			msgHandler(message, c)
 		}
@@ -97,8 +94,8 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 		createServer(markets, marketName)
 	} else if markets.RequireChanReset(marketName, subscribe) {
 		util.SocketInfo(marketName + " need reset " + subscribe)
-		createServer(markets, marketName)
 		channel <- struct{}{}
+		createServer(markets, marketName)
 	}
 }
 
