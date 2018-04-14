@@ -6,7 +6,6 @@ import (
 	"hello/util"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -110,8 +109,7 @@ func AccountDBHandlerServe() {
 				model.ApplicationDB.Create(&account)
 			}
 		} else {
-			util.SocketInfo(fmt.Sprintf("updateeeeeee %s %s %s %f%f", account.Market, account.Currency, account.BelongDate, account.Frozen, account.Free))
-			model.ApplicationDB.Table("account").Where("market = ? AND currency = ? AND belong_date = ?",
+			model.ApplicationDB.Table("accounts").Where("market = ? AND currency = ? AND belong_date = ?",
 				account.Market, account.Currency, account.BelongDate).Updates(map[string]interface{}{
 				"free": account.Free, "frozen": account.Frozen, "price_in_usdt": account.PriceInUsdt})
 
