@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"hello/model"
 	"hello/util"
+	"fmt"
 )
 
 var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) error {
@@ -129,7 +130,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 		status, _ = orderJson.Get("status").String()
 		status = model.OrderStatusMap[status]
 	}
-	util.Notice(status + "binance query order" + orderId + string(responseBody))
+	util.SocketInfo(fmt.Sprintf("%s binance query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 

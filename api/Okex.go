@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"hello/model"
 	"hello/util"
+	"fmt"
 )
 
 type OKEXMessage struct {
@@ -151,7 +152,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 			}
 		}
 	}
-	util.SocketInfo(status + "okex query order" + string(responseBody))
+	util.SocketInfo(fmt.Sprintf("%s okex query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 

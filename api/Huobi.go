@@ -167,7 +167,10 @@ func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 	if err == nil {
 		status, _ = orderJson.GetPath("data", "state").String()
 		status = model.OrderStatusMap[status]
-		dealAmount, _ = orderJson.GetPath("data", "field-amount").Float64()
+		str, _ := orderJson.GetPath("data", "field-amount").String()
+		if str != "" {
+			dealAmount, _ = strconv.ParseFloat(str, 64)
+		}
 	}
 	util.SocketInfo(fmt.Sprintf("%s huobi query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
