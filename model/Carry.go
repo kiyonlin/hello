@@ -4,8 +4,8 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"strconv"
-	"github.com/jinzhu/gorm"
 	"hello/util"
+	"time"
 )
 
 type Carry struct {
@@ -26,9 +26,11 @@ type Carry struct {
 	DealBidStatus  string
 	DealAskStatus  string
 	// time_idx的设计有一定的冲突风险，但为了在发起挂单前减少一次db操作而不使用carry的id
-	BidTime int64 `gorm:"unique_index:time_idx;"`
-	AskTime int64 `gorm:"unique_index:time_idx;"`
-	gorm.Model
+	BidTime   int64 `gorm:"unique_index:time_idx;"`
+	AskTime   int64 `gorm:"unique_index:time_idx;"`
+	ID        uint  `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (carry *Carry) CheckWorth(markets *Markets, config *Config, symbol string) (bool, error) {

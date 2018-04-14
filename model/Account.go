@@ -2,7 +2,7 @@ package model
 
 import (
 	"sync"
-	"github.com/jinzhu/gorm"
+	"time"
 )
 
 type Accounts struct {
@@ -18,7 +18,9 @@ type Account struct {
 	Frozen      float64
 	PriceInUsdt float64
 	Percentage  float64
-	gorm.Model
+	ID          uint `gorm:"primary_key"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func NewAccounts() *Accounts {
