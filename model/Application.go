@@ -39,9 +39,9 @@ var OrderStatusMap = map[string]string{
 	"pre-submitted":    CarryStatusWorking,
 	"submitting":       CarryStatusWorking,
 	"submitted":        CarryStatusWorking,
-	"partial-filled":   CarryStatusWorking,
+	"partial-filled":   CarryStatusSuccess,
 	"filled":           CarryStatusSuccess,
-	"partial-canceled": CarryStatusWorking,
+	"partial-canceled": CarryStatusSuccess,
 	"canceled":         CarryStatusFail,
 	// Okex
 	"-1": CarryStatusFail,    //已撤销

@@ -4,6 +4,7 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
+	"fmt"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -105,9 +106,11 @@ func CarryDBHandlerServe() {
 				carryInDb.DealBidErrCode = carry.DealBidErrCode
 			}
 			if carry.DealAskAmount != 0 {
+				util.SocketInfo(fmt.Sprintf("deal ask amount updated to%f", carry.DealAskAmount))
 				carryInDb.DealAskAmount = carry.DealAskAmount
 			}
 			if carry.DealBidAmount != 0 {
+				util.SocketInfo(fmt.Sprintf("deal bid amount updated to%f", carry.DealBidAmount))
 				carryInDb.DealBidAmount = carry.DealBidAmount
 			}
 			if carry.DealAskStatus != "" {
