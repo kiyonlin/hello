@@ -76,6 +76,7 @@ func AccountDBHandlerServe() {
 			if !cleared {
 				model.ApplicationDB.Delete(model.Account{}, "market = ? AND currency = ? AND belong_date = ?",
 					value.Market, value.Currency, value.BelongDate)
+				util.SocketInfo("delete from account where " + value.Market + " " + value.Currency + " " + value.BelongDate)
 				cleared = true
 			}
 			model.ApplicationDB.Create(value)
