@@ -172,11 +172,9 @@ func GetAccountOkex(accounts *model.Accounts) {
 			if account == nil {
 				account = &model.Account{Market: model.OKEX, Currency: k}
 			}
-			if balance > 0 {
-				accounts.SetAccount(model.OKEX, k, account)
-				account.Free = balance
-				model.AccountChannel <- *account
-			}
+			accounts.SetAccount(model.OKEX, k, account)
+			account.Free = balance
+			model.AccountChannel <- *account
 		}
 		for k, v := range lock {
 			balance, _ := strconv.ParseFloat(v.(string), 64)
@@ -185,11 +183,9 @@ func GetAccountOkex(accounts *model.Accounts) {
 			if account == nil {
 				account = &model.Account{Market: model.OKEX, Currency: currency}
 			}
-			if balance > 0 {
-				accounts.SetAccount(model.OKEX, currency, account)
-				account.Frozen = balance
-				model.AccountChannel <- *account
-			}
+			accounts.SetAccount(model.OKEX, currency, account)
+			account.Frozen = balance
+			model.AccountChannel <- *account
 		}
 	}
 }

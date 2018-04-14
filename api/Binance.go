@@ -147,12 +147,10 @@ func GetAccountBinance(accounts *model.Accounts) {
 				asset := value.(map[string]interface{})
 				free, _ := strconv.ParseFloat(asset["free"].(string), 64)
 				frozen, _ := strconv.ParseFloat(asset["locked"].(string), 64)
-				if free > 0 || frozen > 0 {
-					currency := strings.ToLower(asset["asset"].(string))
-					account := &model.Account{Market: model.Binance, Currency: currency, Free: free, Frozen: frozen}
-					accounts.SetAccount(model.Binance, currency, account)
-					model.AccountChannel <- *account
-				}
+				currency := strings.ToLower(asset["asset"].(string))
+				account := &model.Account{Market: model.Binance, Currency: currency, Free: free, Frozen: frozen}
+				accounts.SetAccount(model.Binance, currency, account)
+				model.AccountChannel <- *account
 			}
 		}
 	}

@@ -104,7 +104,7 @@ func AccountDBHandlerServe() {
 		account.BelongDate = util.GetNow().Format("2006-01-02")
 		db := model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?", account.Market, account.Currency, account.BelongDate)
 		db.Order("created_at desc").First(&accountInDb)
-		if model.ApplicationDB.NewRecord(&accountInDb) {
+		if model.ApplicationDB.NewRecord(&accountInDb) && (account.Free > 0 || account.Frozen > 0) {
 			model.ApplicationDB.Create(&account)
 		} else {
 			accountInDb.Free = account.Free

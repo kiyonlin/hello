@@ -191,21 +191,19 @@ func GetAccountHuobi(accounts *model.Accounts) {
 			for _, value := range currencies {
 				currency := value.(map[string]interface{})
 				balance, _ := strconv.ParseFloat(currency["balance"].(string), 64)
-				if balance > 0 {
-					account := accounts.GetAccount(model.Huobi, currency["currency"].(string))
-					if account == nil {
-						currencyName := strings.ToLower(currency["currency"].(string))
-						account = &model.Account{Market: model.Huobi, Currency: currencyName}
-						accounts.SetAccount(model.Huobi, currencyName, account)
-					}
-					if currency["type"].(string) == "trade" {
-						account.Free = balance
-					}
-					if currency["type"].(string) == "frozen" {
-						account.Frozen = balance
-					}
-					model.AccountChannel <- *account
+				account := accounts.GetAccount(model.Huobi, currency["currency"].(string))
+				if account == nil {
+					currencyName := strings.ToLower(currency["currency"].(string))
+					account = &model.Account{Market: model.Huobi, Currency: currencyName}
+					accounts.SetAccount(model.Huobi, currencyName, account)
 				}
+				if currency["type"].(string) == "trade" {
+					account.Free = balance
+				}
+				if currency["type"].(string) == "frozen" {
+					account.Frozen = balance
+				}
+				model.AccountChannel <- *account
 			}
 		}
 	}
