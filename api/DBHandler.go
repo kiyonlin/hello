@@ -74,9 +74,7 @@ func AccountDBHandlerServe() {
 		for _, value := range accounts {
 			value.BelongDate = util.GetNow().Format("2006-01-02")
 			if !cleared {
-				model.ApplicationDB.Delete(model.Account{}, "market = ? AND currency = ? AND belong_date = ?",
-					value.Market, value.Currency, value.BelongDate)
-				util.SocketInfo("delete from account where " + value.Market + " " + value.Currency + " " + value.BelongDate)
+				model.ApplicationDB.Delete(model.Account{}, "market = ? AND belong_date = ?", value.Market, value.BelongDate)
 				cleared = true
 			}
 			model.ApplicationDB.Create(value)
