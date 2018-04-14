@@ -49,7 +49,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 	for true {
 		select {
 		case <-stopC:
-			util.Info("get stop struct, return")
+			util.SocketInfo("get stop struct, return")
 			return
 		default:
 			_, message, err := c.ReadMessage()
@@ -98,6 +98,7 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 		createServer(markets, marketName)
 		channel <- struct{}{}
 		close(channel)
+		util.SocketInfo(marketName + " channel closed and cleared ")
 	}
 }
 
