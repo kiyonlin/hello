@@ -4,8 +4,6 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
-	"strconv"
-	"strings"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -69,50 +67,18 @@ func CarryProcessor() {
 	}
 }
 
-var currencyPrice = make(map[string]float64)
-var getBuyPriceOkexTime = make(map[string]int64)
-
-func GetBuyPriceOkex(symbol string) (buy float64, err error) {
-	if model.ApplicationConfig == nil {
-		model.ApplicationConfig = model.NewConfig()
-	}
-	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3000000 {
-		return currencyPrice[symbol], nil
-	}
-	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
-	strs := strings.Split(symbol, "_")
-	if strs[0] == strs[1] {
-		currencyPrice[symbol] = 1
-	} else {
-		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-			"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-		responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+"/ticker.do?symbol="+symbol, "", headers)
-		tickerJson, err := util.NewJSON(responseBody)
-		if err == nil {
-			strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
-			currencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
-		}
-	}
-	return currencyPrice[symbol], err
-}
-
 func AccountDBHandlerServe() {
 	for true {
-		account := <-model.AccountChannel
-		var accountInDb model.Account
-		account.PriceInUsdt, _ = GetBuyPriceOkex(account.Currency + "_usdt")
-		account.BelongDate = util.GetNow().Format("2006-01-02")
-		model.ApplicationDB.Where("market = ? AND currency = ? AND belong_date = ?",
-			account.Market, account.Currency, account.BelongDate).First(&accountInDb)
-		if model.ApplicationDB.NewRecord(&accountInDb) {
-			if account.Free > 0 || account.Frozen > 0 {
-				model.ApplicationDB.Create(&account)
+		accounts := <-model.AccountChannel
+		cleared := false
+		for _, value := range accounts {
+			value.BelongDate = util.GetNow().Format("2006-01-02")
+			if !cleared {
+				model.ApplicationDB.Delete(model.Account{}, "market = ? AND currency = ? AND belong_date = ?",
+					value.Market, value.Currency, value.BelongDate)
+				cleared = true
 			}
-		} else {
-			model.ApplicationDB.Table("accounts").Where("market = ? AND currency = ? AND belong_date = ?",
-				account.Market, account.Currency, account.BelongDate).Updates(map[string]interface{}{
-				"free": account.Free, "frozen": account.Frozen, "price_in_usdt": account.PriceInUsdt})
-
+			model.ApplicationDB.Create(value)
 		}
 	}
 }

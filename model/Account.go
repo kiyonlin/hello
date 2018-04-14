@@ -17,6 +17,7 @@ type Account struct {
 	Free        float64
 	Frozen      float64
 	PriceInUsdt float64
+	Percentage  float64
 	gorm.Model
 }
 
@@ -24,6 +25,12 @@ func NewAccounts() *Accounts {
 	accounts := &Accounts{}
 	accounts.Data = make(map[string]map[string]*Account)
 	return accounts
+}
+
+func (accounts *Accounts) ClearAccounts(marketName string) {
+	accounts.lock.Lock()
+	defer accounts.lock.Unlock()
+	accounts.Data[marketName] = nil
 }
 
 func (accounts *Accounts) GetAccount(marketName string, currency string) *Account {
@@ -42,4 +49,19 @@ func (accounts *Accounts) SetAccount(marketName string, currency string, account
 		accounts.Data[marketName] = make(map[string]*Account)
 	}
 	accounts.Data[marketName][currency] = account
+}
+
+func (accounts *Accounts) Maintain(marketName string) {
+	if accounts.Data[marketName] == nil {
+		return
+	}
+	var totalInUsdt float64
+	for key, value := range accounts.Data[marketName] {
+		value.PriceInUsdt, _ = GetBuyPriceOkex(key + "_usdt")
+		totalInUsdt += value.PriceInUsdt * (value.Free + value.Frozen)
+	}
+	for _, value := range accounts.Data[marketName] {
+		value.Percentage = value.PriceInUsdt * (value.Free + value.Frozen) / totalInUsdt
+	}
+	AccountChannel <- accounts.Data[marketName]
 }

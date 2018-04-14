@@ -134,6 +134,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 }
 
 func GetAccountBinance(accounts *model.Accounts) {
+	accounts.ClearAccounts(model.Binance)
 	postData := url.Values{}
 	signBinance(&postData, model.ApplicationConfig.ApiSecrets[model.Binance])
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.ApiKeys[model.Binance]}
@@ -147,11 +148,14 @@ func GetAccountBinance(accounts *model.Accounts) {
 				asset := value.(map[string]interface{})
 				free, _ := strconv.ParseFloat(asset["free"].(string), 64)
 				frozen, _ := strconv.ParseFloat(asset["locked"].(string), 64)
+				if free == 0 && frozen == 0 {
+					continue
+				}
 				currency := strings.ToLower(asset["asset"].(string))
 				account := &model.Account{Market: model.Binance, Currency: currency, Free: free, Frozen: frozen}
 				accounts.SetAccount(model.Binance, currency, account)
-				model.AccountChannel <- *account
 			}
 		}
 	}
+	accounts.Maintain(model.Binance)
 }

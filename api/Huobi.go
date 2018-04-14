@@ -174,6 +174,7 @@ func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 }
 
 func GetAccountHuobi(accounts *model.Accounts) {
+	accounts.ClearAccounts(model.Huobi)
 	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountId)
 	postData := &url.Values{}
 	postData.Set("accountId-id", model.HuobiAccountId)
@@ -191,6 +192,9 @@ func GetAccountHuobi(accounts *model.Accounts) {
 			for _, value := range currencies {
 				currency := value.(map[string]interface{})
 				balance, _ := strconv.ParseFloat(currency["balance"].(string), 64)
+				if balance == 0 {
+					continue
+				}
 				account := accounts.GetAccount(model.Huobi, currency["currency"].(string))
 				if account == nil {
 					currencyName := strings.ToLower(currency["currency"].(string))
@@ -203,8 +207,8 @@ func GetAccountHuobi(accounts *model.Accounts) {
 				if currency["type"].(string) == "frozen" {
 					account.Frozen = balance
 				}
-				model.AccountChannel <- *account
 			}
 		}
 	}
+	accounts.Maintain(model.Huobi)
 }

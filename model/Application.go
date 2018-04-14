@@ -4,6 +4,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"strings"
 	"errors"
+	"github.com/haoweizh/hello/model"
+	"strconv"
+	"hello/util"
 )
 
 const OKEX = "okex"
@@ -17,7 +20,7 @@ var ApplicationConfig *Config
 var ApplicationAccounts = NewAccounts()
 var ApplicationDB *gorm.DB
 var CarryChannel = make(chan Carry, 50)
-var AccountChannel = make(chan Account, 50)
+var AccountChannel = make(chan map[string]*Account, 50)
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
@@ -165,4 +168,31 @@ func (config *Config) GetDelay(symbol string) (float64, error) {
 		}
 	}
 	return 0, errors.New("no such symbol")
+}
+
+var currencyPrice = make(map[string]float64)
+var getBuyPriceOkexTime = make(map[string]int64)
+
+func GetBuyPriceOkex(symbol string) (buy float64, err error) {
+	if model.ApplicationConfig == nil {
+		model.ApplicationConfig = model.NewConfig()
+	}
+	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 86400000 {
+		return currencyPrice[symbol], nil
+	}
+	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
+	strs := strings.Split(symbol, "_")
+	if strs[0] == strs[1] {
+		currencyPrice[symbol] = 1
+	} else {
+		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+			"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+		responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+"/ticker.do?symbol="+symbol, "", headers)
+		tickerJson, err := util.NewJSON(responseBody)
+		if err == nil {
+			strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
+			currencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
+		}
+	}
+	return currencyPrice[symbol], err
 }
