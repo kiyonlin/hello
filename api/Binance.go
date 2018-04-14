@@ -126,7 +126,10 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
-		dealAmount, _ = orderJson.Get("executedQty").Float64()
+		str, _ := orderJson.Get("executedQty").String()
+		if str != "" {
+			dealAmount, _ = strconv.ParseFloat(str, 64)
+		}
 		status, _ = orderJson.Get("status").String()
 		status = model.OrderStatusMap[status]
 	}
