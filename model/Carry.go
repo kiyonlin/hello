@@ -40,7 +40,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		return configMargin
 	}
 	currencies := strings.Split(carry.Symbol, "_")
-	fmt.Printf("%s  %d %s", carry.Symbol, len(currencies), currencies[0])
+	fmt.Println(fmt.Sprintf("%s  %d %s", carry.Symbol, len(currencies), currencies[0]))
 	var leftAskPercentage, rightAskPercentage, leftBidPercentage, rightBidPercentage float64
 	leftAskAccount := ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
 	rightAskAccount := ApplicationAccounts.GetAccount(carry.AskWeb, currencies[1])
