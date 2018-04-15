@@ -75,8 +75,8 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		if discount < (leftBidBalance-leftBidPercentage)/leftBidBalance {
 			discount = (leftBidBalance - leftBidPercentage) / leftBidBalance
 		}
-		util.SocketInfo(fmt.Sprintf("执行动态搬砖利润折扣%.4f", discount))
-		return BaseCarryCost + (configMargin-BaseCarryCost)*discount
+		util.SocketInfo(fmt.Sprintf("执行动态搬砖利润折扣%f", discount))
+		return BaseCarryCost + (configMargin-BaseCarryCost)*(1-discount)
 	}
 	return configMargin
 }
