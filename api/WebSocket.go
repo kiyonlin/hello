@@ -104,7 +104,7 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 
 func Maintain(markets *model.Markets, config *model.Config) {
 	for true {
-		for _, marketName := range config.Markets {
+		for marketName := range config.Markets {
 			subscribes := config.GetSubscribes(marketName)
 			for _, subscribe := range subscribes {
 				go maintainMarketChan(markets, marketName, subscribe)

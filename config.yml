@@ -1,7 +1,19 @@
 markets:
-- huobi
-- okex
-- binance
+  huobi:
+    btc: 0.3
+    eth: 0.15
+    eos: 0.15
+    usdt: 0.4
+  okex:
+    btc: 0.3
+    eth: 0.15
+    eos: 0.15
+    usdt: 0.4
+  binance:
+    btc: 0.3
+    eth: 0.15
+    eos: 0.15
+    usdt: 0.4
 
 symbols:
 #usdt:btc:eth:eos约4:2:1:1
