@@ -7,13 +7,9 @@ import (
 	"strconv"
 )
 
-var socket, notice *log.Logger
-var socketInfoFile, noticeFile *os.File
-var socketCount, noticeCount int
-
-//var info *log.Logger
-//var infoFile *os.File
-//var infoCount int
+var socket, info, notice *log.Logger
+var socketInfoFile, infoFile, noticeFile *os.File
+var socketCount, infoCount, noticeCount int
 
 func initLog(path string) (*log.Logger, *os.File, error) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
@@ -43,16 +39,15 @@ func SocketInfo(message string) {
 }
 
 func Info(message string) {
-	message = ""
 	//fmt.Println(message)
-	//if infoCount%10000 == 0 {
-	//	if infoFile != nil {
-	//		infoFile.Close()
-	//	}
-	//	info, infoFile, _ = initLog(getPath("info"))
-	//}
-	//info.Println(message)
-	//infoCount++
+	if infoCount%10000 == 0 {
+		if infoFile != nil {
+			infoFile.Close()
+		}
+		info, infoFile, _ = initLog(getPath("info"))
+	}
+	info.Println(message)
+	infoCount++
 }
 
 func Notice(message string) {
