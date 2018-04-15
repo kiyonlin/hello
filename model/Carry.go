@@ -68,7 +68,6 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	if rightBidAccount != nil {
 		rightBidPercentage = rightBidAccount.Percentage
 	}
-	util.SocketInfo(fmt.Sprintf("percentage:%.4f %.4f %.4f %.4f", leftAskPercentage, rightAskBalance, leftBidPercentage, rightBidPercentage))
 	if leftAskPercentage >= leftAskBalance && rightAskPercentage <=
 		rightAskBalance && leftBidPercentage <= leftBidBalance && rightBidPercentage >= rightBidBalance {
 		discount := (rightAskBalance - rightAskPercentage) / rightAskBalance
