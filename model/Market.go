@@ -102,7 +102,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	} else {
 		carry.Amount = carry.AskAmount
 	}
-	worth, err := carry.CheckWorth(markets, ApplicationConfig, symbol)
+	worth, err := carry.CheckWorth(markets, ApplicationConfig)
 	if worth {
 		return &carry, nil
 	} else {
