@@ -27,12 +27,12 @@ func main() {
 		return
 	}
 	model.HuobiAccountId, _ = api.GetSpotAccountId(model.ApplicationConfig)
-	go api.CarryDBHandlerServe()
-	go api.AccountDBHandlerServe()
-	go api.CarryProcessor()
 	api.GetAccountHuobi(model.ApplicationAccounts)
 	api.GetAccountOkex(model.ApplicationAccounts)
 	api.GetAccountBinance(model.ApplicationAccounts)
+	go api.CarryDBHandlerServe()
+	go api.AccountDBHandlerServe()
+	go api.CarryProcessor()
 
 	markets := model.NewMarkets()
 	api.Maintain(markets, model.ApplicationConfig)

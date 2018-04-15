@@ -173,11 +173,12 @@ func GetAccountOkex(accounts *model.Accounts) {
 			if balance == 0 {
 				continue
 			}
-			account := accounts.GetAccount(model.OKEX, k)
+			currency := strings.ToLower(k)
+			account := accounts.GetAccount(model.OKEX, currency)
 			if account == nil {
 				account = &model.Account{Market: model.OKEX, Currency: k}
 			}
-			accounts.SetAccount(model.OKEX, k, account)
+			accounts.SetAccount(model.OKEX, currency, account)
 			account.Free = balance
 		}
 		for k, v := range lock {
