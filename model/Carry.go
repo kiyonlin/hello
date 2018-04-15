@@ -40,8 +40,8 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		return configMargin
 	}
 	if !strings.Contains(carry.Symbol, "_") {
-		util.SocketInfo("invalid symbol " + carry.Symbol)
-		return configMargin
+		util.SocketInfo(fmt.Sprintf("invalid carry %s %s %f %d", carry.Symbol, carry.BidWeb, carry.Amount, carry.BidTime))
+		return 1
 	}
 	currencies := strings.Split(carry.Symbol, "_")
 	var leftAskPercentage, rightAskPercentage, leftBidPercentage, rightBidPercentage float64
@@ -65,6 +65,8 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	rightAskBalance := ApplicationConfig.Markets[carry.AskWeb][currencies[1]]
 	leftBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[0]]
 	rightBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[1]]
+	util.SocketInfo(fmt.Sprintf("config:%.4f %.4f %.4f %.4f", leftAskBalance, rightAskBalance, leftBidBalance, rightBidBalance))
+	util.SocketInfo(fmt.Sprintf("percentage:%.4f %.4f %.4f %.4f", leftAskPercentage, rightAskBalance, leftBidPercentage, rightBidPercentage))
 	if leftAskPercentage >= leftAskBalance && rightAskPercentage <=
 		rightAskBalance && leftBidPercentage <= leftBidBalance && rightBidPercentage >= rightBidBalance {
 		discount := (rightAskBalance - rightAskPercentage) / rightAskBalance
