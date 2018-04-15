@@ -39,8 +39,11 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	if ApplicationAccounts == nil {
 		return configMargin
 	}
+	if !strings.Contains(carry.Symbol, "_") {
+		util.SocketInfo("invalid symbol " + carry.Symbol)
+		return configMargin
+	}
 	currencies := strings.Split(carry.Symbol, "_")
-	fmt.Println(fmt.Sprintf("%sget margin discount%s %s", carry.Symbol, currencies[0], currencies[1]))
 	var leftAskPercentage, rightAskPercentage, leftBidPercentage, rightBidPercentage float64
 	leftAskAccount := ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
 	rightAskAccount := ApplicationAccounts.GetAccount(carry.AskWeb, currencies[1])
