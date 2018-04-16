@@ -94,6 +94,7 @@ func BidUpdate() {
 			util.SocketInfo("update bid carry<<<<<<<<<<<<<<<" + carryInDb.Symbol)
 			carryInDb.DealBidOrderId = carry.DealBidOrderId
 			carryInDb.DealBidErrCode = carry.DealBidErrCode
+			carryInDb.DealBidStatus = carry.DealBidStatus
 			model.ApplicationDB.Save(&carryInDb)
 		}
 	}
@@ -111,6 +112,7 @@ func AskUpdate() {
 			util.SocketInfo("update ask carry>>>>>>>>>>>>>>>>" + carryInDb.Symbol)
 			carryInDb.DealAskOrderId = carry.DealAskOrderId
 			carryInDb.DealAskErrCode = carry.DealAskErrCode
+			carryInDb.DealAskStatus = carry.DealAskStatus
 			model.ApplicationDB.Save(&carryInDb)
 		}
 	}
