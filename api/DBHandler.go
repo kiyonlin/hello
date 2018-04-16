@@ -88,10 +88,8 @@ func BidUpdate() {
 		carry := <-model.BidChannel
 		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
-			util.SocketInfo("insert carry" + carryInDb.Symbol)
 			model.ApplicationDB.Create(&carry)
 		} else {
-			util.SocketInfo("update bid carry<<<<<<<<<<<<<<<" + carryInDb.Symbol)
 			carryInDb.DealBidOrderId = carry.DealBidOrderId
 			carryInDb.DealBidErrCode = carry.DealBidErrCode
 			carryInDb.DealBidStatus = carry.DealBidStatus
@@ -106,10 +104,8 @@ func AskUpdate() {
 		carry := <-model.AskChannel
 		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
-			util.SocketInfo("insert carry" + carryInDb.Symbol)
 			model.ApplicationDB.Create(&carry)
 		} else {
-			util.SocketInfo("update ask carry>>>>>>>>>>>>>>>>" + carryInDb.Symbol)
 			carryInDb.DealAskOrderId = carry.DealAskOrderId
 			carryInDb.DealAskErrCode = carry.DealAskErrCode
 			carryInDb.DealAskStatus = carry.DealAskStatus
@@ -124,10 +120,8 @@ func CarryDBHandlerServe() {
 		var carryInDb model.Carry
 		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
-			util.SocketInfo("insert carry" + carryInDb.Symbol)
 			model.ApplicationDB.Create(&carry)
 		} else {
-			util.SocketInfo("update carry")
 			carryInDb.DealAskAmount = carry.DealAskAmount
 			carryInDb.DealBidAmount = carry.DealBidAmount
 			carryInDb.DealAskStatus = carry.DealAskStatus
