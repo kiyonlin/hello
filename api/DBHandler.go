@@ -4,7 +4,6 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
-	"fmt"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -83,6 +82,40 @@ func AccountDBHandlerServe() {
 	}
 }
 
+func BidUpdate() {
+	for true {
+		var carryInDb model.Carry
+		carry := <-model.BidChannel
+		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
+		if model.ApplicationDB.NewRecord(&carryInDb) {
+			util.SocketInfo("insert carry" + carryInDb.Symbol)
+			model.ApplicationDB.Create(&carry)
+		} else {
+			util.SocketInfo("update bid carry<<<<<<<<<<<<<<<" + carryInDb.Symbol)
+			carryInDb.DealBidOrderId = carry.DealBidOrderId
+			carryInDb.DealBidErrCode = carry.DealBidErrCode
+			model.ApplicationDB.Save(&carryInDb)
+		}
+	}
+}
+
+func AskUpdate() {
+	for true {
+		var carryInDb model.Carry
+		carry := <-model.AskChannel
+		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
+		if model.ApplicationDB.NewRecord(&carryInDb) {
+			util.SocketInfo("insert carry" + carryInDb.Symbol)
+			model.ApplicationDB.Create(&carry)
+		} else {
+			util.SocketInfo("update ask carry>>>>>>>>>>>>>>>>" + carryInDb.Symbol)
+			carryInDb.DealAskOrderId = carry.DealAskOrderId
+			carryInDb.DealAskErrCode = carry.DealAskErrCode
+			model.ApplicationDB.Save(&carryInDb)
+		}
+	}
+}
+
 func CarryDBHandlerServe() {
 	for true {
 		carry := <-model.CarryChannel
@@ -93,32 +126,10 @@ func CarryDBHandlerServe() {
 			model.ApplicationDB.Create(&carry)
 		} else {
 			util.SocketInfo("update carry")
-			if carry.DealAskOrderId != "" {
-				carryInDb.DealAskOrderId = carry.DealAskOrderId
-			}
-			if carry.DealBidOrderId != "" {
-				carryInDb.DealBidOrderId = carry.DealBidOrderId
-			}
-			if carry.DealAskErrCode != "" {
-				carryInDb.DealAskErrCode = carry.DealAskErrCode
-			}
-			if carry.DealBidErrCode != "" {
-				carryInDb.DealBidErrCode = carry.DealBidErrCode
-			}
-			if carry.DealAskAmount != 0 {
-				util.SocketInfo(fmt.Sprintf("deal ask amount updated to%f", carry.DealAskAmount))
-				carryInDb.DealAskAmount = carry.DealAskAmount
-			}
-			if carry.DealBidAmount != 0 {
-				util.SocketInfo(fmt.Sprintf("deal bid amount updated to%f", carry.DealBidAmount))
-				carryInDb.DealBidAmount = carry.DealBidAmount
-			}
-			if carry.DealAskStatus != "" {
-				carryInDb.DealAskStatus = carry.DealAskStatus
-			}
-			if carry.DealBidStatus != "" {
-				carryInDb.DealBidStatus = carry.DealBidStatus
-			}
+			carryInDb.DealAskAmount = carry.DealAskAmount
+			carryInDb.DealBidAmount = carry.DealBidAmount
+			carryInDb.DealAskStatus = carry.DealAskStatus
+			carryInDb.DealBidStatus = carry.DealBidStatus
 			model.ApplicationDB.Save(&carryInDb)
 		}
 	}

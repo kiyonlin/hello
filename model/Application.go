@@ -20,6 +20,8 @@ var ApplicationConfig *Config
 var ApplicationAccounts = NewAccounts()
 var ApplicationDB *gorm.DB
 var CarryChannel = make(chan Carry, 50)
+var BidChannel = make(chan Carry, 50)
+var AskChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 
 const CarryStatusSuccess = "success"

@@ -25,7 +25,7 @@ func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 		orderId, errCode = PlaceOrderBinance(carry.Symbol, "SELL", price, amount)
 		GetAccountBinance(model.ApplicationAccounts)
 	}
-	carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
+	//carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealAskErrCode = errCode
 	carry.DealAskOrderId = orderId
 	if orderId == "0" || orderId == "" {
@@ -33,7 +33,7 @@ func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 	} else {
 		carry.DealAskStatus = model.CarryStatusWorking
 	}
-	model.CarryChannel <- *carry
+	model.AskChannel <- *carry
 	return orderId, errCode
 }
 
@@ -50,7 +50,7 @@ func doBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 		orderId, errCode = PlaceOrderBinance(carry.Symbol, "BUY", price, amount)
 		GetAccountBinance(model.ApplicationAccounts)
 	}
-	carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
+	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealBidErrCode = errCode
 	carry.DealBidOrderId = orderId
 	if orderId == "0" || orderId == "" {
@@ -58,7 +58,7 @@ func doBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	} else {
 		carry.DealBidStatus = model.CarryStatusWorking
 	}
-	model.CarryChannel <- *carry
+	model.BidChannel <- *carry
 	return orderId, errCode
 }
 

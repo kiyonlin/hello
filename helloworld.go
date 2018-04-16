@@ -31,6 +31,8 @@ func main() {
 	api.GetAccountOkex(model.ApplicationAccounts)
 	api.GetAccountBinance(model.ApplicationAccounts)
 	go api.CarryDBHandlerServe()
+	go api.AskUpdate()
+	go api.BidUpdate()
 	go api.AccountDBHandlerServe()
 	go api.CarryProcessor()
 
