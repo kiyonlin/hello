@@ -28,7 +28,7 @@ symbols:
 #- xrp_eth
 
 margins: #差价乘数
-- 0.004
+- 0.002
 
 delays: #按照毫秒计算时间差
 - 3000
