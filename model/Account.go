@@ -11,7 +11,6 @@ type Accounts struct {
 }
 
 type Account struct {
-	BelongDate  string
 	Market      string
 	Currency    string
 	Free        float64
