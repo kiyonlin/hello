@@ -16,7 +16,6 @@ markets:
     usdt: 0.3
 
 symbols:
-#usdt:btc:eth:eos约4:2:1:1
 - btc_usdt
 - eth_usdt
 - eos_usdt
