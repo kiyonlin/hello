@@ -185,7 +185,7 @@ func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.ApplicationConfig = model.NewConfig()
 	}
-	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 86400000 {
+	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3600000 {
 		return currencyPrice[symbol], nil
 	}
 	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
