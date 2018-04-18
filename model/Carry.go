@@ -46,10 +46,6 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	currencies := strings.Split(carry.Symbol, "_")
 	leftTotalPercentage := ApplicationAccounts.CurrencyPercentage[currencies[0]]
 	rightTotalPercentage := ApplicationAccounts.CurrencyPercentage[currencies[1]]
-	//leftAskBalance := ApplicationConfig.Markets[carry.AskWeb][currencies[0]]
-	//rightAskBalance := ApplicationConfig.Markets[carry.AskWeb][currencies[1]]
-	//leftBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[0]]
-	//rightBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[1]]
 	if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
 		return configMargin
 	}
