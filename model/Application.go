@@ -95,7 +95,7 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
-	Markets    map[string]map[string]float64
+	Markets    []string
 	Symbols    []string
 	Margins    []float64
 	Delays     []float64
@@ -132,15 +132,15 @@ func NewConfig() *Config {
 }
 
 func (config *Config) GetSubscribes(marketName string) []string {
-	for k := range config.Markets {
-		if k == marketName {
-			if config.subscribes[k] == nil {
-				config.subscribes[k] = make([]string, len(config.Symbols))
+	for _, v := range config.Markets {
+		if v == marketName {
+			if config.subscribes[v] == nil {
+				config.subscribes[v] = make([]string, len(config.Symbols))
 				for i, symbol := range config.Symbols {
-					config.subscribes[k][i] = getWSSubscribe(marketName, symbol)
+					config.subscribes[v][i] = getWSSubscribe(marketName, symbol)
 				}
 			}
-			return config.subscribes[k]
+			return config.subscribes[v]
 		}
 	}
 	return nil

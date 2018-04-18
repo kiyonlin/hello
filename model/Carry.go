@@ -44,11 +44,13 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		return 1
 	}
 	currencies := strings.Split(carry.Symbol, "_")
-	leftAskBalance := ApplicationConfig.Markets[carry.AskWeb][currencies[0]]
-	rightAskBalance := ApplicationConfig.Markets[carry.AskWeb][currencies[1]]
-	leftBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[0]]
-	rightBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[1]]
-	if leftAskBalance == 0 || rightAskBalance == 0 || leftBidBalance == 0 || rightBidBalance == 0 {
+	leftTotalPercentage := ApplicationAccounts.CurrencyPercentage[currencies[0]]
+	rightTotalPercentage := ApplicationAccounts.CurrencyPercentage[currencies[1]]
+	//leftAskBalance := ApplicationConfig.Markets[carry.AskWeb][currencies[0]]
+	//rightAskBalance := ApplicationConfig.Markets[carry.AskWeb][currencies[1]]
+	//leftBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[0]]
+	//rightBidBalance := ApplicationConfig.Markets[carry.BidWeb][currencies[1]]
+	if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
 		return configMargin
 	}
 	var leftAskPercentage, rightAskPercentage, leftBidPercentage, rightBidPercentage float64
@@ -68,12 +70,13 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	if rightBidAccount != nil {
 		rightBidPercentage = rightBidAccount.Percentage
 	}
-	if leftAskPercentage >= leftAskBalance && rightAskPercentage <=
-		rightAskBalance && leftBidPercentage <= leftBidBalance && rightBidPercentage >= rightBidBalance {
-		discount := (rightAskBalance - rightAskPercentage) / rightAskBalance
-		if discount < (leftBidBalance-leftBidPercentage)/leftBidBalance {
-			discount = (leftBidBalance - leftBidPercentage) / leftBidBalance
+	if leftAskPercentage >= leftTotalPercentage && rightAskPercentage <= rightTotalPercentage && leftBidPercentage <=
+		leftTotalPercentage && rightBidPercentage >= rightTotalPercentage {
+		discount := (rightTotalPercentage - rightAskPercentage) / rightTotalPercentage
+		if discount < (leftTotalPercentage-leftBidPercentage)/leftTotalPercentage {
+			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
+		util.SocketInfo(fmt.Sprintf(">>>>>discount:%.4f实际门槛 %.4f", discount, BaseCarryCost+(configMargin-BaseCarryCost)*(1-discount)))
 		return BaseCarryCost + (configMargin-BaseCarryCost)*(1-discount)
 	}
 	return configMargin

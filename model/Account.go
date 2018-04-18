@@ -3,11 +3,17 @@ package model
 import (
 	"sync"
 	"time"
+	"hello/util"
+	"fmt"
 )
 
 type Accounts struct {
-	lock sync.Mutex
-	Data map[string]map[string]*Account // marketName - currency - Account
+	lock               sync.Mutex
+	TotalInUsdt        float64
+	MarketTotal        map[string]float64             // marketName - totalInUsdt
+	CurrencyTotal      map[string]float64             // currency - totalInUsdt
+	CurrencyPercentage map[string]float64             // currency - percentage
+	Data               map[string]map[string]*Account // marketName - currency - Account
 }
 
 type Account struct {
@@ -25,6 +31,9 @@ type Account struct {
 func NewAccounts() *Accounts {
 	accounts := &Accounts{}
 	accounts.Data = make(map[string]map[string]*Account)
+	accounts.CurrencyPercentage = make(map[string]float64)
+	accounts.MarketTotal = make(map[string]float64)
+	accounts.CurrencyTotal = make(map[string]float64)
 	return accounts
 }
 
@@ -53,16 +62,39 @@ func (accounts *Accounts) SetAccount(marketName string, currency string, account
 }
 
 func (accounts *Accounts) Maintain(marketName string) {
+	accounts.lock.Lock()
+	defer accounts.lock.Unlock()
 	if accounts.Data[marketName] == nil {
 		return
 	}
-	var totalInUsdt float64
+	accounts.MarketTotal[marketName] = 0
 	for key, value := range accounts.Data[marketName] {
 		value.PriceInUsdt, _ = GetBuyPriceOkex(key + "_usdt")
-		totalInUsdt += value.PriceInUsdt * (value.Free + value.Frozen)
+		accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
+	}
+	if accounts.MarketTotal[marketName] == 0 {
+		util.SocketInfo(marketName + " balance is empty!!!!!!!!!!!")
+		accounts.MarketTotal[marketName] = 1
 	}
 	for _, value := range accounts.Data[marketName] {
-		value.Percentage = value.PriceInUsdt * (value.Free + value.Frozen) / totalInUsdt
+		value.Percentage = value.PriceInUsdt * (value.Free + value.Frozen) / accounts.MarketTotal[marketName]
+	}
+	// calculate currency percentage of all markets
+	accounts.TotalInUsdt = 0
+	for _, value := range accounts.MarketTotal {
+		accounts.TotalInUsdt += value
+	}
+	accounts.CurrencyTotal = make(map[string]float64)
+	for _, currencies := range accounts.Data {
+		for currency, account := range currencies {
+			accounts.CurrencyTotal[currency] += (account.Free + account.Frozen) * account.PriceInUsdt
+		}
+	}
+	accounts.CurrencyPercentage = make(map[string]float64)
+	for currency, value := range accounts.CurrencyTotal {
+		accounts.CurrencyPercentage[currency] = value / accounts.TotalInUsdt
+		util.SocketInfo(fmt.Sprintf("%s:%.4f of total money in usdt %.2f",
+			currency, accounts.CurrencyPercentage[currency], accounts.TotalInUsdt))
 	}
 	AccountChannel <- accounts.Data[marketName]
 }
