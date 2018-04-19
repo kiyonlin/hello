@@ -10,6 +10,7 @@ symbols:
 #以下两个量很少
 - eos_eth
 - eos_btc
+- eth_btc
 #- xrp_usdt
 #- xrp_btc
 #- xrp_eth
