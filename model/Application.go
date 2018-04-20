@@ -14,7 +14,7 @@ const Huobi = "huobi"
 const Binance = "binance"
 
 var HuobiAccountId = "1651065"
-var BaseCarryCost = 0.001 // 当前搬砖的最低手续费是千分之一
+const BaseCarryCost = 0.001 // 当前搬砖的最低手续费是千分之一
 var ApplicationConfig *Config
 
 var ApplicationAccounts = NewAccounts()

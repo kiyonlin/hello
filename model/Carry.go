@@ -72,8 +72,13 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		if discount < (leftTotalPercentage-leftBidPercentage)/leftTotalPercentage {
 			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
-		util.SocketInfo(fmt.Sprintf(">>>>>discount:%.4f实际门槛 %.4f", discount, BaseCarryCost+(configMargin-BaseCarryCost)*(1-discount)))
-		return BaseCarryCost + (configMargin-BaseCarryCost)*(1-discount)
+		// 把将来可能的最低利润减掉作为成本
+		reBaseCarryConst := BaseCarryCost - (configMargin - BaseCarryCost)
+		if reBaseCarryConst < 0 {
+			reBaseCarryConst = 0
+		}
+		util.SocketInfo(fmt.Sprintf("discount:%.4f实际门槛 %.4f", discount, reBaseCarryConst+(configMargin-reBaseCarryConst)*(1-discount)))
+		return reBaseCarryConst + (configMargin-reBaseCarryConst)*(1-discount)
 	}
 	return configMargin
 }
