@@ -77,7 +77,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		if reBaseCarryConst < 0 {
 			reBaseCarryConst = 0
 		}
-		util.SocketInfo(fmt.Sprintf("discount:%.4f实际门槛 %.4f", discount, reBaseCarryConst+(configMargin-reBaseCarryConst)*(1-discount)))
+		util.SocketInfo(fmt.Sprintf("discount:%f实际门槛 %f", discount, reBaseCarryConst+(configMargin-reBaseCarryConst)*(1-discount)))
 		return reBaseCarryConst + (configMargin-reBaseCarryConst)*(1-discount)
 	}
 	return configMargin
