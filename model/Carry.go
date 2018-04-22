@@ -73,7 +73,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
 		// 把将来可能的最低利润减掉作为成本
-		reBaseCarryConst := BaseCarryCost - (configMargin - BaseCarryCost)
+		reBaseCarryConst := BaseCarryCost - (configMargin-BaseCarryCost)*0.5
 		if reBaseCarryConst < 0 {
 			reBaseCarryConst = 0
 		}
