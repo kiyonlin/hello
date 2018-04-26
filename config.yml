@@ -20,5 +20,5 @@ margins: #差价乘数
 
 delays: #按照毫秒计算时间差
 - 3000
-
+env: tencent
 dbconnection: host=172.29.0.3 port=5432 user=winston dbname=coincarry password=User@123 sslmode=disable

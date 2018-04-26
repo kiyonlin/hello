@@ -95,6 +95,7 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
+	Env          string
 	DBConnection string
 	Markets      []string
 	Symbols      []string
@@ -122,13 +123,24 @@ func NewConfig() *Config {
 	config.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	config.RestUrls[Binance] = "https://api.binance.com"
 	config.ApiKeys = make(map[string]string)
-	config.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
-	config.ApiKeys[OKEX] = "f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c"
-	config.ApiKeys[Binance] = "SrIXmREkCSaVYiqutcUsQkP0z8srg4OMU9kKLODFtAiUgwbBlzebVIeXOrFWkZv0"
 	config.ApiSecrets = make(map[string]string)
-	config.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b" // sammi
-	config.ApiSecrets[OKEX] = "66786EDBC5F3230B7943DB520F86B492"
-	config.ApiSecrets[Binance] = "rUAAgJxzzSRlrHwhNFZOJtiVsxGQvXBeH1GJbzmy9E72pWX1UL9CxbVyRWGzzdgI"
+	if ApplicationConfig.Env == "tencent" {
+		util.SocketInfo("under tencent environment")
+		config.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
+		config.ApiKeys[OKEX] = "f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c"
+		config.ApiKeys[Binance] = "SrIXmREkCSaVYiqutcUsQkP0z8srg4OMU9kKLODFtAiUgwbBlzebVIeXOrFWkZv0"
+		config.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b" // sammi
+		config.ApiSecrets[OKEX] = "66786EDBC5F3230B7943DB520F86B492"
+		config.ApiSecrets[Binance] = "rUAAgJxzzSRlrHwhNFZOJtiVsxGQvXBeH1GJbzmy9E72pWX1UL9CxbVyRWGzzdgI"
+	} else if ApplicationConfig.Env == "aws" {
+		util.SocketInfo("under aws environment")
+		config.ApiKeys[Huobi] = "00b69d3c-aa5c5730-df981aa8-c0dab" // dk
+		config.ApiKeys[OKEX] = "9e676a4c-b826-4102-bb05-cfaa03ba4793"
+		config.ApiKeys[Binance] = "qM46PNifE3MiUeKeq65Vo2k2VZbFsLwO63POanHZbZzBLfUj8xql1MEIGth86Mkg"
+		config.ApiSecrets[Huobi] = "bd91c864-50755708-2d0cfbb1-41f40" // dk
+		config.ApiSecrets[OKEX] = "C87C198A2C4EC1C4FDEFE3FE1565C769"
+		config.ApiSecrets[Binance] = "XOpYOW1qxSJjs8eaxJI3NrDY5YVO45JIK2BqvhYQ9RIwjX0ekm0gDpD9WgRi7LrV"
+	}
 	return config
 }
 
