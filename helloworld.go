@@ -12,12 +12,12 @@ import (
 func main() {
 	util.Notice("start application")
 	model.NewConfig()
-	model.SetApiKeys()
 	err := configor.Load(model.ApplicationConfig, "./config.yml")
 	if err != nil {
 		print(err)
 		return
 	}
+	model.SetApiKeys()
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {
 		panic(err)
