@@ -95,15 +95,16 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
-	Markets    []string
-	Symbols    []string
-	Margins    []float64
-	Delays     []float64
-	subscribes map[string][]string // marketName - subscribes
-	WSUrls     map[string]string   // marketName - ws url
-	RestUrls   map[string]string   // marketName - rest url
-	ApiKeys    map[string]string
-	ApiSecrets map[string]string
+	DBConnection string
+	Markets      []string
+	Symbols      []string
+	Margins      []float64
+	Delays       []float64
+	subscribes   map[string][]string // marketName - subscribes
+	WSUrls       map[string]string   // marketName - ws url
+	RestUrls     map[string]string   // marketName - rest url
+	ApiKeys      map[string]string
+	ApiSecrets   map[string]string
 }
 
 func NewConfig() *Config {
