@@ -111,6 +111,7 @@ type Config struct {
 func SetApiKeys() {
 	ApplicationConfig.ApiKeys = make(map[string]string)
 	ApplicationConfig.ApiSecrets = make(map[string]string)
+	util.SocketInfo("begin to set keys")
 	if ApplicationConfig.Env == "tencent" {
 		util.SocketInfo("under tencent environment")
 		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
