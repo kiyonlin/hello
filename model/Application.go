@@ -4,7 +4,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"strings"
 	"errors"
-	"github.com/haoweizh/hello/model"
 	"strconv"
 	"hello/util"
 )
@@ -14,6 +13,7 @@ const Huobi = "huobi"
 const Binance = "binance"
 
 var HuobiAccountId = "1651065"
+
 const BaseCarryCost = 0.0009 // 当前搬砖的最低手续费是万分之九
 var ApplicationConfig *Config
 
@@ -182,8 +182,8 @@ var currencyPrice = make(map[string]float64)
 var getBuyPriceOkexTime = make(map[string]int64)
 
 func GetBuyPriceOkex(symbol string) (buy float64, err error) {
-	if model.ApplicationConfig == nil {
-		model.ApplicationConfig = model.NewConfig()
+	if ApplicationConfig == nil {
+		ApplicationConfig = NewConfig()
 	}
 	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3600000 {
 		return currencyPrice[symbol], nil
@@ -195,7 +195,7 @@ func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	} else {
 		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 			"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-		responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+"/ticker.do?symbol="+symbol, "", headers)
+		responseBody, _ := util.HttpRequest("GET", ApplicationConfig.RestUrls[OKEX]+"/ticker.do?symbol="+symbol, "", headers)
 		tickerJson, err := util.NewJSON(responseBody)
 		if err == nil {
 			strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
