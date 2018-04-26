@@ -47,23 +47,19 @@ func CarryProcessor() {
 		var carry model.Carry
 		model.ApplicationDB.Where("deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).Offset(index).First(&carry)
 		if model.ApplicationDB.NewRecord(&carry) {
-			util.SocketInfo("Pause carry processor for 10 minutes")
-			time.Sleep(time.Minute * 10)
 			index = 0
 		} else {
-			// cancel order if delay too long (5 minutes)
-			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 300000 {
-				orderId := carry.DealBidOrderId
-				cancelOrder(carry.BidWeb, carry.Symbol, orderId)
+			// cancel order if delay too long (10 seconds)
+			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 10000 {
+				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			}
-			if carry.DealAskStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.AskTime > 300000 {
-				orderId := carry.DealAskOrderId
-				cancelOrder(carry.AskWeb, carry.Symbol, orderId)
+			if carry.DealAskStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.AskTime > 10000 {
+				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			}
 			queryOrder(&carry)
 			index++
-			time.Sleep(time.Second * 10)
 		}
+		time.Sleep(time.Second * 10)
 	}
 }
 
