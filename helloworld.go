@@ -11,7 +11,8 @@ import (
 
 func main() {
 	util.Notice("start application")
-	model.ApplicationConfig = model.NewConfig()
+	model.NewConfig()
+	model.SetApiKeys()
 	err := configor.Load(model.ApplicationConfig, "./config.yml")
 	if err != nil {
 		print(err)

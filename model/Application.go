@@ -108,40 +108,41 @@ type Config struct {
 	ApiSecrets   map[string]string
 }
 
-func NewConfig() *Config {
-	config := &Config{}
-	config.subscribes = make(map[string][]string)
-	config.WSUrls = make(map[string]string)
-	config.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
-	config.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
-	config.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
-
-	config.RestUrls = make(map[string]string)
-	// HUOBI用于交易的API，可能不适用于行情
-	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
-	config.RestUrls[Huobi] = "https://api.huobi.pro"
-	config.RestUrls[OKEX] = "https://www.okex.com/api/v1"
-	config.RestUrls[Binance] = "https://api.binance.com"
-	config.ApiKeys = make(map[string]string)
-	config.ApiSecrets = make(map[string]string)
+func SetApiKeys() {
+	ApplicationConfig.ApiKeys = make(map[string]string)
+	ApplicationConfig.ApiSecrets = make(map[string]string)
 	if ApplicationConfig.Env == "tencent" {
 		util.SocketInfo("under tencent environment")
-		config.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
-		config.ApiKeys[OKEX] = "f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c"
-		config.ApiKeys[Binance] = "SrIXmREkCSaVYiqutcUsQkP0z8srg4OMU9kKLODFtAiUgwbBlzebVIeXOrFWkZv0"
-		config.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b" // sammi
-		config.ApiSecrets[OKEX] = "66786EDBC5F3230B7943DB520F86B492"
-		config.ApiSecrets[Binance] = "rUAAgJxzzSRlrHwhNFZOJtiVsxGQvXBeH1GJbzmy9E72pWX1UL9CxbVyRWGzzdgI"
+		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
+		ApplicationConfig.ApiKeys[OKEX] = "f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c"
+		ApplicationConfig.ApiKeys[Binance] = "SrIXmREkCSaVYiqutcUsQkP0z8srg4OMU9kKLODFtAiUgwbBlzebVIeXOrFWkZv0"
+		ApplicationConfig.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b" // sammi
+		ApplicationConfig.ApiSecrets[OKEX] = "66786EDBC5F3230B7943DB520F86B492"
+		ApplicationConfig.ApiSecrets[Binance] = "rUAAgJxzzSRlrHwhNFZOJtiVsxGQvXBeH1GJbzmy9E72pWX1UL9CxbVyRWGzzdgI"
 	} else if ApplicationConfig.Env == "aws" {
 		util.SocketInfo("under aws environment")
-		config.ApiKeys[Huobi] = "00b69d3c-aa5c5730-df981aa8-c0dab" // dk
-		config.ApiKeys[OKEX] = "9e676a4c-b826-4102-bb05-cfaa03ba4793"
-		config.ApiKeys[Binance] = "qM46PNifE3MiUeKeq65Vo2k2VZbFsLwO63POanHZbZzBLfUj8xql1MEIGth86Mkg"
-		config.ApiSecrets[Huobi] = "bd91c864-50755708-2d0cfbb1-41f40" // dk
-		config.ApiSecrets[OKEX] = "C87C198A2C4EC1C4FDEFE3FE1565C769"
-		config.ApiSecrets[Binance] = "XOpYOW1qxSJjs8eaxJI3NrDY5YVO45JIK2BqvhYQ9RIwjX0ekm0gDpD9WgRi7LrV"
+		ApplicationConfig.ApiKeys[Huobi] = "00b69d3c-aa5c5730-df981aa8-c0dab" // dk
+		ApplicationConfig.ApiKeys[OKEX] = "9e676a4c-b826-4102-bb05-cfaa03ba4793"
+		ApplicationConfig.ApiKeys[Binance] = "qM46PNifE3MiUeKeq65Vo2k2VZbFsLwO63POanHZbZzBLfUj8xql1MEIGth86Mkg"
+		ApplicationConfig.ApiSecrets[Huobi] = "bd91c864-50755708-2d0cfbb1-41f40" // dk
+		ApplicationConfig.ApiSecrets[OKEX] = "C87C198A2C4EC1C4FDEFE3FE1565C769"
+		ApplicationConfig.ApiSecrets[Binance] = "XOpYOW1qxSJjs8eaxJI3NrDY5YVO45JIK2BqvhYQ9RIwjX0ekm0gDpD9WgRi7LrV"
 	}
-	return config
+}
+func NewConfig() {
+	ApplicationConfig = &Config{}
+	ApplicationConfig.subscribes = make(map[string][]string)
+	ApplicationConfig.WSUrls = make(map[string]string)
+	ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
+	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
+	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
+
+	ApplicationConfig.RestUrls = make(map[string]string)
+	// HUOBI用于交易的API，可能不适用于行情
+	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
+	ApplicationConfig.RestUrls[Huobi] = "https://api.huobi.pro"
+	ApplicationConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
+	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"
 }
 
 func (config *Config) GetSubscribes(marketName string) []string {
@@ -196,7 +197,7 @@ var getBuyPriceOkexTime = make(map[string]int64)
 
 func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	if ApplicationConfig == nil {
-		ApplicationConfig = NewConfig()
+		NewConfig()
 	}
 	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3600000 {
 		return currencyPrice[symbol], nil
