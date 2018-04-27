@@ -116,10 +116,10 @@ func SetApiKeys() {
 		util.SocketInfo("under tencent environment")
 		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
 		ApplicationConfig.ApiKeys[OKEX] = "f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c"
-		ApplicationConfig.ApiKeys[Binance] = "SrIXmREkCSaVYiqutcUsQkP0z8srg4OMU9kKLODFtAiUgwbBlzebVIeXOrFWkZv0"
+		ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
 		ApplicationConfig.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b" // sammi
 		ApplicationConfig.ApiSecrets[OKEX] = "66786EDBC5F3230B7943DB520F86B492"
-		ApplicationConfig.ApiSecrets[Binance] = "rUAAgJxzzSRlrHwhNFZOJtiVsxGQvXBeH1GJbzmy9E72pWX1UL9CxbVyRWGzzdgI"
+		ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
 	} else if ApplicationConfig.Env == "aws" {
 		util.SocketInfo("under aws environment")
 		ApplicationConfig.ApiKeys[Huobi] = "00b69d3c-aa5c5730-df981aa8-c0dab" // dk
