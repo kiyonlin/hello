@@ -55,16 +55,21 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	leftBidAccount := ApplicationAccounts.GetAccount(carry.BidWeb, currencies[0])
 	rightBidAccount := ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
 	if leftAskAccount != nil {
-		leftAskPercentage = leftAskAccount.Percentage
+		// 计算假如本次carry完成后达到的占比
+		leftAskPercentage = (leftAskAccount.Free + leftAskAccount.Frozen - carry.Amount) *
+			leftAskAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.AskWeb]
 	}
 	if rightAskAccount != nil {
-		rightAskPercentage = rightAskAccount.Percentage
+		rightAskPercentage = (rightAskAccount.Free + rightAskAccount.Free + carry.Amount) *
+			rightAskAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.AskWeb]
 	}
 	if leftBidAccount != nil {
-		leftBidPercentage = leftBidAccount.Percentage
+		leftBidPercentage = (leftBidAccount.Free + leftBidAccount.Frozen + carry.Amount) *
+			leftBidAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.BidWeb]
 	}
 	if rightBidAccount != nil {
-		rightBidPercentage = rightBidAccount.Percentage
+		rightBidPercentage = (rightBidAccount.Free + rightBidAccount.Frozen - carry.Amount) *
+			rightBidAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.BidWeb]
 	}
 	if leftAskPercentage >= leftTotalPercentage && rightAskPercentage <= rightTotalPercentage && leftBidPercentage <=
 		leftTotalPercentage && rightBidPercentage >= rightTotalPercentage {
@@ -73,7 +78,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
 		// 把将来可能的最低利润减掉作为成本
-		reBaseCarryConst := BaseCarryCost - (configMargin-BaseCarryCost)*0.25
+		reBaseCarryConst := BaseCarryCost - (configMargin-BaseCarryCost)*0.5
 		if reBaseCarryConst < 0 {
 			reBaseCarryConst = 0
 		}
@@ -102,11 +107,6 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 	}
 	margin := carry.AskPrice - carry.BidPrice
 	if margin > 0 && margin > carry.AskPrice*dynamicMargin && carry.Amount > 0 {
-		if carry.BidAmount > carry.AskAmount {
-			carry.Amount = carry.AskAmount
-		} else {
-			carry.Amount = carry.BidAmount
-		}
 		util.Notice(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
 		return true, nil
 	}
