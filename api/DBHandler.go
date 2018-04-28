@@ -4,6 +4,7 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
+	"fmt"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -40,15 +41,14 @@ func queryOrder(carry *model.Carry) {
 	}
 	model.CarryChannel <- *carry
 }
-
 func CarryProcessor() {
-	index := 0
 	for true {
-		var carry model.Carry
-		model.ApplicationDB.Where("deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).Offset(index).First(&carry)
-		if model.ApplicationDB.NewRecord(&carry) {
-			index = 0
-		} else {
+		var carries []model.Carry
+		model.ApplicationDB.Where(
+			"deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).
+			Find(&carries)
+		util.SocketInfo(fmt.Sprintf("deal with working carries %d", len(carries)))
+		for _, carry := range carries {
 			// cancel order if delay too long (180 seconds)
 			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 180000 {
 				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
@@ -57,7 +57,6 @@ func CarryProcessor() {
 				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			}
 			queryOrder(&carry)
-			index++
 		}
 		time.Sleep(time.Minute * 3)
 	}
