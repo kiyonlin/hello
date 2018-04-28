@@ -19,7 +19,7 @@ func cancelOrder(market string, symbol string, orderId string) {
 }
 
 func queryOrder(carry *model.Carry) {
-	if carry.DealBidStatus == model.CarryStatusWorking && carry.DealBidOrderId != "" {
+	if carry.DealBidOrderId != "" {
 		switch carry.BidWeb {
 		case model.Huobi:
 			carry.DealBidAmount, carry.DealBidStatus = QueryOrderHuobi(carry.DealBidOrderId)
@@ -29,7 +29,7 @@ func queryOrder(carry *model.Carry) {
 			carry.DealBidAmount, carry.DealBidStatus = QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
 		}
 	}
-	if carry.DealAskStatus == model.CarryStatusWorking && carry.DealAskOrderId != "" {
+	if carry.DealAskOrderId != "" {
 		switch carry.AskWeb {
 		case model.Huobi:
 			carry.DealAskAmount, carry.DealAskStatus = QueryOrderHuobi(carry.DealAskOrderId)
@@ -41,6 +41,7 @@ func queryOrder(carry *model.Carry) {
 	}
 	model.CarryChannel <- *carry
 }
+
 func CarryProcessor() {
 	for true {
 		var carries []model.Carry
@@ -50,13 +51,11 @@ func CarryProcessor() {
 		util.SocketInfo(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
 			// cancel order if delay too long (180 seconds)
-			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 180000 {
+			if util.GetNowUnixMillion()-carry.BidTime > 180000 || util.GetNowUnixMillion()-carry.AskTime > 180000 {
 				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			}
-			if carry.DealAskStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.AskTime > 180000 {
 				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				queryOrder(&carry)
 			}
-			queryOrder(&carry)
 		}
 		time.Sleep(time.Minute * 3)
 	}
