@@ -11,9 +11,12 @@ symbols:
 - eos_eth
 - eos_btc
 - eth_btc
-#- xrp_usdt
-#- xrp_btc
-#- xrp_eth
+- xrp_usdt
+- xrp_btc
+- xrp_eth
+#- bch-usdt
+#- bch-btc
+#- bch-eth
 
 margins: #差价乘数
 - 0.0015
