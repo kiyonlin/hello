@@ -49,17 +49,17 @@ func CarryProcessor() {
 		if model.ApplicationDB.NewRecord(&carry) {
 			index = 0
 		} else {
-			// cancel order if delay too long (10 seconds)
-			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 10000 {
+			// cancel order if delay too long (180 seconds)
+			if carry.DealBidStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.BidTime > 180000 {
 				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			}
-			if carry.DealAskStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.AskTime > 10000 {
+			if carry.DealAskStatus == model.CarryStatusWorking && util.GetNowUnixMillion()-carry.AskTime > 180000 {
 				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			}
 			queryOrder(&carry)
 			index++
 		}
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Minute * 3)
 	}
 }
 

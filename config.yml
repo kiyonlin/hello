@@ -17,6 +17,15 @@ symbols:
 #- bch-usdt
 #- bch-btc
 #- bch-eth
+- etc_usdt
+- etc_btc
+- etc_eth
+- ltc_usdt
+- ltc_btc
+- ltc_eth
+- neo_usdt
+- neo_btc
+- neo_eth
 
 margins: #差价乘数
 - 0.0015
@@ -24,4 +33,5 @@ margins: #差价乘数
 delays: #按照毫秒计算时间差
 - 3000
 env: tencent
-dbconnection: host=172.29.0.3 port=5432 user=winston dbname=coincarry password=User@123 sslmode=disable
+#dbconnection: host=172.29.0.3 port=5432 user=winston dbname=coincarry password=User@123 sslmode=disable
+dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
