@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 	"hello/util"
-	"fmt"
 )
 
 type Accounts struct {
@@ -93,8 +92,6 @@ func (accounts *Accounts) Maintain(marketName string) {
 	accounts.CurrencyPercentage = make(map[string]float64)
 	for currency, value := range accounts.CurrencyTotal {
 		accounts.CurrencyPercentage[currency] = value / accounts.TotalInUsdt
-		util.SocketInfo(fmt.Sprintf("%s:%.4f of total money in usdt %.2f",
-			currency, accounts.CurrencyPercentage[currency], accounts.TotalInUsdt))
 	}
 	AccountChannel <- accounts.Data[marketName]
 }
