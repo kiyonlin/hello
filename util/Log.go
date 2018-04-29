@@ -43,7 +43,7 @@ func removeOldFiles() {
 		}
 		return nil
 	})
-	if err == nil {
+	if err != nil {
 		fmt.Println("can not walk folder " + err.Error())
 	}
 }
