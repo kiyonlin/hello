@@ -12,6 +12,8 @@ var socketInfoFile, infoFile, noticeFile *os.File
 var socketCount, infoCount, noticeCount int
 
 func initLog(path string) (*log.Logger, *os.File, error) {
+	removeFiles := "info*.log"
+	os.Remove(removeFiles)
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
 	if err != nil {
 		return nil, nil, err
