@@ -34,9 +34,9 @@ func removeOldFiles() {
 		}
 		fmt.Printf(path)
 		if !strings.Contains(f.Name(), strDate) {
-			rmErr := os.Remove(path + "/" + f.Name())
+			rmErr := os.Remove("." + path + "/" + f.Name())
 			if rmErr != nil {
-				fmt.Println(path + "/" + f.Name() + "can not remove " + rmErr.Error())
+				fmt.Println("." + path + "/" + f.Name() + "can not remove " + rmErr.Error())
 			}
 		}
 		return nil
