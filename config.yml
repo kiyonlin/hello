@@ -16,6 +16,9 @@ margins: #差价乘数
 
 delays: #按照毫秒计算时间差
 - 3000
-env: silicon
+env: aws
 dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+#env: silicon
 #dbconnection: host=rm-rj9efi6b8i003acw2.pg.rds.aliyuncs.com port=3433 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+#env: tencent
+#dbconnection: host=172.29.0.3 port=5432 user=winston dbname=coincarry password=User@123 sslmode=disable

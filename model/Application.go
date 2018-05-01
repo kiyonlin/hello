@@ -128,6 +128,14 @@ func SetApiKeys() {
 		ApplicationConfig.ApiSecrets[Huobi] = "9926c6e9-f16fa02b-14db390e-4a9e4"
 		ApplicationConfig.ApiSecrets[OKEX] = "4B335650F61818F06A2B7797170E17E1"
 		ApplicationConfig.ApiSecrets[Binance] = "aRVShWRlaOTjfFsxVca7PAfQaBIq18f8spfnVVBEPcfvfzT2wMw9hF5d0e5gblNg"
+	} else if ApplicationConfig.Env == "aws" {
+		util.SocketInfo("under aws environment")
+		ApplicationConfig.ApiKeys[Huobi] = "00b69d3c-aa5c5730-df981aa8-c0dab" // dk
+		ApplicationConfig.ApiKeys[OKEX] = "9e676a4c-b826-4102-bb05-cfaa03ba4793"
+		ApplicationConfig.ApiKeys[Binance] = "qM46PNifE3MiUeKeq65Vo2k2VZbFsLwO63POanHZbZzBLfUj8xql1MEIGth86Mkg"
+		ApplicationConfig.ApiSecrets[Huobi] = "bd91c864-50755708-2d0cfbb1-41f40" // dk
+		ApplicationConfig.ApiSecrets[OKEX] = "C87C198A2C4EC1C4FDEFE3FE1565C769"
+		ApplicationConfig.ApiSecrets[Binance] = "XOpYOW1qxSJjs8eaxJI3NrDY5YVO45JIK2BqvhYQ9RIwjX0ekm0gDpD9WgRi7LrV"
 	}
 }
 func NewConfig() {
