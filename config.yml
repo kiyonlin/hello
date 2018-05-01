@@ -7,25 +7,10 @@ symbols:
 - btc_usdt
 - eth_usdt
 - eos_usdt
-#以下两个量很少
-- eos_eth
 - eos_btc
 - eth_btc
-- xrp_usdt
-- xrp_btc
-- xrp_eth
-#- bch-usdt
-#- bch-btc
-#- bch-eth
-- etc_usdt
-- etc_btc
-- etc_eth
-- ltc_usdt
-- ltc_btc
-- ltc_eth
-- neo_usdt
-- neo_btc
-- neo_eth
+- eos_eth
+
 
 margins: #差价乘数
 - 0.0015
