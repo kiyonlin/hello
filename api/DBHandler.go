@@ -82,8 +82,10 @@ func BidUpdate() {
 		carry := <-model.BidChannel
 		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
+			util.SocketInfo("create new bid " + carry.ToString())
 			model.ApplicationDB.Create(&carry)
 		} else {
+			util.SocketInfo("update old bid " + carry.ToString())
 			carryInDb.DealBidOrderId = carry.DealBidOrderId
 			carryInDb.DealBidErrCode = carry.DealBidErrCode
 			carryInDb.DealBidStatus = carry.DealBidStatus
