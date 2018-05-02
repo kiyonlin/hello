@@ -112,7 +112,7 @@ func SetApiKeys() {
 	ApplicationConfig.ApiKeys = make(map[string]string)
 	ApplicationConfig.ApiSecrets = make(map[string]string)
 	util.SocketInfo("begin to set keys")
-	if ApplicationConfig.Env == "tencent" {
+	if ApplicationConfig.Env == "aws" {
 		util.SocketInfo("under tencent environment")
 		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714"    // sammi
 		ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
