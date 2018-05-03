@@ -1,7 +1,7 @@
 markets:
-- huobi
-- okex
-- binance
+#- huobi
+#- okex
+#- binance
 
 symbols:
 - btc_usdt

@@ -112,15 +112,7 @@ func SetApiKeys() {
 	ApplicationConfig.ApiKeys = make(map[string]string)
 	ApplicationConfig.ApiSecrets = make(map[string]string)
 	util.SocketInfo("begin to set keys")
-	if ApplicationConfig.Env == "aws" {
-		util.SocketInfo("under tencent environment")
-		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714"    // sammi
-		ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
-		ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
-		ApplicationConfig.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b" // sammi
-		ApplicationConfig.ApiSecrets[OKEX] = "7D0E1B435964B96D72728215CB369CD7"  // sammi
-		ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
-	} else if ApplicationConfig.Env == "silicon" { // dk
+	if ApplicationConfig.Env == "silicon" { // dk
 		util.SocketInfo("under aliyun silicon environment")
 		ApplicationConfig.ApiKeys[Huobi] = "bce89205-af2cc545-ed5660e8-25ffe"
 		ApplicationConfig.ApiKeys[OKEX] = "3e64bd30-e9d4-41dc-8d8d-1850d7c0d9b4"
@@ -130,12 +122,12 @@ func SetApiKeys() {
 		ApplicationConfig.ApiSecrets[Binance] = "aRVShWRlaOTjfFsxVca7PAfQaBIq18f8spfnVVBEPcfvfzT2wMw9hF5d0e5gblNg"
 	} else if ApplicationConfig.Env == "aws" {
 		util.SocketInfo("under aws environment")
-		ApplicationConfig.ApiKeys[Huobi] = "00b69d3c-aa5c5730-df981aa8-c0dab" // dk
-		ApplicationConfig.ApiKeys[OKEX] = "9e676a4c-b826-4102-bb05-cfaa03ba4793"
-		ApplicationConfig.ApiKeys[Binance] = "qM46PNifE3MiUeKeq65Vo2k2VZbFsLwO63POanHZbZzBLfUj8xql1MEIGth86Mkg"
-		ApplicationConfig.ApiSecrets[Huobi] = "bd91c864-50755708-2d0cfbb1-41f40" // dk
-		ApplicationConfig.ApiSecrets[OKEX] = "C87C198A2C4EC1C4FDEFE3FE1565C769"
-		ApplicationConfig.ApiSecrets[Binance] = "XOpYOW1qxSJjs8eaxJI3NrDY5YVO45JIK2BqvhYQ9RIwjX0ekm0gDpD9WgRi7LrV"
+		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
+		ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
+		ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
+		ApplicationConfig.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b"
+		ApplicationConfig.ApiSecrets[OKEX] = "7D0E1B435964B96D72728215CB369CD7"
+		ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
 	}
 }
 func NewConfig() {
