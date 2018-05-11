@@ -18,7 +18,7 @@ func main() {
 		print(err)
 		return
 	}
-	fmt.Println(fmt.Sprintf("=============%f", model.ApplicationConfig.DiscountRate))
+	fmt.Println(fmt.Sprintf("=============%.4f", model.ApplicationConfig.DiscountRate))
 	model.SetApiKeys()
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {

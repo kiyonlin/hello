@@ -11,13 +11,14 @@ symbols:
 - eth_btc
 - eos_eth
 
-margins: #差价乘数
-- 0.0015
+DiscountRate: 0.8
 
-discountRate: 0.8
+margins: #差价
+- 0.0020
 
 delays: #按照毫秒计算时间差
-- 3000
+- 500
+
 env: aws
 dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 #env: silicon
