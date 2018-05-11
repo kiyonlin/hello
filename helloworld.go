@@ -18,6 +18,7 @@ func main() {
 		print(err)
 		return
 	}
+	fmt.Println(fmt.Sprintf("\n%s=============%.4f", model.ApplicationConfig.DBConnection, model.ApplicationConfig.Deduction))
 	model.SetApiKeys()
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {
@@ -28,7 +29,6 @@ func main() {
 	model.ApplicationDB.AutoMigrate(&model.Carry{})
 	model.ApplicationDB.AutoMigrate(&model.Account{})
 
-	fmt.Println(fmt.Sprintf("\n%s=============%.4f", model.ApplicationConfig.DBConnection, model.ApplicationConfig.DiscountRate))
 	util.SocketInfo("start making money")
 	model.HuobiAccountId, _ = api.GetSpotAccountId(model.ApplicationConfig)
 	api.GetAccountHuobi(model.ApplicationAccounts)

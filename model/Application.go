@@ -95,13 +95,14 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
+	Balance      float64
 	Env          string
 	DBConnection string
 	Markets      []string
 	Symbols      []string
 	Margins      []float64
 	Delays       []float64
-	DiscountRate float64
+	Deduction    float64
 	subscribes   map[string][]string // marketName - subscribes
 	WSUrls       map[string]string   // marketName - ws url
 	RestUrls     map[string]string   // marketName - rest url

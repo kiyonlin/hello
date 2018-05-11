@@ -78,10 +78,10 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
 		// 把将来可能的最低利润减掉作为成本
-		reBaseCarryConst := BaseCarryCost - (configMargin-BaseCarryCost)*ApplicationConfig.DiscountRate
-		if reBaseCarryConst < 0 {
-			reBaseCarryConst = 0
-		}
+		reBaseCarryConst := BaseCarryCost - (configMargin-BaseCarryCost)*ApplicationConfig.Deduction
+		//if reBaseCarryConst < 0 {
+		//	reBaseCarryConst = 0
+		//}
 		util.Info(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
 			carry.Symbol, discount, reBaseCarryConst+(configMargin-reBaseCarryConst)*(1-discount)))
 		return reBaseCarryConst + (configMargin-reBaseCarryConst)*(1-discount)

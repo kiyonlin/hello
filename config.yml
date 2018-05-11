@@ -1,7 +1,7 @@
 markets:
-#- huobi
-#- okex
-#- binance
+- huobi
+- okex
+- binance
 
 symbols:
 - btc_usdt
@@ -11,7 +11,7 @@ symbols:
 - eth_btc
 - eos_eth
 
-DiscountRate: 0.8
+deduction: 0.8
 
 margins: #差价
 - 0.0020
