@@ -101,6 +101,7 @@ type Config struct {
 	Symbols      []string
 	Margins      []float64
 	Delays       []float64
+	DiscountRate float64
 	subscribes   map[string][]string // marketName - subscribes
 	WSUrls       map[string]string   // marketName - ws url
 	RestUrls     map[string]string   // marketName - rest url
@@ -122,7 +123,7 @@ func SetApiKeys() {
 		ApplicationConfig.ApiSecrets[Binance] = "aRVShWRlaOTjfFsxVca7PAfQaBIq18f8spfnVVBEPcfvfzT2wMw9hF5d0e5gblNg"
 	} else if ApplicationConfig.Env == "aws" {
 		util.SocketInfo("under aws environment")
-		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714" // sammi
+		ApplicationConfig.ApiKeys[Huobi] = "ff4f8f05-4993f78c-c707cc5b-22714"    // sammi
 		ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
 		ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
 		ApplicationConfig.ApiSecrets[Huobi] = "2d293cd4-04d5c6e5-2b2d5d15-fb56b"
