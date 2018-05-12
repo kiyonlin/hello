@@ -19,7 +19,6 @@ func main() {
 		return
 	}
 	fmt.Println(fmt.Sprintf("\n%s=============%.4f", model.ApplicationConfig.DBConnection, model.ApplicationConfig.Deduction))
-	model.SetApiKeys()
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {
 		util.SocketInfo(fmt.Sprint(err))
