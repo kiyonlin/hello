@@ -8,7 +8,17 @@ import (
 	"hello/model"
 	"github.com/jinzhu/configor"
 	"fmt"
+	"time"
 )
+
+func refreshAccounts() {
+	for true {
+		api.GetAccountHuobi(model.ApplicationAccounts)
+		api.GetAccountOkex(model.ApplicationAccounts)
+		api.GetAccountBinance(model.ApplicationAccounts)
+		time.Sleep(time.Hour)
+	}
+}
 
 func main() {
 	util.SocketInfo("start init")
@@ -18,7 +28,6 @@ func main() {
 		print(err)
 		return
 	}
-	fmt.Println(fmt.Sprintf("\n%s=============%.4f", model.ApplicationConfig.DBConnection, model.ApplicationConfig.Deduction))
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {
 		util.SocketInfo(fmt.Sprint(err))
@@ -30,15 +39,12 @@ func main() {
 
 	util.SocketInfo("start making money")
 	model.HuobiAccountId, _ = api.GetSpotAccountId(model.ApplicationConfig)
-	api.GetAccountHuobi(model.ApplicationAccounts)
-	api.GetAccountOkex(model.ApplicationAccounts)
-	api.GetAccountBinance(model.ApplicationAccounts)
+	go refreshAccounts()
 	go api.CarryDBHandlerServe()
 	go api.AskUpdate()
 	go api.BidUpdate()
 	go api.AccountDBHandlerServe()
 	go api.CarryProcessor()
-
 	markets := model.NewMarkets()
 	api.Maintain(markets, model.ApplicationConfig)
 
