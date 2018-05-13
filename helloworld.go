@@ -28,6 +28,7 @@ func main() {
 		print(err)
 		return
 	}
+	model.SetApiKeys()
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {
 		util.SocketInfo(fmt.Sprint(err))

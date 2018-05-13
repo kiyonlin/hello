@@ -116,11 +116,8 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 }
 
 func (carry *Carry) ToString() string {
-	bidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
-	askPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
-	margin := strconv.FormatFloat(100*(carry.AskPrice-carry.BidPrice)/carry.AskPrice, 'f', -1, 64)
-	amount := strconv.FormatFloat(carry.Amount, 'f', -1, 64)
-	str := carry.Symbol + "卖:" + carry.AskWeb + askPrice + "时间" + strconv.Itoa(int(carry.AskTime)) + "买"
-	str += carry.BidWeb + bidPrice + "时间" + strconv.Itoa(int(carry.BidTime)) + "数量:" + amount + "利润:" + margin + "%"
-	return str
+	marginLine, _ := ApplicationConfig.GetMargin(carry.Symbol)
+	return fmt.Sprintf("%s卖%s%.4f时间%d买%s%.4f时间%d数量%f利润%f 利润门槛%f",
+		carry.Symbol, carry.AskWeb, carry.AskPrice, carry.AskTime, carry.BidWeb, carry.BidPrice, carry.BidTime,
+		carry.Amount, (carry.AskPrice-carry.BidPrice)/carry.AskPrice, marginLine)
 }
