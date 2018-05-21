@@ -27,6 +27,7 @@ type Carry struct {
 	DealAskOrderId string
 	DealBidStatus  string
 	DealAskStatus  string
+	Margin         float64
 	// time_idx的设计有一定的冲突风险，但为了在发起挂单前减少一次db操作而不使用carry的id
 	BidTime   int64 `gorm:"unique_index:time_idx;"`
 	AskTime   int64 `gorm:"unique_index:time_idx;"`
@@ -111,13 +112,13 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 		util.Notice(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
 		return true, nil
 	}
+	ApplicationConfig.DecreaseMargin(carry)
 	util.Info("利润不足" + carry.ToString())
 	return false, errors.New("利润不足")
 }
 
 func (carry *Carry) ToString() string {
-	marginLine, _ := ApplicationConfig.GetMargin(carry.Symbol)
 	return fmt.Sprintf("%s卖%s%.4f时间%d买%s%.4f时间%d数量%f利润%f 利润门槛%f",
 		carry.Symbol, carry.AskWeb, carry.AskPrice, carry.AskTime, carry.BidWeb, carry.BidPrice, carry.BidTime,
-		carry.Amount, (carry.AskPrice-carry.BidPrice)/carry.AskPrice, marginLine)
+		carry.Amount, (carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.Margin)
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"hello/util"
+	"sync"
 )
 
 const OKEX = "okex"
@@ -15,6 +16,8 @@ const Binance = "binance"
 var HuobiAccountId = "1651065"
 
 const BaseCarryCost = 0.0008 // 当前搬砖的最低手续费是万分之八
+const MaxCarryMargin = 0.003
+
 var ApplicationConfig *Config
 
 var ApplicationAccounts = NewAccounts()
@@ -95,6 +98,7 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
+	lock         sync.Mutex
 	Balance      float64
 	Env          string
 	DBConnection string
@@ -108,6 +112,24 @@ type Config struct {
 	RestUrls     map[string]string   // marketName - rest url
 	ApiKeys      map[string]string
 	ApiSecrets   map[string]string
+}
+
+func (config *Config) DecreaseMargin(carry *Carry) {
+	config.lock.Lock()
+	defer config.lock.Unlock()
+	carryMargin := (carry.AskPrice - carry.BidPrice) / carry.AskPrice
+	if carryMargin < BaseCarryCost {
+		return
+	}
+	currentMargin, _ := config.GetMargin(carry.Symbol)
+	config.SetMargin(carry.Symbol, currentMargin-0.00001)
+}
+
+func (config *Config) IncreaseMargin(carry *Carry) {
+	config.lock.Lock()
+	defer config.lock.Unlock()
+	currentMargin, _ := config.GetMargin(carry.Symbol)
+	config.SetMargin(carry.Symbol, currentMargin+0.00001)
 }
 
 func SetApiKeys() {
@@ -163,14 +185,28 @@ func (config *Config) GetSubscribes(marketName string) []string {
 	return nil
 }
 
-func (config *Config) GetMargin(symbol string) (float64, error) {
-	if len(config.Margins) == 1 {
-		if config.Margins[0] < BaseCarryCost {
-			config.Margins[0] = BaseCarryCost
+func (config *Config) SetMargin(symbol string, margin float64) {
+	for i, value := range config.Symbols {
+		if value == symbol {
+			if margin < BaseCarryCost {
+				margin = BaseCarryCost
+			} else if margin > MaxCarryMargin {
+				margin = MaxCarryMargin
+			}
+			config.Margins[i] = margin
+			break
 		}
-		// return first margin as default margin
-		return config.Margins[0], nil
 	}
+}
+
+func (config *Config) GetMargin(symbol string) (float64, error) {
+	//if len(config.Margins) == 1 {
+	//	if config.Margins[0] < BaseCarryCost {
+	//		config.Margins[0] = BaseCarryCost
+	//	}
+	//	// return first margin as default margin
+	//	return config.Margins[0], nil
+	//}
 	for i, value := range config.Symbols {
 		if value == symbol {
 			if config.Margins[i] < BaseCarryCost {

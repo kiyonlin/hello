@@ -102,6 +102,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	} else {
 		carry.Amount = carry.AskAmount
 	}
+	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
 	worth, err := carry.CheckWorth(markets, ApplicationConfig)
 	if worth {
 		return &carry, nil

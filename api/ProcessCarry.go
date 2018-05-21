@@ -103,6 +103,9 @@ var ProcessCarry = func(carry *model.Carry) {
 	if leftBalance*carry.BidPrice > rightBalance {
 		leftBalance = rightBalance / carry.BidPrice
 	}
+	if leftBalance < carry.Amount/2 {
+		model.ApplicationConfig.IncreaseMargin(carry)
+	}
 	leftBalance, _ = calcAmount(leftBalance)
 	util.Info("实际从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
 	if leftBalance == 0 {
