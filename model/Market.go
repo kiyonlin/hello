@@ -5,6 +5,7 @@ import (
 	"sync"
 	"math"
 	"hello/util"
+	"fmt"
 )
 
 type BidAsk struct {
@@ -103,6 +104,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		carry.Amount = carry.AskAmount
 	}
 	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
+	util.SocketInfo(fmt.Sprintf(`%s margin %.4f`, carry.Symbol, carry.Margin))
 	worth, err := carry.CheckWorth(markets, ApplicationConfig)
 	if worth {
 		return &carry, nil
