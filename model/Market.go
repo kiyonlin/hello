@@ -104,7 +104,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		carry.Amount = carry.AskAmount
 	}
 	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
-	util.SocketInfo(fmt.Sprintf(`%s margin %.4f`, carry.Symbol, carry.Margin))
+	util.SocketInfo(fmt.Sprintf(`%s margin %.6f`, carry.Symbol, carry.Margin))
 	worth, err := carry.CheckWorth(markets, ApplicationConfig)
 	if worth {
 		return &carry, nil
