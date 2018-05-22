@@ -46,7 +46,6 @@ func main() {
 	go api.BidUpdate()
 	go api.AccountDBHandlerServe()
 	go api.CarryProcessor()
-	markets := model.NewMarkets()
-	api.Maintain(markets, model.ApplicationConfig)
-
+	model.ApplicationMarkets = model.NewMarkets()
+	api.Maintain(model.ApplicationMarkets, model.ApplicationConfig)
 }
