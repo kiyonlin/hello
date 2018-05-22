@@ -116,25 +116,32 @@ func Maintain(markets *model.Markets, config *model.Config) {
 		for _, symbol := range model.ApplicationConfig.Symbols {
 			currencies := strings.Split(symbol, "_")
 			leftTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[0]]
-			righteTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[1]]
-			leftMarketPercentage := 1.0
-			rightMarketPercentage := 1.0
+			rightTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[1]]
+			if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
+				continue
+			}
+			leftMarketPercentage := 0.0
+			rightMarketPercentage := 0.0
 			for _, market := range model.ApplicationConfig.Markets {
-				if leftMarketPercentage > model.ApplicationAccounts.Data[market][currencies[0]].Percentage {
-					leftMarketPercentage = model.ApplicationAccounts.Data[market][currencies[0]].Percentage
+				leftAccount := model.ApplicationAccounts.Data[market][currencies[0]]
+				rightAccount := model.ApplicationAccounts.Data[market][currencies[1]]
+				if leftAccount != nil && leftMarketPercentage < leftAccount.Percentage {
+					leftMarketPercentage = leftAccount.Percentage
 				}
-				if rightMarketPercentage > model.ApplicationAccounts.Data[market][currencies[1]].Percentage {
-					rightMarketPercentage = model.ApplicationAccounts.Data[market][currencies[1]].Percentage
+				if rightAccount != nil && rightMarketPercentage < rightAccount.Percentage {
+					rightMarketPercentage = rightAccount.Percentage
 				}
 			}
-			balanceRate := leftMarketPercentage / leftTotalPercentage
-			if balanceRate > rightMarketPercentage/righteTotalPercentage {
-				balanceRate = rightMarketPercentage / righteTotalPercentage
+			if leftMarketPercentage == 0 || rightMarketPercentage == 0 {
+				continue
 			}
-			if balanceRate < 0.2 {
+			balanceRate := leftTotalPercentage / leftMarketPercentage
+			if balanceRate > rightTotalPercentage/rightMarketPercentage {
+				balanceRate = rightTotalPercentage / rightMarketPercentage
+			}
+			if balanceRate < 0.5 {
 				model.ApplicationConfig.IncreaseMargin(symbol)
-			}
-			if balanceRate > 0.8 {
+			} else {
 				model.ApplicationConfig.DecreaseMargin(symbol)
 			}
 			margin, _ := model.ApplicationConfig.GetMargin(symbol)
