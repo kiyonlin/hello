@@ -114,22 +114,18 @@ type Config struct {
 	ApiSecrets   map[string]string
 }
 
-func (config *Config) DecreaseMargin(carry *Carry) {
+func (config *Config) DecreaseMargin(symbol string) {
 	config.lock.Lock()
 	defer config.lock.Unlock()
-	carryMargin := (carry.AskPrice - carry.BidPrice) / carry.AskPrice
-	if carryMargin < BaseCarryCost {
-		return
-	}
-	currentMargin, _ := config.GetMargin(carry.Symbol)
-	config.SetMargin(carry.Symbol, currentMargin-0.0001)
+	currentMargin, _ := config.GetMargin(symbol)
+	config.SetMargin(symbol, currentMargin-0.00001)
 }
 
-func (config *Config) IncreaseMargin(carry *Carry) {
+func (config *Config) IncreaseMargin(symbol string) {
 	config.lock.Lock()
 	defer config.lock.Unlock()
-	currentMargin, _ := config.GetMargin(carry.Symbol)
-	config.SetMargin(carry.Symbol, currentMargin+0.0001)
+	currentMargin, _ := config.GetMargin(symbol)
+	config.SetMargin(symbol, currentMargin+0.00001)
 }
 
 func SetApiKeys() {

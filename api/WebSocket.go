@@ -5,6 +5,8 @@ import (
 	"time"
 	"hello/util"
 	"hello/model"
+	"strings"
+	"fmt"
 )
 
 // WsHandler handle raw websocket message
@@ -111,6 +113,33 @@ func Maintain(markets *model.Markets, config *model.Config) {
 				break
 			}
 		}
-		time.Sleep(time.Minute * 2)
+		for _, symbol := range model.ApplicationConfig.Symbols {
+			currencies := strings.Split(symbol, "_")
+			leftTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[0]]
+			righteTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[1]]
+			leftMarketPercentage := 1.0
+			rightMarketPercentage := 1.0
+			for _, market := range model.ApplicationConfig.Markets {
+				if leftMarketPercentage > model.ApplicationAccounts.Data[market][currencies[0]].Percentage {
+					leftMarketPercentage = model.ApplicationAccounts.Data[market][currencies[0]].Percentage
+				}
+				if rightMarketPercentage > model.ApplicationAccounts.Data[market][currencies[1]].Percentage {
+					rightMarketPercentage = model.ApplicationAccounts.Data[market][currencies[1]].Percentage
+				}
+			}
+			balanceRate := leftMarketPercentage / leftTotalPercentage
+			if balanceRate > rightMarketPercentage/righteTotalPercentage {
+				balanceRate = rightMarketPercentage / righteTotalPercentage
+			}
+			if balanceRate < 0.2 {
+				model.ApplicationConfig.IncreaseMargin(symbol)
+			}
+			if balanceRate > 0.8 {
+				model.ApplicationConfig.DecreaseMargin(symbol)
+			}
+			margin, _ := model.ApplicationConfig.GetMargin(symbol)
+			util.SocketInfo(fmt.Sprintf(`%s margin: %.5f`, symbol, margin))
+		}
+		time.Sleep(time.Minute * 1)
 	}
 }
