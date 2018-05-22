@@ -112,9 +112,6 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 		util.Notice(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
 		return true, nil
 	}
-	if margin > BaseCarryCost*carry.AskPrice {
-		ApplicationConfig.DecreaseMargin(carry)
-	}
 	util.Info("利润不足" + carry.ToString())
 	return false, errors.New("利润不足")
 }
