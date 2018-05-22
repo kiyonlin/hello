@@ -34,6 +34,9 @@ func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 		} else {
 			carry.DealAskStatus = model.CarryStatusWorking
 		}
+	} else {
+		carry.DealAskStatus = `NotWorth`
+		carry.DealBidStatus = `NotWorth`
 	}
 	model.AskChannel <- *carry
 	return orderId, errCode

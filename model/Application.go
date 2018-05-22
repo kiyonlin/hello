@@ -119,14 +119,14 @@ func (config *Config) DecreaseMargin(symbol string) {
 	config.lock.Lock()
 	defer config.lock.Unlock()
 	currentMargin, _ := config.GetMargin(symbol)
-	config.SetMargin(symbol, currentMargin-0.00001)
+	config.SetMargin(symbol, currentMargin-0.0001)
 }
 
 func (config *Config) IncreaseMargin(symbol string) {
 	config.lock.Lock()
 	defer config.lock.Unlock()
 	currentMargin, _ := config.GetMargin(symbol)
-	config.SetMargin(symbol, currentMargin+0.00001)
+	config.SetMargin(symbol, currentMargin+0.0001)
 }
 
 func SetApiKeys() {

@@ -147,6 +147,6 @@ func Maintain(markets *model.Markets, config *model.Config) {
 			margin, _ := model.ApplicationConfig.GetMargin(symbol)
 			util.SocketInfo(fmt.Sprintf(`%s margin: %.5f`, symbol, margin))
 		}
-		time.Sleep(time.Minute * 1)
+		time.Sleep(time.Minute * 2)
 	}
 }
