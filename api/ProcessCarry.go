@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"hello/model"
 	"hello/util"
+	"time"
 )
 
 type CarryHandler func(carry *model.Carry)
@@ -12,31 +13,25 @@ type CarryHandler func(carry *model.Carry)
 var Carrying = false
 
 func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-	worth, _ := carry.CheckWorth(model.ApplicationMarkets, model.ApplicationConfig)
-	if worth {
-		util.Notice(carry.AskWeb + "ask" + carry.Symbol + " with price: " + price + " amount:" + amount)
-		switch carry.AskWeb {
-		case model.Huobi:
-			orderId, errCode = PlaceOrderHuobi(carry.Symbol, "sell-limit", price, amount)
-			GetAccountHuobi(model.ApplicationAccounts)
-		case model.OKEX:
-			orderId, errCode = PlaceOrderOkex(carry.Symbol, "sell", price, amount)
-			GetAccountOkex(model.ApplicationAccounts)
-		case model.Binance:
-			orderId, errCode = PlaceOrderBinance(carry.Symbol, "SELL", price, amount)
-			GetAccountBinance(model.ApplicationAccounts)
-		}
-		//carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
-		carry.DealAskErrCode = errCode
-		carry.DealAskOrderId = orderId
-		if orderId == "0" || orderId == "" {
-			carry.DealAskStatus = model.CarryStatusFail
-		} else {
-			carry.DealAskStatus = model.CarryStatusWorking
-		}
+	util.Notice(carry.AskWeb + "ask" + carry.Symbol + " with price: " + price + " amount:" + amount)
+	switch carry.AskWeb {
+	case model.Huobi:
+		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "sell-limit", price, amount)
+		GetAccountHuobi(model.ApplicationAccounts)
+	case model.OKEX:
+		orderId, errCode = PlaceOrderOkex(carry.Symbol, "sell", price, amount)
+		GetAccountOkex(model.ApplicationAccounts)
+	case model.Binance:
+		orderId, errCode = PlaceOrderBinance(carry.Symbol, "SELL", price, amount)
+		GetAccountBinance(model.ApplicationAccounts)
+	}
+	//carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
+	carry.DealAskErrCode = errCode
+	carry.DealAskOrderId = orderId
+	if orderId == "0" || orderId == "" {
+		carry.DealAskStatus = model.CarryStatusFail
 	} else {
-		carry.DealAskStatus = `NotWorth`
-		carry.DealBidStatus = `NotWorth`
+		carry.DealAskStatus = model.CarryStatusWorking
 	}
 	model.AskChannel <- *carry
 	return orderId, errCode
@@ -119,9 +114,17 @@ var ProcessCarry = func(carry *model.Carry) {
 	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
 	strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
 	strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
-	go doAsk(carry, strAskPrice, strLeftBalance)
-	go doBid(carry, strBidPrice, strLeftBalance)
-	//time.Sleep(time.Second * 30)
+
+	worth, _ := carry.CheckWorth(model.ApplicationMarkets, model.ApplicationConfig)
+	if worth {
+		go doAsk(carry, strAskPrice, strLeftBalance)
+		go doBid(carry, strBidPrice, strLeftBalance)
+	} else {
+		carry.DealAskStatus = `NotWorth`
+		carry.DealBidStatus = `NotWorth`
+		model.BidChannel <- *carry
+	}
+	time.Sleep(time.Second * 3)
 	Carrying = false
 	util.Info("搬砖结束")
 }
