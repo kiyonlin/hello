@@ -99,7 +99,8 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 		util.SocketInfo(marketName + " need reset " + subscribe)
 		createServer(markets, marketName)
 		channel <- struct{}{}
-		defer close(channel)
+		close(channel)
+		markets.PutChan(marketName, nil)
 		util.SocketInfo(marketName + " channel closed and cleared ")
 	}
 }
@@ -109,7 +110,7 @@ func Maintain(markets *model.Markets, config *model.Config) {
 		for _, marketName := range config.Markets {
 			subscribes := config.GetSubscribes(marketName)
 			for _, subscribe := range subscribes {
-				go maintainMarketChan(markets, marketName, subscribe)
+				maintainMarketChan(markets, marketName, subscribe)
 				break
 			}
 		}
