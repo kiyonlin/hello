@@ -136,15 +136,15 @@ func Maintain(markets *model.Markets, config *model.Config) {
 			if leftMarketPercentage == 0 || rightMarketPercentage == 0 {
 				continue
 			}
-			balanceRate := leftTotalPercentage / leftMarketPercentage
-			if balanceRate > rightTotalPercentage/rightMarketPercentage {
-				balanceRate = rightTotalPercentage / rightMarketPercentage
-			}
-			if balanceRate < 0.5 {
-				model.ApplicationConfig.IncreaseMargin(symbol)
-			} else {
-				model.ApplicationConfig.DecreaseMargin(symbol)
-			}
+			//balanceRate := leftTotalPercentage / leftMarketPercentage
+			//if balanceRate > rightTotalPercentage/rightMarketPercentage {
+			//	balanceRate = rightTotalPercentage / rightMarketPercentage
+			//}
+			//if balanceRate < 0.5 {
+			//	model.ApplicationConfig.IncreaseMargin(symbol)
+			//} else {
+			//	model.ApplicationConfig.DecreaseMargin(symbol)
+			//}
 			margin, _ := model.ApplicationConfig.GetMargin(symbol)
 			util.SocketInfo(fmt.Sprintf(`%s margin: %.5f`, symbol, margin))
 		}
