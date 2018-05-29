@@ -56,9 +56,9 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				util.SocketInfo("can not read from websocket: " + err.Error())
+				stopC <- struct{}{}
 				continue
 			}
-			util.Info(string(message))
 			msgHandler(message, c)
 		}
 	}
@@ -103,9 +103,8 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 	} else if markets.RequireChanReset(marketName, subscribe) {
 		util.SocketInfo(marketName + " need reset " + subscribe)
 		markets.PutChan(marketName, nil)
-		channel <- struct{}{}
 		createServer(markets, marketName)
-		util.SocketInfo(marketName + " channel closed and cleared ")
+		util.SocketInfo(marketName + " new channel reset done")
 	}
 }
 
