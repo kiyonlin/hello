@@ -14,7 +14,7 @@ type ErrHandler func(err error)
 
 var WSErrHandler = func(err error) {
 	print(err)
-	util.SocketInfo("DO NOTHING")
+	util.SocketInfo(`get error ` + err.Error())
 }
 
 func newConnection(url string) (*websocket.Conn, error) {
@@ -26,7 +26,7 @@ func newConnection(url string) (*websocket.Conn, error) {
 		if connErr == nil {
 			break
 		} else {
-			print(connErr)
+			util.SocketInfo(connErr.Error())
 			if c != nil {
 				c.Close()
 			}
@@ -45,18 +45,18 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 		if err != nil {
 			errHandler(err)
 		}
+		close(stopC)
 	}()
 	for true {
 		select {
 		case <-stopC:
 			util.SocketInfo("get stop struct, return")
-			close(stopC)
 			return
 		default:
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				util.SocketInfo("can not read from websocket: " + err.Error())
-				return
+				continue
 			}
 			util.Info(string(message))
 			msgHandler(message, c)
@@ -80,15 +80,20 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 func createServer(markets *model.Markets, marketName string) {
 	util.SocketInfo(" create chan for " + marketName)
 	var channel chan struct{}
+	var err error
 	switch marketName {
 	case model.Huobi:
-		channel, _ = WsDepthServeHuobi(markets, ProcessCarry, WSErrHandler)
+		channel, err = WsDepthServeHuobi(markets, ProcessCarry, WSErrHandler)
 	case model.OKEX:
-		channel, _ = WsDepthServeOkex(markets, ProcessCarry, WSErrHandler)
+		channel, err = WsDepthServeOkex(markets, ProcessCarry, WSErrHandler)
 	case model.Binance:
-		channel, _ = WsDepthServeBinance(markets, ProcessCarry, WSErrHandler)
+		channel, err = WsDepthServeBinance(markets, ProcessCarry, WSErrHandler)
 	}
-	markets.PutChan(marketName, channel)
+	if err != nil {
+		util.SocketInfo(marketName + ` can not create server ` + err.Error())
+	} else {
+		markets.PutChan(marketName, channel)
+	}
 }
 
 func maintainMarketChan(markets *model.Markets, marketName string, subscribe string) {
