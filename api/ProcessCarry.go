@@ -10,7 +10,7 @@ import (
 
 type CarryHandler func(carry *model.Carry)
 
-var Carrying = false
+//var Carrying = false
 
 func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
 	util.Notice(carry.AskWeb + "ask" + carry.Symbol + " with price: " + price + " amount:" + amount)
@@ -80,12 +80,12 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var ProcessCarry = func(carry *model.Carry) {
-	if Carrying {
-		util.Notice("别人正在搬砖，我先退出")
-		return
-	}
+	//if Carrying {
+	//	util.Notice("别人正在搬砖，我先退出")
+	//	return
+	//}
+	//Carrying = true
 	util.Info(carry.ToString())
-	Carrying = true
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
 	rightBalance := 0.0
@@ -97,7 +97,7 @@ var ProcessCarry = func(carry *model.Carry) {
 	if account != nil {
 		rightBalance = account.Free
 	}
-	util.Info("计划从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
+	//util.Info("计划从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
 	if leftBalance > carry.Amount {
 		leftBalance = carry.Amount
 	}
@@ -105,10 +105,10 @@ var ProcessCarry = func(carry *model.Carry) {
 		leftBalance = rightBalance / carry.BidPrice
 	}
 	leftBalance, _ = calcAmount(leftBalance)
-	util.Info("实际从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
+	//util.Info("实际从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
 	if leftBalance == 0 {
-		util.Info("数量为0,退出")
-		Carrying = false
+		//util.Info("数量为0,退出")
+		//Carrying = false
 		return
 	}
 	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
@@ -125,6 +125,6 @@ var ProcessCarry = func(carry *model.Carry) {
 		model.BidChannel <- *carry
 	}
 	time.Sleep(time.Second * 3)
-	Carrying = false
-	util.Info("搬砖结束")
+	//Carrying = false
+	//util.Info("搬砖结束")
 }

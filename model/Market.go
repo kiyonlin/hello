@@ -124,11 +124,14 @@ func (markets *Markets) GetChan(marketName string) chan struct{} {
 }
 
 func (markets *Markets) RequireChanReset(marketName string, subscribe string) bool {
+	util.SocketInfo(marketName + ` start to check require chan reset or not`)
 	symbol := GetSymbol(marketName, subscribe)
 	market := markets.markets[symbol]
 	if market != nil {
 		bidAsk := market.Data[marketName]
 		if bidAsk != nil {
+			util.SocketInfo(fmt.Sprintf(`%s time %d %d diff:%d`, marketName, util.GetNowUnixMillion(),
+				bidAsk.Ts, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 			if math.Abs(float64(util.GetNowUnixMillion()-int64(bidAsk.Ts))) < 60000 { // 1分钟
 				return false
 			}

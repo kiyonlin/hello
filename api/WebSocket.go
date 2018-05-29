@@ -96,7 +96,7 @@ func createServer(markets *model.Markets, marketName string) {
 	}
 }
 
-func maintainMarketChan(markets *model.Markets, marketName string, subscribe string) {
+func MaintainMarketChan(markets *model.Markets, marketName string, subscribe string) {
 	channel := markets.GetChan(marketName)
 	if channel == nil {
 		createServer(markets, marketName)
@@ -113,11 +113,11 @@ func Maintain(markets *model.Markets, config *model.Config) {
 		for _, marketName := range config.Markets {
 			subscribes := config.GetSubscribes(marketName)
 			for _, subscribe := range subscribes {
-				go maintainMarketChan(markets, marketName, subscribe)
+				go MaintainMarketChan(markets, marketName, subscribe)
 				break
 			}
 		}
-		time.Sleep(time.Minute * 2)
+		time.Sleep(time.Minute)
 	}
 }
 

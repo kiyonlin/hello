@@ -103,6 +103,12 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 	configMargin, _ := config.GetMargin(carry.Symbol)
 	dynamicMargin := getDynamicMargin(carry, configMargin)
 	carry.Margin = dynamicMargin
+	if bidTimeDelay > delay {
+		markets.PutChan(carry.BidWeb, nil)
+	}
+	if askTimeDelay > delay {
+		markets.PutChan(carry.AskWeb, nil)
+	}
 	if timeDiff > delay || bidTimeDelay > delay || askTimeDelay > delay {
 		message := strconv.Itoa(int(now)) + "时间问题，卖方" + carry.AskWeb + strconv.Itoa(int(carry.AskTime)) + "隔" + strconv.Itoa(int(askTimeDelay))
 		message = message + "买方" + carry.BidWeb + strconv.Itoa(int(carry.BidTime)) + "隔" + strconv.Itoa(int(bidTimeDelay))
