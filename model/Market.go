@@ -113,7 +113,9 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 func (markets *Markets) PutChan(marketName string, channel chan struct{}) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	util.SocketInfo(" set channel for " + marketName)
+	if channel != nil {
+		util.SocketInfo(" set channel for " + marketName)
+	}
 	markets.MarketWS[marketName] = channel
 }
 

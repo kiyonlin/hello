@@ -26,12 +26,12 @@ func newConnection(url string) (*websocket.Conn, error) {
 		if connErr == nil {
 			break
 		} else {
-			util.SocketInfo(connErr.Error())
+			util.SocketInfo(`can not create new connection ` + connErr.Error())
 			if c != nil {
 				c.Close()
 			}
 		}
-		time.Sleep(5000)
+		time.Sleep(1000)
 	}
 	if connErr != nil {
 		return nil, connErr
@@ -56,15 +56,15 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				util.SocketInfo("can not read from websocket: " + err.Error())
-				stopC <- struct{}{}
-				continue
+				return
 			}
 			msgHandler(message, c)
 		}
 	}
 }
 
-func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler, msgHandler MsgHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler, msgHandler MsgHandler,
+	errHandler ErrHandler) (chan struct{}, error) {
 	c, err := newConnection(url)
 	if err != nil {
 		util.SocketInfo("can not create web socket")
@@ -72,7 +72,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 		return nil, err
 	}
 	subHandler(subscribes, c)
-	stopC := make(chan struct{})
+	stopC := make(chan struct{}, 10)
 	go chanHandler(c, stopC, errHandler, msgHandler)
 	return stopC, err
 }
@@ -103,9 +103,13 @@ func MaintainMarketChan(markets *model.Markets, marketName string, subscribe str
 	} else if markets.RequireChanReset(marketName, subscribe) {
 		util.SocketInfo(marketName + " need reset " + subscribe)
 		markets.PutChan(marketName, nil)
+		_, isOpen := <-channel
+		if isOpen {
+			channel <- struct{}{}
+		}
 		createServer(markets, marketName)
-		util.SocketInfo(marketName + " new channel reset done")
 	}
+	util.SocketInfo(marketName + " new channel reset done")
 }
 
 func Maintain(markets *model.Markets, config *model.Config) {
