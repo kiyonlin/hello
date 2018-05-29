@@ -20,20 +20,19 @@ var WSErrHandler = func(err error) {
 func newConnection(url string) (*websocket.Conn, error) {
 	var connErr error
 	var c *websocket.Conn
-	for i := 0; i < 10; i++ {
-		util.SocketInfo("try to connect " + url)
-		dialer := &websocket.Dialer{}
-		c, _, connErr = dialer.Dial(url, nil)
-		if connErr == nil {
-			break
-		} else {
-			util.SocketInfo(`can not create new connection ` + connErr.Error())
-			if c != nil {
-				c.Close()
-			}
+	//for i := 0; i < 10; i++ {
+	util.SocketInfo("try to connect " + url)
+	c, _, connErr = websocket.DefaultDialer.Dial(url, nil)
+	if connErr == nil {
+		//	break
+	} else {
+		util.SocketInfo(`can not create new connection ` + connErr.Error())
+		if c != nil {
+			c.Close()
 		}
-		time.Sleep(1000)
 	}
+	//	time.Sleep(1000)
+	//}
 	if connErr != nil {
 		return nil, connErr
 	}
@@ -73,7 +72,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 		return nil, err
 	}
 	subHandler(subscribes, c)
-	stopC := make(chan struct{}, 10)
+	stopC := make(chan struct{})
 	go chanHandler(c, stopC, errHandler, msgHandler)
 	return stopC, err
 }
