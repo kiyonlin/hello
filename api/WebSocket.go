@@ -58,7 +58,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 				util.SocketInfo("can not read from websocket: " + err.Error())
 				return
 			}
-			util.SocketInfo(string(message))
+			//util.SocketInfo(string(message))
 			msgHandler(message, c)
 		}
 	}
