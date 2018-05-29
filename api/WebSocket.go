@@ -121,7 +121,7 @@ func Maintain(markets *model.Markets, config *model.Config) {
 				break
 			}
 		}
-		time.Sleep(time.Minute)
+		time.Sleep(time.Minute * 5)
 	}
 }
 
