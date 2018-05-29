@@ -52,6 +52,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 		select {
 		case <-stopC:
 			util.SocketInfo("get stop struct, return")
+			close(stopC)
 			return
 		default:
 			_, message, err := c.ReadMessage()
@@ -59,6 +60,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 				util.SocketInfo("can not read from websocket: " + err.Error())
 				return
 			}
+			util.Info(string(message))
 			msgHandler(message, c)
 		}
 	}
@@ -99,7 +101,6 @@ func maintainMarketChan(markets *model.Markets, marketName string, subscribe str
 		util.SocketInfo(marketName + " need reset " + subscribe)
 		createServer(markets, marketName)
 		channel <- struct{}{}
-		close(channel)
 		markets.PutChan(marketName, nil)
 		util.SocketInfo(marketName + " channel closed and cleared ")
 	}
@@ -110,7 +111,7 @@ func Maintain(markets *model.Markets, config *model.Config) {
 		for _, marketName := range config.Markets {
 			subscribes := config.GetSubscribes(marketName)
 			for _, subscribe := range subscribes {
-				maintainMarketChan(markets, marketName, subscribe)
+				go maintainMarketChan(markets, marketName, subscribe)
 				break
 			}
 		}

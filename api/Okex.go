@@ -51,7 +51,6 @@ func WsDepthServeOkex(markets *model.Markets, carryHandler CarryHandler, errHand
 				util.SocketInfo("okex server ping client error " + err.Error())
 			}
 		}
-		//util.Info(string(event))
 		messages := make([]OKEXMessage, 1)
 		if err := json.Unmarshal(event, &messages); err == nil {
 			for _, message := range messages {
