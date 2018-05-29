@@ -102,7 +102,7 @@ func MaintainMarketChan(markets *model.Markets, marketName string, subscribe str
 		createServer(markets, marketName)
 	} else if markets.RequireChanReset(marketName, subscribe) {
 		util.SocketInfo(marketName + " need reset " + subscribe)
-		markets.PutChan(marketName, nil)
+		//markets.PutChan(marketName, nil)
 		_, isOpen := <-channel
 		if isOpen {
 			channel <- struct{}{}
