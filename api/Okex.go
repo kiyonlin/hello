@@ -35,7 +35,7 @@ var subscribeHandlerOkex = func(subscribes []string, conn *websocket.Conn) error
 			util.SocketInfo("okex can not subscribe " + err.Error())
 			return err
 		}
-		util.SocketInfo(`okex subscribed ` + v)
+		//util.SocketInfo(`okex subscribed ` + v)
 	}
 	return err
 }

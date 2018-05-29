@@ -96,31 +96,31 @@ func createServer(markets *model.Markets, marketName string) {
 	}
 }
 
-func MaintainMarketChan(markets *model.Markets, marketName string, subscribe string) {
-	channel := markets.GetChan(marketName)
-	if channel == nil {
-		createServer(markets, marketName)
-	} else if markets.RequireChanReset(marketName, subscribe) {
-		util.SocketInfo(marketName + " need reset " + subscribe)
-		//markets.PutChan(marketName, nil)
-		_, isOpen := <-channel
-		if isOpen {
-			channel <- struct{}{}
+func MaintainMarketChan(markets *model.Markets, config *model.Config) {
+	for _, marketName := range config.Markets {
+		subscribes := config.GetSubscribes(marketName)
+		for _, subscribe := range subscribes {
+			channel := markets.GetChan(marketName)
+			if channel == nil {
+				createServer(markets, marketName)
+			} else if markets.RequireChanReset(marketName, subscribe) {
+				util.SocketInfo(marketName + " need reset " + subscribe)
+				//markets.PutChan(marketName, nil)
+				_, isOpen := <-channel
+				if isOpen {
+					channel <- struct{}{}
+				}
+				createServer(markets, marketName)
+			}
+			util.SocketInfo(marketName + " new channel reset done")
+			break
 		}
-		createServer(markets, marketName)
 	}
-	util.SocketInfo(marketName + " new channel reset done")
 }
 
 func Maintain(markets *model.Markets, config *model.Config) {
 	for true {
-		for _, marketName := range config.Markets {
-			subscribes := config.GetSubscribes(marketName)
-			for _, subscribe := range subscribes {
-				go MaintainMarketChan(markets, marketName, subscribe)
-				break
-			}
-		}
+		go MaintainMarketChan(markets, config)
 		time.Sleep(time.Minute * 5)
 	}
 }
