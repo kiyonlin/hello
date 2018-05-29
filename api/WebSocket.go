@@ -22,7 +22,8 @@ func newConnection(url string) (*websocket.Conn, error) {
 	var c *websocket.Conn
 	for i := 0; i < 10; i++ {
 		util.SocketInfo("try to connect " + url)
-		c, _, connErr = websocket.DefaultDialer.Dial(url, nil)
+		dialer := &websocket.Dialer{}
+		c, _, connErr = dialer.Dial(url, nil)
 		if connErr == nil {
 			break
 		} else {
