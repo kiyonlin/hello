@@ -54,8 +54,7 @@ var subscribeHandlerHuobi = func(subscribes []string, conn *websocket.Conn) erro
 	return err
 }
 
-func WsDepthServeHuobi(markets *model.Markets, carryHandler CarryHandler,
-	errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeHuobi(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		res := util.UnGzip(event)
 		resMap := util.JsonDecodeByte(res)
@@ -84,8 +83,7 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandler CarryHandler,
 			}
 		}
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Huobi],
-		model.ApplicationConfig.GetSubscribes(model.Huobi), subscribeHandlerHuobi, wsHandler, errHandler)
+	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Huobi], model.ApplicationConfig.GetSubscribes(model.Huobi), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
 func buildFormHuobi(postData *url.Values, path string, method string) {
@@ -93,8 +91,7 @@ func buildFormHuobi(postData *url.Values, path string, method string) {
 	postData.Set("SignatureMethod", "HmacSHA256")
 	postData.Set("SignatureVersion", "2")
 	postData.Set("Timestamp", time.Now().UTC().Format("2006-01-02T15:04:05"))
-	domain := strings.Replace(model.ApplicationConfig.RestUrls[model.Huobi], "https://", "",
-		len(model.ApplicationConfig.RestUrls[model.Huobi]))
+	domain := strings.Replace(model.ApplicationConfig.RestUrls[model.Huobi], "https://", "", len(model.ApplicationConfig.RestUrls[model.Huobi]))
 	payload := fmt.Sprintf("%s\n%s\n%s\n%s", method, domain, path, postData.Encode())
 	hash := hmac.New(sha256.New, []byte(model.ApplicationConfig.ApiSecrets[model.Huobi]))
 	hash.Write([]byte(payload))
@@ -135,8 +132,7 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 	buildFormHuobi(postData, path, "POST")
 
 	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.Huobi] + path + "?"+
-		postData.Encode(), util.ToJson(postData), headers)
+	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.Huobi]+path+"?"+postData.Encode(), util.ToJson(postData), headers)
 
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
@@ -147,8 +143,7 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 			errCode, _ = orderJson.Get("err-code").String()
 		}
 	}
-	util.Notice(symbol + "挂单huobi:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" +
-		errCode + "orderId" + orderId)
+	util.Notice(symbol + "挂单huobi:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" + errCode + "orderId" + orderId)
 	return orderId, errCode
 }
 
