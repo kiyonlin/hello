@@ -31,7 +31,7 @@ func main() {
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {
 		util.Notice(err.Error())
-		rurn
+		return
 	}
 	defer model.ApplicationDB.Close()
 	model.ApplicationDB.AutoMigrate(&model.Carry{})
