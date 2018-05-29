@@ -113,7 +113,7 @@ func CancelOrderBinance(symbol string, orderId string) {
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.ApiKeys[model.Binance]}
 	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("DELETE", requestUrl, "", headers)
-	util.SocketInfo("binance cancel order" + string(responseBody))
+	util.Notice("binance cancel order" + string(responseBody))
 }
 
 func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, status string) {
@@ -133,7 +133,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 		status, _ = orderJson.Get("status").String()
 		status = model.OrderStatusMap[status]
 	}
-	util.SocketInfo(fmt.Sprintf("%s binance query order %f %s", status, dealAmount, responseBody))
+	util.Notice(fmt.Sprintf("%s binance query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 

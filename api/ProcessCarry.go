@@ -81,10 +81,10 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 
 var ProcessCarry = func(carry *model.Carry) {
 	if Carrying {
-		util.SocketInfo("别人正在搬砖，我先退出")
+		util.Notice("别人正在搬砖，我先退出")
 		return
 	}
-	util.SocketInfo("开始搬砖" + carry.ToString())
+	util.Notice("开始搬砖" + carry.ToString())
 	Carrying = true
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
@@ -97,7 +97,7 @@ var ProcessCarry = func(carry *model.Carry) {
 	if account != nil {
 		rightBalance = account.Free
 	}
-	util.SocketInfo("计划从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
+	util.Notice("计划从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
 	if leftBalance > carry.Amount {
 		leftBalance = carry.Amount
 	}
@@ -105,9 +105,9 @@ var ProcessCarry = func(carry *model.Carry) {
 		leftBalance = rightBalance / carry.BidPrice
 	}
 	leftBalance, _ = calcAmount(leftBalance)
-	util.SocketInfo("实际从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
+	util.Notice("实际从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
 	if leftBalance == 0 {
-		util.SocketInfo("数量为0,退出")
+		util.Notice("数量为0,退出")
 		Carrying = false
 		return
 	}
@@ -126,5 +126,5 @@ var ProcessCarry = func(carry *model.Carry) {
 	}
 	time.Sleep(time.Second * 3)
 	Carrying = false
-	util.SocketInfo("搬砖结束")
+	util.Notice("搬砖结束")
 }

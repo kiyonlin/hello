@@ -7,7 +7,6 @@ import (
 	"hello/api"
 	"hello/model"
 	"github.com/jinzhu/configor"
-	"fmt"
 	"time"
 )
 
@@ -21,7 +20,7 @@ func refreshAccounts() {
 }
 
 func main() {
-	util.SocketInfo("start init")
+	util.Notice("start init")
 	model.NewConfig()
 	err := configor.Load(model.ApplicationConfig, "./config.yml")
 	if err != nil {
@@ -31,14 +30,14 @@ func main() {
 	model.SetApiKeys()
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
 	if err != nil {
-		util.SocketInfo(fmt.Sprint(err))
-		return
+		util.Notice(err.Error())
+		rurn
 	}
 	defer model.ApplicationDB.Close()
 	model.ApplicationDB.AutoMigrate(&model.Carry{})
 	model.ApplicationDB.AutoMigrate(&model.Account{})
 
-	util.SocketInfo("start making money")
+	util.Notice("start making money")
 	model.HuobiAccountId, _ = api.GetSpotAccountId(model.ApplicationConfig)
 	go refreshAccounts()
 	go api.CarryDBHandlerServe()

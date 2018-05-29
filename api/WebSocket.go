@@ -5,8 +5,6 @@ import (
 	"time"
 	"hello/util"
 	"hello/model"
-	"strings"
-	"fmt"
 )
 
 // WsHandler handle raw websocket message
@@ -115,40 +113,41 @@ func Maintain(markets *model.Markets, config *model.Config) {
 				break
 			}
 		}
-		for _, symbol := range model.ApplicationConfig.Symbols {
-			currencies := strings.Split(symbol, "_")
-			leftTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[0]]
-			rightTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[1]]
-			if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
-				continue
-			}
-			leftMarketPercentage := 0.0
-			rightMarketPercentage := 0.0
-			for _, market := range model.ApplicationConfig.Markets {
-				leftAccount := model.ApplicationAccounts.Data[market][currencies[0]]
-				rightAccount := model.ApplicationAccounts.Data[market][currencies[1]]
-				if leftAccount != nil && leftMarketPercentage < leftAccount.Percentage {
-					leftMarketPercentage = leftAccount.Percentage
-				}
-				if rightAccount != nil && rightMarketPercentage < rightAccount.Percentage {
-					rightMarketPercentage = rightAccount.Percentage
-				}
-			}
-			if leftMarketPercentage == 0 || rightMarketPercentage == 0 {
-				continue
-			}
-			//balanceRate := leftTotalPercentage / leftMarketPercentage
-			//if balanceRate > rightTotalPercentage/rightMarketPercentage {
-			//	balanceRate = rightTotalPercentage / rightMarketPercentage
-			//}
-			//if balanceRate < 0.5 {
-			//	model.ApplicationConfig.IncreaseMargin(symbol)
-			//} else {
-			//	model.ApplicationConfig.DecreaseMargin(symbol)
-			//}
-			margin, _ := model.ApplicationConfig.GetMargin(symbol)
-			util.SocketInfo(fmt.Sprintf(`%s margin: %.5f`, symbol, margin))
-		}
 		time.Sleep(time.Minute * 2)
 	}
 }
+
+//for _, symbol := range model.ApplicationConfig.Symbols {
+//	currencies := strings.Split(symbol, "_")
+//	leftTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[0]]
+//	rightTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[1]]
+//	if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
+//		continue
+//	}
+//	leftMarketPercentage := 0.0
+//	rightMarketPercentage := 0.0
+//	for _, market := range model.ApplicationConfig.Markets {
+//		leftAccount := model.ApplicationAccounts.Data[market][currencies[0]]
+//		rightAccount := model.ApplicationAccounts.Data[market][currencies[1]]
+//		if leftAccount != nil && leftMarketPercentage < leftAccount.Percentage {
+//			leftMarketPercentage = leftAccount.Percentage
+//		}
+//		if rightAccount != nil && rightMarketPercentage < rightAccount.Percentage {
+//			rightMarketPercentage = rightAccount.Percentage
+//		}
+//	}
+//if leftMarketPercentage == 0 || rightMarketPercentage == 0 {
+//	continue
+//}
+//balanceRate := leftTotalPercentage / leftMarketPercentage
+//if balanceRate > rightTotalPercentage/rightMarketPercentage {
+//	balanceRate = rightTotalPercentage / rightMarketPercentage
+//}
+//if balanceRate < 0.5 {
+//	model.ApplicationConfig.IncreaseMargin(symbol)
+//} else {
+//	model.ApplicationConfig.DecreaseMargin(symbol)
+//}
+//margin, _ := model.ApplicationConfig.GetMargin(symbol)
+//util.Notice(fmt.Sprintf(`%s margin: %.5f`, symbol, margin))
+//}

@@ -72,7 +72,7 @@ func (accounts *Accounts) Maintain(marketName string) {
 		accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
 	}
 	if accounts.MarketTotal[marketName] == 0 {
-		util.SocketInfo(marketName + " balance is empty!!!!!!!!!!!")
+		util.Notice(marketName + " balance is empty!!!!!!!!!!!")
 		accounts.MarketTotal[marketName] = 1
 	}
 	for _, value := range accounts.Data[marketName] {

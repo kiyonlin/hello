@@ -48,7 +48,7 @@ func CarryProcessor() {
 		model.ApplicationDB.Where(
 			"deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).
 			Find(&carries)
-		util.SocketInfo(fmt.Sprintf("deal with working carries %d", len(carries)))
+		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
 			// cancel order if delay too long (180 seconds)
 			if util.GetNowUnixMillion()-carry.BidTime > 180000 || util.GetNowUnixMillion()-carry.AskTime > 180000 {
@@ -82,10 +82,10 @@ func BidUpdate() {
 		carry := <-model.BidChannel
 		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
-			util.SocketInfo("create new bid " + carry.ToString())
+			util.Notice("create new bid " + carry.ToString())
 			model.ApplicationDB.Create(&carry)
 		} else {
-			util.SocketInfo("update old bid " + carry.ToString())
+			util.Notice("update old bid " + carry.ToString())
 			carryInDb.DealBidOrderId = carry.DealBidOrderId
 			carryInDb.DealBidErrCode = carry.DealBidErrCode
 			carryInDb.DealBidStatus = carry.DealBidStatus

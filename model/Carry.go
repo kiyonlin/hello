@@ -41,7 +41,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		return configMargin
 	}
 	if !strings.Contains(carry.Symbol, "_") {
-		util.SocketInfo(fmt.Sprintf("invalid carry %s %s %f %d", carry.Symbol, carry.BidWeb, carry.Amount, carry.BidTime))
+		util.Notice(fmt.Sprintf("invalid carry %s %s %f %d", carry.Symbol, carry.BidWeb, carry.Amount, carry.BidTime))
 		return 1
 	}
 	currencies := strings.Split(carry.Symbol, "_")
@@ -84,7 +84,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		if dynamicMargin < BaseCarryCost/2 {
 			dynamicMargin = BaseCarryCost / 2
 		}
-		util.SocketInfo(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
+		util.Notice(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
 			carry.Symbol, discount, dynamicMargin))
 		return dynamicMargin
 	}
@@ -105,7 +105,7 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 	if timeDiff > delay || bidTimeDelay > delay || askTimeDelay > delay {
 		message := strconv.Itoa(int(now)) + "时间问题，卖方" + carry.AskWeb + strconv.Itoa(int(carry.AskTime)) + "隔" + strconv.Itoa(int(askTimeDelay))
 		message = message + "买方" + carry.BidWeb + strconv.Itoa(int(carry.BidTime)) + "隔" + strconv.Itoa(int(bidTimeDelay))
-		util.SocketInfo(message)
+		util.Notice(message)
 		return false, errors.New(message)
 	}
 	margin := carry.AskPrice - carry.BidPrice
@@ -113,7 +113,7 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 		util.Notice(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
 		return true, nil
 	}
-	util.SocketInfo("利润不足" + carry.ToString())
+	util.Notice("利润不足" + carry.ToString())
 	return false, errors.New("利润不足")
 }
 

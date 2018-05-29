@@ -132,9 +132,9 @@ func (config *Config) IncreaseMargin(symbol string) {
 func SetApiKeys() {
 	ApplicationConfig.ApiKeys = make(map[string]string)
 	ApplicationConfig.ApiSecrets = make(map[string]string)
-	util.SocketInfo("begin to set keys")
+	util.Notice("begin to set keys")
 	if ApplicationConfig.Env == "aws" {
-		util.SocketInfo("under aws environment")
+		util.Notice("under aws environment")
 		ApplicationConfig.ApiKeys[Huobi] = "003fe1c2-1a5a12e1-73668e50-6773e"    // sammi
 		ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
 		ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
