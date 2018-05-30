@@ -5,7 +5,6 @@ import (
 	"sync"
 	"math"
 	"hello/util"
-	"fmt"
 )
 
 type BidAsk struct {
@@ -104,10 +103,11 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		carry.Amount = carry.AskAmount
 	}
 	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
-	if BaseCarryCost < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
-		return &carry, nil
-	}
-	return nil, errors.New(fmt.Sprintf(`利润小于%f`, BaseCarryCost))
+	return &carry, nil
+	//if BaseCarryCost < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
+	//	return &carry, nil
+	//}
+	//return nil, errors.New(fmt.Sprintf(`利润小于%f`, BaseCarryCost))
 }
 
 func (markets *Markets) PutChan(marketName string, channel chan struct{}) {

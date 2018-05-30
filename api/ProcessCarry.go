@@ -115,14 +115,16 @@ var ProcessCarry = func(carry *model.Carry) {
 	strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
 	strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
 
-	worth, _ := carry.CheckWorth(model.ApplicationMarkets, model.ApplicationConfig)
+	worth, _ := carry.CheckWorthCarry(model.ApplicationMarkets, model.ApplicationConfig)
 	if worth {
 		go doAsk(carry, strAskPrice, strLeftBalance)
 		go doBid(carry, strBidPrice, strLeftBalance)
 	} else {
-		carry.DealAskStatus = `NotWorth`
-		carry.DealBidStatus = `NotWorth`
-		model.BidChannel <- *carry
+		if carry.CheckWorthSave() {
+			carry.DealAskStatus = `NotWorth`
+			carry.DealBidStatus = `NotWorth`
+			model.BidChannel <- *carry
+		}
 	}
 	time.Sleep(time.Second * 3)
 	//Carrying = false

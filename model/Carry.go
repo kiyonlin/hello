@@ -91,7 +91,14 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	return configMargin
 }
 
-func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
+func (carry *Carry) CheckWorthSave() bool {
+	if BaseCarryCost < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
+		return true
+	}
+	return false
+}
+
+func (carry *Carry) CheckWorthCarry(markets *Markets, config *Config) (bool, error) {
 	if carry == nil {
 		return false, errors.New("carry is nil")
 	}
@@ -103,12 +110,6 @@ func (carry *Carry) CheckWorth(markets *Markets, config *Config) (bool, error) {
 	configMargin, _ := config.GetMargin(carry.Symbol)
 	dynamicMargin := getDynamicMargin(carry, configMargin)
 	carry.Margin = dynamicMargin
-	//if bidTimeDelay > delay {
-	//	markets.PutChan(carry.BidWeb, nil)
-	//}
-	//if askTimeDelay > delay {
-	//	markets.PutChan(carry.AskWeb, nil)
-	//}
 	if timeDiff > delay || bidTimeDelay > delay || askTimeDelay > delay {
 		message := strconv.Itoa(int(now)) + "时间问题，卖方" + carry.AskWeb + strconv.Itoa(int(carry.AskTime)) + "隔" + strconv.Itoa(int(askTimeDelay))
 		message = message + "买方" + carry.BidWeb + strconv.Itoa(int(carry.BidTime)) + "隔" + strconv.Itoa(int(bidTimeDelay))
