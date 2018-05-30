@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"hello/util"
+	"fmt"
 )
 
 type BidAsk struct {
@@ -45,6 +46,7 @@ func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidA
 	if markets.BidAsks[symbol] == nil {
 		markets.BidAsks[symbol] = map[string]*BidAsk{}
 	}
+	util.SocketInfo(fmt.Sprintf(`%s>>>>>>>>>>>>>>>>>>> %s %d`, symbol, marketName, bidAsk.Ts))
 	markets.BidAsks[symbol][marketName] = bidAsk
 	//oldData := markets.markets[symbol].Data[marketName]
 	//if oldData == nil {
@@ -64,6 +66,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		if v == nil {
 			continue
 		}
+		util.SocketInfo(fmt.Sprintf(`%s================%s %d`, symbol, k, v.Ts))
 		if len(v.Bids) > 0 && carry.AskPrice < v.Bids[0][0] {
 			carry.AskPrice = v.Bids[0][0]
 			carry.AskAmount = v.Bids[0][1]
