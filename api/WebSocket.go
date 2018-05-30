@@ -45,7 +45,6 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 		if err != nil {
 			errHandler(err)
 		}
-		close(stopC)
 	}()
 	for true {
 		select {
@@ -73,7 +72,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 		return nil, err
 	}
 	subHandler(subscribes, c)
-	stopC := make(chan struct{})
+	stopC := make(chan struct{}, 10)
 	go chanHandler(c, stopC, errHandler, msgHandler)
 	return stopC, err
 }
@@ -106,10 +105,8 @@ func MaintainMarketChan(markets *model.Markets, config *model.Config) {
 			} else if markets.RequireChanReset(marketName, subscribe) {
 				util.SocketInfo(marketName + " need reset " + subscribe)
 				markets.PutChan(marketName, nil)
-				_, isOpen := <-channel
-				if isOpen {
-					channel <- struct{}{}
-				}
+				channel <- struct{}{}
+				close(channel)
 				createServer(markets, marketName)
 			}
 			util.SocketInfo(marketName + " new channel reset done")

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math"
 	"hello/util"
-	"fmt"
+	"sync"
 )
 
 type BidAsk struct {
@@ -13,17 +13,13 @@ type BidAsk struct {
 	Asks PriceAmount
 }
 
-//type Market struct {
-//	// marketName - data
-//	Data map[string]*BidAsk
-//}
-
 type Rule struct {
 	Margin float64
 	Delay  float64
 }
 
 type Markets struct {
+	lock     sync.Mutex
 	BidAsks  map[string]map[string]*BidAsk // symbol - market - bidask
 	MarketWS map[string]chan struct{}      // marketName - channel
 }
@@ -32,28 +28,18 @@ func NewMarkets() *Markets {
 	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), MarketWS: make(map[string]chan struct{})}
 }
 
-//func (bidAsk *BidAsk) SetBidAsk(data *BidAsk) {
-//	if data.Bids != nil && data.Bids.Len() > 0 {
-//		bidAsk.Bids = data.Bids
-//	}
-//	if data.Asks != nil && data.Asks.Len() > 0 {
-//		bidAsk.Asks = data.Asks
-//	}
-//	bidAsk.Ts = data.Ts
-//}
-
 func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidAsk) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
 	if markets.BidAsks[symbol] == nil {
 		markets.BidAsks[symbol] = map[string]*BidAsk{}
 	}
-	util.SocketInfo(fmt.Sprintf(`%s>>>>>>>>>>>>>>>>>>> %s %d`, symbol, marketName, bidAsk.Ts))
-	markets.BidAsks[symbol][marketName] = bidAsk
-	//oldData := markets.markets[symbol].Data[marketName]
-	//if oldData == nil {
-	//	oldData = &BidAsk{}
-	//	markets.markets[symbol].Data[marketName] = oldData
-	//}
-	//oldData.SetBidAsk(bidAsk)
+	//util.SocketInfo(fmt.Sprintf(`%s>>>>>>>>>>>>>>>>>>> %s %d`, symbol, marketName, bidAsk.Ts))
+	if markets.BidAsks[symbol][marketName] == nil {
+		markets.BidAsks[symbol][marketName] = bidAsk
+	} else if markets.BidAsks[symbol][marketName].Ts < bidAsk.Ts {
+		markets.BidAsks[symbol][marketName] = bidAsk
+	}
 }
 
 func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
@@ -66,7 +52,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		if v == nil {
 			continue
 		}
-		util.SocketInfo(fmt.Sprintf(`%s================%s %d`, symbol, k, v.Ts))
+		//util.SocketInfo(fmt.Sprintf(`%s================%s %d`, symbol, k, v.Ts))
 		if len(v.Bids) > 0 && carry.AskPrice < v.Bids[0][0] {
 			carry.AskPrice = v.Bids[0][0]
 			carry.AskAmount = v.Bids[0][1]
@@ -110,8 +96,6 @@ func (markets *Markets) RequireChanReset(marketName string, subscribe string) bo
 	if bidAsks != nil {
 		bidAsk := bidAsks[marketName]
 		if bidAsk != nil {
-			//util.SocketInfo(fmt.Sprintf(`%s time %d %d diff:%d`, marketName, util.GetNowUnixMillion(),
-			//	bidAsk.Ts, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 			delay, _ := ApplicationConfig.GetDelay(symbol)
 			if math.Abs(float64(util.GetNowUnixMillion()-int64(bidAsk.Ts))) < delay {
 				return false
