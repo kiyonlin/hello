@@ -100,7 +100,7 @@ func MaintainMarketChan(markets *model.Markets, config *model.Config) {
 	for _, marketName := range config.Markets {
 		subscribes := config.GetSubscribes(marketName)
 		for _, subscribe := range subscribes {
-			channel := markets.GetChan(marketName)
+			channel := markets.MarketWS[marketName]
 			if channel == nil {
 				createServer(markets, marketName)
 			} else if markets.RequireChanReset(marketName, subscribe) {
