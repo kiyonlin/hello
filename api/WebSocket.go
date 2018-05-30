@@ -97,23 +97,23 @@ func createServer(markets *model.Markets, marketName string) {
 
 var socketMaintaining = false
 
-func MaintainMarketChan(markets *model.Markets, config *model.Config) {
+func MaintainMarketChan() {
 	if socketMaintaining {
 		return
 	}
 	socketMaintaining = true
-	for _, marketName := range config.Markets {
-		subscribes := config.GetSubscribes(marketName)
+	for _, marketName := range model.ApplicationConfig.Markets {
+		subscribes := model.ApplicationConfig.GetSubscribes(marketName)
 		for _, subscribe := range subscribes {
-			channel := markets.MarketWS[marketName]
+			channel := model.ApplicationMarkets.MarketWS[marketName]
 			if channel == nil {
-				createServer(markets, marketName)
-			} else if markets.RequireChanReset(marketName, subscribe) {
+				createServer(model.ApplicationMarkets, marketName)
+			} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
 				util.SocketInfo(marketName + " need reset " + subscribe)
-				markets.PutChan(marketName, nil)
+				model.ApplicationMarkets.PutChan(marketName, nil)
 				channel <- struct{}{}
 				close(channel)
-				createServer(markets, marketName)
+				createServer(model.ApplicationMarkets, marketName)
 			}
 			util.SocketInfo(marketName + " new channel reset done")
 			break
@@ -122,10 +122,12 @@ func MaintainMarketChan(markets *model.Markets, config *model.Config) {
 	socketMaintaining = false
 }
 
-func Maintain(markets *model.Markets, config *model.Config) {
+func Maintain() {
 	for true {
-		go MaintainMarketChan(markets, config)
-		time.Sleep(time.Minute * 2)
+		go MaintainMarketChan()
+
+		delay, _ := model.ApplicationConfig.GetDelay(model.ApplicationConfig.Symbols[0])
+		time.Sleep(time.Millisecond * time.Duration(delay))
 	}
 }
 

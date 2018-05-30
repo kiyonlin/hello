@@ -80,11 +80,6 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var ProcessCarry = func(carry *model.Carry) {
-	//if Carrying {
-	//	util.Notice("别人正在搬砖，我先退出")
-	//	return
-	//}
-	//Carrying = true
 	util.Info(carry.ToString())
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
@@ -127,10 +122,5 @@ var ProcessCarry = func(carry *model.Carry) {
 			model.BidChannel <- *carry
 		}
 	}
-	if !timeOk {
-		MaintainMarketChan(model.ApplicationMarkets, model.ApplicationConfig)
-	}
 	time.Sleep(time.Second * 3)
-	//Carrying = false
-	//util.Info("搬砖结束")
 }

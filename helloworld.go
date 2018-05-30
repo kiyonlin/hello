@@ -46,5 +46,5 @@ func main() {
 	go api.AccountDBHandlerServe()
 	go api.CarryProcessor()
 	model.ApplicationMarkets = model.NewMarkets()
-	api.Maintain(model.ApplicationMarkets, model.ApplicationConfig)
+	api.Maintain()
 }
