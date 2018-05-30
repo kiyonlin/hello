@@ -95,7 +95,13 @@ func createServer(markets *model.Markets, marketName string) {
 	markets.PutChan(marketName, channel)
 }
 
+var socketMaintaining = false
+
 func MaintainMarketChan(markets *model.Markets, config *model.Config) {
+	if socketMaintaining {
+		return
+	}
+	socketMaintaining = true
 	for _, marketName := range config.Markets {
 		subscribes := config.GetSubscribes(marketName)
 		for _, subscribe := range subscribes {
@@ -113,6 +119,7 @@ func MaintainMarketChan(markets *model.Markets, config *model.Config) {
 			break
 		}
 	}
+	socketMaintaining = false
 }
 
 func Maintain(markets *model.Markets, config *model.Config) {
