@@ -66,7 +66,8 @@ func WsDepthServeBinance(markets *model.Markets, carryHandler CarryHandler, errH
 	for _, v := range model.ApplicationConfig.GetSubscribes(model.Binance) {
 		requestUrl += strings.ToLower(v) + "@depth/"
 	}
-	return WebSocketServe(requestUrl, model.ApplicationConfig.GetSubscribes(model.Binance), subscribeHandlerBinance, wsHandler, errHandler)
+	return WebSocketServe(requestUrl, model.ApplicationConfig.GetSubscribes(model.Binance), subscribeHandlerBinance,
+		wsHandler, errHandler)
 }
 func signBinance(postData *url.Values, secretKey string) {
 	postData.Set("recvWindow", "6000000")
@@ -88,7 +89,8 @@ func PlaceOrderBinance(symbol string, orderType string, price string, amount str
 	postData.Set("timeInForce", "GTC")
 	signBinance(&postData, model.ApplicationConfig.ApiSecrets[model.Binance])
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.ApiKeys[model.Binance]}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.Binance]+"/api/v3/order?", postData.Encode(), headers)
+	responseBody, _ := util.HttpRequest("POST",
+		model.ApplicationConfig.RestUrls[model.Binance]+"/api/v3/order?", postData.Encode(), headers)
 	util.Notice(symbol + "挂单binance:" + price + orderType + amount + "返回" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
@@ -101,7 +103,8 @@ func PlaceOrderBinance(symbol string, orderType string, price string, amount str
 			errCode = strconv.Itoa(errCodeInt)
 		}
 	}
-	util.Notice(symbol + "挂单binance:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" + errCode + "orderId" + orderId)
+	util.Notice(symbol + "挂单binance:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" +
+		errCode + "orderId" + orderId)
 	return orderId, errCode
 }
 

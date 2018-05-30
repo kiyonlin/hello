@@ -43,7 +43,7 @@ var subscribeHandlerOkex = func(subscribes []string, conn *websocket.Conn) error
 func WsDepthServeOkex(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		if util.GetNow().Unix()-lastPingTime > 10 { // ping okex server every 30 seconds
+		if util.GetNow().Unix()-lastPingTime > 30 { // ping okex server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
 			pingMap := make(map[string]interface{})
 			pingMap["event"] = "ping"
@@ -103,9 +103,10 @@ func PlaceOrderOkex(symbol string, orderType string, price string, amount string
 	postData.Set("price", price)
 	postData.Set("amount", amount)
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", postData.Encode(), headers)
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
+	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest("POST",
+		model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", postData.Encode(), headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("order_id").Int()
@@ -117,7 +118,8 @@ func PlaceOrderOkex(symbol string, orderType string, price string, amount string
 			errCode = strconv.Itoa(errCodeInt)
 		}
 	}
-	util.Notice(symbol + "挂单okex:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" + errCode + "orderId" + orderId)
+	util.Notice(symbol + "挂单okex:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" +
+		errCode + "orderId" + orderId)
 	return orderId, errCode
 }
 
@@ -127,9 +129,10 @@ func CancelOrderOkex(symbol string, orderId string) {
 	postData.Set("symbol", symbol)
 	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", postData.Encode(), headers)
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
+	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest("POST",
+		model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", postData.Encode(), headers)
 	util.SocketInfo("okex cancel order" + orderId + string(responseBody))
 }
 
@@ -139,9 +142,10 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 	postData.Set("symbol", symbol)
 	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do", postData.Encode(), headers)
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
+	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do",
+		postData.Encode(), headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orders, _ := orderJson.Get("orders").Array()
@@ -162,9 +166,10 @@ func GetAccountOkex(accounts *model.Accounts) {
 	postData := url.Values{}
 	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do", postData.Encode(), headers)
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
+	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do",
+		postData.Encode(), headers)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		free, _ := balanceJson.GetPath("info", "funds", "free").Map()

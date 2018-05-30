@@ -58,6 +58,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 				util.SocketInfo("can not read from websocket: " + err.Error())
 				return
 			}
+			util.Info(`=====================================================`)
 			//util.SocketInfo(string(message))
 			msgHandler(message, c)
 		}
@@ -92,9 +93,8 @@ func createServer(markets *model.Markets, marketName string) {
 	}
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())
-	} else {
-		markets.PutChan(marketName, channel)
 	}
+	markets.PutChan(marketName, channel)
 }
 
 func MaintainMarketChan(markets *model.Markets, config *model.Config) {
