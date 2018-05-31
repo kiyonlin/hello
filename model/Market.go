@@ -89,9 +89,9 @@ func (markets *Markets) GetChan(marketName string, index int) chan struct{} {
 func (markets *Markets) PutChan(marketName string, index int, channel chan struct{}) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	if channel != nil {
-		util.SocketInfo(" set channel for " + marketName)
-	}
+	//if channel != nil {
+	//	util.SocketInfo(" set channel for " + marketName)
+	//}
 	if markets.marketWS[marketName] == nil {
 		markets.marketWS[marketName] = make([]chan struct{}, ApplicationConfig.Channels)
 	}

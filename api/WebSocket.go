@@ -110,13 +110,13 @@ func MaintainMarketChan() {
 				if channel == nil {
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets, marketName))
 				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
-					util.SocketInfo(marketName + " need reset " + subscribe)
+					//util.SocketInfo(marketName + " need reset " + subscribe)
 					model.ApplicationMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets, marketName))
 				}
-				util.SocketInfo(marketName + " new channel reset done")
+				//util.SocketInfo(marketName + " new channel reset done")
 			}
 			break
 		}
