@@ -126,7 +126,8 @@ func (carry *Carry) CheckWorthCarryTime(markets *Markets, config *Config) (bool,
 }
 
 func (carry *Carry) ToString() string {
-	return fmt.Sprintf("%s卖%s%.4f时间%d买%s%.4f时间%d数量%f利润%f 利润门槛%f",
-		carry.Symbol, carry.AskWeb, carry.AskPrice, carry.AskTime, carry.BidWeb, carry.BidPrice, carry.BidTime,
-		carry.Amount, (carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.Margin)
+	return fmt.Sprintf("ask间隔 %d bid间隔 %d %s卖%s%.4f时间%d买%s%.4f时间%d数量%f利润%f 利润门槛%f",
+		time.Now().Unix()*1000-carry.AskTime, time.Now().Unix()*1000-carry.BidTime, carry.Symbol, carry.AskWeb,
+		carry.AskPrice, carry.AskTime, carry.BidWeb, carry.BidPrice, carry.BidTime, carry.Amount,
+		(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.Margin)
 }
