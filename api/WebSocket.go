@@ -127,7 +127,7 @@ func MaintainMarketChan() {
 func Maintain() {
 	for true {
 		go MaintainMarketChan()
-		time.Sleep(1000)
+		time.Sleep(time.Second * 1)
 	}
 }
 
