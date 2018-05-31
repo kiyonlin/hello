@@ -55,9 +55,7 @@ func WsDepthServeBinance(markets *model.Markets, carryHandler CarryHandler, errH
 			sort.Sort(bidAsk.Asks)
 			sort.Reverse(bidAsk.Bids)
 			bidAsk.Ts = json.Get("E").MustInt()
-
-			markets.SetBidAsk(symbol, model.Binance, &bidAsk)
-			if carry, err := markets.NewCarry(symbol); err == nil {
+			if carry, err := markets.NewCarry(symbol); err == nil && markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
 				carryHandler(carry)
 			}
 		}

@@ -28,17 +28,17 @@ func NewMarkets() *Markets {
 	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), marketWS: make(map[string][]chan struct{})}
 }
 
-func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidAsk) {
+func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidAsk) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if markets.BidAsks[symbol] == nil {
 		markets.BidAsks[symbol] = map[string]*BidAsk{}
 	}
-	if markets.BidAsks[symbol][marketName] == nil {
+	if markets.BidAsks[symbol][marketName] == nil || markets.BidAsks[symbol][marketName].Ts < bidAsk.Ts {
 		markets.BidAsks[symbol][marketName] = bidAsk
-	} else if markets.BidAsks[symbol][marketName].Ts < bidAsk.Ts {
-		markets.BidAsks[symbol][marketName] = bidAsk
+		return true
 	}
+	return false
 }
 
 func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
