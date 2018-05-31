@@ -103,6 +103,7 @@ type Config struct {
 	Balance      float64
 	Env          string
 	DBConnection string
+	Channels     int
 	Markets      []string
 	Symbols      []string
 	Margins      []float64

@@ -19,13 +19,13 @@ type Rule struct {
 }
 
 type Markets struct {
-	lock     sync.Mutex
-	BidAsks  map[string]map[string]*BidAsk // symbol - market - bidask
-	MarketWS map[string]chan struct{}      // marketName - channel
+	lock    sync.Mutex
+	BidAsks map[string]map[string]*BidAsk // symbol - market - bidask
+	marketWS map[string][]chan struct{}   // marketName - channel
 }
 
 func NewMarkets() *Markets {
-	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), MarketWS: make(map[string]chan struct{})}
+	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), marketWS: make(map[string][]chan struct{})}
 }
 
 func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidAsk) {
@@ -34,7 +34,6 @@ func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidA
 	if markets.BidAsks[symbol] == nil {
 		markets.BidAsks[symbol] = map[string]*BidAsk{}
 	}
-	//util.SocketInfo(fmt.Sprintf(`%s>>>>>>>>>>>>>>>>>>> %s %d`, symbol, marketName, bidAsk.Ts))
 	if markets.BidAsks[symbol][marketName] == nil {
 		markets.BidAsks[symbol][marketName] = bidAsk
 	} else if markets.BidAsks[symbol][marketName].Ts < bidAsk.Ts {
@@ -76,17 +75,27 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		return &carry, nil
 	}
 	return nil, errors.New(`invalid carry`)
-	//if BaseCarryCost < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
-	//	return &carry, nil
-	//}
-	//return nil, errors.New(fmt.Sprintf(`利润小于%f`, BaseCarryCost))
 }
 
-func (markets *Markets) PutChan(marketName string, channel chan struct{}) {
+func (markets *Markets) GetChan(marketName string, index int) chan struct{} {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.marketWS[marketName] == nil {
+		markets.marketWS[marketName] = make([]chan struct{}, ApplicationConfig.Channels)
+	}
+	return markets.marketWS[marketName][index]
+}
+
+func (markets *Markets) PutChan(marketName string, index int, channel chan struct{}) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
 	if channel != nil {
 		util.SocketInfo(" set channel for " + marketName)
 	}
-	markets.MarketWS[marketName] = channel
+	if markets.marketWS[marketName] == nil {
+		markets.marketWS[marketName] = make([]chan struct{}, ApplicationConfig.Channels)
+	}
+	markets.marketWS[marketName][index] = channel
 }
 
 func (markets *Markets) RequireChanReset(marketName string, subscribe string) bool {

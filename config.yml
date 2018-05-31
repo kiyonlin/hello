@@ -24,6 +24,8 @@ margins: #差价
 delays: #按照毫秒计算时间差
 - 500
 
+channels: 3
+
 env: aws
 dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 #env: silicon

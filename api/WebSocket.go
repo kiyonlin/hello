@@ -77,7 +77,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 	return stopC, err
 }
 
-func createServer(markets *model.Markets, marketName string) {
+func createServer(markets *model.Markets, marketName string) chan struct{} {
 	util.SocketInfo(" create chan for " + marketName)
 	var channel chan struct{}
 	var err error
@@ -92,7 +92,7 @@ func createServer(markets *model.Markets, marketName string) {
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())
 	}
-	markets.PutChan(marketName, channel)
+	return channel
 }
 
 var socketMaintaining = false
@@ -105,17 +105,19 @@ func MaintainMarketChan() {
 	for _, marketName := range model.ApplicationConfig.Markets {
 		subscribes := model.ApplicationConfig.GetSubscribes(marketName)
 		for _, subscribe := range subscribes {
-			channel := model.ApplicationMarkets.MarketWS[marketName]
-			if channel == nil {
-				createServer(model.ApplicationMarkets, marketName)
-			} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
-				util.SocketInfo(marketName + " need reset " + subscribe)
-				model.ApplicationMarkets.PutChan(marketName, nil)
-				channel <- struct{}{}
-				close(channel)
-				createServer(model.ApplicationMarkets, marketName)
+			for index := 0; index < model.ApplicationConfig.Channels; index++ {
+				channel := model.ApplicationMarkets.GetChan(marketName, index)
+				if channel == nil {
+					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets, marketName))
+				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
+					util.SocketInfo(marketName + " need reset " + subscribe)
+					model.ApplicationMarkets.PutChan(marketName, index, nil)
+					channel <- struct{}{}
+					close(channel)
+					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets, marketName))
+				}
+				util.SocketInfo(marketName + " new channel reset done")
 			}
-			util.SocketInfo(marketName + " new channel reset done")
 			break
 		}
 	}
@@ -125,9 +127,7 @@ func MaintainMarketChan() {
 func Maintain() {
 	for true {
 		go MaintainMarketChan()
-
-		delay, _ := model.ApplicationConfig.GetDelay(model.ApplicationConfig.Symbols[0])
-		time.Sleep(time.Millisecond * time.Duration(delay))
+		time.Sleep(1000)
 	}
 }
 
