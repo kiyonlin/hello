@@ -15,7 +15,7 @@ func refreshAccounts() {
 		api.GetAccountHuobi(model.ApplicationAccounts)
 		api.GetAccountOkex(model.ApplicationAccounts)
 		api.GetAccountBinance(model.ApplicationAccounts)
-		time.Sleep(time.Hour)
+		time.Sleep(time.Minute * 10)
 	}
 }
 
