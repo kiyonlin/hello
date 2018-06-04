@@ -150,8 +150,11 @@ func NewConfig() {
 	ApplicationConfig = &Config{}
 	ApplicationConfig.MinNum = make(map[string]float64)
 	ApplicationConfig.MinNum[`BTC`] = 0.001
+	ApplicationConfig.MinNum[`btc`] = 0.001
 	ApplicationConfig.MinNum[`EOS`] = 1
+	ApplicationConfig.MinNum[`eos`] = 1
 	ApplicationConfig.MinNum[`ETH`] = 0.01
+	ApplicationConfig.MinNum[`eth`] = 0.01
 	ApplicationConfig.subscribes = make(map[string][]string)
 	ApplicationConfig.WSUrls = make(map[string]string)
 	ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"

@@ -98,9 +98,12 @@ func (carry *Carry) CheckWorthSaveMargin() bool {
 	return false
 }
 func (carry *Carry) CheckWorthAmount() bool {
-	minAmount := ApplicationConfig.MinNum[carry.Symbol]
-	if carry.Amount >= minAmount {
-		return true
+	currencies := strings.Split(carry.Symbol, `_`)
+	if len(currencies) == 2 {
+		minAmount := ApplicationConfig.MinNum[currencies[0]]
+		if carry.Amount >= minAmount {
+			return true
+		}
 	}
 	return false
 }
