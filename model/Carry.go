@@ -97,6 +97,14 @@ func (carry *Carry) CheckWorthSaveMargin() bool {
 	}
 	return false
 }
+func (carry *Carry) CheckWorthAmount() bool {
+	minAmount := ApplicationConfig.MinNum[carry.Symbol]
+	if carry.Amount >= minAmount {
+		return true
+	}
+	return false
+}
+
 func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (bool, error) {
 	configMargin, _ := config.GetMargin(carry.Symbol)
 	dynamicMargin := getDynamicMargin(carry, configMargin)

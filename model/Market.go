@@ -70,8 +70,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		carry.Amount = carry.AskAmount
 	}
 	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
-	minAmount := ApplicationConfig.MinNum[symbol]
-	if carry.Symbol != `` && carry.BidAmount > minAmount && carry.AskAmount > minAmount {
+	if carry.Symbol != `` && carry.BidAmount > 0 && carry.AskAmount > 0 {
 		return &carry, nil
 	}
 	return nil, errors.New(`invalid carry`)
