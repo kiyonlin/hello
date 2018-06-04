@@ -57,7 +57,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 				util.SocketInfo("can not read from websocket: " + err.Error())
 				return
 			}
-			util.SocketInfo(string(message))
+			//util.SocketInfo(string(message))
 			msgHandler(message, c)
 		}
 	}
@@ -127,7 +127,7 @@ func MaintainMarketChan() {
 func Maintain() {
 	for true {
 		go MaintainMarketChan()
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot))
 	}
 }
 

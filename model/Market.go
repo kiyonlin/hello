@@ -105,7 +105,7 @@ func (markets *Markets) RequireChanReset(marketName string, subscribe string) bo
 	if bidAsks != nil {
 		bidAsk := bidAsks[marketName]
 		if bidAsk != nil {
-			delay, _ := ApplicationConfig.GetDelay(symbol)
+			delay := ApplicationConfig.ChannelSlot
 			if math.Abs(float64(util.GetNowUnixMillion()-int64(bidAsk.Ts))) < delay {
 				return false
 			}

@@ -104,6 +104,7 @@ type Config struct {
 	Env          string
 	DBConnection string
 	Channels     int
+	ChannelSlot  float64
 	Markets      []string
 	Symbols      []string
 	Margins      []float64
