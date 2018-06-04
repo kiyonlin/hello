@@ -97,16 +97,6 @@ func (carry *Carry) CheckWorthSaveMargin() bool {
 	}
 	return false
 }
-func (carry *Carry) CheckWorthAmount() bool {
-	currencies := strings.Split(carry.Symbol, `_`)
-	if len(currencies) == 2 {
-		minAmount := ApplicationConfig.MinNum[currencies[0]]
-		if carry.Amount >= minAmount {
-			return true
-		}
-	}
-	return false
-}
 
 func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (bool, error) {
 	configMargin, _ := config.GetMargin(carry.Symbol)

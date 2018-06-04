@@ -5,6 +5,8 @@ import (
 	"math"
 	"hello/util"
 	"sync"
+	"strings"
+	"fmt"
 )
 
 type BidAsk struct {
@@ -64,16 +66,25 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 			carry.BidTime = int64(v.Ts)
 		}
 	}
+	currencies := strings.Split(carry.Symbol, `_`)
+	if len(currencies) != 2 {
+		return nil, errors.New(`invalid carry symbol`)
+	}
+	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
 	if carry.BidAmount < carry.AskAmount {
 		carry.Amount = carry.BidAmount
 	} else {
 		carry.Amount = carry.AskAmount
 	}
-	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
-	if carry.Symbol != `` && carry.BidAmount > 0 && carry.AskAmount > 0 {
-		return &carry, nil
+	minAmount := ApplicationConfig.MinUsdt / ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0]).PriceInUsdt
+	maxAmount := ApplicationConfig.MaxUsdt / ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0]).PriceInUsdt
+	if carry.Amount < minAmount {
+		return nil, errors.New(fmt.Sprintf(`amount less than %f usdt`, minAmount))
 	}
-	return nil, errors.New(`invalid carry`)
+	if carry.Amount > maxAmount {
+		carry.Amount = maxAmount
+	}
+	return &carry, nil
 }
 
 func (markets *Markets) GetChan(marketName string, index int) chan struct{} {
