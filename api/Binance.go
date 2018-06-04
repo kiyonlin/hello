@@ -20,13 +20,11 @@ var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) er
 
 func WsDepthServeBinance(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		util.SocketInfo(`try to handle` + string(event))
 		json, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
 			return
 		}
-		util.SocketInfo(`try to parse json data` + string(event))
 		json = json.Get("data")
 		if json == nil {
 			return
@@ -58,8 +56,12 @@ func WsDepthServeBinance(markets *model.Markets, carryHandler CarryHandler, errH
 			sort.Sort(bidAsk.Asks)
 			sort.Reverse(bidAsk.Bids)
 			bidAsk.Ts = json.Get("E").MustInt()
-			if carry, err := markets.NewCarry(symbol); err == nil && markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
-				carryHandler(carry)
+			carry, err := markets.NewCarry(symbol)
+			if err == nil {
+				if markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
+					util.SocketInfo(fmt.Sprintf(`the bid-ask is latest %d`, bidAsk.Ts))
+					carryHandler(carry)
+				}
 			}
 		}
 	}
