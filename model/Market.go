@@ -5,7 +5,6 @@ import (
 	"math"
 	"hello/util"
 	"sync"
-	"fmt"
 )
 
 type BidAsk struct {
@@ -52,7 +51,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		if v == nil {
 			continue
 		}
-		util.Info(fmt.Sprintf(`%s================%s %d`, symbol, k, v.Ts))
+		//util.Info(fmt.Sprintf(`%s================%s %d`, symbol, k, v.Ts))
 		if len(v.Bids) > 0 && carry.AskPrice < v.Bids[0][0] {
 			carry.AskPrice = v.Bids[0][0]
 			carry.AskAmount = v.Bids[0][1]
