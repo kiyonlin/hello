@@ -6,7 +6,6 @@ import (
 	"hello/util"
 	"sync"
 	"strings"
-	"fmt"
 )
 
 type BidAsk struct {
@@ -75,15 +74,6 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		carry.Amount = carry.BidAmount
 	} else {
 		carry.Amount = carry.AskAmount
-	}
-	priceInUsdt, _ := GetBuyPriceOkex(currencies[0] + "_usdt")
-	minAmount := ApplicationConfig.MinUsdt / priceInUsdt
-	maxAmount := ApplicationConfig.MaxUsdt / priceInUsdt
-	if carry.Amount < minAmount {
-		return nil, errors.New(fmt.Sprintf(`amount less than %f usdt`, minAmount))
-	}
-	if carry.Amount > maxAmount {
-		carry.Amount = maxAmount
 	}
 	return &carry, nil
 }

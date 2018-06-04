@@ -92,7 +92,12 @@ var ProcessCarry = func(carry *model.Carry) {
 	if account != nil {
 		rightBalance = account.Free
 	}
-	//util.Info("计划从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
+	priceInUsdt, _ := model.GetBuyPriceOkex(currencies[0] + "_usdt")
+	minAmount := model.ApplicationConfig.MinUsdt / priceInUsdt
+	maxAmount := model.ApplicationConfig.MaxUsdt / priceInUsdt
+	if carry.Amount > maxAmount {
+		carry.Amount = maxAmount
+	}
 	if leftBalance > carry.Amount {
 		leftBalance = carry.Amount
 	}
@@ -100,10 +105,7 @@ var ProcessCarry = func(carry *model.Carry) {
 		leftBalance = rightBalance / carry.BidPrice
 	}
 	leftBalance, _ = calcAmount(leftBalance)
-	//util.Info("实际从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
-	if leftBalance == 0 {
-		//util.Info("数量为0,退出")
-		//Carrying = false
+	if leftBalance < minAmount {
 		return
 	}
 	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
