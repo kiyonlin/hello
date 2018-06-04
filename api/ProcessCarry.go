@@ -112,6 +112,7 @@ var ProcessCarry = func(carry *model.Carry) {
 
 	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
 	marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
+	util.Info(carry.ToString())
 	if timeOk && marginOk {
 		go doAsk(carry, strAskPrice, strLeftBalance)
 		go doBid(carry, strBidPrice, strLeftBalance)
