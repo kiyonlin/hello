@@ -58,10 +58,13 @@ func WsDepthServeBinance(markets *model.Markets, carryHandler CarryHandler, errH
 			bidAsk.Ts = json.Get("E").MustInt()
 			carry, err := markets.NewCarry(symbol)
 			if err == nil {
+				util.SocketInfo(carry.ToString())
 				if markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
 					util.SocketInfo(fmt.Sprintf(`the bid-ask is latest %d`, bidAsk.Ts))
 					carryHandler(carry)
 				}
+			} else {
+				util.SocketInfo(err.Error())
 			}
 		}
 	}
