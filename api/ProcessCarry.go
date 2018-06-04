@@ -92,7 +92,7 @@ var ProcessCarry = func(carry *model.Carry) {
 	if account != nil {
 		rightBalance = account.Free
 	}
-	//util.Info("计划从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
+	util.Info("计划从" + carry.AskWeb + "搬运" + carry.Symbol + strconv.FormatFloat(leftBalance, 'f', -1, 64) + "到" + carry.BidWeb)
 	if leftBalance > carry.Amount {
 		leftBalance = carry.Amount
 	}
