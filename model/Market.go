@@ -51,7 +51,6 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		if v == nil {
 			continue
 		}
-		//util.Info(fmt.Sprintf(`%s================%s %d`, symbol, k, v.Ts))
 		if len(v.Bids) > 0 && carry.AskPrice < v.Bids[0][0] {
 			carry.AskPrice = v.Bids[0][0]
 			carry.AskAmount = v.Bids[0][1]
@@ -71,7 +70,8 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		carry.Amount = carry.AskAmount
 	}
 	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
-	if carry.Symbol != `` && carry.BidAmount > 0 && carry.AskAmount > 0 {
+	minAmount := ApplicationConfig.MinNum[symbol]
+	if carry.Symbol != `` && carry.BidAmount > minAmount && carry.AskAmount > minAmount {
 		return &carry, nil
 	}
 	return nil, errors.New(`invalid carry`)

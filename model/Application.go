@@ -110,6 +110,7 @@ type Config struct {
 	Margins      []float64
 	Delays       []float64
 	Deduction    float64
+	MinNum       map[string]float64  // currency - amount
 	subscribes   map[string][]string // marketName - subscribes
 	WSUrls       map[string]string   // marketName - ws url
 	RestUrls     map[string]string   // marketName - rest url
@@ -147,6 +148,10 @@ func SetApiKeys() {
 }
 func NewConfig() {
 	ApplicationConfig = &Config{}
+	ApplicationConfig.MinNum = make(map[string]float64)
+	ApplicationConfig.MinNum[`BTC`] = 0.001
+	ApplicationConfig.MinNum[`EOS`] = 1
+	ApplicationConfig.MinNum[`ETH`] = 0.01
 	ApplicationConfig.subscribes = make(map[string][]string)
 	ApplicationConfig.WSUrls = make(map[string]string)
 	ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
