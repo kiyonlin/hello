@@ -76,8 +76,9 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	} else {
 		carry.Amount = carry.AskAmount
 	}
-	minAmount := ApplicationConfig.MinUsdt / ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0]).PriceInUsdt
-	maxAmount := ApplicationConfig.MaxUsdt / ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0]).PriceInUsdt
+	priceInUsdt, _ := GetBuyPriceOkex(currencies[0] + "_usdt")
+	minAmount := ApplicationConfig.MinUsdt / priceInUsdt
+	maxAmount := ApplicationConfig.MaxUsdt / priceInUsdt
 	if carry.Amount < minAmount {
 		return nil, errors.New(fmt.Sprintf(`amount less than %f usdt`, minAmount))
 	}
