@@ -76,9 +76,10 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandler CarryHandler, errHan
 				sort.Sort(bidAsk.Asks)
 				sort.Reverse(bidAsk.Bids)
 				bidAsk.Ts = message.Ts
-				markets.SetBidAsk(symbol, model.Huobi, &bidAsk)
-				if carry, err := markets.NewCarry(symbol); err == nil {
-					carryHandler(carry)
+				if markets.SetBidAsk(symbol, model.Huobi, &bidAsk) {
+					if carry, err := markets.NewCarry(symbol); err == nil {
+						carryHandler(carry)
+					}
 				}
 			}
 		}

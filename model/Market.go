@@ -21,7 +21,7 @@ type Rule struct {
 
 type Markets struct {
 	lock    sync.Mutex
-	BidAsks map[string]map[string]*BidAsk // symbol - market - bidask
+	BidAsks map[string]map[string]*BidAsk // symbol - market - bidAsk
 	marketWS map[string][]chan struct{}   // marketName - channel
 }
 
@@ -44,7 +44,7 @@ func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidA
 
 func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	if markets.BidAsks[symbol] == nil {
-		return nil, errors.New("no market data" + symbol)
+		return nil, errors.New("no market data " + symbol)
 	}
 	carry := Carry{}
 	carry.Symbol = symbol

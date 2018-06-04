@@ -74,9 +74,10 @@ func WsDepthServeOkex(markets *model.Markets, carryHandler CarryHandler, errHand
 					sort.Sort(bidAsk.Asks)
 					sort.Reverse(bidAsk.Bids)
 					bidAsk.Ts = message.Data.Timestamp
-					markets.SetBidAsk(symbol, model.OKEX, &bidAsk)
-					if carry, err := markets.NewCarry(symbol); err == nil {
-						carryHandler(carry)
+					if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
+						if carry, err := markets.NewCarry(symbol); err == nil {
+							carryHandler(carry)
+						}
 					}
 				}
 			}
