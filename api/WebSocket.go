@@ -127,7 +127,7 @@ func MaintainMarketChan() {
 func Maintain() {
 	for true {
 		go MaintainMarketChan()
-		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot))
+		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)
 	}
 }
 
