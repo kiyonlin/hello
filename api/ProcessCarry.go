@@ -116,7 +116,7 @@ var ProcessCarry = func(carry *model.Carry) {
 	marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
 	util.Info(carry.ToString())
 	if timeOk && marginOk {
-		if model.ApplicationConfig.Env == `test` {
+		if model.ApplicationConfig.Env != `test` {
 			go doAsk(carry, strAskPrice, strLeftBalance)
 			go doBid(carry, strBidPrice, strLeftBalance)
 		}
@@ -127,6 +127,8 @@ var ProcessCarry = func(carry *model.Carry) {
 			carry.DealAskStatus = `NotWorth`
 			carry.DealBidStatus = `NotWorth`
 			model.BidChannel <- *carry
+			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
+			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
 		}
 	}
 	time.Sleep(time.Second * 3)
