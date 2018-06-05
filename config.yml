@@ -25,12 +25,9 @@ delays: #按照毫秒计算时间差
 - 5000
 
 channelslot: 1000 #按照毫秒计算的检查时间间隔
-
 channels: 1
-
 minusdt: 15
 maxusdt: 1500
-
 env: aws
 dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 
