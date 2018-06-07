@@ -75,6 +75,9 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	} else {
 		carry.Amount = carry.AskAmount
 	}
+	if carry.Amount == 0 {
+		return nil, errors.New(`0 amount carry`)
+	}
 	return &carry, nil
 }
 
