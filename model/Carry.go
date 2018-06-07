@@ -107,7 +107,7 @@ func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (boo
 		util.Notice(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
 		return true, nil
 	}
-	util.Notice("利润不足" + carry.ToString())
+	util.Info("利润不足" + carry.ToString())
 	return false, errors.New("利润不足")
 }
 
@@ -120,7 +120,7 @@ func (carry *Carry) CheckWorthCarryTime(markets *Markets, config *Config) (bool,
 	if timeDiff > delay || bidTimeDelay > delay || askTimeDelay > delay {
 		message := strconv.Itoa(int(now)) + "时间问题，卖方" + carry.AskWeb + strconv.Itoa(int(carry.AskTime)) + "隔" + strconv.Itoa(int(askTimeDelay))
 		message = message + "买方" + carry.BidWeb + strconv.Itoa(int(carry.BidTime)) + "隔" + strconv.Itoa(int(bidTimeDelay))
-		util.Notice(message)
+		util.Info(message)
 		return false, errors.New(message)
 	}
 	return true, nil

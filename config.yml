@@ -31,5 +31,5 @@ maxusdt: 1500
 env: aws
 dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 
-#env: silicon
+#env: andrew
 #dbconnection: host=172.20.48.174 port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable

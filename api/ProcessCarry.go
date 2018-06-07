@@ -1,10 +1,10 @@
 package api
 
 import (
-	"strings"
-	"strconv"
 	"hello/model"
 	"hello/util"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -80,7 +80,6 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var ProcessCarry = func(carry *model.Carry) {
-	util.Info(carry.ToString())
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
 	rightBalance := 0.0
@@ -104,32 +103,51 @@ var ProcessCarry = func(carry *model.Carry) {
 	if leftBalance*carry.BidPrice > rightBalance {
 		leftBalance = rightBalance / carry.BidPrice
 	}
+	planAmount, _ := calcAmount(carry.Amount)
+	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
-	if leftBalance < minAmount {
-		return
-	}
 	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
 	strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
 	strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
 
 	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
 	marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
-	util.Info(carry.ToString())
-	if timeOk && marginOk {
-		if model.ApplicationConfig.Env != `test` {
-			go doAsk(carry, strAskPrice, strLeftBalance)
-			go doBid(carry, strBidPrice, strLeftBalance)
-		}
-		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
-		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+	if !carry.CheckWorthSaveMargin() {
+		// no need to save carry with margin < base cost
+		return
+	}
+	doCarry := false
+	if !timeOk {
+		carry.DealAskStatus = `NotOnTime`
+		carry.DealBidStatus = `NotOnTime`
+		util.Notice(`get carry not on time` + carry.ToString())
 	} else {
-		if carry.CheckWorthSaveMargin() {
+		if !marginOk {
 			carry.DealAskStatus = `NotWorth`
 			carry.DealBidStatus = `NotWorth`
-			model.BidChannel <- *carry
+			util.Notice(`get carry no worth` + carry.ToString())
+		} else {
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+			if leftBalance < minAmount {
+				carry.DealAskStatus = `NotEnough`
+				carry.DealBidStatus = `NotEnough`
+				util.Notice(`get carry but not enough money` + carry.ToString())
+			} else {
+				if model.ApplicationConfig.Env == `test` {
+					carry.DealAskStatus = `NotDo`
+					carry.DealBidStatus = `NotDo`
+				} else {
+					util.Notice(`get carry worth` + carry.ToString())
+					doCarry = true
+				}
+			}
 		}
 	}
-	time.Sleep(time.Second * 3)
+	if doCarry {
+		go doAsk(carry, strAskPrice, strLeftBalance)
+		go doBid(carry, strBidPrice, strLeftBalance)
+	} else {
+		model.BidChannel <- *carry
+	}
 }
