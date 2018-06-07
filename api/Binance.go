@@ -30,7 +30,6 @@ func WsDepthServeBinance(markets *model.Markets, carryHandler CarryHandler, errH
 			return
 		}
 		symbol := model.GetSymbol(model.Binance, json.Get("s").MustString())
-		util.SocketInfo(`get symbol` + symbol)
 		if symbol != "" {
 			bidAsk := model.BidAsk{}
 			bidsLen := len(json.Get("b").MustArray())

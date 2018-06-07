@@ -5,12 +5,9 @@ import (
 	"hello/util"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type CarryHandler func(carry *model.Carry)
-
-//var Carrying = false
 
 func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
 	util.Notice(carry.AskWeb + "ask" + carry.Symbol + " with price: " + price + " amount:" + amount)
