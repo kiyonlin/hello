@@ -88,13 +88,16 @@ var ProcessCarry = func(carry *model.Carry) {
 	leftBalance := 0.0
 	rightBalance := 0.0
 	account := model.ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
-	if account != nil {
-		leftBalance = account.Free
+	if account == nil {
+		util.Notice(`nil account ` + carry.AskWeb + currencies[0])
+		return
 	}
+	leftBalance = account.Free
 	account = model.ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
-	if account != nil {
-		rightBalance = account.Free
+	if account == nil {
+		util.Notice(`nil account ` + carry.BidWeb + currencies[1])
 	}
+	rightBalance = account.Free
 	priceInUsdt, _ := model.GetBuyPriceOkex(currencies[0] + "_usdt")
 	minAmount := model.ApplicationConfig.MinUsdt / priceInUsdt
 	maxAmount := model.ApplicationConfig.MaxUsdt / priceInUsdt
