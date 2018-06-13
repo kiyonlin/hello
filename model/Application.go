@@ -16,7 +16,7 @@ const Fcoin  = "fcoin"
 
 var HuobiAccountId = "1651065"
 
-const BaseCarryCost = 0.0008 // 当前搬砖的最低手续费是万分之八
+const BaseCarryCost = 0.0004 // 当前搬砖的最低手续费是万分之4
 const MaxCarryMargin = 0.003
 
 var ApplicationConfig *Config
