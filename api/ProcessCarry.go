@@ -96,6 +96,7 @@ var ProcessCarry = func(carry *model.Carry) {
 	account = model.ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
 	if account == nil {
 		util.Notice(`nil account ` + carry.BidWeb + currencies[1])
+		return
 	}
 	rightBalance = account.Free
 	priceInUsdt, _ := model.GetBuyPriceOkex(currencies[0] + "_usdt")
