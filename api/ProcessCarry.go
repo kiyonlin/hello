@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"hello/model"
 	"hello/util"
 	"strconv"
@@ -135,7 +136,7 @@ var ProcessCarry = func(carry *model.Carry) {
 			if leftBalance < minAmount {
 				carry.DealAskStatus = `NotEnough`
 				carry.DealBidStatus = `NotEnough`
-				util.SocketInfo(`get carry but not enough money` + carry.ToString())
+				util.Notice(fmt.Sprintf(`NotEnough %f - %f %s`, leftBalance, minAmount, carry.ToString()))
 			} else {
 				if model.ApplicationConfig.Env == `test` {
 					carry.DealAskStatus = `NotDo`
