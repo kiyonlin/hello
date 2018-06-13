@@ -12,6 +12,7 @@ import (
 const OKEX = "okex"
 const Huobi = "huobi"
 const Binance = "binance"
+const Fcoin  = "fcoin"
 
 var HuobiAccountId = "1651065"
 
@@ -44,17 +45,25 @@ var OrderStatusMap = map[string]string{
 	// Huobi
 	"pre-submitted":    CarryStatusWorking,
 	"submitting":       CarryStatusWorking,
+	// Huobi&Fcoin
 	"submitted":        CarryStatusWorking,
 	"partial-filled":   CarryStatusSuccess,
+	// Huobi&Fcoin
 	"filled":           CarryStatusSuccess,
 	"partial-canceled": CarryStatusSuccess,
+	// Huobi&Fcoin
 	"canceled":         CarryStatusFail,
 	// Okex
 	"-1": CarryStatusFail,    //已撤销
 	"0":  CarryStatusWorking, //未成交
 	"1":  CarryStatusWorking, //部分成交
 	"2":  CarryStatusSuccess, //完全成交
-	"3":  CarryStatusWorking} //撤单处理中
+	"3":  CarryStatusWorking, //撤单处理中
+	// Fcoin
+	"partial_filled": CarryStatusSuccess,
+	"partial_canceled": CarryStatusSuccess,
+	"pending_cancel": CarryStatusSuccess,
+}
 
 // TODO filter out unsupported symbol for each market
 func getWSSubscribe(market, symbol string) (subscribe string) {
@@ -65,6 +74,8 @@ func getWSSubscribe(market, symbol string) (subscribe string) {
 		return "ok_sub_spot_" + symbol + "_depth_5"
 	case Binance: // xrp_btc: XRPBTC
 		return strings.ToUpper(strings.Replace(symbol, "_", "", 1))
+	case Fcoin: // btc_usdt: depth.L20.btcusdt
+		return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	}
 	return ""
 }
@@ -93,6 +104,9 @@ func GetSymbol(market, subscribe string) (symbol string) {
 		subscribe = strings.Replace(subscribe, "_depth_5", "", 1)
 		return subscribe
 	case Binance: // XRPBTC: xrp_btc
+		return getSymbolWithSplit(subscribe, "_")
+	case Fcoin: // btc_usdt: depth.L20.btcusdt
+		subscribe := strings.Replace(subscribe, "depth.L20.", "", 1)
 		return getSymbolWithSplit(subscribe, "_")
 	}
 	return ""
@@ -140,11 +154,13 @@ func SetApiKeys() {
 	//if ApplicationConfig.Env == "aws" {
 	//	util.Notice("under aws environment")
 	ApplicationConfig.ApiKeys[Huobi] = "003fe1c2-1a5a12e1-73668e50-6773e"    // sammi
-	ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
-	ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
 	ApplicationConfig.ApiSecrets[Huobi] = "05d114f3-6f455bf3-a640f2c4-06050" // sammi
+	ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
 	ApplicationConfig.ApiSecrets[OKEX] = "7D0E1B435964B96D72728215CB369CD7"  // sammi
+	ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
 	ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
+	ApplicationConfig.ApiKeys[Fcoin] = "f255aba8e2834af8aee6385603c98add"
+	ApplicationConfig.ApiSecrets[Fcoin] = "11967c535763435eb2957f63e9d90e16"
 	//}
 }
 func NewConfig() {
@@ -154,10 +170,12 @@ func NewConfig() {
 	ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
 	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
 	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
+	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
 
 	ApplicationConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
+	ApplicationConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
 	ApplicationConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	ApplicationConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"

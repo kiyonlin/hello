@@ -1,15 +1,16 @@
 markets:
-- huobi
-- okex
-- binance
+#- huobi
+#- okex
+#- binance
+- fcoin
 
 symbols:
 - btc_usdt
 - eth_usdt
-- eos_usdt
-- eos_btc
-- eth_btc
-- eos_eth
+#- eos_usdt
+#- eos_btc
+#- eth_btc
+#- eos_eth
 
 deduction: 0.8
 
@@ -24,7 +25,7 @@ margins: #差价
 delays: #按照毫秒计算时间差
 - 5000
 
-channelslot: 1000 #按照毫秒计算的检查时间间隔
+channelslot: 100000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15
 maxusdt: 1500

@@ -15,6 +15,8 @@ func cancelOrder(market string, symbol string, orderId string) {
 		CancelOrderOkex(symbol, orderId)
 	case model.Binance:
 		CancelOrderBinance(symbol, orderId)
+	case model.Fcoin:
+		CancelOrderFcoin(orderId)
 	}
 }
 
@@ -27,6 +29,8 @@ func queryOrder(carry *model.Carry) {
 			carry.DealBidAmount, carry.DealBidStatus = QueryOrderOkex(carry.Symbol, carry.DealBidOrderId)
 		case model.Binance:
 			carry.DealBidAmount, carry.DealBidStatus = QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
+		case model.Fcoin:
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderFcoin(carry.DealBidOrderId)
 		}
 	}
 	if carry.DealAskOrderId != "" {
@@ -37,6 +41,8 @@ func queryOrder(carry *model.Carry) {
 			carry.DealAskAmount, carry.DealAskStatus = QueryOrderOkex(carry.Symbol, carry.DealAskOrderId)
 		case model.Binance:
 			carry.DealAskAmount, carry.DealAskStatus = QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
+		case model.Fcoin:
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderFcoin(carry.DealAskOrderId)
 		}
 	}
 	model.CarryChannel <- *carry

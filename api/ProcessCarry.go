@@ -21,6 +21,9 @@ func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 	case model.Binance:
 		orderId, errCode = PlaceOrderBinance(carry.Symbol, "SELL", price, amount)
 		GetAccountBinance(model.ApplicationAccounts)
+	case model.Fcoin:
+		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "sell", price, amount)
+		GetAccountFcoin(model.ApplicationAccounts)
 	}
 	//carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealAskErrCode = errCode
@@ -47,6 +50,9 @@ func doBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	case model.Binance:
 		orderId, errCode = PlaceOrderBinance(carry.Symbol, "BUY", price, amount)
 		GetAccountBinance(model.ApplicationAccounts)
+	case model.Fcoin:
+		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "buy", price, amount)
+		GetAccountFcoin(model.ApplicationAccounts)
 	}
 	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealBidErrCode = errCode

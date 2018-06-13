@@ -88,6 +88,8 @@ func createServer(markets *model.Markets, marketName string) chan struct{} {
 		channel, err = WsDepthServeOkex(markets, ProcessCarry, WSErrHandler)
 	case model.Binance:
 		channel, err = WsDepthServeBinance(markets, ProcessCarry, WSErrHandler)
+	case model.Fcoin:
+		channel, err = WsDepthServeFcoin(markets, ProcessCarry, WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())
