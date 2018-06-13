@@ -114,10 +114,10 @@ func PlaceOrderFcoin(symbol, side, price, amount string) (orderId, errCode strin
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderId, _ := orderJson.Get("data").String()
-		status, _ := orderJson.Get("status").String()
+		status, _ := orderJson.Get("status").Int()
 		util.Notice(symbol + "挂单fcoin:" + price + side + amount + "返回" + string(responseBody) + "errCode:" +
 			errCode + "orderId" + orderId)
-		return orderId, status
+		return orderId, strconv.Itoa(status)
 	}
 	return ``, err.Error()
 }
