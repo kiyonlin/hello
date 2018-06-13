@@ -159,8 +159,10 @@ func SetApiKeys() {
 	ApplicationConfig.ApiSecrets[OKEX] = "7D0E1B435964B96D72728215CB369CD7"  // sammi
 	ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
 	ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
-	ApplicationConfig.ApiKeys[Fcoin] = "7c26be189ddc4e59aeb6021cfbfc3415"
-	ApplicationConfig.ApiSecrets[Fcoin] = "54342819cbe148859f8d5ebdf384e607"
+	//ApplicationConfig.ApiKeys[Fcoin] = "7c26be189ddc4e59aeb6021cfbfc3415" // ace
+	//ApplicationConfig.ApiSecrets[Fcoin] = "54342819cbe148859f8d5ebdf384e607" // ace
+	ApplicationConfig.ApiKeys[Fcoin] = "f255aba8e2834af8aee6385603c98add" // simon
+	ApplicationConfig.ApiSecrets[Fcoin] = "11967c535763435eb2957f63e9d90e16" // simon
 	//}
 }
 func NewConfig() {

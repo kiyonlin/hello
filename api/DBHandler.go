@@ -30,7 +30,7 @@ func queryOrder(carry *model.Carry) {
 		case model.Binance:
 			carry.DealBidAmount, carry.DealBidStatus = QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
 		case model.Fcoin:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderFcoin(carry.DealBidOrderId)
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
 		}
 	}
 	if carry.DealAskOrderId != "" {
@@ -42,7 +42,7 @@ func queryOrder(carry *model.Carry) {
 		case model.Binance:
 			carry.DealAskAmount, carry.DealAskStatus = QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
 		case model.Fcoin:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderFcoin(carry.DealAskOrderId)
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderFcoin(carry.Symbol, carry.DealAskOrderId)
 		}
 	}
 	model.CarryChannel <- *carry

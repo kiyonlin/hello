@@ -81,7 +81,10 @@ func signedRequest(method, path string, postMap map[string]interface{}) []byte {
 	for key, value := range postMap {
 		postData.Set(key, value.(string))
 	}
-	toBeBase := method + uri + time + postData.Encode()
+	toBeBase := method + uri + time
+	if method != `GET` {
+		toBeBase += postData.Encode()
+	}
 	based := base64.StdEncoding.EncodeToString([]byte(toBeBase))
 	hash := hmac.New(sha1.New, []byte(model.ApplicationConfig.ApiSecrets[model.Fcoin]))
 	hash.Write([]byte(based))
@@ -119,16 +122,18 @@ func PlaceOrderFcoin(symbol, side, price, amount string) (orderId, errCode strin
 	return ``, err.Error()
 }
 
-
 func CancelOrderFcoin(orderId string) {
 	responseBody := signedRequest(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
 	util.Notice("fcoin cancel order" + string(responseBody))
 }
 
-func QueryOrderFcoin(orderId string) (dealAmount float64, status string) {
-	responseBody := signedRequest(`GET`, `/orders/`+orderId, nil)
+func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string) {
+	postData := make(map[string]interface{})
+	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	responseBody := signedRequest(`GET`, `/orders/`+orderId, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
+		orderJson = orderJson.Get(`data`)
 		str, _ := orderJson.Get("filled_amount").String()
 		if str != "" {
 			dealAmount, _ = strconv.ParseFloat(str, 64)
@@ -143,7 +148,7 @@ func QueryOrderFcoin(orderId string) (dealAmount float64, status string) {
 func GetAccountFcoin(accounts *model.Accounts) {
 	accounts.ClearAccounts(model.Fcoin)
 	responseBody := signedRequest(`GET`, `/accounts/balance`, nil)
-	//fmt.Println("\n" + string(responseBody))
+	fmt.Println("\n" + string(responseBody))
 	balanceJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		status, _ := balanceJson.Get("status").Int()
