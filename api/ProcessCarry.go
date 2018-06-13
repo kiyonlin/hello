@@ -123,19 +123,19 @@ var ProcessCarry = func(carry *model.Carry) {
 	if !timeOk {
 		carry.DealAskStatus = `NotOnTime`
 		carry.DealBidStatus = `NotOnTime`
-		util.Notice(`get carry not on time` + carry.ToString())
+		util.SocketInfo(`get carry not on time` + carry.ToString())
 	} else {
 		if !marginOk {
 			carry.DealAskStatus = `NotWorth`
 			carry.DealBidStatus = `NotWorth`
-			util.Notice(`get carry no worth` + carry.ToString())
+			util.SocketInfo(`get carry no worth` + carry.ToString())
 		} else {
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
 			if leftBalance < minAmount {
 				carry.DealAskStatus = `NotEnough`
 				carry.DealBidStatus = `NotEnough`
-				util.Notice(`get carry but not enough money` + carry.ToString())
+				util.SocketInfo(`get carry but not enough money` + carry.ToString())
 			} else {
 				if model.ApplicationConfig.Env == `test` {
 					carry.DealAskStatus = `NotDo`

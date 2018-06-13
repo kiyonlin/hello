@@ -136,7 +136,7 @@ func QueryOrderFcoin(orderId string) (dealAmount float64, status string) {
 		status, _ = orderJson.Get("state").String()
 		status = model.OrderStatusMap[status]
 	}
-	util.Notice(fmt.Sprintf("%s fcoin query order %f %s", status, dealAmount, responseBody))
+	util.SocketInfo(fmt.Sprintf("%s fcoin query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 

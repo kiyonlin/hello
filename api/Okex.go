@@ -158,7 +158,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 			}
 		}
 	}
-	util.Notice(fmt.Sprintf("%s okex query order %f %s", status, dealAmount, responseBody))
+	util.SocketInfo(fmt.Sprintf("%s okex query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 
