@@ -136,8 +136,8 @@ var ProcessCarry = func(carry *model.Carry) {
 			if leftBalance < minAmount {
 				carry.DealAskStatus = `NotEnough`
 				carry.DealBidStatus = `NotEnough`
-				util.Info(fmt.Sprintf(`rightB/bidPrice %f/%f NotEnough %f - %f %s`, rightBalance, carry.BidPrice,
-					leftBalance, minAmount, carry.ToString()))
+				util.Info(fmt.Sprintf(`leftB %f rightB/bidPrice %f/%f NotEnough %f - %f %s`, account.Free,
+					rightBalance, carry.BidPrice, leftBalance, minAmount, carry.ToString()))
 			} else {
 				if model.ApplicationConfig.Env == `test` {
 					carry.DealAskStatus = `NotDo`
