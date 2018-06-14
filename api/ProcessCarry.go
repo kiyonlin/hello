@@ -108,15 +108,12 @@ var ProcessCarry = func(carry *model.Carry) {
 	if leftBalance > carry.Amount {
 		leftBalance = carry.Amount
 	}
-	util.Info(fmt.Sprintf(`1. %f`, leftBalance))
 	if leftBalance*carry.BidPrice > rightBalance {
 		leftBalance = rightBalance / carry.BidPrice
 	}
-	util.Info(fmt.Sprintf(`1. %f`, leftBalance))
 	planAmount, _ := calcAmount(carry.Amount)
 	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
-	util.Info(fmt.Sprintf(`1. %f`, leftBalance))
 	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
 	strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
 	strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
