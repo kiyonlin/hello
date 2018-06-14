@@ -221,17 +221,12 @@ func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	if ApplicationConfig == nil {
 		NewConfig()
 	}
-	util.Info(fmt.Sprintf(`%s time %f`, symbol, getBuyPriceOkexTime[symbol]))
 	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3600000 {
 		return currencyPrice[symbol], nil
 	}
 	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
 	strs := strings.Split(symbol, "_")
-	util.Info(strs[0])
-	if strs[0] == `ft` {
-		return 1, nil
-	}
-	if strs[0] == strs[1] {
+	if strs[0] == strs[1] || strs[0] == `ft` {
 		currencyPrice[symbol] = 1
 	} else {
 		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
