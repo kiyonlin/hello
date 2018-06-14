@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"hello/util"
 	"strconv"
@@ -145,7 +146,7 @@ func SetApiKeys() {
 	ApplicationConfig.ApiSecrets[OKEX] = "7D0E1B435964B96D72728215CB369CD7"  // sammi
 	ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
 	ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
-	ApplicationConfig.ApiKeys[Fcoin] = "4c1db3d5a7124fb0bcf79579cc94ae1a" // 25 server ace fcoin
+	ApplicationConfig.ApiKeys[Fcoin] = "4c1db3d5a7124fb0bcf79579cc94ae1a"    // 25 server ace fcoin
 	ApplicationConfig.ApiSecrets[Fcoin] = "98002cf0d4f846a8b01e4ce73248ff28" // 25 server ace fcoin
 	//ApplicationConfig.ApiKeys[Fcoin] = "7c26be189ddc4e59aeb6021cfbfc3415"    // 3 server ace fcoin
 	//ApplicationConfig.ApiSecrets[Fcoin] = "54342819cbe148859f8d5ebdf384e607" // 3 server ace fcoin
@@ -220,11 +221,13 @@ func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	if ApplicationConfig == nil {
 		NewConfig()
 	}
+	util.Info(fmt.Sprintf(`%s time %f`, symbol, getBuyPriceOkexTime[symbol]))
 	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3600000 {
 		return currencyPrice[symbol], nil
 	}
 	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
 	strs := strings.Split(symbol, "_")
+	util.Info(strs[0])
 	if strs[0] == `ft` {
 		return 1, nil
 	}

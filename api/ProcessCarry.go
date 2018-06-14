@@ -102,8 +102,6 @@ var ProcessCarry = func(carry *model.Carry) {
 	priceInUsdt, _ := model.GetBuyPriceOkex(currencies[0] + "_usdt")
 	minAmount := model.ApplicationConfig.MinUsdt / priceInUsdt
 	maxAmount := model.ApplicationConfig.MaxUsdt / priceInUsdt
-	util.Info(fmt.Sprintf(`minUsdt %f 除以 priceInusdt %f 等 minAmount %f `, model.ApplicationConfig.MinUsdt,
-		priceInUsdt, minAmount))
 	if carry.Amount > maxAmount {
 		carry.Amount = maxAmount
 	}
