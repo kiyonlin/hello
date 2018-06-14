@@ -103,7 +103,7 @@ func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (boo
 	dynamicMargin := getDynamicMargin(carry, configMargin)
 	carry.Margin = dynamicMargin
 	margin := carry.AskPrice - carry.BidPrice
-	if margin > 0 && margin > carry.AskPrice*dynamicMargin && carry.Amount > 0 {
+	if margin > carry.AskPrice*dynamicMargin && carry.Amount > 0 {
 		util.SocketInfo(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
 		return true, nil
 	}
