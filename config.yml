@@ -5,8 +5,9 @@ markets:
 - fcoin
 
 symbols:
-- btc_usdt
-- eth_usdt
+- ft_usdt
+#- btc_usdt
+#- eth_usdt
 #- eos_usdt
 #- eos_btc
 #- eth_btc
@@ -15,22 +16,23 @@ symbols:
 deduction: 0.8
 
 margins: #差价
-- 0.0020
-- 0.0020
-- 0.0020
-- 0.0020
-- 0.0020
-- 0.0020
+- -0.00001
+#- 0.0020
+#- 0.0020
+#- 0.0020
+#- 0.0020
+#- 0.0020
 
 delays: #按照毫秒计算时间差
 - 5000
-
+basecarrycost: -0.00001
 channelslot: 100000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15
 maxusdt: 1500
-env: aws
-dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
-
+#env: aws
+#dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+env: ace
+dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
 #env: andrew
-#dbconnection: host=172.20.48.174 port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+#dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable

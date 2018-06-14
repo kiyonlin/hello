@@ -1,23 +1,22 @@
 package model
 
 import (
-	"github.com/jinzhu/gorm"
-	"strings"
 	"errors"
-	"strconv"
+	"github.com/jinzhu/gorm"
 	"hello/util"
+	"strconv"
+	"strings"
 	"sync"
 )
 
 const OKEX = "okex"
 const Huobi = "huobi"
 const Binance = "binance"
-const Fcoin  = "fcoin"
+const Fcoin = "fcoin"
 
 var HuobiAccountId = "1651065"
 
-const BaseCarryCost = 0.0004 // 当前搬砖的最低手续费是万分之4
-const MaxCarryMargin = 0.003
+//const BaseCarryCost = 0.0004 // 当前搬砖的最低手续费是万分之4
 
 var ApplicationConfig *Config
 
@@ -43,16 +42,16 @@ var OrderStatusMap = map[string]string{
 	"REJECTED":         CarryStatusFail,
 	"EXPIRED":          CarryStatusFail,
 	// Huobi
-	"pre-submitted":    CarryStatusWorking,
-	"submitting":       CarryStatusWorking,
+	"pre-submitted": CarryStatusWorking,
+	"submitting":    CarryStatusWorking,
 	// Huobi&Fcoin
-	"submitted":        CarryStatusWorking,
-	"partial-filled":   CarryStatusSuccess,
+	"submitted":      CarryStatusWorking,
+	"partial-filled": CarryStatusSuccess,
 	// Huobi&Fcoin
 	"filled":           CarryStatusSuccess,
 	"partial-canceled": CarryStatusSuccess,
 	// Huobi&Fcoin
-	"canceled":         CarryStatusFail,
+	"canceled": CarryStatusFail,
 	// Okex
 	"-1": CarryStatusFail,    //已撤销
 	"0":  CarryStatusWorking, //未成交
@@ -60,9 +59,9 @@ var OrderStatusMap = map[string]string{
 	"2":  CarryStatusSuccess, //完全成交
 	"3":  CarryStatusWorking, //撤单处理中
 	// Fcoin
-	"partial_filled": CarryStatusSuccess,
+	"partial_filled":   CarryStatusSuccess,
 	"partial_canceled": CarryStatusSuccess,
-	"pending_cancel": CarryStatusSuccess,
+	"pending_cancel":   CarryStatusSuccess,
 }
 
 // TODO filter out unsupported symbol for each market
@@ -113,38 +112,25 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
-	lock         sync.Mutex
-	Balance      float64
-	Env          string
-	DBConnection string
-	Channels     int
-	ChannelSlot  float64
-	Markets      []string
-	Symbols      []string
-	Margins      []float64
-	Delays       []float64
-	Deduction    float64
-	MinUsdt      float64             // 折合usdt最小下单金额
-	MaxUsdt      float64             // 折合usdt最大下单金额
-	subscribes   map[string][]string // marketName - subscribes
-	WSUrls       map[string]string   // marketName - ws url
-	RestUrls     map[string]string   // marketName - rest url
-	ApiKeys      map[string]string
-	ApiSecrets   map[string]string
-}
-
-func (config *Config) DecreaseMargin(symbol string) {
-	config.lock.Lock()
-	defer config.lock.Unlock()
-	currentMargin, _ := config.GetMargin(symbol)
-	config.SetMargin(symbol, currentMargin-0.0001)
-}
-
-func (config *Config) IncreaseMargin(symbol string) {
-	config.lock.Lock()
-	defer config.lock.Unlock()
-	currentMargin, _ := config.GetMargin(symbol)
-	config.SetMargin(symbol, currentMargin+0.0001)
+	lock          sync.Mutex
+	BaseCarryCost float64
+	Balance       float64
+	Env           string
+	DBConnection  string
+	Channels      int
+	ChannelSlot   float64
+	Markets       []string
+	Symbols       []string
+	Margins       []float64
+	Delays        []float64
+	Deduction     float64
+	MinUsdt       float64             // 折合usdt最小下单金额
+	MaxUsdt       float64             // 折合usdt最大下单金额
+	subscribes    map[string][]string // marketName - subscribes
+	WSUrls        map[string]string   // marketName - ws url
+	RestUrls      map[string]string   // marketName - rest url
+	ApiKeys       map[string]string
+	ApiSecrets    map[string]string
 }
 
 func SetApiKeys() {
@@ -161,7 +147,7 @@ func SetApiKeys() {
 	ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
 	//ApplicationConfig.ApiKeys[Fcoin] = "4c1db3d5a7124fb0bcf79579cc94ae1a" // 25 server ace fcoin
 	//ApplicationConfig.ApiSecrets[Fcoin] = "98002cf0d4f846a8b01e4ce73248ff28" // 25 server ace fcoin
-	ApplicationConfig.ApiKeys[Fcoin] = "7c26be189ddc4e59aeb6021cfbfc3415" // 3 server ace fcoin
+	ApplicationConfig.ApiKeys[Fcoin] = "7c26be189ddc4e59aeb6021cfbfc3415"    // 3 server ace fcoin
 	ApplicationConfig.ApiSecrets[Fcoin] = "54342819cbe148859f8d5ebdf384e607" // 3 server ace fcoin
 	//}
 }
@@ -198,20 +184,6 @@ func (config *Config) GetSubscribes(marketName string) []string {
 	return nil
 }
 
-func (config *Config) SetMargin(symbol string, margin float64) {
-	for i, value := range config.Symbols {
-		if value == symbol {
-			if margin < BaseCarryCost {
-				margin = BaseCarryCost
-			} else if margin > MaxCarryMargin {
-				margin = MaxCarryMargin
-			}
-			config.Margins[i] = margin
-			break
-		}
-	}
-}
-
 func (config *Config) GetMargin(symbol string) (float64, error) {
 	//if len(config.Margins) == 1 {
 	//	if config.Margins[0] < BaseCarryCost {
@@ -222,9 +194,6 @@ func (config *Config) GetMargin(symbol string) (float64, error) {
 	//}
 	for i, value := range config.Symbols {
 		if value == symbol {
-			if config.Margins[i] < BaseCarryCost {
-				config.Margins[i] = BaseCarryCost
-			}
 			return config.Margins[i], nil
 		}
 	}
