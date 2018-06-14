@@ -29,7 +29,7 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 
 func WsDepthServeFcoin(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		fmt.Println(string(event))
+		//fmt.Println(string(event))
 		json, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -148,7 +148,6 @@ func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string)
 func GetAccountFcoin(accounts *model.Accounts) {
 	accounts.ClearAccounts(model.Fcoin)
 	responseBody := signedRequest(`GET`, `/accounts/balance`, nil)
-	fmt.Println("\n" + string(responseBody))
 	balanceJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		status, _ := balanceJson.Get("status").Int()
