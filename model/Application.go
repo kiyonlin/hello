@@ -2,7 +2,6 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	"hello/util"
 	"strconv"
