@@ -225,6 +225,9 @@ func GetBuyPriceOkex(symbol string) (buy float64, err error) {
 	}
 	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
 	strs := strings.Split(symbol, "_")
+	if strs[0] == `ft` {
+		return 1, nil
+	}
 	if strs[0] == strs[1] {
 		currencyPrice[symbol] = 1
 	} else {
