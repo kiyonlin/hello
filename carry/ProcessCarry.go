@@ -1,70 +1,21 @@
-package api
+package carry
 
 import (
 	"fmt"
+	"github.com/jinzhu/configor"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"hello/api"
 	"hello/model"
 	"hello/util"
 	"strconv"
 	"strings"
+	"time"
 )
 
-type CarryHandler func(carry *model.Carry)
-
-func doAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-	util.Notice(carry.AskWeb + "ask" + carry.Symbol + " with price: " + price + " amount:" + amount)
-	switch carry.AskWeb {
-	case model.Huobi:
-		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "sell-limit", price, amount)
-		GetAccountHuobi(model.ApplicationAccounts)
-	case model.OKEX:
-		orderId, errCode = PlaceOrderOkex(carry.Symbol, "sell", price, amount)
-		GetAccountOkex(model.ApplicationAccounts)
-	case model.Binance:
-		orderId, errCode = PlaceOrderBinance(carry.Symbol, "SELL", price, amount)
-		GetAccountBinance(model.ApplicationAccounts)
-	case model.Fcoin:
-		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "sell", price, amount)
-		GetAccountFcoin(model.ApplicationAccounts)
-	}
-	//carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
-	carry.DealAskErrCode = errCode
-	carry.DealAskOrderId = orderId
-	if orderId == "0" || orderId == "" {
-		carry.DealAskStatus = model.CarryStatusFail
-	} else {
-		carry.DealAskStatus = model.CarryStatusWorking
-	}
-	model.AskChannel <- *carry
-	return orderId, errCode
-}
-
-func doBid(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-
-	util.Notice(carry.BidWeb + "bid" + carry.Symbol + " with price: " + price + " amount:" + amount)
-	switch carry.BidWeb {
-	case model.Huobi:
-		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "buy-limit", price, amount)
-		GetAccountHuobi(model.ApplicationAccounts)
-	case model.OKEX:
-		orderId, errCode = PlaceOrderOkex(carry.Symbol, "buy", price, amount)
-		GetAccountOkex(model.ApplicationAccounts)
-	case model.Binance:
-		orderId, errCode = PlaceOrderBinance(carry.Symbol, "BUY", price, amount)
-		GetAccountBinance(model.ApplicationAccounts)
-	case model.Fcoin:
-		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "buy", price, amount)
-		GetAccountFcoin(model.ApplicationAccounts)
-	}
-	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
-	carry.DealBidErrCode = errCode
-	carry.DealBidOrderId = orderId
-	if orderId == "0" || orderId == "" {
-		carry.DealBidStatus = model.CarryStatusFail
-	} else {
-		carry.DealBidStatus = model.CarryStatusWorking
-	}
-	model.BidChannel <- *carry
-	return orderId, errCode
+var WSErrHandler = func(err error) {
+	print(err)
+	util.SocketInfo(`get error ` + err.Error())
 }
 
 // 只取第一位
@@ -154,9 +105,90 @@ var ProcessCarry = func(carry *model.Carry) {
 		}
 	}
 	if doCarry {
-		go doAsk(carry, strAskPrice, strLeftBalance)
-		go doBid(carry, strBidPrice, strLeftBalance)
+		go api.DoAsk(carry, strAskPrice, strLeftBalance)
+		go api.DoBid(carry, strBidPrice, strLeftBalance)
 	} else {
 		model.BidChannel <- *carry
+	}
+}
+
+func createServer(markets *model.Markets, carryHandler api.CarryHandler, marketName string) chan struct{} {
+	util.SocketInfo(" create chan for " + marketName)
+	var channel chan struct{}
+	var err error
+	switch marketName {
+	case model.Huobi:
+		channel, err = api.WsDepthServeHuobi(markets, carryHandler, WSErrHandler)
+	case model.OKEX:
+		channel, err = api.WsDepthServeOkex(markets, carryHandler, WSErrHandler)
+	case model.Binance:
+		channel, err = api.WsDepthServeBinance(markets, carryHandler, WSErrHandler)
+	case model.Fcoin:
+		channel, err = api.WsDepthServeFcoin(markets, carryHandler, WSErrHandler)
+	}
+	if err != nil {
+		util.SocketInfo(marketName + ` can not create server ` + err.Error())
+	}
+	return channel
+}
+
+var socketMaintaining = false
+
+func MaintainMarketChan() {
+	if socketMaintaining {
+		return
+	}
+	socketMaintaining = true
+	for _, marketName := range model.ApplicationConfig.Markets {
+		subscribes := model.ApplicationConfig.GetSubscribes(marketName)
+		for _, subscribe := range subscribes {
+			for index := 0; index < model.ApplicationConfig.Channels; index++ {
+				channel := model.ApplicationMarkets.GetChan(marketName, index)
+				if channel == nil {
+					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
+						ProcessCarry, marketName))
+				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
+					//util.SocketInfo(marketName + " need reset " + subscribe)
+					model.ApplicationMarkets.PutChan(marketName, index, nil)
+					channel <- struct{}{}
+					close(channel)
+					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
+						ProcessCarry, marketName))
+				}
+				//util.SocketInfo(marketName + " new channel reset done")
+			}
+			break
+		}
+	}
+	socketMaintaining = false
+}
+
+func Maintain() {
+	util.Notice("start carrying")
+	model.NewConfig()
+	err := configor.Load(model.ApplicationConfig, "./config.yml")
+	if err != nil {
+		print(err)
+		return
+	}
+	model.SetApiKeys()
+	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+	defer model.ApplicationDB.Close()
+	model.ApplicationDB.AutoMigrate(&model.Carry{})
+	model.ApplicationDB.AutoMigrate(&model.Account{})
+	go api.RefreshAccounts()
+	go DBHandlerServe()
+	go AskUpdate()
+	go BidUpdate()
+	go AccountDBHandlerServe()
+	go MaintainOrders()
+	model.ApplicationMarkets = model.NewMarkets()
+	for true {
+		go MaintainMarketChan()
+		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)
 	}
 }

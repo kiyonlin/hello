@@ -143,8 +143,8 @@ func SetApiKeys() {
 	ApplicationConfig.ApiSecrets[Huobi] = "05d114f3-6f455bf3-a640f2c4-06050" // sammi
 	ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
 	ApplicationConfig.ApiSecrets[OKEX] = "7D0E1B435964B96D72728215CB369CD7"  // sammi
-	ApplicationConfig.ApiKeys[Binance] = "IkR9OHIQPe9YZtCUGa8Haa6hYQuyRFISYfTc05OkU2m3bujqL9evUoOLuKjsGm3q"
-	ApplicationConfig.ApiSecrets[Binance] = "xH2xGFmvSoy0LPtAaFElFbChxplbiEpyP2Bp9ZFo3zYlsaAyZ0DlTjA0bH1Tcndy"
+	ApplicationConfig.ApiKeys[Binance] = "jKOAtt1OxuUZ2NyXdmFSBggmgR9beiHvt1DmBHvXMDBDQmEip2xgU8pEP5iHA9gn"
+	ApplicationConfig.ApiSecrets[Binance] = "EBVyA8aH0KoEKnnGrIbuRjUxLrx6b7UDk3XpTvpeXn0SEGSFjZZPqSLeoKLJE4Qh"
 	ApplicationConfig.ApiKeys[Fcoin] = "4c1db3d5a7124fb0bcf79579cc94ae1a"    // 25 server ace fcoin
 	ApplicationConfig.ApiSecrets[Fcoin] = "98002cf0d4f846a8b01e4ce73248ff28" // 25 server ace fcoin
 	//ApplicationConfig.ApiKeys[Fcoin] = "7c26be189ddc4e59aeb6021cfbfc3415"    // 3 server ace fcoin

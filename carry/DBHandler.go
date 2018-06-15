@@ -1,22 +1,23 @@
-package api
+package carry
 
 import (
 	"time"
 	"hello/model"
 	"hello/util"
 	"fmt"
+	"hello/api"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
 	switch market {
 	case model.Huobi:
-		CancelOrderHuobi(orderId)
+		api.CancelOrderHuobi(orderId)
 	case model.OKEX:
-		CancelOrderOkex(symbol, orderId)
+		api.CancelOrderOkex(symbol, orderId)
 	case model.Binance:
-		CancelOrderBinance(symbol, orderId)
+		api.CancelOrderBinance(symbol, orderId)
 	case model.Fcoin:
-		CancelOrderFcoin(orderId)
+		api.CancelOrderFcoin(orderId)
 	}
 }
 
@@ -24,31 +25,31 @@ func queryOrder(carry *model.Carry) {
 	if carry.DealBidOrderId != "" {
 		switch carry.BidWeb {
 		case model.Huobi:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderHuobi(carry.DealBidOrderId)
+			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderHuobi(carry.DealBidOrderId)
 		case model.OKEX:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderOkex(carry.Symbol, carry.DealBidOrderId)
+			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderOkex(carry.Symbol, carry.DealBidOrderId)
 		case model.Binance:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
+			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
 		case model.Fcoin:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
+			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
 		}
 	}
 	if carry.DealAskOrderId != "" {
 		switch carry.AskWeb {
 		case model.Huobi:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderHuobi(carry.DealAskOrderId)
+			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderHuobi(carry.DealAskOrderId)
 		case model.OKEX:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderOkex(carry.Symbol, carry.DealAskOrderId)
+			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderOkex(carry.Symbol, carry.DealAskOrderId)
 		case model.Binance:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
+			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
 		case model.Fcoin:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderFcoin(carry.Symbol, carry.DealAskOrderId)
+			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderFcoin(carry.Symbol, carry.DealAskOrderId)
 		}
 	}
 	model.CarryChannel <- *carry
 }
 
-func CarryProcessor() {
+func MaintainOrders() {
 	for true {
 		var carries []model.Carry
 		model.ApplicationDB.Where(
@@ -116,7 +117,7 @@ func AskUpdate() {
 	}
 }
 
-func CarryDBHandlerServe() {
+func DBHandlerServe() {
 	for true {
 		carry := <-model.CarryChannel
 		var carryInDb model.Carry

@@ -2,20 +2,14 @@ package api
 
 import (
 	"github.com/gorilla/websocket"
-	"time"
-	"hello/util"
 	"hello/model"
+	"hello/util"
 )
 
-// WsHandler handle raw websocket message
 type MsgHandler func(message []byte, conn *websocket.Conn)
 type SubscribeHandler func(subscribes []string, conn *websocket.Conn) error
 type ErrHandler func(err error)
-
-var WSErrHandler = func(err error) {
-	print(err)
-	util.SocketInfo(`get error ` + err.Error())
-}
+type CarryHandler func(carry *model.Carry)
 
 func newConnection(url string) (*websocket.Conn, error) {
 	var connErr error
@@ -76,94 +70,3 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 	go chanHandler(c, stopC, errHandler, msgHandler)
 	return stopC, err
 }
-
-func createServer(markets *model.Markets, marketName string) chan struct{} {
-	util.SocketInfo(" create chan for " + marketName)
-	var channel chan struct{}
-	var err error
-	switch marketName {
-	case model.Huobi:
-		channel, err = WsDepthServeHuobi(markets, ProcessCarry, WSErrHandler)
-	case model.OKEX:
-		channel, err = WsDepthServeOkex(markets, ProcessCarry, WSErrHandler)
-	case model.Binance:
-		channel, err = WsDepthServeBinance(markets, ProcessCarry, WSErrHandler)
-	case model.Fcoin:
-		channel, err = WsDepthServeFcoin(markets, ProcessCarry, WSErrHandler)
-	}
-	if err != nil {
-		util.SocketInfo(marketName + ` can not create server ` + err.Error())
-	}
-	return channel
-}
-
-var socketMaintaining = false
-
-func MaintainMarketChan() {
-	if socketMaintaining {
-		return
-	}
-	socketMaintaining = true
-	for _, marketName := range model.ApplicationConfig.Markets {
-		subscribes := model.ApplicationConfig.GetSubscribes(marketName)
-		for _, subscribe := range subscribes {
-			for index := 0; index < model.ApplicationConfig.Channels; index++ {
-				channel := model.ApplicationMarkets.GetChan(marketName, index)
-				if channel == nil {
-					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets, marketName))
-				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
-					//util.SocketInfo(marketName + " need reset " + subscribe)
-					model.ApplicationMarkets.PutChan(marketName, index, nil)
-					channel <- struct{}{}
-					close(channel)
-					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets, marketName))
-				}
-				//util.SocketInfo(marketName + " new channel reset done")
-			}
-			break
-		}
-	}
-	socketMaintaining = false
-}
-
-func Maintain() {
-	for true {
-		go MaintainMarketChan()
-		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)
-	}
-}
-
-//for _, symbol := range model.ApplicationConfig.Symbols {
-//	currencies := strings.Split(symbol, "_")
-//	leftTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[0]]
-//	rightTotalPercentage := model.ApplicationAccounts.CurrencyPercentage[currencies[1]]
-//	if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
-//		continue
-//	}
-//	leftMarketPercentage := 0.0
-//	rightMarketPercentage := 0.0
-//	for _, market := range model.ApplicationConfig.Markets {
-//		leftAccount := model.ApplicationAccounts.Data[market][currencies[0]]
-//		rightAccount := model.ApplicationAccounts.Data[market][currencies[1]]
-//		if leftAccount != nil && leftMarketPercentage < leftAccount.Percentage {
-//			leftMarketPercentage = leftAccount.Percentage
-//		}
-//		if rightAccount != nil && rightMarketPercentage < rightAccount.Percentage {
-//			rightMarketPercentage = rightAccount.Percentage
-//		}
-//	}
-//if leftMarketPercentage == 0 || rightMarketPercentage == 0 {
-//	continue
-//}
-//balanceRate := leftTotalPercentage / leftMarketPercentage
-//if balanceRate > rightTotalPercentage/rightMarketPercentage {
-//	balanceRate = rightTotalPercentage / rightMarketPercentage
-//}
-//if balanceRate < 0.5 {
-//	model.ApplicationConfig.IncreaseMargin(symbol)
-//} else {
-//	model.ApplicationConfig.DecreaseMargin(symbol)
-//}
-//margin, _ := model.ApplicationConfig.GetMargin(symbol)
-//util.Notice(fmt.Sprintf(`%s margin: %.5f`, symbol, margin))
-//}
