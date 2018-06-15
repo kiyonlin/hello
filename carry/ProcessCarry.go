@@ -35,18 +35,22 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var ProcessCarry = func(carry *model.Carry) {
+	if model.WorkingCarryNum > 1 {
+		util.Notice(`waiting for more than 1 working carry, return`)
+		return
+	}
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
 	rightBalance := 0.0
 	account := model.ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
 	if account == nil {
-		util.Notice(`nil account ` + carry.AskWeb + currencies[0])
+		util.Info(`nil account ` + carry.AskWeb + currencies[0])
 		return
 	}
 	leftBalance = account.Free
 	account = model.ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
 	if account == nil {
-		util.Notice(`nil account ` + carry.BidWeb + currencies[1])
+		util.Info(`nil account ` + carry.BidWeb + currencies[1])
 		return
 	}
 	rightBalance = account.Free
@@ -134,7 +138,7 @@ func createServer(markets *model.Markets, carryHandler api.CarryHandler, marketN
 
 var socketMaintaining = false
 
-func MaintainMarketChan() {
+func MaintainMarketChan(carryHandler api.CarryHandler) {
 	if socketMaintaining {
 		return
 	}
@@ -146,14 +150,14 @@ func MaintainMarketChan() {
 				channel := model.ApplicationMarkets.GetChan(marketName, index)
 				if channel == nil {
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
-						ProcessCarry, marketName))
+						carryHandler, marketName))
 				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
 					//util.SocketInfo(marketName + " need reset " + subscribe)
 					model.ApplicationMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
-						ProcessCarry, marketName))
+						carryHandler, marketName))
 				}
 				//util.SocketInfo(marketName + " new channel reset done")
 			}
@@ -188,7 +192,7 @@ func Maintain() {
 	go MaintainOrders()
 	model.ApplicationMarkets = model.NewMarkets()
 	for true {
-		go MaintainMarketChan()
+		go MaintainMarketChan(ProcessCarry)
 		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)
 	}
 }

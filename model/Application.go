@@ -27,6 +27,7 @@ var BidChannel = make(chan Carry, 50)
 var AskChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var ApplicationMarkets *Markets
+var WorkingCarryNum = 0
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"

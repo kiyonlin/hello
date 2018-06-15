@@ -1,11 +1,11 @@
 package carry
 
 import (
-	"time"
-	"hello/model"
-	"hello/util"
 	"fmt"
 	"hello/api"
+	"hello/model"
+	"hello/util"
+	"time"
 )
 
 func cancelOrder(market string, symbol string, orderId string) {
@@ -55,6 +55,7 @@ func MaintainOrders() {
 		model.ApplicationDB.Where(
 			"deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).
 			Find(&carries)
+		model.WorkingCarryNum = len(carries)
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
 			// cancel order if delay too long (180 seconds)
