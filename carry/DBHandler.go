@@ -83,38 +83,27 @@ func AccountDBHandlerServe() {
 	}
 }
 
-func BidUpdate() {
+func BidAskUpdate() {
 	for true {
 		var carryInDb model.Carry
-		carry := <-model.BidChannel
-		model.ApplicationDB.Where("deal_bid_order_id = ? AND deal_bid_err_code = ?", carry.DealBidOrderId,
-			carry.DealBidErrCode).First(&carryInDb)
+		carry := <-model.BidAskChannel
+		model.ApplicationDB.Where("ask_time = ? AND bid_time = ?", carry.AskTime, carry.BidTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
-			util.SocketInfo("create new bid " + carry.ToString())
+			util.Notice("create new ask " + carry.ToString())
 			model.ApplicationDB.Create(&carry)
 		} else {
-			util.Notice("update old bid " + carry.ToString())
-			model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
-				"deal_bid_order_id": carryInDb.DealBidOrderId, "deal_bid_err_code": carryInDb.DealBidErrCode,
-				"deal_bid_status": carryInDb.DealBidStatus})
-		}
-	}
-}
-
-func AskUpdate() {
-	for true {
-		var carryInDb model.Carry
-		carry := <-model.AskChannel
-		model.ApplicationDB.Where("deal_ask_order_id = ? AND deal_ask_err_code = ?", carry.DealAskOrderId,
-			carry.DealAskErrCode).First(&carryInDb)
-		if model.ApplicationDB.NewRecord(&carryInDb) {
-			util.SocketInfo("create new ask " + carry.ToString())
-			model.ApplicationDB.Create(&carry)
-		} else {
-			util.Notice("update old ask " + carry.ToString())
-			model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
-				"deal_ask_order_id": carryInDb.DealAskOrderId, "deal_ask_err_code": carryInDb.DealAskErrCode,
-				"deal_ask_status": carryInDb.DealAskStatus})
+			util.Notice(carry.DealAskOrderId + " update old " + carry.SideType + carry.ToString())
+			if carry.SideType == `ask` {
+				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
+					"deal_ask_order_id": carry.DealAskOrderId, "deal_ask_err_code": carry.DealAskErrCode,
+					"deal_ask_status": carry.DealAskStatus})
+			} else if carry.SideType == `bid` {
+				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
+					"deal_bid_order_id": carry.DealBidOrderId, "deal_bid_err_code": carry.DealBidErrCode,
+					"deal_bid_status": carry.DealBidStatus})
+			} else {
+				// TODO 处理其他更新类型
+			}
 		}
 	}
 }

@@ -29,11 +29,12 @@ type Carry struct {
 	DealAskStatus  string
 	Margin         float64
 	// time_idx的设计有一定的冲突风险，但为了在发起挂单前减少一次db操作而不使用carry的id
-	BidTime   int64 `gorm:"unique_index:time_idx;"`
-	AskTime   int64 `gorm:"unique_index:time_idx;"`
-	ID        uint  `gorm:"primary_key"`
+	BidTime   int64
+	AskTime   int64
+	ID        uint `gorm:"primary_key"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	SideType  string
 }
 
 func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64) {

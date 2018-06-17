@@ -108,7 +108,7 @@ var ProcessCarry = func(carry *model.Carry) {
 		go api.DoAsk(carry, strAskPrice, strLeftBalance)
 		go api.DoBid(carry, strBidPrice, strLeftBalance)
 	} else {
-		model.BidChannel <- *carry
+		model.BidAskChannel <- *carry
 	}
 }
 
@@ -182,8 +182,7 @@ func Maintain() {
 	model.ApplicationDB.AutoMigrate(&model.Account{})
 	go api.RefreshAccounts()
 	go DBHandlerServe()
-	go AskUpdate()
-	go BidUpdate()
+	go BidAskUpdate()
 	go AccountDBHandlerServe()
 	go MaintainOrders()
 	model.ApplicationMarkets = model.NewMarkets()

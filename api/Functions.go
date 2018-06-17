@@ -50,7 +50,8 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 	} else {
 		carry.DealAskStatus = model.CarryStatusWorking
 	}
-	model.AskChannel <- *carry
+	carry.SideType = `ask`
+	model.BidAskChannel <- *carry
 	return orderId, errCode
 }
 
@@ -79,7 +80,8 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	} else {
 		carry.DealBidStatus = model.CarryStatusWorking
 	}
-	model.BidChannel <- *carry
+	carry.SideType = `bid`
+	model.BidAskChannel <- *carry
 	return orderId, errCode
 }
 

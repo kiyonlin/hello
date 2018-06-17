@@ -16,6 +16,7 @@ const Fcoin = "fcoin"
 var HuobiAccountId = "1651065"
 var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
+
 //const BaseCarryCost = 0.0004 // 当前搬砖的最低手续费是万分之4
 
 var ApplicationConfig *Config
@@ -23,8 +24,7 @@ var ApplicationConfig *Config
 var ApplicationAccounts = NewAccounts()
 var ApplicationDB *gorm.DB
 var CarryChannel = make(chan Carry, 50)
-var BidChannel = make(chan Carry, 50)
-var AskChannel = make(chan Carry, 50)
+var BidAskChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var ApplicationMarkets *Markets
 
@@ -131,7 +131,8 @@ type Config struct {
 	RestUrls      map[string]string   // marketName - rest url
 	ApiKeys       map[string]string
 	ApiSecrets    map[string]string
-	OrderWait     int64 // fcoin 刷单平均等待时间
+	OrderWait     int64   // fcoin 刷单平均等待时间
+	AmountRate    float64 // 刷单填写数量比率
 }
 
 func SetApiKeys() {

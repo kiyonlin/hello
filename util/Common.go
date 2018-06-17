@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"time"
 	"net/url"
+	"math"
 )
 
 func UnGzip(byte []byte) []byte {
@@ -55,4 +56,14 @@ func GetNow() time.Time {
 
 func GetNowUnixMillion() int64 {
 	return GetNow().Unix() * 1000
+}
+
+func GetPrecision(num float64) int {
+	for i := 0; true; i++ {
+		temp := num * math.Pow(10, float64(i))
+		if temp == math.Floor(temp) {
+			return i
+		}
+	}
+	return 0
 }
