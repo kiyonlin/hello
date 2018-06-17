@@ -36,7 +36,7 @@ var OrderStatusMap = map[string]string{
 	// Binance
 	"NEW":              CarryStatusWorking,
 	"PARTIALLY_FILLED": CarryStatusWorking,
-	"PENDING_CANCEL":   CarryStatusWorking,
+	"PENDING_CANCEL":   CarryStatusSuccess,
 	"FILLED":           CarryStatusSuccess,
 	"CANCELED":         CarryStatusFail,
 	"REJECTED":         CarryStatusFail,

@@ -22,7 +22,7 @@ func RefreshAccounts() {
 				GetAccountFcoin(model.ApplicationAccounts)
 			}
 		}
-		time.Sleep(time.Minute * 1)
+		time.Sleep(time.Second * 20)
 	}
 }
 

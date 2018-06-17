@@ -64,7 +64,7 @@ func MaintainOrders() {
 				queryOrder(&carry)
 			}
 		}
-		time.Sleep(time.Minute * 1)
+		time.Sleep(time.Second * 20)
 	}
 }
 
