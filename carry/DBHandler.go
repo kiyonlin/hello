@@ -87,16 +87,16 @@ func BidUpdate() {
 	for true {
 		var carryInDb model.Carry
 		carry := <-model.BidChannel
-		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
+		model.ApplicationDB.Where("deal_bid_order_id = ? AND deal_bid_err_code = ?", carry.DealBidOrderId,
+			carry.DealBidErrCode).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
 			util.SocketInfo("create new bid " + carry.ToString())
 			model.ApplicationDB.Create(&carry)
 		} else {
 			util.Notice("update old bid " + carry.ToString())
-			carryInDb.DealBidOrderId = carry.DealBidOrderId
-			carryInDb.DealBidErrCode = carry.DealBidErrCode
-			carryInDb.DealBidStatus = carry.DealBidStatus
-			model.ApplicationDB.Save(&carryInDb)
+			model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
+				"deal_bid_order_id": carryInDb.DealBidOrderId, "deal_bid_err_code": carryInDb.DealBidErrCode,
+				"deal_bid_status": carryInDb.DealBidStatus})
 		}
 	}
 }
@@ -105,14 +105,16 @@ func AskUpdate() {
 	for true {
 		var carryInDb model.Carry
 		carry := <-model.AskChannel
-		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
+		model.ApplicationDB.Where("deal_ask_order_id = ? AND deal_ask_err_code = ?", carry.DealAskOrderId,
+			carry.DealAskErrCode).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
+			util.SocketInfo("create new ask " + carry.ToString())
 			model.ApplicationDB.Create(&carry)
 		} else {
-			carryInDb.DealAskOrderId = carry.DealAskOrderId
-			carryInDb.DealAskErrCode = carry.DealAskErrCode
-			carryInDb.DealAskStatus = carry.DealAskStatus
-			model.ApplicationDB.Save(&carryInDb)
+			util.Notice("update old ask " + carry.ToString())
+			model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
+				"deal_ask_order_id": carryInDb.DealAskOrderId, "deal_ask_err_code": carryInDb.DealAskErrCode,
+				"deal_ask_status": carryInDb.DealAskStatus})
 		}
 	}
 }
