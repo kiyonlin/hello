@@ -55,7 +55,6 @@ func MaintainOrders() {
 		model.ApplicationDB.Where(
 			"deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).
 			Find(&carries)
-		model.WorkingCarryNum = len(carries)
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
 			// cancel order if delay too long (180 seconds)
@@ -65,7 +64,7 @@ func MaintainOrders() {
 				queryOrder(&carry)
 			}
 		}
-		time.Sleep(time.Minute * 3)
+		time.Sleep(time.Minute * 1)
 	}
 }
 

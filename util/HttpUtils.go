@@ -1,10 +1,10 @@
 package util
 
 import (
-	"strings"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 //	method: GET, POST, DELETE

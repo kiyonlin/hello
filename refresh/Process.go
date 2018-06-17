@@ -1,91 +1,98 @@
 package refresh
 
 import (
-	"time"
 	"github.com/jinzhu/configor"
 	"github.com/jinzhu/gorm"
-	"hello/util"
-	"hello/model"
 	"hello/api"
 	"hello/carry"
+	"hello/model"
+	"hello/util"
+	"math/rand"
+	"strconv"
+	"strings"
+	"time"
 )
 
+var lastOrderTime int64
+var ordering = false
+
+func checkTime(begin, end int64) bool {
+	now := util.GetNowUnixMillion()
+	if now-lastOrderTime < begin {
+		return false
+	}
+	if end <= begin || now-lastOrderTime > end {
+		return true
+	}
+	if rand.Int63n(end-begin+1) > now-lastOrderTime {
+		return false
+	}
+	return true
+}
+
+// 只取第一位
+func calcAmount(originalAmount float64) (num float64, err error) {
+	str := strconv.FormatFloat(originalAmount, 'f', -1, 64)
+	bytes := []byte(str)
+	startReplace := false
+	for i, v := range bytes {
+		if startReplace && v != '.' {
+			bytes[i] = '0'
+		}
+		if v != '0' && v != '.' {
+			startReplace = true
+		}
+	}
+	return strconv.ParseFloat(string(bytes), 64)
+}
+
 var ProcessRefresh = func(carry *model.Carry) {
-	//currencies := strings.Split(carry.Symbol, "_")
-	//leftBalance := 0.0
-	//rightBalance := 0.0
-	//account := model.ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
-	//if account == nil {
-	//	util.Notice(`nil account ` + carry.AskWeb + currencies[0])
-	//	return
-	//}
-	//leftBalance = account.Free
-	//account = model.ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
-	//if account == nil {
-	//	util.Notice(`nil account ` + carry.BidWeb + currencies[1])
-	//	return
-	//}
-	//rightBalance = account.Free
-	//priceInUsdt, _ := model.GetBuyPriceOkex(currencies[0] + "_usdt")
-	//minAmount := model.ApplicationConfig.MinUsdt / priceInUsdt
-	//maxAmount := model.ApplicationConfig.MaxUsdt / priceInUsdt
-	//if carry.Amount > maxAmount {
-	//	carry.Amount = maxAmount
-	//}
-	//if leftBalance > carry.Amount {
-	//	leftBalance = carry.Amount
-	//}
-	//if leftBalance*carry.BidPrice > rightBalance {
-	//	leftBalance = rightBalance / carry.BidPrice
-	//}
-	//planAmount, _ := calcAmount(carry.Amount)
-	//carry.Amount = planAmount
-	//leftBalance, _ = calcAmount(leftBalance)
-	//strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
-	//strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
-	//strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
-	//
-	//timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
-	//marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
-	//if !carry.CheckWorthSaveMargin() {
-	//	// no need to save carry with margin < base cost
-	//	return
-	//}
-	//doCarry := false
-	//if !timeOk {
-	//	carry.DealAskStatus = `NotOnTime`
-	//	carry.DealBidStatus = `NotOnTime`
-	//	util.SocketInfo(`get carry not on time` + carry.ToString())
-	//} else {
-	//	if !marginOk {
-	//		carry.DealAskStatus = `NotWorth`
-	//		carry.DealBidStatus = `NotWorth`
-	//		util.SocketInfo(`get carry no worth` + carry.ToString())
-	//	} else {
-	//		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
-	//		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
-	//		if leftBalance < minAmount {
-	//			carry.DealAskStatus = `NotEnough`
-	//			carry.DealBidStatus = `NotEnough`
-	//			util.Info(fmt.Sprintf(`leftB %f rightB/bidPrice %f/%f NotEnough %f - %f %s`, account.Free,
-	//				rightBalance, carry.BidPrice, leftBalance, minAmount, carry.ToString()))
-	//		} else {
-	//			if model.ApplicationConfig.Env == `test` {
-	//				carry.DealAskStatus = `NotDo`
-	//				carry.DealBidStatus = `NotDo`
-	//			} else {
-	//				util.Notice(`get carry worth` + carry.ToString())
-	//				doCarry = true
-	//			}
-	//		}
-	//	}
-	//}
-	//if doCarry {
-	//	go api.DoAsk(carry, strAskPrice, strLeftBalance)
-	//	go api.DoBid(carry, strBidPrice, strLeftBalance)
-	//} else {
-	//	model.BidChannel <- *carry
-	//}
+	if ordering == true {
+		return
+	}
+	ordering = true
+	if !checkTime(model.ApplicationConfig.OrderWait-1000, model.ApplicationConfig.OrderWait+1000) {
+		return
+	}
+	lastOrderTime = util.GetNowUnixMillion()
+	currencies := strings.Split(carry.Symbol, "_")
+	account := model.ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
+	if account == nil {
+		util.Notice(`nil account ` + carry.AskWeb + currencies[0])
+		return
+	}
+	leftBalance := account.Free
+	account = model.ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
+	if account == nil {
+		util.Notice(`nil account ` + carry.BidWeb + currencies[1])
+		return
+	}
+	if leftBalance > carry.Amount {
+		leftBalance = carry.Amount
+	}
+	rightBalance := account.Free
+	if leftBalance*carry.BidPrice > rightBalance {
+		leftBalance = rightBalance / carry.BidPrice
+	}
+	carry.Amount, _ = calcAmount(carry.Amount)
+	leftBalance, _ = calcAmount(leftBalance)
+	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
+	carry.AskPrice = carry.BidPrice + (carry.AskPrice-carry.BidPrice)*2/3
+	carry.BidPrice = carry.BidPrice + (carry.AskPrice-carry.BidPrice)*2/3
+	strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
+	strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
+	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
+	if !timeOk {
+		util.SocketInfo(`get carry not on time` + carry.ToString())
+		return
+	} else {
+		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
+		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+		util.Notice(`get carry worth` + carry.ToString())
+		go api.DoAsk(carry, strAskPrice, strLeftBalance)
+		go api.DoBid(carry, strBidPrice, strLeftBalance)
+	}
+	ordering = false
 }
 
 func Maintain() {

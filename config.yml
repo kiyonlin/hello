@@ -33,6 +33,9 @@ maxusdt: 1500
 #env: aws
 #dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 env: ace
-dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
+#dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
 #env: andrew
 #dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+dbconnection: host=139.196.84.85 port=5432 user=postgres dbname=test password=tarotpostgres sslmode=disable
+
+orderwait: 10000

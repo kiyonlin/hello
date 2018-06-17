@@ -35,10 +35,6 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var ProcessCarry = func(carry *model.Carry) {
-	if model.WorkingCarryNum > 1 {
-		util.Notice(`waiting for more than 1 working carry, return`)
-		return
-	}
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
 	rightBalance := 0.0
