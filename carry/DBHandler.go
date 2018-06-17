@@ -57,14 +57,19 @@ func MaintainOrders() {
 			Find(&carries)
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
-			// cancel order if delay too long (180 seconds)
-			if util.GetNowUnixMillion()-carry.BidTime > 180000 || util.GetNowUnixMillion()-carry.AskTime > 180000 {
+			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking &&
+				util.GetNowUnixMillion()-carry.BidTime < 10000{ // 忽略十分钟以前的
 				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				queryOrder(&carry)
+			}
+			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking &&
+				util.GetNowUnixMillion()-carry.AskTime < 10000{
 				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				queryOrder(&carry)
 			}
+			time.Sleep(time.Second * 1)
 		}
-		time.Sleep(time.Second * 20)
+		time.Sleep(time.Minute * 1)
 	}
 }
 
