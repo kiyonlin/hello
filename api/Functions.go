@@ -7,12 +7,21 @@ import (
 )
 
 func RefreshAccounts() {
-	model.HuobiAccountId, _ = GetSpotAccountId(model.ApplicationConfig)
 	for true {
-		GetAccountHuobi(model.ApplicationAccounts)
-		GetAccountOkex(model.ApplicationAccounts)
-		GetAccountBinance(model.ApplicationAccounts)
-		GetAccountFcoin(model.ApplicationAccounts)
+		markets := model.ApplicationConfig.Markets
+		for _, value := range markets {
+			switch value {
+			case model.Huobi:
+				model.HuobiAccountId, _ = GetSpotAccountId(model.ApplicationConfig)
+				GetAccountHuobi(model.ApplicationAccounts)
+			case model.OKEX:
+				GetAccountOkex(model.ApplicationAccounts)
+			case model.Binance:
+				GetAccountBinance(model.ApplicationAccounts)
+			case model.Fcoin:
+				GetAccountFcoin(model.ApplicationAccounts)
+			}
+		}
 		time.Sleep(time.Minute * 1)
 	}
 }
@@ -74,3 +83,38 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	return orderId, errCode
 }
 
+func Maintain(accounts *model.Accounts, marketName string) {
+	accounts.Lock.Lock()
+	defer accounts.Lock.Unlock()
+	if accounts.Data[marketName] == nil {
+		return
+	}
+	accounts.MarketTotal[marketName] = 0
+	for key, value := range accounts.Data[marketName] {
+		value.PriceInUsdt, _ = GetBuyPriceFcoin(key + "_usdt")
+		accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
+	}
+	if accounts.MarketTotal[marketName] == 0 {
+		util.Notice(marketName + " balance is empty!!!!!!!!!!!")
+		accounts.MarketTotal[marketName] = 1
+	}
+	for _, value := range accounts.Data[marketName] {
+		value.Percentage = value.PriceInUsdt * (value.Free + value.Frozen) / accounts.MarketTotal[marketName]
+	}
+	// calculate currency percentage of all markets
+	accounts.TotalInUsdt = 0
+	for _, value := range accounts.MarketTotal {
+		accounts.TotalInUsdt += value
+	}
+	accounts.CurrencyTotal = make(map[string]float64)
+	for _, currencies := range accounts.Data {
+		for currency, account := range currencies {
+			accounts.CurrencyTotal[currency] += (account.Free + account.Frozen) * account.PriceInUsdt
+		}
+	}
+	accounts.CurrencyPercentage = make(map[string]float64)
+	for currency, value := range accounts.CurrencyTotal {
+		accounts.CurrencyPercentage[currency] = value / accounts.TotalInUsdt
+	}
+	model.AccountChannel <- accounts.Data[marketName]
+}

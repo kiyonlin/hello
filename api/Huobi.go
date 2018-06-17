@@ -219,5 +219,5 @@ func GetAccountHuobi(accounts *model.Accounts) {
 			}
 		}
 	}
-	accounts.Maintain(model.Huobi)
+	Maintain(accounts, model.Huobi)
 }

@@ -164,5 +164,5 @@ func GetAccountBinance(accounts *model.Accounts) {
 			}
 		}
 	}
-	accounts.Maintain(model.Binance)
+	Maintain(accounts, model.Binance)
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/jinzhu/gorm"
 	"hello/util"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -15,7 +14,8 @@ const Binance = "binance"
 const Fcoin = "fcoin"
 
 var HuobiAccountId = "1651065"
-
+var CurrencyPrice = make(map[string]float64)
+var GetBuyPriceTime = make(map[string]int64)
 //const BaseCarryCost = 0.0004 // 当前搬砖的最低手续费是万分之4
 
 var ApplicationConfig *Config
@@ -212,31 +212,4 @@ func (config *Config) GetDelay(symbol string) (float64, error) {
 		}
 	}
 	return 0, errors.New("no such symbol")
-}
-
-var currencyPrice = make(map[string]float64)
-var getBuyPriceOkexTime = make(map[string]int64)
-
-func GetBuyPriceOkex(symbol string) (buy float64, err error) {
-	if ApplicationConfig == nil {
-		NewConfig()
-	}
-	if getBuyPriceOkexTime[symbol] != 0 && util.GetNowUnixMillion()-getBuyPriceOkexTime[symbol] < 3600000 {
-		return currencyPrice[symbol], nil
-	}
-	getBuyPriceOkexTime[symbol] = util.GetNowUnixMillion()
-	strs := strings.Split(symbol, "_")
-	if strs[0] == strs[1] || strs[0] == `ft` {
-		currencyPrice[symbol] = 1
-	} else {
-		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-			"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-		responseBody, _ := util.HttpRequest("GET", ApplicationConfig.RestUrls[OKEX]+"/ticker.do?symbol="+symbol, "", headers)
-		tickerJson, err := util.NewJSON(responseBody)
-		if err == nil {
-			strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
-			currencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
-		}
-	}
-	return currencyPrice[symbol], err
 }

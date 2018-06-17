@@ -1,17 +1,17 @@
 package api
 
 import (
-	"encoding/json"
-	"github.com/gorilla/websocket"
-	"sort"
-	"strconv"
 	"crypto/md5"
-	"net/url"
-	"strings"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
-	"fmt"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 type OKEXMessage struct {
@@ -104,8 +104,7 @@ func PlaceOrderOkex(symbol string, orderType string, price string, amount string
 	postData.Set("price", price)
 	postData.Set("amount", amount)
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", postData.Encode(), headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -130,8 +129,7 @@ func CancelOrderOkex(symbol string, orderId string) {
 	postData.Set("symbol", symbol)
 	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", postData.Encode(), headers)
 	util.SocketInfo("okex cancel order" + orderId + string(responseBody))
@@ -143,8 +141,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 	postData.Set("symbol", symbol)
 	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do",
 		postData.Encode(), headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -167,8 +164,7 @@ func GetAccountOkex(accounts *model.Accounts) {
 	postData := url.Values{}
 	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
 	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do",
 		postData.Encode(), headers)
 	balanceJson, err := util.NewJSON(responseBody)
@@ -202,5 +198,30 @@ func GetAccountOkex(accounts *model.Accounts) {
 			account.Frozen = balance
 		}
 	}
-	accounts.Maintain(model.OKEX)
+	Maintain(accounts, model.OKEX)
 }
+
+//func GetBuyPriceOkex(symbol string) (buy float64, err error) {
+//	if model.ApplicationConfig == nil {
+//		model.NewConfig()
+//	}
+//	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
+//		return model.CurrencyPrice[symbol], nil
+//	}
+//	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
+//	strs := strings.Split(symbol, "_")
+//	if strs[0] == strs[1] {
+//		model.CurrencyPrice[symbol] = 1
+//	} else {
+//		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+//			"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+//		responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+
+//			"/ticker.do?symbol="+ symbol, "", headers)
+//		tickerJson, err := util.NewJSON(responseBody)
+//		if err == nil {
+//			strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
+//			model.CurrencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
+//		}
+//	}
+//	return model.CurrencyPrice[symbol], err
+//}

@@ -74,7 +74,7 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandler CarryHandler, errHan
 		wsHandler, errHandler)
 }
 
-func signedRequest(method, path string, postMap map[string]interface{}) []byte {
+func SignedRequest(method, path string, postMap map[string]interface{}) []byte {
 	uri := model.ApplicationConfig.RestUrls[model.Fcoin] + path
 	time := strconv.FormatInt(util.GetNow().UnixNano(), 10)[0:13]
 	postData := &url.Values{}
@@ -108,7 +108,7 @@ func PlaceOrderFcoin(symbol, side, price, amount string) (orderId, errCode strin
 	postData["side"] = side
 	postData["amount"] = amount
 	postData["price"] = price
-	responseBody := signedRequest("POST", "/orders", postData)
+	responseBody := SignedRequest("POST", "/orders", postData)
 	//fmt.Println("\n" + string(responseBody))
 	util.Notice(symbol + "挂单fcoin:" + price + side + amount + "返回" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -123,14 +123,14 @@ func PlaceOrderFcoin(symbol, side, price, amount string) (orderId, errCode strin
 }
 
 func CancelOrderFcoin(orderId string) {
-	responseBody := signedRequest(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
+	responseBody := SignedRequest(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
 	util.Notice("fcoin cancel order" + string(responseBody))
 }
 
 func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string) {
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody := signedRequest(`GET`, `/orders/`+orderId, postData)
+	responseBody := SignedRequest(`GET`, `/orders/`+orderId, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderJson = orderJson.Get(`data`)
@@ -147,7 +147,7 @@ func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string)
 
 func GetAccountFcoin(accounts *model.Accounts) {
 	accounts.ClearAccounts(model.Fcoin)
-	responseBody := signedRequest(`GET`, `/accounts/balance`, nil)
+	responseBody := SignedRequest(`GET`, `/accounts/balance`, nil)
 	balanceJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		status, _ := balanceJson.Get("status").Int()
@@ -166,5 +166,35 @@ func GetAccountFcoin(accounts *model.Accounts) {
 			}
 		}
 	}
-	accounts.Maintain(model.Fcoin)
+	Maintain(accounts, model.Fcoin)
+}
+
+func GetBuyPriceFcoin(symbol string) (buy float64, err error) {
+	if model.ApplicationConfig == nil {
+		model.NewConfig()
+	}
+	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
+		return model.CurrencyPrice[symbol], nil
+	}
+	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
+	strs := strings.Split(symbol, "_")
+	model.CurrencyPrice[symbol] = 0
+	if strs[0] == strs[1] {
+		model.CurrencyPrice[symbol] = 1
+	} else {
+		requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
+		responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
+			``, nil)
+		if err == nil {
+			orderJson, err := util.NewJSON([]byte(responseBody))
+			if err == nil {
+				orderJson = orderJson.Get(`data`)
+				tickerType, _ := orderJson.Get(`type`).String()
+				if strings.Contains(tickerType, requestSymbol) {
+					model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
+				}
+			}
+		}
+	}
+	return model.CurrencyPrice[symbol], nil
 }
