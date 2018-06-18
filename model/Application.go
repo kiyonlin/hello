@@ -133,6 +133,7 @@ type Config struct {
 	ApiSecrets    map[string]string
 	OrderWait     int64   // fcoin 刷单平均等待时间
 	AmountRate    float64 // 刷单填写数量比率
+	Handle        int64     // 0 不执行处理程序，1执行处理程序
 }
 
 func SetApiKeys() {
