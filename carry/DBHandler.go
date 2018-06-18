@@ -57,13 +57,11 @@ func MaintainOrders() {
 			Find(&carries)
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
-			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking &&
-				util.GetNowUnixMillion()-carry.BidTime < 600000{ // 忽略十分钟以前的
+			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking {
 				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 				queryOrder(&carry)
 			}
-			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking &&
-				util.GetNowUnixMillion()-carry.AskTime < 600000{
+			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
 				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				queryOrder(&carry)
 			}
@@ -101,11 +99,11 @@ func BidAskUpdate() {
 			if carry.SideType == `ask` {
 				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
 					"deal_ask_order_id": carry.DealAskOrderId, "deal_ask_err_code": carry.DealAskErrCode,
-					"deal_ask_status": carry.DealAskStatus})
+					"deal_ask_status":   carry.DealAskStatus})
 			} else if carry.SideType == `bid` {
 				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
 					"deal_bid_order_id": carry.DealBidOrderId, "deal_bid_err_code": carry.DealBidErrCode,
-					"deal_bid_status": carry.DealBidStatus})
+					"deal_bid_status":   carry.DealBidStatus})
 			} else {
 				// TODO 处理其他更新类型
 			}
