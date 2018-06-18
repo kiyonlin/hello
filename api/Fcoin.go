@@ -122,9 +122,15 @@ func PlaceOrderFcoin(symbol, side, price, amount string) (orderId, errCode strin
 	return ``, err.Error()
 }
 
-func CancelOrderFcoin(orderId string) {
+func CancelOrderFcoin(orderId string) int{
 	responseBody := SignedRequest(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
+	json, err := util.NewJSON([]byte(responseBody))
+	status := -1
+	if err == nil {
+		status, _ = json.Get(`status`).Int()
+	}
 	util.Notice("fcoin cancel order" + string(responseBody))
+	return status
 }
 
 func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string) {
