@@ -58,12 +58,12 @@ func MaintainOrders() {
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
 			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking &&
-				util.GetNowUnixMillion()-carry.BidTime < 10000{ // 忽略十分钟以前的
+				util.GetNowUnixMillion()-carry.BidTime < 600000{ // 忽略十分钟以前的
 				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 				queryOrder(&carry)
 			}
 			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking &&
-				util.GetNowUnixMillion()-carry.AskTime < 10000{
+				util.GetNowUnixMillion()-carry.AskTime < 600000{
 				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				queryOrder(&carry)
 			}
