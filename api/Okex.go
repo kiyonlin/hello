@@ -98,12 +98,12 @@ func signOkex(postData *url.Values, secretKey string) {
 // orderType:  限价单（buy/sell） 市价单（buy_market/sell_market）
 func PlaceOrderOkex(symbol string, orderType string, price string, amount string) (orderId, errCode string) {
 	postData := url.Values{}
-	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
+	postData.Set("api_key", model.ApplicationConfig.OkexKey)
 	postData.Set("symbol", symbol)
 	postData.Set("type", orderType)
 	postData.Set("price", price)
 	postData.Set("amount", amount)
-	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
+	signOkex(&postData, model.ApplicationConfig.OkexSecret)
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", postData.Encode(), headers)
@@ -127,8 +127,8 @@ func CancelOrderOkex(symbol string, orderId string) {
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
-	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
-	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
+	postData.Set("api_key", model.ApplicationConfig.OkexKey)
+	signOkex(&postData, model.ApplicationConfig.OkexSecret)
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", postData.Encode(), headers)
@@ -139,8 +139,8 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
-	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
-	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
+	postData.Set("api_key", model.ApplicationConfig.OkexKey)
+	signOkex(&postData, model.ApplicationConfig.OkexSecret)
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do",
 		postData.Encode(), headers)
@@ -162,8 +162,8 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 func GetAccountOkex(accounts *model.Accounts) {
 	accounts.ClearAccounts(model.OKEX)
 	postData := url.Values{}
-	postData.Set("api_key", model.ApplicationConfig.ApiKeys[model.OKEX])
-	signOkex(&postData, model.ApplicationConfig.ApiSecrets[model.OKEX])
+	postData.Set("api_key", model.ApplicationConfig.OkexKey)
+	signOkex(&postData, model.ApplicationConfig.OkexSecret)
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do",
 		postData.Encode(), headers)

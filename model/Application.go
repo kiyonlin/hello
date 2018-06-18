@@ -2,8 +2,8 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"github.com/jinzhu/gorm"
-	"hello/util"
 	"strings"
 	"sync"
 )
@@ -129,31 +129,19 @@ type Config struct {
 	subscribes    map[string][]string // marketName - subscribes
 	WSUrls        map[string]string   // marketName - ws url
 	RestUrls      map[string]string   // marketName - rest url
-	ApiKeys       map[string]string
-	ApiSecrets    map[string]string
+	HuobiKey      string
+	HuobiSecret   string
+	OkexKey       string
+	OkexSecret    string
+	BinanceKey    string
+	BinanceSecret string
+	FcoinKey      string
+	FcoinSecret   string
 	OrderWait     int64   // fcoin 刷单平均等待时间
 	AmountRate    float64 // 刷单填写数量比率
-	Handle        int64     // 0 不执行处理程序，1执行处理程序
+	Handle        int64   // 0 不执行处理程序，1执行处理程序
 }
 
-func SetApiKeys() {
-	ApplicationConfig.ApiKeys = make(map[string]string)
-	ApplicationConfig.ApiSecrets = make(map[string]string)
-	util.Notice("begin to set keys")
-	//if ApplicationConfig.Env == "aws" {
-	//	util.Notice("under aws environment")
-	ApplicationConfig.ApiKeys[Huobi] = "003fe1c2-1a5a12e1-73668e50-6773e"    // sammi
-	ApplicationConfig.ApiSecrets[Huobi] = "05d114f3-6f455bf3-a640f2c4-06050" // sammi
-	ApplicationConfig.ApiKeys[OKEX] = "bb709a25-4d5b-4d9a-83ba-17cb514506fc" // sammi
-	ApplicationConfig.ApiSecrets[OKEX] = "7D0E1B435964B96D72728215CB369CD7"  // sammi
-	ApplicationConfig.ApiKeys[Binance] = "jKOAtt1OxuUZ2NyXdmFSBggmgR9beiHvt1DmBHvXMDBDQmEip2xgU8pEP5iHA9gn"
-	ApplicationConfig.ApiSecrets[Binance] = "EBVyA8aH0KoEKnnGrIbuRjUxLrx6b7UDk3XpTvpeXn0SEGSFjZZPqSLeoKLJE4Qh"
-	ApplicationConfig.ApiKeys[Fcoin] = "4c1db3d5a7124fb0bcf79579cc94ae1a"    // 25 server ace fcoin
-	ApplicationConfig.ApiSecrets[Fcoin] = "98002cf0d4f846a8b01e4ce73248ff28" // 25 server ace fcoin
-	//ApplicationConfig.ApiKeys[Fcoin] = "7c26be189ddc4e59aeb6021cfbfc3415"    // 3 server ace fcoin
-	//ApplicationConfig.ApiSecrets[Fcoin] = "54342819cbe148859f8d5ebdf384e607" // 3 server ace fcoin
-	//}
-}
 func NewConfig() {
 	ApplicationConfig = &Config{}
 	ApplicationConfig.subscribes = make(map[string][]string)
@@ -214,4 +202,31 @@ func (config *Config) GetDelay(symbol string) (float64, error) {
 		}
 	}
 	return 0, errors.New("no such symbol")
+}
+
+func (config *Config) ToString() string {
+	str := "markets:\n"
+	for _, value := range config.Markets {
+		str += "- " + value + "\n"
+	}
+	str += "symbols:\n"
+	for _, value := range config.Symbols {
+		str += "- " + value + "\n"
+	}
+	str += fmt.Sprintf("deduction: %f\n", config.Deduction)
+	str += "margins:\n"
+	for _, value := range config.Margins {
+		str += fmt.Sprintf("- %f\n", value)
+	}
+	str += "delays:\n"
+	for _, value := range config.Delays {
+		str += fmt.Sprintf("- %f\n", value)
+	}
+	str += fmt.Sprintf("basecarrycost: %f\n", config.BaseCarryCost)
+	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
+	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)
+	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
+	str += "env: " + config.Env + "\n"
+	str += "dbconnection: " + config.DBConnection
+	return str
 }

@@ -89,14 +89,14 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandler CarryHandler, errHan
 }
 
 func buildFormHuobi(postData *url.Values, path string, method string) {
-	postData.Set("AccessKeyId", model.ApplicationConfig.ApiKeys[model.Huobi])
+	postData.Set("AccessKeyId", model.ApplicationConfig.HuobiKey)
 	postData.Set("SignatureMethod", "HmacSHA256")
 	postData.Set("SignatureVersion", "2")
 	postData.Set("Timestamp", time.Now().UTC().Format("2006-01-02T15:04:05"))
 	domain := strings.Replace(model.ApplicationConfig.RestUrls[model.Huobi], "https://", "",
 		len(model.ApplicationConfig.RestUrls[model.Huobi]))
 	payload := fmt.Sprintf("%s\n%s\n%s\n%s", method, domain, path, postData.Encode())
-	hash := hmac.New(sha256.New, []byte(model.ApplicationConfig.ApiSecrets[model.Huobi]))
+	hash := hmac.New(sha256.New, []byte(model.ApplicationConfig.HuobiSecret))
 	hash.Write([]byte(payload))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	postData.Set("Signature", sign)

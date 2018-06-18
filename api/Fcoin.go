@@ -86,10 +86,10 @@ func SignedRequest(method, path string, postMap map[string]interface{}) []byte {
 		toBeBase += postData.Encode()
 	}
 	based := base64.StdEncoding.EncodeToString([]byte(toBeBase))
-	hash := hmac.New(sha1.New, []byte(model.ApplicationConfig.ApiSecrets[model.Fcoin]))
+	hash := hmac.New(sha1.New, []byte(model.ApplicationConfig.FcoinSecret))
 	hash.Write([]byte(based))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-	headers := map[string]string{`FC-ACCESS-KEY`: model.ApplicationConfig.ApiKeys[model.Fcoin],
+	headers := map[string]string{`FC-ACCESS-KEY`: model.ApplicationConfig.FcoinKey,
 		`FC-ACCESS-SIGNATURE`: sign, `FC-ACCESS-TIMESTAMP`: time, "Content-Type": "application/json"}
 	var responseBody []byte
 	if postMap == nil {
