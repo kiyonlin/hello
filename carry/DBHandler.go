@@ -22,7 +22,7 @@ func cancelOrder(market string, symbol string, orderId string) {
 }
 
 func queryOrder(carry *model.Carry) {
-	if carry.DealBidOrderId != "" {
+	if carry.DealBidOrderId != "" && carry.DealBidStatus == model.CarryStatusWorking {
 		switch carry.BidWeb {
 		case model.Huobi:
 			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderHuobi(carry.DealBidOrderId)
@@ -34,7 +34,7 @@ func queryOrder(carry *model.Carry) {
 			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
 		}
 	}
-	if carry.DealAskOrderId != "" {
+	if carry.DealAskOrderId != "" && carry.DealAskStatus == model.CarryStatusWorking {
 		switch carry.AskWeb {
 		case model.Huobi:
 			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderHuobi(carry.DealAskOrderId)
@@ -119,10 +119,18 @@ func DBHandlerServe() {
 		if model.ApplicationDB.NewRecord(&carryInDb) {
 			model.ApplicationDB.Create(&carry)
 		} else {
-			carryInDb.DealAskAmount = carry.DealAskAmount
-			carryInDb.DealBidAmount = carry.DealBidAmount
-			carryInDb.DealAskStatus = carry.DealAskStatus
-			carryInDb.DealBidStatus = carry.DealBidStatus
+			if carry.DealAskAmount != 0 {
+				carryInDb.DealAskAmount = carry.DealAskAmount
+			}
+			if carry.DealBidAmount != 0 {
+				carryInDb.DealBidAmount = carry.DealBidAmount
+			}
+			if carry.DealAskStatus != `` {
+				carryInDb.DealAskStatus = carry.DealAskStatus
+			}
+			if carry.DealBidStatus != `` {
+				carryInDb.DealBidStatus = carry.DealBidStatus
+			}
 			model.ApplicationDB.Save(&carryInDb)
 		}
 	}

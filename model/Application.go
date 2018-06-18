@@ -36,7 +36,7 @@ var OrderStatusMap = map[string]string{
 	// Binance
 	"NEW":              CarryStatusWorking,
 	"PARTIALLY_FILLED": CarryStatusWorking,
-	"PENDING_CANCEL":   CarryStatusWorking,
+	"PENDING_CANCEL":   CarryStatusSuccess,
 	"FILLED":           CarryStatusSuccess,
 	"CANCELED":         CarryStatusFail,
 	"REJECTED":         CarryStatusFail,
@@ -61,7 +61,7 @@ var OrderStatusMap = map[string]string{
 	// Fcoin
 	"partial_filled":   CarryStatusSuccess,
 	"partial_canceled": CarryStatusSuccess,
-	"pending_cancel":   CarryStatusWorking,
+	"pending_cancel":   CarryStatusSuccess,
 }
 
 // TODO filter out unsupported symbol for each market
