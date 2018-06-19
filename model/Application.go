@@ -163,11 +163,9 @@ func NewConfig() {
 func (config *Config) GetSubscribes(marketName string) []string {
 	for _, v := range config.Markets {
 		if v == marketName {
-			if config.subscribes[v] == nil {
-				config.subscribes[v] = make([]string, len(config.Symbols))
-				for i, symbol := range config.Symbols {
-					config.subscribes[v][i] = getWSSubscribe(marketName, symbol)
-				}
+			config.subscribes[v] = make([]string, len(config.Symbols))
+			for i, symbol := range config.Symbols {
+				config.subscribes[v][i] = getWSSubscribe(marketName, symbol)
 			}
 			return config.subscribes[v]
 		}
