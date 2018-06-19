@@ -201,7 +201,7 @@ func GetAccountOkex(accounts *model.Accounts) {
 	Maintain(accounts, model.OKEX)
 }
 
-func GetBuyPriceOkex(symbol string) (buy float64, err error) {
+func getBuyPriceOkex(symbol string) (buy float64, err error) {
 	model.CurrencyPrice[symbol] = 0
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
