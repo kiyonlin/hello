@@ -175,7 +175,7 @@ func GetAccountFcoin(accounts *model.Accounts) {
 	Maintain(accounts, model.Fcoin)
 }
 
-func GetBuyPriceFcoin(symbol string) (buy float64, err error) {
+func getBuyPriceFcoin(symbol string) (buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.NewConfig()
 	}

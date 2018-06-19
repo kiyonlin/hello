@@ -4,6 +4,8 @@ import (
 	"time"
 	"hello/model"
 	"hello/util"
+	"strings"
+	"github.com/pkg/errors"
 )
 
 func RefreshAccounts() {
@@ -93,7 +95,8 @@ func Maintain(accounts *model.Accounts, marketName string) {
 	}
 	accounts.MarketTotal[marketName] = 0
 	for key, value := range accounts.Data[marketName] {
-		value.PriceInUsdt, _ = GetBuyPriceFcoin(key + "_usdt")
+		value.PriceInUsdt, _ = GetPrice(key + "_usdt")
+
 		accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
 	}
 	if accounts.MarketTotal[marketName] == 0 {
@@ -119,4 +122,15 @@ func Maintain(accounts *model.Accounts, marketName string) {
 		accounts.CurrencyPercentage[currency] = value / accounts.TotalInUsdt
 	}
 	model.AccountChannel <- accounts.Data[marketName]
+}
+
+func GetPrice(symbol string)(buy float64, err error) {
+	strs := strings.Split(symbol, "_")
+	if len(strs) != 2 {
+		return 0, errors.New(`wrong symbol ` + symbol)
+	}
+	if strs[0] == `ft` || strs[1] == `ft` {
+		return getBuyPriceFcoin(symbol)
+	}
+	return GetBuyPriceOkex(symbol)
 }

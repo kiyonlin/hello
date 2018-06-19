@@ -51,7 +51,7 @@ var ProcessCarry = func(carry *model.Carry) {
 		return
 	}
 	rightBalance = account.Free
-	priceInUsdt, _ := api.GetBuyPriceFcoin(currencies[0] + "_usdt")
+	priceInUsdt, _ := api.GetPrice(currencies[0] + "_usdt")
 	minAmount := model.ApplicationConfig.MinUsdt / priceInUsdt
 	maxAmount := model.ApplicationConfig.MaxUsdt / priceInUsdt
 	if carry.Amount > maxAmount {
