@@ -142,5 +142,8 @@ func GetPrice(symbol string)(buy float64, err error) {
 	if strs[0] == `ft` || strs[1] == `ft` {
 		return getBuyPriceFcoin(symbol)
 	}
-	return GetBuyPriceOkex(symbol)
+	if model.ApplicationConfig.InChina != 1 {
+		return GetBuyPriceOkex(symbol)
+	}
+	return 1, nil
 }
