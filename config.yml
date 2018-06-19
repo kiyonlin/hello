@@ -2,7 +2,7 @@ markets:
 #- huobi
 #- okex
 #- binance
-- fcoin
+#- fcoin
 
 symbols:
 - ft_usdt

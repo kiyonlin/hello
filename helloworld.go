@@ -1,6 +1,8 @@
 package main
 
-import "hello/carry"
+import (
+	"hello/carry"
+)
 
 func main() {
 	carry.Maintain()

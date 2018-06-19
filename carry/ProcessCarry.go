@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"hello/controller"
 )
 
 var WSErrHandler = func(err error) {
@@ -185,6 +186,7 @@ func Maintain() {
 	go AccountDBHandlerServe()
 	go MaintainOrders()
 	model.ApplicationMarkets = model.NewMarkets()
+	go controller.ParameterServe()
 	for true {
 		go MaintainMarketChan(ProcessCarry)
 		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)

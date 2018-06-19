@@ -2,10 +2,10 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"hello/model"
-	"strings"
+	"net/http"
 	"strconv"
+	"strings"
 )
 
 func ParameterServe() {
@@ -24,12 +24,49 @@ func SetParameters(c *gin.Context) {
 	if len(strings.TrimSpace(deduction)) > 0 {
 		model.ApplicationConfig.Deduction, _ = strconv.ParseFloat(deduction, 64)
 	}
-//	c.Query()
-//	if len(strings.TrimSpace())
-//deduction: 0.800000
-//basecarrycost: -0.000010
-//channelslot: 100000.000000
-//minusdt: 15.000000
-//maxusdt: 1500.000000
-//env: ace
+	baseCarryCost := c.Query("basecarrycost")
+	if len(strings.TrimSpace(baseCarryCost)) > 0 {
+		model.ApplicationConfig.BaseCarryCost, _ = strconv.ParseFloat(baseCarryCost, 64)
+	}
+	channelSlot := c.Query("channelslot")
+	if len(strings.TrimSpace(channelSlot)) > 0 {
+		model.ApplicationConfig.ChannelSlot, _ = strconv.ParseFloat(channelSlot, 64)
+	}
+	minUsdt := c.Query("minusdt")
+	if len(strings.TrimSpace(minUsdt)) > 0 {
+		model.ApplicationConfig.MinUsdt, _ = strconv.ParseFloat(minUsdt, 64)
+	}
+	maxUsdt := c.Query("maxusdt")
+	if len(strings.TrimSpace(maxUsdt)) > 0 {
+		model.ApplicationConfig.MaxUsdt, _ = strconv.ParseFloat(maxUsdt, 64)
+	}
+	env := c.Query("env")
+	if len(strings.TrimSpace(env)) > 0 {
+		model.ApplicationConfig.Env = env
+	}
+	markets := c.Query("markets")
+	if len(strings.TrimSpace(markets)) > 0 {
+		model.ApplicationConfig.Markets = strings.Split(strings.Replace(markets, " ", "", -1), ",")
+	}
+	symbols := c.Query("symbols")
+	if len(strings.TrimSpace(symbols)) > 0 {
+		model.ApplicationConfig.Symbols = strings.Split(strings.Replace(symbols, " ", "", -1), ",")
+	}
+	margins := c.Query("margins")
+	if len(strings.TrimSpace(margins)) > 0 {
+		strMargins := strings.Split(strings.Replace(margins, " ", "", -1), ",")
+		model.ApplicationConfig.Margins = make([]float64, len(strMargins))
+		for key, value := range strMargins {
+			model.ApplicationConfig.Margins[key], _ = strconv.ParseFloat(value, 64)
+		}
+	}
+	delays := c.Query("delays")
+	if len(strings.TrimSpace(delays)) > 0 {
+		strDelays := strings.Split(strings.Replace(delays, " ", "", -1), ",")
+		model.ApplicationConfig.Delays = make([]float64, len(strDelays))
+		for key, value := range strDelays {
+			model.ApplicationConfig.Delays[key], _ = strconv.ParseFloat(value, 64)
+		}
+	}
+	c.String(http.StatusOK, model.ApplicationConfig.ToString())
 }
