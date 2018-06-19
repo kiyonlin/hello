@@ -122,7 +122,7 @@ func PlaceOrderFcoin(symbol, side, price, amount string) (orderId, errCode strin
 	return ``, err.Error()
 }
 
-func CancelOrderFcoin(orderId string) int{
+func CancelOrderFcoin(orderId string) int {
 	responseBody := SignedRequest(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
 	json, err := util.NewJSON([]byte(responseBody))
 	status := -1
@@ -176,29 +176,17 @@ func GetAccountFcoin(accounts *model.Accounts) {
 }
 
 func getBuyPriceFcoin(symbol string) (buy float64, err error) {
-	if model.ApplicationConfig == nil {
-		model.NewConfig()
-	}
-	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
-		return model.CurrencyPrice[symbol], nil
-	}
-	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
-	strs := strings.Split(symbol, "_")
 	model.CurrencyPrice[symbol] = 0
-	if strs[0] == strs[1] {
-		model.CurrencyPrice[symbol] = 1
-	} else {
-		requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
-		responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
-			``, nil)
+	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
+		``, nil)
+	if err == nil {
+		orderJson, err := util.NewJSON([]byte(responseBody))
 		if err == nil {
-			orderJson, err := util.NewJSON([]byte(responseBody))
-			if err == nil {
-				orderJson = orderJson.Get(`data`)
-				tickerType, _ := orderJson.Get(`type`).String()
-				if strings.Contains(tickerType, requestSymbol) {
-					model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
-				}
+			orderJson = orderJson.Get(`data`)
+			tickerType, _ := orderJson.Get(`type`).String()
+			if strings.Contains(tickerType, requestSymbol) {
+				model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
 			}
 		}
 	}

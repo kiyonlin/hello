@@ -125,9 +125,19 @@ func Maintain(accounts *model.Accounts, marketName string) {
 }
 
 func GetPrice(symbol string)(buy float64, err error) {
+	if model.ApplicationConfig == nil {
+		model.NewConfig()
+	}
+	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
+		return model.CurrencyPrice[symbol], nil
+	}
+	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
 	strs := strings.Split(symbol, "_")
 	if len(strs) != 2 {
 		return 0, errors.New(`wrong symbol ` + symbol)
+	}
+	if strs[0] == strs[1] {
+		return 1, nil
 	}
 	if strs[0] == `ft` || strs[1] == `ft` {
 		return getBuyPriceFcoin(symbol)
