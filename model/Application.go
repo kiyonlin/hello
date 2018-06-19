@@ -226,6 +226,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
 	str += "env: " + config.Env + "\n"
+	str += fmt.Sprintf("channels: %d", config.Channels)
 	str += "dbconnection: " + config.DBConnection
 	return str
 }

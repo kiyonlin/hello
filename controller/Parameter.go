@@ -32,6 +32,11 @@ func SetParameters(c *gin.Context) {
 	if len(strings.TrimSpace(channelSlot)) > 0 {
 		model.ApplicationConfig.ChannelSlot, _ = strconv.ParseFloat(channelSlot, 64)
 	}
+	channels := c.Query("channels")
+	if len(strings.TrimSpace(channels)) > 0 {
+		temp, _ := strconv.ParseInt(channels, 10, 64)
+		model.ApplicationConfig.Channels = int(temp)
+	}
 	minUsdt := c.Query("minusdt")
 	if len(strings.TrimSpace(minUsdt)) > 0 {
 		model.ApplicationConfig.MinUsdt, _ = strconv.ParseFloat(minUsdt, 64)
