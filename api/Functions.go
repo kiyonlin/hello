@@ -128,6 +128,7 @@ func GetPrice(symbol string)(buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.NewConfig()
 	}
+	symbol = strings.ToLower(symbol)
 	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
 		return model.CurrencyPrice[symbol], nil
 	}
