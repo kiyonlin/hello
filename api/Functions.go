@@ -1,11 +1,12 @@
 package api
 
 import (
-	"time"
+	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
 	"strings"
-	"github.com/pkg/errors"
+	"time"
+	"fmt"
 )
 
 func RefreshAccounts() {
@@ -96,7 +97,7 @@ func Maintain(accounts *model.Accounts, marketName string) {
 	accounts.MarketTotal[marketName] = 0
 	for key, value := range accounts.Data[marketName] {
 		value.PriceInUsdt, _ = GetPrice(key + "_usdt")
-
+		util.Info(fmt.Sprintf(`%s price %f`, key, value.PriceInUsdt))
 		accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
 	}
 	if accounts.MarketTotal[marketName] == 0 {
@@ -124,7 +125,7 @@ func Maintain(accounts *model.Accounts, marketName string) {
 	model.AccountChannel <- accounts.Data[marketName]
 }
 
-func GetPrice(symbol string)(buy float64, err error) {
+func GetPrice(symbol string) (buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.NewConfig()
 	}
@@ -142,10 +143,7 @@ func GetPrice(symbol string)(buy float64, err error) {
 	if strs[0] == strs[1] {
 		return 1, nil
 	}
-	if strs[0] == `ft` || strs[1] == `ft` {
-		return getBuyPriceFcoin(symbol)
-	}
-	if model.ApplicationConfig.InChina == 1 {
+	if strs[0] == `ft` || strs[1] == `ft` || model.ApplicationConfig.InChina == 1 {
 		return getBuyPriceFcoin(symbol)
 	}
 	return getBuyPriceOkex(symbol)
