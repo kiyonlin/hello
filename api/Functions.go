@@ -128,7 +128,7 @@ func GetPrice(symbol string)(buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.NewConfig()
 	}
-	symbol = strings.ToLower(symbol)
+	symbol = strings.TrimSpace(strings.ToLower(symbol))
 	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
 		return model.CurrencyPrice[symbol], nil
 	}
@@ -137,6 +137,8 @@ func GetPrice(symbol string)(buy float64, err error) {
 	if len(strs) != 2 {
 		return 0, errors.New(`wrong symbol ` + symbol)
 	}
+	strs[0] = strings.TrimSpace(strs[0])
+	strs[1] = strings.TrimSpace(strs[1])
 	if strs[0] == strs[1] {
 		return 1, nil
 	}
