@@ -76,7 +76,9 @@ func AccountDBHandlerServe() {
 		accounts := <-model.AccountChannel
 		cleared := false
 		for _, value := range accounts {
+			util.Info(fmt.Sprintf(`%s add account %s %f`, value.Market, value.Currency, value.PriceInUsdt))
 			if !cleared {
+				util.Info(`remove accounts ` + value.Market + util.GetNow().Format("2006-01-02"))
 				model.ApplicationDB.Delete(model.Account{}, "market = ? AND date(created_at) = ?",
 					value.Market, util.GetNow().Format("2006-01-02"))
 				cleared = true
@@ -99,11 +101,11 @@ func BidAskUpdate() {
 			if carry.SideType == `ask` {
 				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
 					"deal_ask_order_id": carry.DealAskOrderId, "deal_ask_err_code": carry.DealAskErrCode,
-					"deal_ask_status":   carry.DealAskStatus})
+					"deal_ask_status": carry.DealAskStatus})
 			} else if carry.SideType == `bid` {
 				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
 					"deal_bid_order_id": carry.DealBidOrderId, "deal_bid_err_code": carry.DealBidErrCode,
-					"deal_bid_status":   carry.DealBidStatus})
+					"deal_bid_status": carry.DealBidStatus})
 			} else {
 				// TODO 处理其他更新类型
 			}
