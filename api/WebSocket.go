@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
+	"net/http"
 )
 
 type MsgHandler func(message []byte, conn *websocket.Conn)
@@ -16,7 +17,10 @@ func newConnection(url string) (*websocket.Conn, error) {
 	var c *websocket.Conn
 	//for i := 0; i < 10; i++ {
 	util.SocketInfo("try to connect " + url)
-	c, _, connErr = websocket.DefaultDialer.Dial(url, nil)
+	dialer := &websocket.Dialer{
+		Proxy: http.ProxyFromEnvironment,
+	}
+	c, _, connErr = dialer.Dial(url, nil)
 	if connErr == nil {
 		//	break
 	} else {

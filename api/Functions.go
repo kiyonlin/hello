@@ -1,12 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
 	"strings"
 	"time"
-	"fmt"
 )
 
 func RefreshAccounts() {

@@ -1,12 +1,12 @@
 markets:
-#- huobi
+- huobi
 #- okex
 #- binance
 - fcoin
 
 symbols:
-- ft_usdt
-#- btc_usdt
+#- ft_usdt
+- btc_usdt
 #- eth_usdt
 #- eos_usdt
 #- eos_btc
@@ -30,7 +30,7 @@ channelslot: 100000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15
 maxusdt: 1500
-inchina: 1
+inchina: 0
 env: aws
 dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 #env: ace
