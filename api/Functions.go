@@ -42,7 +42,7 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 		orderId, errCode = PlaceOrderBinance(carry.Symbol, "SELL", price, amount)
 		GetAccountBinance(model.ApplicationAccounts)
 	case model.Fcoin:
-		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "sell", price, amount)
+		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "sell", `limit`, price, amount)
 		GetAccountFcoin(model.ApplicationAccounts)
 	}
 	//carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
@@ -72,7 +72,7 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 		orderId, errCode = PlaceOrderBinance(carry.Symbol, "BUY", price, amount)
 		GetAccountBinance(model.ApplicationAccounts)
 	case model.Fcoin:
-		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "buy", price, amount)
+		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "buy", `limit`, price, amount)
 		GetAccountFcoin(model.ApplicationAccounts)
 	}
 	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
