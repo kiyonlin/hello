@@ -100,14 +100,16 @@ func SignedRequest(method, path string, postMap map[string]interface{}) []byte {
 	return responseBody
 }
 
-// side: buy sell
+// side: buy sell buy_market sell_market
 func PlaceOrderFcoin(symbol, side, price, amount string) (orderId, errCode string) {
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	postData["type"] = "limit"
 	postData["side"] = side
 	postData["amount"] = amount
-	postData["price"] = price
+	if price != `` {
+		postData["price"] = price
+	}
 	responseBody := SignedRequest("POST", "/orders", postData)
 	//fmt.Println("\n" + string(responseBody))
 	util.Notice(symbol + "挂单fcoin:" + price + side + amount + "返回" + string(responseBody))
