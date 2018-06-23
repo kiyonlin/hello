@@ -152,7 +152,7 @@ func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string)
 }
 
 func GetAccountFcoin(accounts *model.Accounts) {
-	accounts.ClearAccounts(model.Fcoin)
+	//accounts.ClearAccounts(model.Fcoin)
 	responseBody := SignedRequest(`GET`, `/accounts/balance`, nil)
 	balanceJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
