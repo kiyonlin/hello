@@ -112,14 +112,10 @@ func PlaceOrderFcoin(symbol, side, orderType, price, amount string) (orderId, er
 		postData["price"] = price
 	}
 	responseBody := SignedRequest("POST", "/orders", postData)
-	//fmt.Println("\n" + string(responseBody))
-	util.Notice(symbol + "挂单fcoin:" + price + side + amount + "返回" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderId, _ := orderJson.Get("data").String()
 		status, _ := orderJson.Get("status").Int()
-		util.Notice(symbol + "挂单fcoin:" + price + side + amount + "返回" + string(responseBody) + "errCode:" +
-			errCode + "orderId" + orderId)
 		return orderId, strconv.Itoa(status)
 	}
 	return ``, err.Error()
