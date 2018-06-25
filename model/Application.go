@@ -12,6 +12,7 @@ const OKEX = "okex"
 const Huobi = "huobi"
 const Binance = "binance"
 const Fcoin = "fcoin"
+const BigOne = "bigone"
 
 var HuobiAccountId = "1651065"
 var CurrencyPrice = make(map[string]float64)
@@ -151,7 +152,7 @@ func NewConfig() {
 	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
 	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
-
+	ApplicationConfig.WSUrls[BigOne] = "wss://b1.run/api/socket/websocket?host=b1.run&vsn=2.0.0"
 	ApplicationConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"

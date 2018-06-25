@@ -1,13 +1,13 @@
 package model
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
+	"hello/util"
 	"math"
 	"strconv"
-	"hello/util"
-	"time"
 	"strings"
-	"fmt"
+	"time"
 )
 
 type Carry struct {
