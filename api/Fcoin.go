@@ -112,6 +112,7 @@ func PlaceOrderFcoin(symbol, side, orderType, price, amount string) (orderId, er
 		postData["price"] = price
 	}
 	responseBody := SignedRequest("POST", "/orders", postData)
+	util.Notice("fcoin place order" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderId, _ := orderJson.Get("data").String()
