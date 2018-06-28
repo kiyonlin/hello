@@ -12,7 +12,8 @@ const OKEX = "okex"
 const Huobi = "huobi"
 const Binance = "binance"
 const Fcoin = "fcoin"
-const BigOne = "bigone"
+const Coinbig = "coinbig"
+const Coinpark = "coinpark"
 
 var HuobiAccountId = "1651065"
 var CurrencyPrice = make(map[string]float64)
@@ -63,6 +64,13 @@ var OrderStatusMap = map[string]string{
 	"partial_filled":   CarryStatusSuccess,
 	"partial_canceled": CarryStatusSuccess,
 	"pending_cancel":   CarryStatusSuccess,
+	// Coinpark
+	Coinpark + `1`: CarryStatusWorking, // 待成交
+	Coinpark + `2`: CarryStatusSuccess, //部分成交
+	Coinpark + `3`: CarryStatusSuccess, //完全成交
+	Coinpark + `4`: CarryStatusSuccess, //部分撤销
+	Coinpark + `5`: CarryStatusFail,    //完全撤销
+	Coinpark + `6`: CarryStatusSuccess, //待撤销
 }
 
 // TODO filter out unsupported symbol for each market
@@ -76,6 +84,9 @@ func getWSSubscribe(market, symbol string) (subscribe string) {
 		return strings.ToUpper(strings.Replace(symbol, "_", "", 1))
 	case Fcoin: // btc_usdt: depth.L20.btcusdt
 		return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
+		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
+		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
 	}
 	return ""
 }
@@ -106,42 +117,50 @@ func GetSymbol(market, subscribe string) (symbol string) {
 	case Binance: // XRPBTC: xrp_btc
 		return getSymbolWithSplit(subscribe, "_")
 	case Fcoin: // btc_usdt: depth.L20.btcusdt
-		subscribe := strings.Replace(subscribe, "depth.L20.", "", 1)
+		subscribe = strings.Replace(subscribe, "depth.L20.", "", 1)
 		return getSymbolWithSplit(subscribe, "_")
+	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
+		subscribe = strings.Replace(subscribe, `bibox_sub_spot_`, ``, 1)
+		subscribe = strings.Replace(subscribe, `_ticker`, ``, 1)
+		return subscribe
 	}
 	return ""
 }
 
 type Config struct {
-	lock          sync.Mutex
-	BaseCarryCost float64
-	Balance       float64
-	Env           string
-	DBConnection  string
-	Channels      int
-	ChannelSlot   float64
-	Markets       []string
-	Symbols       []string
-	Margins       []float64
-	Delays        []float64
-	Deduction     float64
-	MinUsdt       float64             // 折合usdt最小下单金额
-	MaxUsdt       float64             // 折合usdt最大下单金额
-	subscribes    map[string][]string // marketName - subscribes
-	WSUrls        map[string]string   // marketName - ws url
-	RestUrls      map[string]string   // marketName - rest url
-	HuobiKey      string
-	HuobiSecret   string
-	OkexKey       string
-	OkexSecret    string
-	BinanceKey    string
-	BinanceSecret string
-	FcoinKey      string
-	FcoinSecret   string
-	OrderWait     int64   // fcoin 刷单平均等待时间
-	AmountRate    float64 // 刷单填写数量比率
-	Handle        int64   // 0 不执行处理程序，1执行处理程序
-	InChina       int     // 1 in china, otherwise outter china
+	lock           sync.Mutex
+	BaseCarryCost  float64
+	Balance        float64
+	Env            string
+	DBConnection   string
+	Channels       int
+	ChannelSlot    float64
+	Markets        []string
+	Symbols        []string
+	Margins        []float64
+	Delays         []float64
+	Deduction      float64
+	MinUsdt        float64             // 折合usdt最小下单金额
+	MaxUsdt        float64             // 折合usdt最大下单金额
+	subscribes     map[string][]string // marketName - subscribes
+	WSUrls         map[string]string   // marketName - ws url
+	RestUrls       map[string]string   // marketName - rest url
+	HuobiKey       string
+	HuobiSecret    string
+	OkexKey        string
+	OkexSecret     string
+	BinanceKey     string
+	BinanceSecret  string
+	CoinbigKey     string
+	CoinbigSecret  string
+	CoinparkKey    string
+	CoinparkSecret string
+	FcoinKey       string
+	FcoinSecret    string
+	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
+	AmountRate     float64 // 刷单填写数量比率
+	Handle         int64   // 0 不执行处理程序，1执行处理程序
+	InChina        int     // 1 in china, otherwise outter china
 }
 
 func NewConfig() {
@@ -152,7 +171,8 @@ func NewConfig() {
 	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
 	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
-	ApplicationConfig.WSUrls[BigOne] = "wss://b1.run/api/socket/websocket?host=b1.run&vsn=2.0.0"
+	ApplicationConfig.WSUrls[Coinbig] = "wss://www.coinbig.com/api/publics/websocket"
+	ApplicationConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	ApplicationConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
@@ -160,6 +180,8 @@ func NewConfig() {
 	ApplicationConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	ApplicationConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"
+	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
+	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 }
 
 func (config *Config) GetSubscribes(marketName string) []string {

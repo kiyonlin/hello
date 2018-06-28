@@ -29,7 +29,6 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 
 func WsDepthServeFcoin(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		//fmt.Println(string(event))
 		json, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -74,7 +73,7 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandler CarryHandler, errHan
 		wsHandler, errHandler)
 }
 
-func SignedRequest(method, path string, postMap map[string]interface{}) []byte {
+func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []byte {
 	uri := model.ApplicationConfig.RestUrls[model.Fcoin] + path
 	time := strconv.FormatInt(util.GetNow().UnixNano(), 10)[0:13]
 	postData := &url.Values{}
@@ -111,7 +110,7 @@ func PlaceOrderFcoin(symbol, side, orderType, price, amount string) (orderId, er
 	if orderType == `limit` {
 		postData["price"] = price
 	}
-	responseBody := SignedRequest("POST", "/orders", postData)
+	responseBody := SignedRequestFcoin("POST", "/orders", postData)
 	util.Notice("fcoin place order" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
@@ -123,7 +122,7 @@ func PlaceOrderFcoin(symbol, side, orderType, price, amount string) (orderId, er
 }
 
 func CancelOrderFcoin(orderId string) int {
-	responseBody := SignedRequest(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
+	responseBody := SignedRequestFcoin(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
 	json, err := util.NewJSON([]byte(responseBody))
 	status := -1
 	if err == nil {
@@ -136,7 +135,7 @@ func CancelOrderFcoin(orderId string) int {
 func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string) {
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody := SignedRequest(`GET`, `/orders/`+orderId, postData)
+	responseBody := SignedRequestFcoin(`GET`, `/orders/`+orderId, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderJson = orderJson.Get(`data`)
@@ -153,7 +152,7 @@ func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string)
 
 func GetAccountFcoin(accounts *model.Accounts) {
 	//accounts.ClearAccounts(model.Fcoin)
-	responseBody := SignedRequest(`GET`, `/accounts/balance`, nil)
+	responseBody := SignedRequestFcoin(`GET`, `/accounts/balance`, nil)
 	balanceJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		status, _ := balanceJson.Get("status").Int()

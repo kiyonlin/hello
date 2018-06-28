@@ -18,6 +18,8 @@ func cancelOrder(market string, symbol string, orderId string) {
 		api.CancelOrderBinance(symbol, orderId)
 	case model.Fcoin:
 		api.CancelOrderFcoin(orderId)
+	case model.Coinpark:
+		api.CancelOrderCoinpark(orderId)
 	}
 }
 
@@ -32,6 +34,8 @@ func queryOrder(carry *model.Carry) {
 			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
 		case model.Fcoin:
 			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
+		case model.Coinpark:
+			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderCoinpark(carry.DealBidOrderId)
 		}
 	}
 	if carry.DealAskOrderId != "" && carry.DealAskStatus == model.CarryStatusWorking {
@@ -44,6 +48,8 @@ func queryOrder(carry *model.Carry) {
 			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
 		case model.Fcoin:
 			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderFcoin(carry.Symbol, carry.DealAskOrderId)
+		case model.Coinpark:
+			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderCoinpark(carry.DealAskOrderId)
 		}
 	}
 	model.CarryChannel <- *carry

@@ -23,6 +23,9 @@ func RefreshAccounts() {
 				GetAccountBinance(model.ApplicationAccounts)
 			case model.Fcoin:
 				GetAccountFcoin(model.ApplicationAccounts)
+			case model.Coinpark:
+				GetAccountCoinpark(model.ApplicationAccounts)
+
 			}
 		}
 		time.Sleep(time.Second * 20)
@@ -44,8 +47,10 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 	case model.Fcoin:
 		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "sell", `limit`, price, amount)
 		GetAccountFcoin(model.ApplicationAccounts)
+	case model.Coinpark:
+		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 2, 2, price, amount)
+		GetAccountCoinpark(model.ApplicationAccounts)
 	}
-	//carry.DealAskAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealAskErrCode = errCode
 	carry.DealAskOrderId = orderId
 	if orderId == "0" || orderId == "" {
@@ -74,6 +79,9 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	case model.Fcoin:
 		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "buy", `limit`, price, amount)
 		GetAccountFcoin(model.ApplicationAccounts)
+	case model.Coinpark:
+		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 1, 1, price, amount)
+		GetAccountCoinpark(model.ApplicationAccounts)
 	}
 	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealBidErrCode = errCode
@@ -145,6 +153,9 @@ func GetPrice(symbol string) (buy float64, err error) {
 	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
 	if strs[0] == `ft` || strs[1] == `ft` || model.ApplicationConfig.InChina == 1 {
 		return getBuyPriceFcoin(symbol)
+	}
+	if strings.ToUpper(strs[0]) == `BIX` || strings.ToUpper(strs[1]) == `BIX` {
+		return getBuyPriceCoinpark(symbol)
 	}
 	return getBuyPriceOkex(symbol)
 }
