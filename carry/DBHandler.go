@@ -82,7 +82,7 @@ func AccountDBHandlerServe() {
 		accounts := <-model.AccountChannel
 		cleared := false
 		for _, value := range accounts {
-			util.Info(fmt.Sprintf(`%s add account %s %f`, value.Market, value.Currency, value.PriceInUsdt))
+			//util.Info(fmt.Sprintf(`%s add account %s %f`, value.Market, value.Currency, value.PriceInUsdt))
 			if !cleared {
 				util.Info(`remove accounts ` + value.Market + util.GetNow().Format("2006-01-02"))
 				model.ApplicationDB.Delete(model.Account{}, "market = ? AND date(created_at) = ?",

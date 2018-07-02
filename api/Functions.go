@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
@@ -105,7 +104,7 @@ func Maintain(accounts *model.Accounts, marketName string) {
 	accounts.MarketTotal[marketName] = 0
 	for key, value := range accounts.Data[marketName] {
 		value.PriceInUsdt, _ = GetPrice(key + "_usdt")
-		util.Info(fmt.Sprintf(`%s price %f`, key, value.PriceInUsdt))
+		//util.Info(fmt.Sprintf(`%s price %f`, key, value.PriceInUsdt))
 		accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
 	}
 	if accounts.MarketTotal[marketName] == 0 {
