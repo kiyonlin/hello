@@ -140,6 +140,7 @@ func GetAccountCoinpark(accounts *model.Accounts) {
 // order_type 交易类型，2-限价单
 // order_side 交易方向，1-买，2-卖
 func PlaceOrderCoinpark(symbol string, side, orderType int, price, amount string) (orderId, errCode, errMsg string) {
+	symbol = strings.ToUpper(symbol)
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/trade",
 		"body":{"pair":"%s","account_type":0,"order_type":%d,"order_side":"%d","price":%s,"amount":"%s"}}]`,
 		symbol, orderType, side, price, amount)
