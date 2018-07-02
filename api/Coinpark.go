@@ -45,6 +45,9 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandler CarryHandler, err
 		if err == nil && len(depthArray) > 0 {
 			data := depthArray[0].(map[string]interface{})[`data`].(map[string]interface{})
 			if data != nil {
+				if data[`pair`] == nil {
+					return
+				}
 				symbol := data[`pair`].(string)
 				time, _ := data[`update_time`].(json.Number).Int64()
 				bidAsk := model.BidAsk{Ts: int(time)}
