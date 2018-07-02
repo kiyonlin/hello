@@ -79,7 +79,7 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "buy", `limit`, price, amount)
 		GetAccountFcoin(model.ApplicationAccounts)
 	case model.Coinpark:
-		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 1, 1, price, amount)
+		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 1, 2, price, amount)
 		GetAccountCoinpark(model.ApplicationAccounts)
 	}
 	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
