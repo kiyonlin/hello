@@ -49,7 +49,7 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandler CarryHandler, err
 				if data[`pair`] == nil {
 					return
 				}
-				symbol := data[`pair`].(string)
+				symbol := strings.ToLower(data[`pair`].(string))
 				time, _ := data[`update_time`].(json.Number).Int64()
 				bidAsk := model.BidAsk{Ts: int(time)}
 				askArray := data[`asks`].([]interface{})
@@ -134,7 +134,6 @@ func GetAccountCoinpark(accounts *model.Accounts) {
 			}
 		}
 	}
-	util.Notice(fmt.Sprintf(`account eth free %f`, accounts.GetAccount(model.Coinpark, `eth`).Free))
 	Maintain(accounts, model.Coinpark)
 }
 
