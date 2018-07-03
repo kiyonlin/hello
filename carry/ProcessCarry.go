@@ -99,7 +99,7 @@ var ProcessCarry = func(carry *model.Carry) {
 					carry.DealAskStatus = `NotDo`
 					carry.DealBidStatus = `NotDo`
 				} else {
-					util.Notice(`get carry worth` + carry.ToString())
+					util.Notice(`[worth carry]` + carry.ToString())
 					doCarry = true
 				}
 			}

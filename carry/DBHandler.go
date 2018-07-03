@@ -100,7 +100,6 @@ func BidAskUpdate() {
 		carry := <-model.BidAskChannel
 		model.ApplicationDB.Where("ask_time = ? AND bid_time = ?", carry.AskTime, carry.BidTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
-			util.Notice("create new ask " + carry.ToString())
 			model.ApplicationDB.Create(&carry)
 		} else {
 			util.Notice(carry.DealAskOrderId + " update old " + carry.SideType + carry.ToString())
