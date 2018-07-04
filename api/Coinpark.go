@@ -147,18 +147,20 @@ func PlaceOrderCoinpark(symbol string, side, orderType int, price, amount string
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	util.Notice(`[place order]` + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
-	results, err := orderJson.Get("result").Array()
-	if err == nil && len(results) > 0 {
-		errorData := results[0].(map[string]interface{})[`error`]
-		resultData := results[0].(map[string]interface{})["result"]
-		if resultData != nil {
-			str, _ := resultData.(json.Number).Int64()
-			return strconv.FormatInt(str, 10), ``, ``
-		}
-		if errorData != nil {
-			errCode = errorData.(map[string]interface{})[`code`].(string)
-			errMsg = errorData.(map[string]interface{})[`msg`].(string)
-			return ``, errCode, errMsg
+	if orderJson.Get(`result`) != nil {
+		results, err := orderJson.Get("result").Array()
+		if err == nil && len(results) > 0 {
+			errorData := results[0].(map[string]interface{})[`error`]
+			resultData := results[0].(map[string]interface{})["result"]
+			if resultData != nil {
+				str, _ := resultData.(json.Number).Int64()
+				return strconv.FormatInt(str, 10), ``, ``
+			}
+			if errorData != nil {
+				errCode = errorData.(map[string]interface{})[`code`].(string)
+				errMsg = errorData.(map[string]interface{})[`msg`].(string)
+				return ``, errCode, errMsg
+			}
 		}
 	}
 	return ``, err.Error(), `response format err`
