@@ -14,6 +14,7 @@ const Binance = "binance"
 const Fcoin = "fcoin"
 const Coinbig = "coinbig"
 const Coinpark = "coinpark"
+const Coinex = `coinex`
 
 var HuobiAccountId = "1651065"
 var CurrencyPrice = make(map[string]float64)
@@ -157,6 +158,8 @@ type Config struct {
 	CoinparkSecret string
 	FcoinKey       string
 	FcoinSecret    string
+	CoinexKey      string
+	CoinexSecret   string
 	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate     float64 // 刷单填写数量比率
 	Handle         int64   // 0 不执行处理程序，1执行处理程序
@@ -182,6 +185,7 @@ func NewConfig() {
 	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"
 	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
+	ApplicationConfig.RestUrls[Coinex] = `https://api.coinex.com/v1`
 }
 
 func (config *Config) GetSubscribes(marketName string) []string {
