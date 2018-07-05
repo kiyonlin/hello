@@ -33,7 +33,7 @@ var subscribeHandlerCoinpark = func(subscribes []string, conn *websocket.Conn) e
 
 func WsDepthServeCoinpark(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		//fmt.Println(string(event))
+		fmt.Println(string(event))
 		depthJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
