@@ -15,6 +15,7 @@ const Fcoin = "fcoin"
 const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Coinex = `coinex`
+const Btcdo = `btcdo`
 
 var HuobiAccountId = "1651065"
 var CurrencyPrice = make(map[string]float64)
@@ -88,6 +89,15 @@ func getWSSubscribe(market, symbol string) (subscribe string) {
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
 		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
 		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
+	case Btcdo:
+		return strings.ToUpper(symbol)
+	case Coinbig:
+		switch symbol {
+		case `btc_usdt`:
+			return `27`
+		case `eth_usdt`:
+			return `28`
+		}
 	}
 	return ""
 }
@@ -160,6 +170,8 @@ type Config struct {
 	FcoinSecret    string
 	CoinexKey      string
 	CoinexSecret   string
+	BtcdoKey       string
+	BtcdoSecret    string
 	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate     float64 // 刷单填写数量比率
 	Handle         int64   // 0 不执行处理程序，1执行处理程序
@@ -176,6 +188,7 @@ func NewConfig() {
 	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
 	ApplicationConfig.WSUrls[Coinbig] = "wss://www.coinbig.com/api/publics/websocket"
 	ApplicationConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
+	ApplicationConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
 	ApplicationConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
@@ -186,6 +199,7 @@ func NewConfig() {
 	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 	ApplicationConfig.RestUrls[Coinex] = `https://api.coinex.com/v1`
+	ApplicationConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
 }
 
 func (config *Config) GetSubscribes(marketName string) []string {

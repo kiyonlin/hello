@@ -92,7 +92,8 @@ func SignedRequestCoinpark(method, path, cmds string) []byte {
 	postData.Set("cmds", cmds)
 	postData.Set("apikey", model.ApplicationConfig.CoinparkKey)
 	postData.Set("sign", sign)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
+		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest(method, model.ApplicationConfig.RestUrls[model.Coinpark]+path,
 		postData.Encode(), headers)
 	return responseBody

@@ -3,11 +3,13 @@ markets:
 #- okex
 #- binance
 #- fcoin
-- coinpark
+#- coinpark
+#- coinbig
+- btcdo
 
 symbols:
 #- ft_usdt
-- btc_usdt
+- eth_usdt
 #- eth_usdt
 #- eos_usdt
 #- eos_btc
@@ -59,4 +61,6 @@ coinbigsecret: 8F45F90B1A509AA987F32812E603C735
 #yjsx_52.192.134.3,13.209.7.121,13.231.235.25,18.191.71.98
 coinparkkey: f2e3679a4f7eddf786ae57d38b84a7992b6b8d86
 coinparksecret: 8a6973ddfd9a5df5c4450ac61ab522293fe971e5
-// test for all ip
+# all ip
+btcdokey: AAAAAkNyFWrKUGQmFtUnYXe4TtxHNLlr
+btcdosecret: GjCgP2TEQ2sppUhjeiv8

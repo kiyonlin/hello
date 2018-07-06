@@ -128,7 +128,10 @@ func createServer(markets *model.Markets, carryHandler api.CarryHandler, marketN
 		channel, err = api.WsDepthServeFcoin(markets, carryHandler, WSErrHandler)
 	case model.Coinpark:
 		channel, err = api.WsDepthServeCoinpark(markets, carryHandler, WSErrHandler)
-
+	case model.Coinbig:
+		channel, err = api.WsDepthServeCoinbig(markets, carryHandler, WSErrHandler)
+	case model.Btcdo:
+		channel, err = api.WsDepthServeBtcdo(markets, carryHandler, WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())

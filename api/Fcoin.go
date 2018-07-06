@@ -21,7 +21,7 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 	subscribeMap[`args`] = subscribes
 	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
 	if err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
-		util.SocketInfo("huobi can not subscribe " + err.Error())
+		util.SocketInfo("fcoin can not subscribe " + err.Error())
 		return err
 	}
 	return err
