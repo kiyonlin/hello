@@ -80,7 +80,8 @@ func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
 	sign := hex.EncodeToString(hash.Sum(nil))
 	postData.Set("sign", strings.ToUpper(sign))
 	uri := model.ApplicationConfig.RestUrls[model.Coinbig] + path
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	var responseBody []byte
 	responseBody, _ = util.HttpRequest(method, uri, postData.Encode(), headers)
 	return responseBody
@@ -137,7 +138,6 @@ func PlaceOrderCoinbig(symbol, orderType, price, amount string) (orderId, errCod
 	postData.Set(`amount`, amount)
 	postData.Set(`symbol`, symbol)
 	responseBody := SignedRequestCoinbig(`POST`, `/trade`, postData)
-	fmt.Println(string(responseBody))
 	util.Notice("coinbig place order" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
@@ -148,42 +148,52 @@ func PlaceOrderCoinbig(symbol, orderType, price, amount string) (orderId, errCod
 	return ``, err.Error()
 }
 
-// 批量下单接口，只支持限价单, side sell/buy
-func PlaceOrdersCoinbig(symbol string, side []string, price, amount []float64) {
-	postData := &url.Values{}
-	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
-	postData.Set(`symbol`, symbol)
-	data := `[`
-	for i := 0; i < len(side); i++ {
-		data += fmt.Sprintf(`{price:%f,amount:%f,type:"%s"}`, price[i], amount[i], side[i])
-		if i < len(side)-1 {
-			data += `,`
-		}
-	}
-	data += `]`
-	postData.Set(`ordersdata`, data)
-	responseBody := SignedRequestCoinbig(`POST`, `/batch_trade`, postData)
-	util.Notice(`[place order]` + string(responseBody))
-}
+//// 批量下单接口，只支持限价单, side sell/buy
+//func PlaceOrdersCoinbig(symbol string, side []string, price, amount []float64) {
+//	postData := &url.Values{}
+//	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+//	postData.Set(`symbol`, symbol)
+//	data := `[`
+//	for i := 0; i < len(side); i++ {
+//		data += fmt.Sprintf(`{price:%f,amount:%f,type:"%s"}`, price[i], amount[i], side[i])
+//		if i < len(side)-1 {
+//			data += `,`
+//		}
+//	}
+//	data += `]`
+//	postData.Set(`ordersdata`, data)
+//	responseBody := SignedRequestCoinbig(`POST`, `/batch_trade`, postData)
+//	util.Notice(`[place order]` + string(responseBody))
+//}
 
+//状态:1未成交,2部分成交,3完全成交,4用户撤销,5部分撤回,6成交失败
 func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
 	postData.Set(`orderId`, orderId)
 	responseBody := SignedRequestCoinbig(`POST`, `/getOrderInfoById`, postData)
-	fmt.Println()
-	fmt.Println(string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		dealAmount, _ = orderJson.GetPath(`data`, `successAmount`).Float64()
 		intStatus, _ := orderJson.GetPath(`data`, "status").Int()
 		status = model.OrderStatusMap[fmt.Sprintf(`%s%d`, model.Coinbig, intStatus)]
 	}
-	//状态:1未成交,2部分成交,3完全成交,4用户撤销,5部分撤回,6成交失败
 	util.Notice(fmt.Sprintf("%s coinbig query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 
-func CancelOrderCoinbig()  {
-	
+func CancelOrderCoinbig(orderId string) {
+	postData := &url.Values{}
+	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+	postData.Set(`order_id`, orderId)
+	responseBody := SignedRequestCoinbig(`POST`, `/cancel_order`, postData)
+	fmt.Println(string(responseBody))
 }
+
+//func CancelOrdersCoinbig(symbol string) {
+//	postData := &url.Values{}
+//	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+//	postData.Set(`symbol`, symbol)
+//	responseBody := SignedRequestCoinbig(`POST`, `/cance_all_orders`, postData)
+//	fmt.Println(string(responseBody))
+//}

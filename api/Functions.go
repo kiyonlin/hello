@@ -24,7 +24,8 @@ func RefreshAccounts() {
 				GetAccountFcoin(model.ApplicationAccounts)
 			case model.Coinpark:
 				GetAccountCoinpark(model.ApplicationAccounts)
-
+			case model.Coinbig:
+				GetAccountCoinbig(model.ApplicationAccounts)
 			}
 		}
 		time.Sleep(time.Second * 20)
@@ -49,6 +50,9 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 	case model.Coinpark:
 		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 2, 2, price, amount)
 		GetAccountCoinpark(model.ApplicationAccounts)
+	case model.Coinbig:
+		orderId, errCode = PlaceOrderCoinbig(carry.Symbol, `sell`, price, amount)
+		GetAccountCoinbig(model.ApplicationAccounts)
 	}
 	carry.DealAskErrCode = errCode
 	carry.DealAskOrderId = orderId
@@ -81,6 +85,9 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	case model.Coinpark:
 		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 1, 2, price, amount)
 		GetAccountCoinpark(model.ApplicationAccounts)
+	case model.Coinbig:
+		orderId, errCode = PlaceOrderCoinbig(carry.Symbol, `buy`, price, amount)
+		GetAccountCoinbig(model.ApplicationAccounts)
 	}
 	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealBidErrCode = errCode
