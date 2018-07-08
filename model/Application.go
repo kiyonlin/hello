@@ -73,6 +73,13 @@ var OrderStatusMap = map[string]string{
 	Coinpark + `4`: CarryStatusSuccess, //部分撤销
 	Coinpark + `5`: CarryStatusFail,    //完全撤销
 	Coinpark + `6`: CarryStatusSuccess, //待撤销
+	// Coinbig
+	Coinbig + `1`: CarryStatusWorking, // 未成交
+	Coinbig + `2`: CarryStatusWorking, // 部分成交,
+	Coinbig + `3`: CarryStatusSuccess, // 完全成交,
+	Coinbig + `4`: CarryStatusSuccess, // 用户撤销,
+	Coinbig + `5`: CarryStatusSuccess, // 部分撤回,
+	Coinbig + `6`: CarryStatusFail,    // 成交失败
 }
 
 // TODO filter out unsupported symbol for each market
@@ -134,6 +141,13 @@ func GetSymbol(market, subscribe string) (symbol string) {
 		subscribe = strings.Replace(subscribe, `bibox_sub_spot_`, ``, 1)
 		subscribe = strings.Replace(subscribe, `_ticker`, ``, 1)
 		return subscribe
+	case Coinbig: // btc_usdt 27 // eth_usdt 28
+		switch subscribe {
+		case `27`:
+			return `btc_usdt`
+		case `28`:
+			return `eth_usdt`
+		}
 	}
 	return ""
 }
@@ -175,6 +189,8 @@ type Config struct {
 	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate     float64 // 刷单填写数量比率
 	Handle         int64   // 0 不执行处理程序，1执行处理程序
+	SellRate       float64 // fcoin dk 额外卖单下单比例
+	FtMax          float64 // fcoin dk ft上限
 	InChina        int     // 1 in china, otherwise outter china
 }
 
@@ -186,7 +202,7 @@ func NewConfig() {
 	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
 	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
-	ApplicationConfig.WSUrls[Coinbig] = "wss://www.coinbig.com/api/publics/websocket"
+	ApplicationConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	ApplicationConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	ApplicationConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
 	ApplicationConfig.RestUrls = make(map[string]string)

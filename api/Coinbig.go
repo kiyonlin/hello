@@ -1,16 +1,20 @@
 package api
 
 import (
-	"net/url"
+	"bytes"
+	"compress/zlib"
 	"crypto/md5"
-	"hello/model"
 	"encoding/hex"
-	"strings"
-	"hello/util"
-	"fmt"
-	"strconv"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
+	"hello/model"
+	"hello/util"
+	"io"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 var subscribeHandlerCoinbig = func(subscribes []string, conn *websocket.Conn) error {
@@ -29,77 +33,45 @@ var subscribeHandlerCoinbig = func(subscribes []string, conn *websocket.Conn) er
 func WsDepthServeCoinbig(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	//lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-
-		//buf := bytes.NewBuffer(event)
-		//bufOut := new(bytes.Buffer)
-		//for i := 0; i < buf.Len(); {
-		//	ch, size := utf8.DecodeRune(event[i:])
-		//	fmt.Printf("下标: %d\t字符: %c\n", i, ch)
-		//	binary.Write(bufOut, binary.LittleEndian, ch)
-		//	i += size
-		//}
-		//rdata := bytes.NewReader(bufOut.Bytes())
-		//r, err := gzip.NewReader(rdata)
-		//if err != nil {
-		//	fmt.Println(err)
-		//}
-		//s, _ := ioutil.ReadAll(r)
-		//fmt.Println(s)
-		////data := make([]uint16, len(event)/2)
-		////binary.Read(buf, binary.LittleEndian, data)
-		////buf = new(bytes.Buffer)
-		////buf.Write()
-		//to := ``
-		//for i, bl, br, r := 0, len(s), bytes.NewReader(s), uint16(0); i < bl; i += 2 {
-		//	binary.Read(br, binary.LittleEndian, &r)
-		//	to += string(r)
-		//}
-		//fmt.Println(string(to))
-		fmt.Println(event)
-		//if util.GetNow().Unix()-lastPingTime > 30 { // ping okex server every 30 seconds
-		//	lastPingTime = util.GetNow().Unix()
-		//	pingMap := make(map[string]interface{})
-		//	pingMap["event"] = "ping"
-		//	pingParams := util.JsonEncodeMapToByte(pingMap)
-		//	if err := conn.WriteMessage(websocket.TextMessage, pingParams); err != nil {
-		//		util.SocketInfo("okex server ping client error " + err.Error())
-		//	}
-		//}
-		//messages := make([]OKEXMessage, 1)
-		//if err := json.Unmarshal(event, &messages); err == nil {
-		//	for _, message := range messages {
-		//		symbol := model.GetSymbol(model.OKEX, message.Channel)
-		//		if symbol != "" {
-		//			bidAsk := model.BidAsk{}
-		//			bidAsk.Asks = make([][]float64, len(message.Data.Asks))
-		//			bidAsk.Bids = make([][]float64, len(message.Data.Bids))
-		//			for i, v := range message.Data.Bids {
-		//				price, _ := strconv.ParseFloat(v[0], 64)
-		//				amount, _ := strconv.ParseFloat(v[1], 64)
-		//				bidAsk.Bids[i] = []float64{price, amount}
-		//			}
-		//			for i, v := range message.Data.Asks {
-		//				price, _ := strconv.ParseFloat(v[0], 64)
-		//				amount, _ := strconv.ParseFloat(v[1], 64)
-		//				bidAsk.Asks[i] = []float64{price, amount}
-		//			}
-		//			//bidAsk.Bids = message.Data.Bids
-		//			sort.Sort(bidAsk.Asks)
-		//			sort.Reverse(bidAsk.Bids)
-		//			bidAsk.Ts = message.Data.Timestamp
-		//			if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
-		//				if carry, err := markets.NewCarry(symbol); err == nil {
-		//					carryHandler(carry)
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
+		var out bytes.Buffer
+		r, _ := zlib.NewReader(bytes.NewReader(event))
+		io.Copy(&out, r)
+		dataJson, err := util.NewJSON(out.Bytes())
+		if err == nil {
+			subscribe, _ := dataJson.GetPath(`data`, `tradeMappingId`).String()
+			symbol := model.GetSymbol(model.Coinbig, subscribe)
+			if symbol != `` {
+				bidAsk := model.BidAsk{}
+				bids, _ := dataJson.Get(`data`).Get(`bids`).Array()
+				asks, _ := dataJson.Get(`data`).Get(`asks`).Array()
+				bidAsk.Bids = make([][]float64, len(bids))
+				bidAsk.Asks = make([][]float64, len(asks))
+				for key, value := range bids {
+					bidAsk.Bids[key] = make([]float64, 2)
+					bidAsk.Bids[key][0], _ = strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
+					bidAsk.Bids[key][1], _ = strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
+				}
+				for key, value := range asks {
+					bidAsk.Asks[key] = make([]float64, 2)
+					bidAsk.Asks[key][0], _ = strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
+					bidAsk.Asks[key][1], _ = strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
+				}
+				sort.Sort(bidAsk.Asks)
+				sort.Reverse(bidAsk.Bids)
+				realTimeQueue, _ := dataJson.Get(`data`).Get(`RealTimeQueue`).Array()
+				ts, _ := realTimeQueue[0].(map[string]interface{})[`createTime`].(json.Number).Int64()
+				bidAsk.Ts = int(ts)
+				if markets.SetBidAsk(symbol, model.Coinbig, &bidAsk) {
+					if carry, err := markets.NewCarry(symbol); err == nil {
+						carryHandler(carry)
+					}
+				}
+			}
+		}
 	}
 	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Coinbig],
 		model.ApplicationConfig.GetSubscribes(model.Coinbig), subscribeHandlerCoinbig, wsHandler, errHandler)
 }
-
 
 func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
 	hash := md5.New()
@@ -108,8 +80,7 @@ func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
 	sign := hex.EncodeToString(hash.Sum(nil))
 	postData.Set("sign", strings.ToUpper(sign))
 	uri := model.ApplicationConfig.RestUrls[model.Coinbig] + path
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	var responseBody []byte
 	responseBody, _ = util.HttpRequest(method, uri, postData.Encode(), headers)
 	return responseBody
@@ -120,7 +91,6 @@ func GetAccountCoinbig(accounts *model.Accounts) {
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
 	responseBody := SignedRequestCoinbig(`POST`, `/userinfo`, postData)
-	fmt.Print(string(responseBody))
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		code, _ := balanceJson.Get(`code`).Int()
@@ -155,37 +125,45 @@ func GetAccountCoinbig(accounts *model.Accounts) {
 			}
 		}
 	}
-	Maintain(accounts, model.Huobi)
+	Maintain(accounts, model.Coinbig)
 }
 
-// order_side 限价单(buy/sell) 市价单(buy_market/sell_market)
-func PlaceOrderCoinbigs(symbol string) (orderId, errCode, errMsg string) {
+// orderType 买卖类型: 限价单(buy/sell) 市价单(buy_market/sell_market)
+func PlaceOrderCoinbig(symbol, orderType, price, amount string) (orderId, errCode string) {
+	postData := &url.Values{}
+	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+	postData.Set(`type`, orderType)
+	postData.Set(`price`, price)
+	postData.Set(`amount`, amount)
+	postData.Set(`symbol`, symbol)
+	responseBody := SignedRequestCoinbig(`POST`, `/trade`, postData)
+	fmt.Println(string(responseBody))
+	util.Notice("coinbig place order" + string(responseBody))
+	orderJson, err := util.NewJSON([]byte(responseBody))
+	if err == nil {
+		orderId, _ := orderJson.GetPath("data", `order_id`).Int64()
+		status, _ := orderJson.Get("code").Int()
+		return strconv.FormatInt(orderId, 10), strconv.Itoa(status)
+	}
+	return ``, err.Error()
+}
+
+// 批量下单接口，只支持限价单, side sell/buy
+func PlaceOrdersCoinbig(symbol string, side []string, price, amount []float64) {
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
 	postData.Set(`symbol`, symbol)
-	//postData.Set(`type`, side)
-	postData.Set(`ordersdata`, `[{price:3,amount:5,type:"sell"},{price:3,amount:3,type:"buy"}]`)
-	responseBody := SignedRequestCoinbig(`POST`, `/batch_trade`, postData)
-	fmt.Println(string(responseBody))
-	util.Notice(`[place order]` + string(responseBody))
-	orderJson, err := util.NewJSON([]byte(responseBody))
-	if orderJson.Get(`result`) != nil {
-		results, err := orderJson.Get("result").Array()
-		if err == nil && len(results) > 0 {
-			errorData := results[0].(map[string]interface{})[`error`]
-			resultData := results[0].(map[string]interface{})["result"]
-			if resultData != nil {
-				str, _ := resultData.(json.Number).Int64()
-				return strconv.FormatInt(str, 10), ``, ``
-			}
-			if errorData != nil {
-				errCode = errorData.(map[string]interface{})[`code`].(string)
-				errMsg = errorData.(map[string]interface{})[`msg`].(string)
-				return ``, errCode, errMsg
-			}
+	data := `[`
+	for i := 0; i < len(side); i++ {
+		data += fmt.Sprintf(`{price:%f,amount:%f,type:"%s"}`, price[i], amount[i], side[i])
+		if i < len(side)-1 {
+			data += `,`
 		}
 	}
-	return ``, err.Error(), `response format err`
+	data += `]`
+	postData.Set(`ordersdata`, data)
+	responseBody := SignedRequestCoinbig(`POST`, `/batch_trade`, postData)
+	util.Notice(`[place order]` + string(responseBody))
 }
 
 func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
@@ -196,17 +174,16 @@ func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	fmt.Println()
 	fmt.Println(string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
-	results, err := orderJson.Get("result").Array()
-	if err == nil && len(results) > 0 {
-		resultData := results[0].(map[string]interface{})[`result`]
-		if resultData != nil {
-			strDealAmount := resultData.(map[string]interface{})[`deal_amount`].(string)
-			intStatus, _ := resultData.(map[string]interface{})[`status`].(json.Number).Int64()
-			status = model.OrderStatusMap[fmt.Sprintf(`%s%d`, model.Coinpark, intStatus)]
-			if strDealAmount != "" {
-				dealAmount, _ = strconv.ParseFloat(strDealAmount, 64)
-			}
-		}
+	if err == nil {
+		dealAmount, _ = orderJson.GetPath(`data`, `successAmount`).Float64()
+		intStatus, _ := orderJson.GetPath(`data`, "status").Int()
+		status = model.OrderStatusMap[fmt.Sprintf(`%s%d`, model.Coinbig, intStatus)]
 	}
+	//状态:1未成交,2部分成交,3完全成交,4用户撤销,5部分撤回,6成交失败
+	util.Notice(fmt.Sprintf("%s coinbig query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
+}
+
+func CancelOrderCoinbig()  {
+	
 }

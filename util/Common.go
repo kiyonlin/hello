@@ -9,11 +9,16 @@ import (
 	"time"
 	"net/url"
 	"math"
+	"fmt"
 )
 
 func UnGzip(byte []byte) []byte {
-	r, _ := gzip.NewReader(bytes.NewBuffer(byte))
+	r, err := gzip.NewReader(bytes.NewBuffer(byte))
 	defer r.Close()
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
 	undatas, _ := ioutil.ReadAll(r)
 	return undatas
 }

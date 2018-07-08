@@ -4,8 +4,8 @@ markets:
 #- binance
 #- fcoin
 #- coinpark
-#- coinbig
-- btcdo
+- coinbig
+#- btcdo
 
 symbols:
 #- ft_usdt
