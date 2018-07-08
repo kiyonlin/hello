@@ -182,12 +182,17 @@ func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	return dealAmount, status
 }
 
-func CancelOrderCoinbig(orderId string) {
+func CancelOrderCoinbig(orderId string) (status int) {
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
 	postData.Set(`order_id`, orderId)
 	responseBody := SignedRequestCoinbig(`POST`, `/cancel_order`, postData)
-	fmt.Println(string(responseBody))
+	orderJson, err := util.NewJSON([]byte(responseBody))
+	if err == nil {
+		status, _ = orderJson.Get(`code`).Int()
+	}
+	util.Notice("coinbig cancel order" + string(responseBody))
+	return status
 }
 
 //func CancelOrdersCoinbig(symbol string) {
