@@ -147,7 +147,7 @@ func PlaceOrderCoinpark(symbol string, side, orderType int, price, amount string
 		symbol, orderType, side, price, amount)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	util.Notice(`[place order]` + string(responseBody))
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, _ := util.NewJSON([]byte(responseBody))
 	if orderJson.Get(`result`) != nil {
 		results, err := orderJson.Get("result").Array()
 		if err == nil && len(results) > 0 {
@@ -164,7 +164,7 @@ func PlaceOrderCoinpark(symbol string, side, orderType int, price, amount string
 			}
 		}
 	}
-	return ``, err.Error(), `response format err`
+	return ``, ``, `response format err`
 }
 
 func QueryOrderCoinpark(orderId string) (dealAmount float64, status string) {
