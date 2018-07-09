@@ -191,6 +191,7 @@ func CancelOrderCoinpark(orderId string) (code, msg string) {
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	results, err := orderJson.Get("result").Array()
+	util.Notice(`[cancel order]` + string(responseBody))
 	if err == nil && len(results) > 0 {
 		errorData := results[0].(map[string]interface{})[`error`]
 		resultData := results[0].(map[string]interface{})["result"]
