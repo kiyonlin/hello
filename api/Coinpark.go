@@ -171,6 +171,7 @@ func QueryOrderCoinpark(orderId string) (dealAmount float64, status string) {
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/order","body":{"id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	orderJson, err := util.NewJSON([]byte(responseBody))
+	util.Notice(string(responseBody))
 	results, err := orderJson.Get("result").Array()
 	if err == nil && len(results) > 0 {
 		resultData := results[0].(map[string]interface{})[`result`]
