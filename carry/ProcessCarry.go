@@ -6,12 +6,12 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
+	"hello/controller"
 	"hello/model"
 	"hello/util"
 	"strconv"
 	"strings"
 	"time"
-	"hello/controller"
 )
 
 var WSErrHandler = func(err error) {
@@ -154,15 +154,16 @@ func MaintainMarketChan(carryHandler api.CarryHandler) {
 				if channel == nil {
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
 						carryHandler, marketName))
+					util.SocketInfo(marketName + " create new channel" + subscribe)
 				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
-					//util.SocketInfo(marketName + " need reset " + subscribe)
+					util.SocketInfo(marketName + " reset channel" + subscribe)
 					model.ApplicationMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
 						carryHandler, marketName))
 				}
-				//util.SocketInfo(marketName + " new channel reset done")
+				util.SocketInfo(marketName + " new channel reset done")
 			}
 			break
 		}
