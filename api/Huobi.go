@@ -1,19 +1,23 @@
 package api
 
 import (
+	"crypto/ecdsa"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
+	"fmt"
 	"github.com/gorilla/websocket"
+	"hello/model"
+	"hello/util"
+	"net/url"
 	"sort"
 	"strconv"
-	"net/url"
-	"fmt"
-	"time"
 	"strings"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"hello/util"
-	"hello/model"
+	"time"
 )
 
 type HuobiMessage struct {
@@ -24,7 +28,7 @@ type HuobiMessage struct {
 	Rep    string `json:"rep"`
 	Status string `json:"status"`
 	Id     string `json:"id"`
-	Tick struct {
+	Tick   struct {
 		Id     string      `json:"id"`     // K线id
 		Amount float64     `json:"amount"` // 成交量
 		Count  int         `json:"count"`  // 成交笔数
@@ -88,28 +92,53 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandler CarryHandler, errHan
 		model.ApplicationConfig.GetSubscribes(model.Huobi), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
-func buildFormHuobi(postData *url.Values, path string, method string) {
-	postData.Set("AccessKeyId", model.ApplicationConfig.HuobiKey)
-	postData.Set("SignatureMethod", "HmacSHA256")
-	postData.Set("SignatureVersion", "2")
-	postData.Set("Timestamp", time.Now().UTC().Format("2006-01-02T15:04:05"))
+func SignedRequestHuobi(method, path, postBody string, getParams map[string]string) []byte {
+	urlValues := &url.Values{}
+	urlValues.Set("AccessKeyId", model.ApplicationConfig.HuobiKey)
+	urlValues.Set("SignatureMethod", "HmacSHA256")
+	urlValues.Set("SignatureVersion", "2")
+	urlValues.Set("Timestamp", time.Now().UTC().Format("2006-01-02T15:04:05"))
+	if getParams != nil {
+		for key, value := range getParams {
+			urlValues.Set(key, value)
+		}
+	}
 	domain := strings.Replace(model.ApplicationConfig.RestUrls[model.Huobi], "https://", "",
 		len(model.ApplicationConfig.RestUrls[model.Huobi]))
-	payload := fmt.Sprintf("%s\n%s\n%s\n%s", method, domain, path, postData.Encode())
+	payload := fmt.Sprintf("%s\n%s\n%s\n%s", method, domain, path, urlValues.Encode())
 	hash := hmac.New(sha256.New, []byte(model.ApplicationConfig.HuobiSecret))
 	hash.Write([]byte(payload))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-	postData.Set("Signature", sign)
+	urlValues.Set("Signature", sign)
+
+	var pemBytes = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIJUh+m2GyS9GKsEZ0/5WqM3owjYGtttQXPl9pR8nks+moAoGCCqGSM49
+AwEHoUQDQgAEF+5o7rybYv7/40CSReXKr2jxiW9iVE1+l/6vjnDSkyK8mCw220QM
+J2k98epEs68Y+OjaRp0uP8821WkP5tLM1Q==
+-----END EC PRIVATE KEY-----`
+
+	block, _ := pem.Decode([]byte(pemBytes))
+	ecdsaPk, _ := x509.ParseECPrivateKey(block.Bytes)
+	digest := sha256.Sum256([]byte(sign))
+	r, s, _ := ecdsa.Sign(rand.Reader, ecdsaPk, digest[:])
+	//	encode the signature {R, S}
+	params := ecdsaPk.Curve.Params()
+	curveByteSize := params.P.BitLen() / 8
+	rBytes, sBytes := r.Bytes(), s.Bytes()
+	privateSign := make([]byte, curveByteSize*2)
+	copy(privateSign[curveByteSize-len(rBytes):], rBytes)
+	copy(privateSign[curveByteSize*2-len(sBytes):], sBytes)
+	urlValues.Set(`PrivateSignature`, base64.StdEncoding.EncodeToString(privateSign))
+	requestUrl := model.ApplicationConfig.RestUrls[model.Huobi] + path + "?" + urlValues.Encode()
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest(method, requestUrl, postBody, headers)
+	return responseBody
 }
 
-func GetSpotAccountId(config *model.Config) (accountId string, err error) {
-	path := "/v1/account/accounts"
-	postData := &url.Values{}
-	buildFormHuobi(postData, path, "GET")
-	requestUrl := config.RestUrls[model.Huobi] + path + "?" + postData.Encode()
-	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
-	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
-	accountJson, err := util.NewJSON([]byte(responseBody))
+func GetSpotAccountId() (accountId string, err error) {
+	responseBody := SignedRequestHuobi(`GET`, "/v1/account/accounts", ``, nil)
+	accountJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		accounts, _ := accountJson.Get("data").Array()
 		for _, value := range accounts {
@@ -132,13 +161,8 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 	postData.Set("symbol", strings.ToLower(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("type", orderType)
 	postData.Set("price", price)
-	buildFormHuobi(postData, path, "POST")
-
-	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
-	responseBody, _ := util.HttpRequest("POST",
-		model.ApplicationConfig.RestUrls[model.Huobi]+path+"?"+postData.Encode(), util.ToJson(postData), headers)
-
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	responseBody := SignedRequestHuobi(`POST`, path, util.ToJson(postData), nil)
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ := orderJson.Get("status").String()
 		if status == "ok" {
@@ -155,20 +179,13 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 func CancelOrderHuobi(orderId string) {
 	path := fmt.Sprintf("/v1/order/orders/%s/submitcancel", orderId)
 	postData := &url.Values{}
-	buildFormHuobi(postData, path, "POST")
-	requestUrl := model.ApplicationConfig.RestUrls[model.Huobi] + path + "?" + postData.Encode()
-	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
-	responseBody, _ := util.HttpRequest("POST", requestUrl, util.ToJson(postData), headers)
+	responseBody := SignedRequestHuobi(`POST`, path, util.ToJson(postData), nil)
 	util.Notice("huobi cancel order" + orderId + string(responseBody))
 }
 
 func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 	path := fmt.Sprintf("/v1/order/orders/%s", orderId)
-	postData := &url.Values{}
-	buildFormHuobi(postData, path, "GET")
-	requestUrl := model.ApplicationConfig.RestUrls[model.Huobi] + path + "?" + postData.Encode()
-	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
-	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
+	responseBody := SignedRequestHuobi(`GET`, path, ``, nil)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		status, _ = orderJson.GetPath("data", "state").String()
@@ -185,13 +202,9 @@ func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 func GetAccountHuobi(accounts *model.Accounts) {
 	accounts.ClearAccounts(model.Huobi)
 	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountId)
-	postData := &url.Values{}
-	postData.Set("accountId-id", model.HuobiAccountId)
-	buildFormHuobi(postData, path, "GET")
-	requestUrl := model.ApplicationConfig.RestUrls[model.Huobi] + path + "?" + postData.Encode()
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-	"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
+	postData := make(map[string]string)
+	postData["accountId-id"] = model.HuobiAccountId
+	responseBody := SignedRequestHuobi(`GET`, path, ``, postData)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		accountType, _ := balanceJson.GetPath("data", "type").String()

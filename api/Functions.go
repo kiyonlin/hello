@@ -14,7 +14,7 @@ func RefreshAccounts() {
 		for _, value := range markets {
 			switch value {
 			case model.Huobi:
-				model.HuobiAccountId, _ = GetSpotAccountId(model.ApplicationConfig)
+				model.HuobiAccountId, _ = GetSpotAccountId()
 				GetAccountHuobi(model.ApplicationAccounts)
 			case model.OKEX:
 				GetAccountOkex(model.ApplicationAccounts)

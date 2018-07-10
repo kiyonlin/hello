@@ -2,19 +2,18 @@ markets:
 #- huobi
 #- okex
 #- binance
-#- fcoin
+- fcoin
 #- coinpark
-- coinbig
+#- coinbig
 #- btcdo
 
 symbols:
 #- ft_usdt
 - eth_usdt
-#- eth_usdt
-#- eos_usdt
-#- eos_btc
-#- eth_btc
-#- eos_eth
+- eos_usdt
+- eos_btc
+- eth_btc
+- eos_eth
 
 deduction: 0.8
 
