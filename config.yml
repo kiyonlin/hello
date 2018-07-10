@@ -35,7 +35,7 @@ minusdt: 15
 maxusdt: 1500
 inchina: 0
 env: aws
-dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
 #env: ace
 #dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
 #env: andrew

@@ -22,15 +22,24 @@ func GetParameters(c *gin.Context) {
 func SetParameters(c *gin.Context) {
 	deduction := c.Query("deduction")
 	if len(strings.TrimSpace(deduction)) > 0 {
-		model.ApplicationConfig.Deduction, _ = strconv.ParseFloat(deduction, 64)
+		value, _ := strconv.ParseFloat(deduction, 64)
+		if value > 0 && value < 1 {
+			model.ApplicationConfig.Deduction = value
+		}
 	}
 	baseCarryCost := c.Query("basecarrycost")
 	if len(strings.TrimSpace(baseCarryCost)) > 0 {
-		model.ApplicationConfig.BaseCarryCost, _ = strconv.ParseFloat(baseCarryCost, 64)
+		value, _ := strconv.ParseFloat(baseCarryCost, 64)
+		if value > 0 {
+			model.ApplicationConfig.BaseCarryCost = value
+		}
 	}
 	channelSlot := c.Query("channelslot")
 	if len(strings.TrimSpace(channelSlot)) > 0 {
-		model.ApplicationConfig.ChannelSlot, _ = strconv.ParseFloat(channelSlot, 64)
+		value, _  :=  strconv.ParseFloat(channelSlot, 64)
+		if value > 0 {
+			model.ApplicationConfig.ChannelSlot = value
+		}
 	}
 	channels := c.Query("channels")
 	if len(strings.TrimSpace(channels)) > 0 {
@@ -62,7 +71,10 @@ func SetParameters(c *gin.Context) {
 		strMargins := strings.Split(strings.Replace(margins, " ", "", -1), ",")
 		model.ApplicationConfig.Margins = make([]float64, len(strMargins))
 		for key, value := range strMargins {
-			model.ApplicationConfig.Margins[key], _ = strconv.ParseFloat(value, 64)
+			floatValue, _ := strconv.ParseFloat(value, 64)
+			if floatValue > 0 {
+				model.ApplicationConfig.Margins[key] = floatValue
+			}
 		}
 	}
 	delays := c.Query("delays")
