@@ -80,12 +80,12 @@ var ProcessCarry = func(carry *model.Carry) {
 	if !timeOk {
 		carry.DealAskStatus = `NotOnTime`
 		carry.DealBidStatus = `NotOnTime`
-		util.SocketInfo(`get carry not on time` + carry.ToString())
+		util.Info(`get carry not on time` + carry.ToString())
 	} else {
 		if !marginOk {
 			carry.DealAskStatus = `NotWorth`
 			carry.DealBidStatus = `NotWorth`
-			util.SocketInfo(`get carry no worth` + carry.ToString())
+			util.Info(`get carry no worth` + carry.ToString())
 		} else {
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil

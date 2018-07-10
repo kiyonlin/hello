@@ -132,7 +132,7 @@ func CancelOrderOkex(symbol string, orderId string) {
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", postData.Encode(), headers)
-	util.SocketInfo("okex cancel order" + orderId + string(responseBody))
+	util.Notice("okex cancel order" + orderId + string(responseBody))
 }
 
 func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status string) {
@@ -155,7 +155,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 			}
 		}
 	}
-	util.SocketInfo(fmt.Sprintf("%s okex query order %f %s", status, dealAmount, responseBody))
+	util.Notice(fmt.Sprintf("%s okex query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 

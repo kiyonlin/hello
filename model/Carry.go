@@ -42,7 +42,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		return configMargin
 	}
 	if !strings.Contains(carry.Symbol, "_") {
-		util.SocketInfo(fmt.Sprintf("invalid carry %s %s %f %d", carry.Symbol, carry.BidWeb, carry.Amount, carry.BidTime))
+		util.Info(fmt.Sprintf("invalid carry %s %s %f %d", carry.Symbol, carry.BidWeb, carry.Amount, carry.BidTime))
 		return 1
 	}
 	currencies := strings.Split(carry.Symbol, "_")
@@ -105,7 +105,7 @@ func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (boo
 	carry.Margin = dynamicMargin
 	margin := carry.AskPrice - carry.BidPrice
 	if margin > carry.AskPrice*dynamicMargin && carry.Amount > 0 {
-		util.SocketInfo(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
+		util.Info(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
 		return true, nil
 	}
 	return false, errors.New("利润不足")

@@ -178,7 +178,7 @@ func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 			dealAmount, _ = strconv.ParseFloat(str, 64)
 		}
 	}
-	util.SocketInfo(fmt.Sprintf("%s huobi query order %f %s", status, dealAmount, responseBody))
+	util.Notice(fmt.Sprintf("%s huobi query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 

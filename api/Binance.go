@@ -136,7 +136,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 		status, _ = orderJson.Get("status").String()
 		status = model.OrderStatusMap[status]
 	}
-	util.SocketInfo(fmt.Sprintf("%s binance query order %f %s", status, dealAmount, responseBody))
+	util.Notice(fmt.Sprintf("%s binance query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status
 }
 
