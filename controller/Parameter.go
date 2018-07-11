@@ -27,13 +27,6 @@ func SetParameters(c *gin.Context) {
 			model.ApplicationConfig.Deduction = value
 		}
 	}
-	baseCarryCost := c.Query("basecarrycost")
-	if len(strings.TrimSpace(baseCarryCost)) > 0 {
-		value, _ := strconv.ParseFloat(baseCarryCost, 64)
-		if value > 0 {
-			model.ApplicationConfig.BaseCarryCost = value
-		}
-	}
 	channelSlot := c.Query("channelslot")
 	if len(strings.TrimSpace(channelSlot)) > 0 {
 		value, _  :=  strconv.ParseFloat(channelSlot, 64)

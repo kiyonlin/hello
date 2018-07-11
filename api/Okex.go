@@ -17,7 +17,7 @@ import (
 type OKEXMessage struct {
 	Binary  int    `json:"binary"`
 	Channel string `json:"channel"`
-	Data struct {
+	Data    struct {
 		Asks      [][]string `json:"asks"`
 		Bids      [][]string `json:"bids"`
 		Timestamp int        `json:"timestamp"`
@@ -40,7 +40,7 @@ var subscribeHandlerOkex = func(subscribes []string, conn *websocket.Conn) error
 	return err
 }
 
-func WsDepthServeOkex(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping okex server every 30 seconds
@@ -75,8 +75,8 @@ func WsDepthServeOkex(markets *model.Markets, carryHandler CarryHandler, errHand
 					sort.Reverse(bidAsk.Bids)
 					bidAsk.Ts = message.Data.Timestamp
 					if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
-						if carry, err := markets.NewCarry(symbol); err == nil {
-							carryHandler(carry)
+						for _, handler := range carryHandlers {
+							handler(symbol, model.OKEX)
 						}
 					}
 				}
@@ -206,7 +206,7 @@ func getBuyPriceOkex(symbol string) (buy float64, err error) {
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+
-		"/ticker.do?symbol="+ symbol, "", headers)
+		"/ticker.do?symbol="+symbol, "", headers)
 	tickerJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()

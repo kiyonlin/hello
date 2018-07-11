@@ -31,7 +31,7 @@ var subscribeHandlerCoinpark = func(subscribes []string, conn *websocket.Conn) e
 	return err
 }
 
-func WsDepthServeCoinpark(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		fmt.Println(string(event))
 		depthJson, err := util.NewJSON(event)
@@ -73,8 +73,8 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandler CarryHandler, err
 				sort.Sort(bidAsk.Asks)
 				sort.Reverse(bidAsk.Bids)
 				if markets.SetBidAsk(symbol, model.Coinpark, &bidAsk) {
-					if carry, err := markets.NewCarry(symbol); err == nil {
-						carryHandler(carry)
+					for _, handler := range carryHandlers {
+						handler(symbol, model.Coinpark)
 					}
 				}
 			}

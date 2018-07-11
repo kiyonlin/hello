@@ -32,6 +32,54 @@ func RefreshAccounts() {
 	}
 }
 
+func SendAsk(market, symbol, price, amount string)(orderId, errCode string)  {
+	switch market {
+	case model.Huobi:
+		orderId, errCode = PlaceOrderHuobi(symbol, "sell-limit", price, amount)
+		GetAccountHuobi(model.ApplicationAccounts)
+	case model.OKEX:
+		orderId, errCode = PlaceOrderOkex(symbol, "sell", price, amount)
+		GetAccountOkex(model.ApplicationAccounts)
+	case model.Binance:
+		orderId, errCode = PlaceOrderBinance(symbol, "SELL", price, amount)
+		GetAccountBinance(model.ApplicationAccounts)
+	case model.Fcoin:
+		orderId, errCode = PlaceOrderFcoin(symbol, "sell", `limit`, price, amount)
+		GetAccountFcoin(model.ApplicationAccounts)
+	case model.Coinpark:
+		orderId, errCode, _ = PlaceOrderCoinpark(symbol, 2, 2, price, amount)
+		GetAccountCoinpark(model.ApplicationAccounts)
+	case model.Coinbig:
+		orderId, errCode = PlaceOrderCoinbig(symbol, `sell`, price, amount)
+		GetAccountCoinbig(model.ApplicationAccounts)
+	}
+	return orderId, errCode
+}
+
+func SendBid(market, symbol, price, amount string)(orderId, errCode string)  {
+	switch market {
+	case model.Huobi:
+		orderId, errCode = PlaceOrderHuobi(symbol, "buy-limit", price, amount)
+		GetAccountHuobi(model.ApplicationAccounts)
+	case model.OKEX:
+		orderId, errCode = PlaceOrderOkex(symbol, "buy", price, amount)
+		GetAccountOkex(model.ApplicationAccounts)
+	case model.Binance:
+		orderId, errCode = PlaceOrderBinance(symbol, "BUY", price, amount)
+		GetAccountBinance(model.ApplicationAccounts)
+	case model.Fcoin:
+		orderId, errCode = PlaceOrderFcoin(symbol, "buy", `limit`, price, amount)
+		GetAccountFcoin(model.ApplicationAccounts)
+	case model.Coinpark:
+		orderId, errCode, _ = PlaceOrderCoinpark(symbol, 1, 2, price, amount)
+		GetAccountCoinpark(model.ApplicationAccounts)
+	case model.Coinbig:
+		orderId, errCode = PlaceOrderCoinbig(symbol, `buy`, price, amount)
+		GetAccountCoinbig(model.ApplicationAccounts)
+	}
+	return orderId, errCode
+}
+
 func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
 	util.Notice(carry.AskWeb + "ask" + carry.Symbol + " with price: " + price + " amount:" + amount)
 	switch carry.AskWeb {
@@ -67,7 +115,6 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 }
 
 func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-
 	util.Notice(carry.BidWeb + "bid" + carry.Symbol + " with price: " + price + " amount:" + amount)
 	switch carry.BidWeb {
 	case model.Huobi:
@@ -89,7 +136,6 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 		orderId, errCode = PlaceOrderCoinbig(carry.Symbol, `buy`, price, amount)
 		GetAccountCoinbig(model.ApplicationAccounts)
 	}
-	//carry.DealBidAmount, _ = strconv.ParseFloat(amount, 64)
 	carry.DealBidErrCode = errCode
 	carry.DealBidOrderId = orderId
 	if orderId == "0" || orderId == "" {

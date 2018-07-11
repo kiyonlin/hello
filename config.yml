@@ -7,6 +7,7 @@ markets:
 #- coinbig
 #- btcdo
 
+
 symbols:
 #- ft_usdt
 - eth_usdt
@@ -16,6 +17,29 @@ symbols:
 - eos_eth
 
 deduction: 0.8
+
+marketcost:
+- 0
+
+functions:
+- carry
+- tutle
+
+turtleleftamount:
+- 0.1
+- 7
+- 7
+- 0.1
+- 0.1
+
+turtlepricewidth:
+- 0.0005
+- 0.01
+- 0.01
+- 0.0005
+- 0.01
+
+turtleamount:
 
 margins: #差价
 - -0.00001
@@ -27,7 +51,6 @@ margins: #差价
 
 delays: #按照毫秒计算时间差
 - 5000
-basecarrycost: -0.00001
 channelslot: 100000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15

@@ -24,7 +24,7 @@ var subscribeHandlerBtcdo = func(subscribes []string, conn *websocket.Conn) erro
 
 var lastSendTime int64
 
-func WsDepthServeBtcdo(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeBtcdo(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		if util.GetNowUnixMillion()-lastSendTime > 20000 {
 			if err := conn.WriteMessage(websocket.TextMessage, []byte(`2`)); err != nil {
@@ -69,8 +69,8 @@ func WsDepthServeBtcdo(markets *model.Markets, carryHandler CarryHandler, errHan
 			sort.Reverse(bidAsk.Bids)
 			//bidAsk.Ts = json.Get("ts").MustInt()
 			if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
-				if carry, err := markets.NewCarry(symbol); err == nil {
-					carryHandler(carry)
+				for _, handler := range carryHandlers {
+					handler(symbol, model.Fcoin)
 				}
 			}
 		}

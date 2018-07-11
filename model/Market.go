@@ -2,10 +2,10 @@ package model
 
 import (
 	"errors"
-	"math"
 	"hello/util"
-	"sync"
+	"math"
 	"strings"
+	"sync"
 )
 
 type BidAsk struct {
@@ -20,9 +20,9 @@ type Rule struct {
 }
 
 type Markets struct {
-	lock    sync.Mutex
-	BidAsks map[string]map[string]*BidAsk // symbol - market - bidAsk
-	marketWS map[string][]chan struct{}   // marketName - channel
+	lock     sync.Mutex
+	BidAsks  map[string]map[string]*BidAsk // symbol - market - bidAsk
+	marketWS map[string][]chan struct{}    // marketName - channel
 }
 
 func NewMarkets() *Markets {
@@ -40,6 +40,25 @@ func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidA
 		return true
 	}
 	return false
+}
+
+func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
+	if markets.BidAsks[symbol] == nil {
+		return nil, errors.New("no market data " + symbol)
+	}
+	amount, err := ApplicationConfig.GetTurtleAmount(symbol)
+	if err != nil {
+		return nil, err
+	}
+	priceWidth, err := ApplicationConfig.GetTurtlePriceWidth(symbol)
+	bidAsks := markets.BidAsks[symbol][market]
+	if err != nil {
+		return nil, err
+	}
+	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
+		BidPrice: bidAsks.Bids[0][0] - priceWidth, AskPrice: bidAsks.Asks[0][0] + priceWidth, DealBidStatus: TurtleStatusPending,
+		DealAskStatus: TurtleStatusPending, BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts)}
+	return &carry, nil
 }
 
 func (markets *Markets) NewCarry(symbol string) (*Carry, error) {

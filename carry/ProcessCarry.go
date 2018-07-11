@@ -35,7 +35,92 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 	return strconv.ParseFloat(string(bytes), 64)
 }
 
-var ProcessCarry = func(carry *model.Carry) {
+var ProcessTurtle = func(symbol, market string) {
+	carry, err := model.ApplicationMarkets.NewTurtleCarry(symbol, market)
+	if err != nil {
+		util.Notice(`can not create turtle ` + err.Error())
+		return
+	}
+	if !carry.CheckWorthSaveMargin() {
+		util.Notice(`turtle利潤不足手續費` + carry.ToString())
+	}
+	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
+	if !timeOk {
+		util.Info(`turtle get carry not on time` + carry.ToString())
+	}
+	if model.ApplicationTurtle == nil {
+		// order, save db
+		currencies := strings.Split(carry.Symbol, `_`)
+		if len(currencies) != 2 {
+			util.Notice(`wrong symbol format ` + carry.Symbol)
+			return
+		}
+		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
+		model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+		coin := model.ApplicationAccounts.GetAccount(market, currencies[0]).Free
+		money := model.ApplicationAccounts.GetAccount(market, currencies[1]).Free
+		if carry.AskAmount > coin {
+			price := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
+			amount := strconv.FormatFloat(carry.AskAmount*3, 'f', -1, 64)
+			orderId, status := api.SendBid(carry.AskWeb, carry.Symbol, price, amount)
+			util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s %s`,
+				carry.Symbol, coin, carry.AskAmount, orderId, status))
+		} else if carry.BidAmount > money/carry.BidPrice {
+			price := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
+			amount := strconv.FormatFloat(carry.BidAmount*3, 'f', -1, 64)
+			orderId, status := api.SendAsk(carry.BidWeb, carry.Symbol, price, amount)
+			util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s %s`,
+				carry.Symbol, money, carry.BidAmount, orderId, status))
+		} else {
+			bidAmount := strconv.FormatFloat(carry.BidAmount, 'f', -1, 64)
+			askAmount := strconv.FormatFloat(carry.AskAmount, 'f', -1, 64)
+			bidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
+			askPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
+			go api.DoAsk(carry, askPrice, askAmount)
+			go api.DoBid(carry, bidPrice, bidAmount)
+			model.ApplicationTurtle = carry
+		}
+	} else {
+		if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] >= model.ApplicationTurtle.BidPrice &&
+			model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] > model.ApplicationTurtle.AskPrice {
+			util.Info(fmt.Sprintf(`[%s等待波动]%f - %f amount:%f`, model.ApplicationTurtle.Symbol,
+				model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.Amount))
+		} else {
+			// 当前的ask价，比之前carry的bid价还低，或者反过来当前的bid价比之前carry的ask价还高
+			if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] < model.ApplicationTurtle.BidPrice {
+				cancelOrder(model.ApplicationTurtle.AskWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealAskOrderId)
+				model.ApplicationTurtle.DealAskStatus = model.TurtleStatusCancel
+				model.ApplicationTurtle.DealBidStatus = model.TurtleStatusSuccess
+				util.Info(fmt.Sprintf(`[%s取消ASK]%f - %f amount:%f`, model.ApplicationTurtle.Symbol,
+					model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.Amount))
+			} else if model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] > model.ApplicationTurtle.AskPrice {
+				cancelOrder(model.ApplicationTurtle.BidWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealBidOrderId)
+				model.ApplicationTurtle.DealBidStatus = model.TurtleStatusCancel
+				model.ApplicationTurtle.DealAskStatus = model.TurtleStatusSuccess
+				util.Info(fmt.Sprintf(`[%s取消BID]%f - %f amount:%f`, model.ApplicationTurtle.Symbol,
+					model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.Amount))
+			}
+			model.ApplicationTurtle.DealBidAmount, model.ApplicationTurtle.DealBidStatus = QueryOrderById(
+				model.ApplicationTurtle.BidWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealBidOrderId)
+			model.ApplicationTurtle.DealAskAmount, model.ApplicationTurtle.DealAskStatus = QueryOrderById(
+				model.ApplicationTurtle.AskWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealAskOrderId)
+			util.Notice(fmt.Sprintf(`[%s捕获Turtle]ask: %f - bid %f`, model.ApplicationTurtle.Symbol,
+				model.ApplicationTurtle.DealAskAmount, model.ApplicationTurtle.DealBidAmount))
+			model.ApplicationTurtle = nil
+			model.BidAskChannel <- *carry
+		}
+	}
+}
+
+var ProcessCarry = func(symbol, market string) {
+	carry, err := model.ApplicationMarkets.NewCarry(symbol)
+	if err != nil {
+		util.Notice(`can not create carry ` + err.Error())
+		return
+	}
+	if carry.AskWeb != market && carry.BidWeb != market {
+		util.Notice(`do not create a carry not related to ` + market)
+	}
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
 	rightBalance := 0.0
@@ -113,25 +198,25 @@ var ProcessCarry = func(carry *model.Carry) {
 	}
 }
 
-func createServer(markets *model.Markets, carryHandler api.CarryHandler, marketName string) chan struct{} {
+func createServer(markets *model.Markets, carryHandlers []api.CarryHandler, marketName string) chan struct{} {
 	util.SocketInfo(" create chan for " + marketName)
 	var channel chan struct{}
 	var err error
 	switch marketName {
 	case model.Huobi:
-		channel, err = api.WsDepthServeHuobi(markets, carryHandler, WSErrHandler)
+		channel, err = api.WsDepthServeHuobi(markets, carryHandlers, WSErrHandler)
 	case model.OKEX:
-		channel, err = api.WsDepthServeOkex(markets, carryHandler, WSErrHandler)
+		channel, err = api.WsDepthServeOkex(markets, carryHandlers, WSErrHandler)
 	case model.Binance:
-		channel, err = api.WsDepthServeBinance(markets, carryHandler, WSErrHandler)
+		channel, err = api.WsDepthServeBinance(markets, carryHandlers, WSErrHandler)
 	case model.Fcoin:
-		channel, err = api.WsDepthServeFcoin(markets, carryHandler, WSErrHandler)
+		channel, err = api.WsDepthServeFcoin(markets, carryHandlers, WSErrHandler)
 	case model.Coinpark:
-		channel, err = api.WsDepthServeCoinpark(markets, carryHandler, WSErrHandler)
+		channel, err = api.WsDepthServeCoinpark(markets, carryHandlers, WSErrHandler)
 	case model.Coinbig:
-		channel, err = api.WsDepthServeCoinbig(markets, carryHandler, WSErrHandler)
+		channel, err = api.WsDepthServeCoinbig(markets, carryHandlers, WSErrHandler)
 	case model.Btcdo:
-		channel, err = api.WsDepthServeBtcdo(markets, carryHandler, WSErrHandler)
+		channel, err = api.WsDepthServeBtcdo(markets, carryHandlers, WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())
@@ -141,7 +226,7 @@ func createServer(markets *model.Markets, carryHandler api.CarryHandler, marketN
 
 var socketMaintaining = false
 
-func MaintainMarketChan(carryHandler api.CarryHandler) {
+func MaintainMarketChan(carryHandlers []api.CarryHandler) {
 	if socketMaintaining {
 		return
 	}
@@ -153,7 +238,7 @@ func MaintainMarketChan(carryHandler api.CarryHandler) {
 				channel := model.ApplicationMarkets.GetChan(marketName, index)
 				if channel == nil {
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
-						carryHandler, marketName))
+						carryHandlers, marketName))
 					util.SocketInfo(marketName + " create new channel" + subscribe)
 				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
 					util.SocketInfo(marketName + " reset channel" + subscribe)
@@ -161,7 +246,7 @@ func MaintainMarketChan(carryHandler api.CarryHandler) {
 					channel <- struct{}{}
 					close(channel)
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
-						carryHandler, marketName))
+						carryHandlers, marketName))
 				}
 				util.SocketInfo(marketName + " new channel reset done")
 			}
@@ -191,11 +276,21 @@ func Maintain() {
 	go DBHandlerServe()
 	go BidAskUpdate()
 	go AccountDBHandlerServe()
-	go MaintainOrders()
 	model.ApplicationMarkets = model.NewMarkets()
 	go controller.ParameterServe()
+
+	carryHandlers := make([]api.CarryHandler, len(model.ApplicationConfig.Functions))
+	for i, value := range model.ApplicationConfig.Functions {
+		switch value {
+		case `carry`:
+			go MaintainOrders()
+			carryHandlers[i] = ProcessCarry
+		case `turtle`:
+			carryHandlers[i] = ProcessTurtle
+		}
+	}
 	for true {
-		go MaintainMarketChan(ProcessCarry)
+		go MaintainMarketChan(carryHandlers)
 		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)
 	}
 }

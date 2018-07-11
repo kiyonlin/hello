@@ -79,12 +79,10 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		if discount < (leftTotalPercentage-leftBidPercentage)/leftTotalPercentage {
 			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
-		// 把将来可能的最低利润减掉作为成本
-		reBaseCarryConst := ApplicationConfig.BaseCarryCost - (configMargin-ApplicationConfig.BaseCarryCost)*ApplicationConfig.Deduction
-		dynamicMargin := reBaseCarryConst + (configMargin-reBaseCarryConst)*(1-discount)
-		if dynamicMargin < ApplicationConfig.BaseCarryCost {
-			dynamicMargin = ApplicationConfig.BaseCarryCost
-		}
+		askCost, _ := ApplicationConfig.GetMarketCost(carry.AskWeb)
+		bidCost, _ := ApplicationConfig.GetMarketCost(carry.BidWeb)
+		baseCost := (askCost + bidCost) / 2
+		dynamicMargin := baseCost + (configMargin-baseCost)*(1-discount)
 		util.SocketInfo(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
 			carry.Symbol, discount, dynamicMargin))
 		return dynamicMargin
@@ -93,7 +91,9 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 }
 
 func (carry *Carry) CheckWorthSaveMargin() bool {
-	if ApplicationConfig.BaseCarryCost < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
+	askCost, _ := ApplicationConfig.GetMarketCost(carry.AskWeb)
+	bidCost, _ := ApplicationConfig.GetMarketCost(carry.BidWeb)
+	if (askCost+bidCost)/2 < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
 		return true
 	}
 	return false

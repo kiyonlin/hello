@@ -25,6 +25,24 @@ func cancelOrder(market string, symbol string, orderId string) {
 	}
 }
 
+func QueryOrderById(market, symbol, orderId string) (dealAmount float64, status string) {
+	switch market {
+	case model.Huobi:
+		dealAmount, status = api.QueryOrderHuobi(orderId)
+	case model.OKEX:
+		dealAmount, status = api.QueryOrderOkex(symbol, orderId)
+	case model.Binance:
+		dealAmount, status = api.QueryOrderBinance(symbol, orderId)
+	case model.Fcoin:
+		dealAmount, status = api.QueryOrderFcoin(symbol, orderId)
+	case model.Coinpark:
+		dealAmount, status = api.QueryOrderCoinpark(orderId)
+	case model.Coinbig:
+		dealAmount, status = api.QueryOrderCoinbig(orderId)
+	}
+	return dealAmount, status
+}
+
 func queryOrder(carry *model.Carry) {
 	if carry.DealBidOrderId != "" && carry.DealBidStatus == model.CarryStatusWorking {
 		switch carry.BidWeb {
@@ -126,8 +144,8 @@ func BidAskUpdate() {
 
 func DBHandlerServe() {
 	for true {
-		carry := <-model.CarryChannel
 		var carryInDb model.Carry
+		carry := <-model.CarryChannel
 		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
 		if model.ApplicationDB.NewRecord(&carryInDb) {
 			model.ApplicationDB.Create(&carry)

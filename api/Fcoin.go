@@ -27,7 +27,7 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 	return err
 }
 
-func WsDepthServeFcoin(markets *model.Markets, carryHandler CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		json, err := util.NewJSON(event)
 		if err != nil {
@@ -62,8 +62,8 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandler CarryHandler, errHan
 			sort.Reverse(bidAsk.Bids)
 			bidAsk.Ts = json.Get("ts").MustInt()
 			if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
-				if carry, err := markets.NewCarry(symbol); err == nil {
-					carryHandler(carry)
+				for _, handler := range carryHandlers {
+					handler(symbol, model.Fcoin)
 				}
 			}
 		}

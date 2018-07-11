@@ -14,14 +14,11 @@ const Binance = "binance"
 const Fcoin = "fcoin"
 const Coinbig = "coinbig"
 const Coinpark = "coinpark"
-const Coinex = `coinex`
 const Btcdo = `btcdo`
 
 var HuobiAccountId = "1651065"
 var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
-
-//const BaseCarryCost = 0.0004 // 当前搬砖的最低手续费是万分之4
 
 var ApplicationConfig *Config
 
@@ -31,10 +28,14 @@ var CarryChannel = make(chan Carry, 50)
 var BidAskChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var ApplicationMarkets *Markets
+var ApplicationTurtle *Carry
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
+const TurtleStatusPending = `turtle_pending`
+const TurtleStatusSuccess = `turtle_success`
+const TurtleStatusCancel = `turtle_cancel`
 
 var OrderStatusMap = map[string]string{
 	// Binance
@@ -153,45 +154,46 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
-	lock           sync.Mutex
-	BaseCarryCost  float64
-	Balance        float64
-	Env            string
-	DBConnection   string
-	Channels       int
-	ChannelSlot    float64
-	Markets        []string
-	Symbols        []string
-	Margins        []float64
-	Delays         []float64
-	Deduction      float64
-	MinUsdt        float64             // 折合usdt最小下单金额
-	MaxUsdt        float64             // 折合usdt最大下单金额
-	subscribes     map[string][]string // marketName - subscribes
-	WSUrls         map[string]string   // marketName - ws url
-	RestUrls       map[string]string   // marketName - rest url
-	HuobiKey       string
-	HuobiSecret    string
-	OkexKey        string
-	OkexSecret     string
-	BinanceKey     string
-	BinanceSecret  string
-	CoinbigKey     string
-	CoinbigSecret  string
-	CoinparkKey    string
-	CoinparkSecret string
-	FcoinKey       string
-	FcoinSecret    string
-	CoinexKey      string
-	CoinexSecret   string
-	BtcdoKey       string
-	BtcdoSecret    string
-	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
-	AmountRate     float64 // 刷单填写数量比率
-	Handle         int64   // 0 不执行处理程序，1执行处理程序
-	SellRate       float64 // fcoin dk 额外卖单下单比例
-	FtMax          float64 // fcoin dk ft上限
-	InChina        int     // 1 in china, otherwise outter china
+	lock             sync.Mutex
+	Balance          float64
+	Env              string
+	DBConnection     string
+	Channels         int
+	ChannelSlot      float64
+	MarketCost       []float64
+	Markets          []string
+	Symbols          []string
+	Margins          []float64
+	Delays           []float64
+	TurtleLeftAmount []float64
+	TurtlePriceWidth []float64
+	Functions        []string
+	Deduction        float64
+	MinUsdt          float64             // 折合usdt最小下单金额
+	MaxUsdt          float64             // 折合usdt最大下单金额
+	subscribes       map[string][]string // marketName - subscribes
+	WSUrls           map[string]string   // marketName - ws url
+	RestUrls         map[string]string   // marketName - rest url
+	HuobiKey         string
+	HuobiSecret      string
+	OkexKey          string
+	OkexSecret       string
+	BinanceKey       string
+	BinanceSecret    string
+	CoinbigKey       string
+	CoinbigSecret    string
+	CoinparkKey      string
+	CoinparkSecret   string
+	FcoinKey         string
+	FcoinSecret      string
+	BtcdoKey         string
+	BtcdoSecret      string
+	OrderWait        int64   // fcoin/coinpark 刷单平均等待时间
+	AmountRate       float64 // 刷单填写数量比率
+	Handle           int64   // 0 不执行处理程序，1执行处理程序
+	SellRate         float64 // fcoin dk 额外卖单下单比例
+	FtMax            float64 // fcoin dk ft上限
+	InChina          int     // 1 in china, otherwise outter china
 }
 
 func NewConfig() {
@@ -214,7 +216,6 @@ func NewConfig() {
 	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"
 	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
-	ApplicationConfig.RestUrls[Coinex] = `https://api.coinex.com/v1`
 	ApplicationConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
 }
 
@@ -232,19 +233,39 @@ func (config *Config) GetSubscribes(marketName string) []string {
 }
 
 func (config *Config) GetMargin(symbol string) (float64, error) {
-	//if len(config.Margins) == 1 {
-	//	if config.Margins[0] < BaseCarryCost {
-	//		config.Margins[0] = BaseCarryCost
-	//	}
-	//	// return first margin as default margin
-	//	return config.Margins[0], nil
-	//}
 	for i, value := range config.Symbols {
 		if value == symbol {
 			return config.Margins[i], nil
 		}
 	}
 	return 1, errors.New("no such symbol")
+}
+
+func (config *Config) GetTurtleAmount(symbol string) (amount float64, err error) {
+	for i, value := range config.Symbols {
+		if value == symbol {
+			return config.TurtleLeftAmount[i], nil
+		}
+	}
+	return 0, errors.New("no such symbol amount")
+}
+
+func (config *Config) GetTurtlePriceWidth(symbol string) (priceWidth float64, err error) {
+	for i, value := range config.Symbols {
+		if value == symbol {
+			return config.TurtlePriceWidth[i], nil
+		}
+	}
+	return 0, errors.New(`no such symbol price width`)
+}
+
+func (config *Config) GetMarketCost(market string) (marketCost float64, err error) {
+	for i, value := range config.Markets {
+		if value == market {
+			return config.MarketCost[i], nil
+		}
+	}
+	return 1, errors.New(`no such market base carry cost`)
 }
 
 func (config *Config) GetDelay(symbol string) (float64, error) {
@@ -261,9 +282,12 @@ func (config *Config) GetDelay(symbol string) (float64, error) {
 }
 
 func (config *Config) ToString() string {
-	str := "markets:\n"
+	str := "markets-carry cost:\n"
 	for _, value := range config.Markets {
-		str += "- " + value + "\n"
+		marketCost, err := config.GetMarketCost(value)
+		if err == nil {
+			str += fmt.Sprintf("-%s base carry cost: %f\n", value, marketCost)
+		}
 	}
 	str += "symbols:\n"
 	for _, value := range config.Symbols {
@@ -278,7 +302,6 @@ func (config *Config) ToString() string {
 	for _, value := range config.Delays {
 		str += fmt.Sprintf("- %f\n", value)
 	}
-	str += fmt.Sprintf("basecarrycost: %f\n", config.BaseCarryCost)
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
 	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)

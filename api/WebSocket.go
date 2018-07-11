@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/gorilla/websocket"
-	"hello/model"
 	"hello/util"
 	"net/http"
 )
@@ -10,7 +9,7 @@ import (
 type MsgHandler func(message []byte, conn *websocket.Conn)
 type SubscribeHandler func(subscribes []string, conn *websocket.Conn) error
 type ErrHandler func(err error)
-type CarryHandler func(carry *model.Carry)
+type CarryHandler func(symbol, market string)
 
 func newConnection(url string) (*websocket.Conn, error) {
 	var connErr error
