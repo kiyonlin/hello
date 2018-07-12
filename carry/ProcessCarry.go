@@ -21,7 +21,7 @@ var WSErrHandler = func(err error) {
 
 // 只取第一位
 func calcAmount(originalAmount float64) (num float64, err error) {
-	str := strconv.FormatFloat(originalAmount, 'f', -1, 64)
+	str := fmt.Sprintf(`%f`, originalAmount)
 	bytes := []byte(str)
 	startReplace := false
 	for i, v := range bytes {
@@ -42,15 +42,14 @@ func extraBid(carry *model.Carry, coin float64) {
 		return
 	}
 	turtleExtra = true
-	price := strconv.FormatFloat(model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0],
-		'f', -1, 64)
+	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0])
 	var amount float64
 	if carry.AskAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Bids[0][1] {
 		amount = model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Bids[0][1]
 	} else {
 		amount = carry.AskAmount * 3
 	}
-	amountStr := strconv.FormatFloat(amount, 'f', -1, 64)
+	amountStr := fmt.Sprintf(`%f`, amount)
 	orderId, status := api.SendBid(carry.AskWeb, carry.Symbol, price, amountStr)
 	util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s status %s`,
 		carry.Symbol, coin, carry.AskAmount, orderId, status))
@@ -67,15 +66,14 @@ func extraAsk(carry *model.Carry, money float64) {
 		return
 	}
 	turtleExtra = true
-	price := strconv.FormatFloat(model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0],
-		'f', -1, 64)
+	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0])
 	var amount float64
 	if carry.BidAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Asks[0][1] {
 		amount = model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Asks[0][1]
 	} else {
 		amount = carry.BidAmount * 3
 	}
-	amountStr := strconv.FormatFloat(amount, 'f', -1, 64)
+	amountStr := fmt.Sprintf(`%f`, amount)
 	orderId, status := api.SendAsk(carry.BidWeb, carry.Symbol, price, amountStr)
 	util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s status %s`,
 		carry.Symbol, money, carry.BidAmount, orderId, status))
@@ -119,10 +117,10 @@ var ProcessTurtle = func(symbol, market string) {
 		} else if carry.BidAmount > money/carry.BidPrice {
 			go extraAsk(carry, money)
 		} else {
-			bidAmount := strconv.FormatFloat(carry.BidAmount, 'f', -1, 64)
-			askAmount := strconv.FormatFloat(carry.AskAmount, 'f', -1, 64)
-			bidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
-			askPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
+			bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
+			askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
+			bidPrice := fmt.Sprintf(`%f`, carry.BidPrice)
+			askPrice := fmt.Sprintf(`%f`, carry.AskPrice)
 			go api.DoAsk(carry, askPrice, askAmount)
 			go api.DoBid(carry, bidPrice, bidAmount)
 			util.Notice(`set new carry ` + carry.ToString())
@@ -207,9 +205,9 @@ var ProcessCarry = func(symbol, market string) {
 	planAmount, _ := calcAmount(carry.Amount)
 	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
-	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', -1, 64)
-	strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
-	strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', -1, 64)
+	strLeftBalance := fmt.Sprintf(`%f`, leftBalance)
+	strAskPrice := fmt.Sprintf(`%f`, carry.AskPrice)
+	strBidPrice := fmt.Sprintf(`%f`, carry.BidPrice)
 
 	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
 	marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
