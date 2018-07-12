@@ -27,7 +27,7 @@ functions:
 - turtle
 
 turtleleftamount:
-- 3 #ft
+- 3.1 #ft
 #- 3 #ft
 #- 0.1
 #- 7

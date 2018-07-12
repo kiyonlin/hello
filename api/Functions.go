@@ -121,6 +121,8 @@ func RefreshAccount(market string)  {
 }
 
 func SendAsk(market, symbol, price, amount string)(orderId, errCode string)  {
+	price = strings.TrimRight(price , `0`)
+	amount = strings.TrimRight(amount, `0`)
 	switch market {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(symbol, "sell-limit", price, amount)
@@ -139,6 +141,8 @@ func SendAsk(market, symbol, price, amount string)(orderId, errCode string)  {
 }
 
 func SendBid(market, symbol, price, amount string)(orderId, errCode string)  {
+	price = strings.TrimRight(price , `0`)
+	amount = strings.TrimRight(amount, `0`)
 	switch market {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(symbol, "buy-limit", price, amount)
@@ -157,6 +161,8 @@ func SendBid(market, symbol, price, amount string)(orderId, errCode string)  {
 }
 
 func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
+	price = strings.TrimRight(price , `0`)
+	amount = strings.TrimRight(amount, `0`)
 	switch carry.AskWeb {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "sell-limit", price, amount)
@@ -192,6 +198,8 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 }
 
 func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode string) {
+	price = strings.TrimRight(price , `0`)
+	amount = strings.TrimRight(amount, `0`)
 	switch carry.BidWeb {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "buy-limit", price, amount)
