@@ -16,7 +16,7 @@ const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
 
-var HuobiAccountId = "1651065"
+var HuobiAccountId = ""
 var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
 

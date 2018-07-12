@@ -2,82 +2,11 @@ package carry
 
 import (
 	"fmt"
-	"hello/api"
 	"hello/model"
 	"hello/util"
 	"time"
+	"hello/api"
 )
-
-func cancelOrder(market string, symbol string, orderId string) {
-	switch market {
-	case model.Huobi:
-		api.CancelOrderHuobi(orderId)
-	case model.OKEX:
-		api.CancelOrderOkex(symbol, orderId)
-	case model.Binance:
-		api.CancelOrderBinance(symbol, orderId)
-	case model.Fcoin:
-		api.CancelOrderFcoin(orderId)
-	case model.Coinpark:
-		api.CancelOrderCoinpark(orderId)
-	case model.Coinbig:
-		api.CancelOrderCoinbig(orderId)
-	}
-}
-
-func QueryOrderById(market, symbol, orderId string) (dealAmount float64, status string) {
-	switch market {
-	case model.Huobi:
-		dealAmount, status = api.QueryOrderHuobi(orderId)
-	case model.OKEX:
-		dealAmount, status = api.QueryOrderOkex(symbol, orderId)
-	case model.Binance:
-		dealAmount, status = api.QueryOrderBinance(symbol, orderId)
-	case model.Fcoin:
-		dealAmount, status = api.QueryOrderFcoin(symbol, orderId)
-	case model.Coinpark:
-		dealAmount, status = api.QueryOrderCoinpark(orderId)
-	case model.Coinbig:
-		dealAmount, status = api.QueryOrderCoinbig(orderId)
-	}
-	return dealAmount, status
-}
-
-func queryOrder(carry *model.Carry) {
-	if carry.DealBidOrderId != "" && carry.DealBidStatus == model.CarryStatusWorking {
-		switch carry.BidWeb {
-		case model.Huobi:
-			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderHuobi(carry.DealBidOrderId)
-		case model.OKEX:
-			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderOkex(carry.Symbol, carry.DealBidOrderId)
-		case model.Binance:
-			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
-		case model.Fcoin:
-			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
-		case model.Coinpark:
-			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderCoinpark(carry.DealBidOrderId)
-		case model.Coinbig:
-			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderCoinbig(carry.DealBidOrderId)
-		}
-	}
-	if carry.DealAskOrderId != "" && carry.DealAskStatus == model.CarryStatusWorking {
-		switch carry.AskWeb {
-		case model.Huobi:
-			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderHuobi(carry.DealAskOrderId)
-		case model.OKEX:
-			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderOkex(carry.Symbol, carry.DealAskOrderId)
-		case model.Binance:
-			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
-		case model.Fcoin:
-			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderFcoin(carry.Symbol, carry.DealAskOrderId)
-		case model.Coinpark:
-			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderCoinpark(carry.DealAskOrderId)
-		case model.Coinbig:
-			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderCoinbig(carry.DealAskOrderId)
-		}
-	}
-	model.CarryChannel <- *carry
-}
 
 func MaintainOrders() {
 	for true {
@@ -88,12 +17,12 @@ func MaintainOrders() {
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
 			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking {
-				cancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				queryOrder(&carry)
+				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				api.QueryOrder(&carry)
 			}
 			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
-				cancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				queryOrder(&carry)
+				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				api.QueryOrder(&carry)
 			}
 			time.Sleep(time.Second * 1)
 		}

@@ -9,12 +9,13 @@ markets:
 
 
 symbols:
-#- ft_usdt
-- eth_usdt
-- eos_usdt
-- eos_btc
-- eth_btc
-- eos_eth
+- ft_usdt
+#- ft_btc
+#- eth_usdt
+#- eos_usdt
+#- eos_btc
+#- eth_btc
+#- eos_eth
 
 deduction: 0.8
 
@@ -22,26 +23,28 @@ marketcost:
 - 0
 
 functions:
-- carry
-- tutle
+#- carry
+- turtle
 
 turtleleftamount:
-- 0.1
-- 7
-- 7
-- 0.1
-- 0.1
+- 3 #ft
+#- 3 #ft
+#- 0.1
+#- 7
+#- 7
+#- 0.1
+#- 0.1
 
 turtlepricewidth:
-- 0.0005
-- 0.01
-- 0.01
-- 0.0005
-- 0.01
+- 0.001
+- 0.0000001
+#- 0.0005
+#- 0.01
+#- 0.01
+#- 0.0005
+#- 0.01
 
-turtleamount:
-
-margins: #差价
+margins: #差价，搬磚專用
 - -0.00001
 #- 0.0020
 #- 0.0020
@@ -50,20 +53,19 @@ margins: #差价
 #- 0.0020
 
 delays: #按照毫秒计算时间差
-- 5000
-channelslot: 100000 #按照毫秒计算的检查时间间隔
+- 29000
+channelslot: 20000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15
 maxusdt: 1500
-inchina: 0
+inchina: 1
+orderwait: 10000
 env: aws
 dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
 #env: ace
 #dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
 #env: andrew
 #dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
-
-orderwait: 10000
 
 #sammi huobi
 huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
@@ -74,9 +76,9 @@ okexsecret: 7D0E1B435964B96D72728215CB369CD7
 #sammi binance
 binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
 binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
-#fcoin yjsx_
-fcoinkey: b816373ea55049bfa586080952f8d89c
-fcoinsecret: 35660fa142364a668eea7a3e32d27bcd
+#3 server ace fcoin
+fcoinkey: 7c26be189ddc4e59aeb6021cfbfc3415
+fcoinsecret: 54342819cbe148859f8d5ebdf384e607
 #116.233.200.203
 coinbigkey: 932573681E0ED965D382C405DAD8DB98
 coinbigsecret: 8F45F90B1A509AA987F32812E603C735

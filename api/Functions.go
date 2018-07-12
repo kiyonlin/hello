@@ -6,7 +6,79 @@ import (
 	"hello/util"
 	"strings"
 	"time"
+	"fmt"
 )
+
+func CancelOrder(market string, symbol string, orderId string) {
+	switch market {
+	case model.Huobi:
+		CancelOrderHuobi(orderId)
+	case model.OKEX:
+		CancelOrderOkex(symbol, orderId)
+	case model.Binance:
+		CancelOrderBinance(symbol, orderId)
+	case model.Fcoin:
+		CancelOrderFcoin(orderId)
+	case model.Coinpark:
+		CancelOrderCoinpark(orderId)
+	case model.Coinbig:
+		CancelOrderCoinbig(orderId)
+	}
+}
+
+func QueryOrderById(market, symbol, orderId string) (dealAmount float64, status string) {
+	switch market {
+	case model.Huobi:
+		dealAmount, status = QueryOrderHuobi(orderId)
+	case model.OKEX:
+		dealAmount, status = QueryOrderOkex(symbol, orderId)
+	case model.Binance:
+		dealAmount, status = QueryOrderBinance(symbol, orderId)
+	case model.Fcoin:
+		dealAmount, status = QueryOrderFcoin(symbol, orderId)
+	case model.Coinpark:
+		dealAmount, status = QueryOrderCoinpark(orderId)
+	case model.Coinbig:
+		dealAmount, status = QueryOrderCoinbig(orderId)
+	}
+	return dealAmount, status
+}
+
+func QueryOrder(carry *model.Carry) {
+	if carry.DealBidOrderId != "" && carry.DealBidStatus == model.CarryStatusWorking {
+		switch carry.BidWeb {
+		case model.Huobi:
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderHuobi(carry.DealBidOrderId)
+		case model.OKEX:
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderOkex(carry.Symbol, carry.DealBidOrderId)
+		case model.Binance:
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
+		case model.Fcoin:
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
+		case model.Coinpark:
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderCoinpark(carry.DealBidOrderId)
+		case model.Coinbig:
+			carry.DealBidAmount, carry.DealBidStatus = QueryOrderCoinbig(carry.DealBidOrderId)
+		}
+	}
+	if carry.DealAskOrderId != "" && carry.DealAskStatus == model.CarryStatusWorking {
+		switch carry.AskWeb {
+		case model.Huobi:
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderHuobi(carry.DealAskOrderId)
+		case model.OKEX:
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderOkex(carry.Symbol, carry.DealAskOrderId)
+		case model.Binance:
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
+		case model.Fcoin:
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderFcoin(carry.Symbol, carry.DealAskOrderId)
+		case model.Coinpark:
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderCoinpark(carry.DealAskOrderId)
+		case model.Coinbig:
+			carry.DealAskAmount, carry.DealAskStatus = QueryOrderCoinbig(carry.DealAskOrderId)
+		}
+	}
+	model.CarryChannel <- *carry
+}
 
 func RefreshAccounts() {
 	for true {
@@ -14,7 +86,6 @@ func RefreshAccounts() {
 		for _, value := range markets {
 			switch value {
 			case model.Huobi:
-				model.HuobiAccountId, _ = GetSpotAccountId()
 				GetAccountHuobi(model.ApplicationAccounts)
 			case model.OKEX:
 				GetAccountOkex(model.ApplicationAccounts)
@@ -32,26 +103,37 @@ func RefreshAccounts() {
 	}
 }
 
+func RefreshAccount(market string)  {
+	switch market {
+	case model.Huobi:
+		GetAccountHuobi(model.ApplicationAccounts)
+	case model.OKEX:
+		GetAccountOkex(model.ApplicationAccounts)
+	case model.Binance:
+		GetAccountBinance(model.ApplicationAccounts)
+	case model.Fcoin:
+		GetAccountFcoin(model.ApplicationAccounts)
+	case model.Coinpark:
+		GetAccountCoinpark(model.ApplicationAccounts)
+	case model.Coinbig:
+		GetAccountCoinbig(model.ApplicationAccounts)
+	}
+}
+
 func SendAsk(market, symbol, price, amount string)(orderId, errCode string)  {
 	switch market {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(symbol, "sell-limit", price, amount)
-		GetAccountHuobi(model.ApplicationAccounts)
 	case model.OKEX:
 		orderId, errCode = PlaceOrderOkex(symbol, "sell", price, amount)
-		GetAccountOkex(model.ApplicationAccounts)
 	case model.Binance:
 		orderId, errCode = PlaceOrderBinance(symbol, "SELL", price, amount)
-		GetAccountBinance(model.ApplicationAccounts)
 	case model.Fcoin:
 		orderId, errCode = PlaceOrderFcoin(symbol, "sell", `limit`, price, amount)
-		GetAccountFcoin(model.ApplicationAccounts)
 	case model.Coinpark:
 		orderId, errCode, _ = PlaceOrderCoinpark(symbol, 2, 2, price, amount)
-		GetAccountCoinpark(model.ApplicationAccounts)
 	case model.Coinbig:
 		orderId, errCode = PlaceOrderCoinbig(symbol, `sell`, price, amount)
-		GetAccountCoinbig(model.ApplicationAccounts)
 	}
 	return orderId, errCode
 }
@@ -60,28 +142,21 @@ func SendBid(market, symbol, price, amount string)(orderId, errCode string)  {
 	switch market {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(symbol, "buy-limit", price, amount)
-		GetAccountHuobi(model.ApplicationAccounts)
 	case model.OKEX:
 		orderId, errCode = PlaceOrderOkex(symbol, "buy", price, amount)
-		GetAccountOkex(model.ApplicationAccounts)
 	case model.Binance:
 		orderId, errCode = PlaceOrderBinance(symbol, "BUY", price, amount)
-		GetAccountBinance(model.ApplicationAccounts)
 	case model.Fcoin:
 		orderId, errCode = PlaceOrderFcoin(symbol, "buy", `limit`, price, amount)
-		GetAccountFcoin(model.ApplicationAccounts)
 	case model.Coinpark:
 		orderId, errCode, _ = PlaceOrderCoinpark(symbol, 1, 2, price, amount)
-		GetAccountCoinpark(model.ApplicationAccounts)
 	case model.Coinbig:
 		orderId, errCode = PlaceOrderCoinbig(symbol, `buy`, price, amount)
-		GetAccountCoinbig(model.ApplicationAccounts)
 	}
 	return orderId, errCode
 }
 
 func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-	util.Notice(carry.AskWeb + "ask" + carry.Symbol + " with price: " + price + " amount:" + amount)
 	switch carry.AskWeb {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "sell-limit", price, amount)
@@ -111,11 +186,12 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 	}
 	carry.SideType = `ask`
 	model.BidAskChannel <- *carry
+	util.Notice(fmt.Sprintf(`%s ask %s price: %s amount %s orderId: %s errCode %s`,
+		carry.AskWeb ,carry.Symbol, price, amount, orderId, errCode))
 	return orderId, errCode
 }
 
 func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-	util.Notice(carry.BidWeb + "bid" + carry.Symbol + " with price: " + price + " amount:" + amount)
 	switch carry.BidWeb {
 	case model.Huobi:
 		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "buy-limit", price, amount)
@@ -145,6 +221,8 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	}
 	carry.SideType = `bid`
 	model.BidAskChannel <- *carry
+	util.Notice(fmt.Sprintf(`%s ask %s price: %s amount %s orderId: %s errCode %s`,
+		carry.BidWeb ,carry.Symbol, price, amount, orderId, errCode))
 	return orderId, errCode
 }
 

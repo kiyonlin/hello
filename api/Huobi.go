@@ -154,6 +154,9 @@ func GetSpotAccountId() (accountId string, err error) {
 
 // orderType: buy-market：市价买, sell-market：市价卖, buy-limit：限价买, sell-limit：限价卖
 func PlaceOrderHuobi(symbol string, orderType string, price string, amount string) (orderId, errCode string) {
+	if model.HuobiAccountId == `` {
+		model.HuobiAccountId, _ = GetSpotAccountId()
+	}
 	path := "/v1/order/orders/place"
 	postData := &url.Values{}
 	postData.Set("account-id", model.HuobiAccountId)
@@ -200,6 +203,9 @@ func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 }
 
 func GetAccountHuobi(accounts *model.Accounts) {
+	if model.HuobiAccountId == `` {
+		model.HuobiAccountId, _ = GetSpotAccountId()
+	}
 	accounts.ClearAccounts(model.Huobi)
 	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountId)
 	postData := make(map[string]string)
