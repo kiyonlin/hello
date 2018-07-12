@@ -221,7 +221,7 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	}
 	carry.SideType = `bid`
 	model.BidAskChannel <- *carry
-	util.Notice(fmt.Sprintf(`%s ask %s price: %s amount %s [orderId: %s] errCode %s`,
+	util.Notice(fmt.Sprintf(`%s bid %s price: %s amount %s [orderId: %s] errCode %s`,
 		carry.BidWeb ,carry.Symbol, price, amount, orderId, errCode))
 	return orderId, errCode
 }

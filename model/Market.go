@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"fmt"
 )
 
 type BidAsk struct {
@@ -63,6 +64,12 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	} else {
 		bidPrice = bidAsks.Asks[0][0] - priceWidth
 		askPrice = bidAsks.Asks[0][0] + priceWidth
+	}
+	if bidPrice + priceWidth * 2 != askPrice {
+		msg := fmt.Sprintf(`出现了某种特别的小数目干扰 [last: %f] [market %f] %f [bid - ask %f - %f] `,
+			lastDealPrice, bidAsks.Asks[0][0], priceWidth, bidPrice, askPrice)
+		util.Notice(msg)
+		return nil, errors.New(msg)
 	}
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
 		BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking, DealAskStatus: CarryStatusWorking,
