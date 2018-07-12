@@ -139,16 +139,18 @@ var ProcessTurtle = func(symbol, market string) {
 			// 当前的ask价，比之前carry的bid价还低，或者反过来当前的bid价比之前carry的ask价还高
 			if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] < model.ApplicationTurtle.BidPrice {
 				api.CancelOrder(model.ApplicationTurtle.AskWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealAskOrderId)
-				model.ApplicationTurtle.DealAskStatus = model.TurtleStatusCancel
-				model.ApplicationTurtle.DealBidStatus = model.TurtleStatusSuccess
+				model.ApplicationTurtle.DealAskStatus = model.CarryStatusFail
+				model.ApplicationTurtle.DealBidStatus = model.CarryStatusSuccess
+				model.SetTurtleDealPrice(model.ApplicationTurtle.BidWeb, symbol, model.ApplicationTurtle.BidPrice)
 				util.Info(fmt.Sprintf(`[%s取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`, model.ApplicationTurtle.Symbol,
 					model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.Amount,
 					model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
 					model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
 			} else if model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] > model.ApplicationTurtle.AskPrice {
 				api.CancelOrder(model.ApplicationTurtle.BidWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealBidOrderId)
-				model.ApplicationTurtle.DealBidStatus = model.TurtleStatusCancel
-				model.ApplicationTurtle.DealAskStatus = model.TurtleStatusSuccess
+				model.ApplicationTurtle.DealBidStatus = model.CarryStatusFail
+				model.ApplicationTurtle.DealAskStatus = model.CarryStatusSuccess
+				model.SetTurtleDealPrice(model.ApplicationTurtle.AskWeb, symbol, model.ApplicationTurtle.AskPrice)
 				util.Info(fmt.Sprintf(`[%s取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, model.ApplicationTurtle.Symbol,
 					model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.Amount,
 					model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],

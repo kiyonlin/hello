@@ -29,13 +29,13 @@ var BidAskChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var ApplicationMarkets *Markets
 var ApplicationTurtle *Carry
+var turtleDealPrice = make(map[string]map[string]float64) // market - symbol - price
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
-const TurtleStatusPending = `turtle_pending`
-const TurtleStatusSuccess = `turtle_success`
-const TurtleStatusCancel = `turtle_cancel`
+
+const CarryTypeTurtle  = `turtle`
 
 var OrderStatusMap = map[string]string{
 	// Binance
@@ -81,6 +81,20 @@ var OrderStatusMap = map[string]string{
 	Coinbig + `4`: CarryStatusSuccess, // 用户撤销,
 	Coinbig + `5`: CarryStatusSuccess, // 部分撤回,
 	Coinbig + `6`: CarryStatusFail,    // 成交失败
+}
+
+func GetTurtleDealPrice(market, symbol string) (price float64) {
+	if turtleDealPrice[market] == nil {
+		return 0
+	}
+	return turtleDealPrice[market][symbol]
+}
+
+func SetTurtleDealPrice(market, symbol string, price float64)  {
+	if turtleDealPrice[market] == nil {
+		turtleDealPrice[market] = make(map[string]float64)
+	}
+	turtleDealPrice[market][symbol] = price
 }
 
 // TODO filter out unsupported symbol for each market

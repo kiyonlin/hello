@@ -55,9 +55,18 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	if err != nil {
 		return nil, err
 	}
+	var bidPrice, askPrice float64
+	lastDealPrice := GetTurtleDealPrice(market, symbol)
+	if lastDealPrice > 0 {
+		bidPrice = lastDealPrice - priceWidth
+		askPrice = lastDealPrice + priceWidth
+	} else {
+		bidPrice = bidAsks.Asks[0][0] - priceWidth
+		askPrice = bidAsks.Asks[0][0] + priceWidth
+	}
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
-		BidPrice: bidAsks.Bids[0][0] - priceWidth, AskPrice: bidAsks.Asks[0][0] + priceWidth, DealBidStatus: TurtleStatusPending,
-		DealAskStatus: TurtleStatusPending, BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts)}
+		BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking, DealAskStatus: CarryStatusWorking,
+		BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts), SideType: CarryTypeTurtle}
 	return &carry, nil
 }
 
