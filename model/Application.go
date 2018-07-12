@@ -238,7 +238,7 @@ func (config *Config) GetMargin(symbol string) (float64, error) {
 			return config.Margins[i], nil
 		}
 	}
-	return 1, errors.New("no such symbol")
+	return 1, errors.New("no such symbol" + symbol)
 }
 
 func (config *Config) GetTurtleAmount(symbol string) (amount float64, err error) {
@@ -247,7 +247,7 @@ func (config *Config) GetTurtleAmount(symbol string) (amount float64, err error)
 			return config.TurtleLeftAmount[i], nil
 		}
 	}
-	return 0, errors.New("no such symbol amount")
+	return 0, errors.New("no such amount to the symbol " + symbol)
 }
 
 func (config *Config) GetTurtlePriceWidth(symbol string) (priceWidth float64, err error) {
@@ -256,7 +256,7 @@ func (config *Config) GetTurtlePriceWidth(symbol string) (priceWidth float64, er
 			return config.TurtlePriceWidth[i], nil
 		}
 	}
-	return 0, errors.New(`no such symbol price width`)
+	return 0, errors.New(`no such price width to the symbol ` + symbol)
 }
 
 func (config *Config) GetMarketCost(market string) (marketCost float64, err error) {
@@ -265,7 +265,7 @@ func (config *Config) GetMarketCost(market string) (marketCost float64, err erro
 			return config.MarketCost[i], nil
 		}
 	}
-	return 1, errors.New(`no such market base carry cost`)
+	return 1, errors.New(`no such base carry cost to the market ` + market)
 }
 
 func (config *Config) GetDelay(symbol string) (float64, error) {
@@ -278,7 +278,7 @@ func (config *Config) GetDelay(symbol string) (float64, error) {
 			return config.Delays[i], nil
 		}
 	}
-	return 0, errors.New("no such symbol")
+	return 0, errors.New("no such symbol " + symbol)
 }
 
 func (config *Config) ToString() string {

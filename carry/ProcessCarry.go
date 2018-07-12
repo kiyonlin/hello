@@ -52,7 +52,7 @@ func extraBid(carry *model.Carry, coin float64) {
 	}
 	amountStr := strconv.FormatFloat(amount, 'f', -1, 64)
 	orderId, status := api.SendBid(carry.AskWeb, carry.Symbol, price, amountStr)
-	util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s %s`,
+	util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s status %s`,
 		carry.Symbol, coin, carry.AskAmount, orderId, status))
 	if orderId != `` && orderId != `0` {
 		time.Sleep(time.Second * 5)
@@ -77,7 +77,7 @@ func extraAsk(carry *model.Carry, money float64) {
 	}
 	amountStr := strconv.FormatFloat(amount, 'f', -1, 64)
 	orderId, status := api.SendAsk(carry.BidWeb, carry.Symbol, price, amountStr)
-	util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s %s`,
+	util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s status %s`,
 		carry.Symbol, money, carry.BidAmount, orderId, status))
 	if orderId != `` && orderId != `0` {
 		time.Sleep(time.Second * 5)
@@ -125,27 +125,34 @@ var ProcessTurtle = func(symbol, market string) {
 			askPrice := strconv.FormatFloat(carry.AskPrice, 'f', -1, 64)
 			go api.DoAsk(carry, askPrice, askAmount)
 			go api.DoBid(carry, bidPrice, bidAmount)
+			util.Notice(`set new carry ` + carry.ToString())
 			model.ApplicationTurtle = carry
 		}
 	} else {
 		if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] >= model.ApplicationTurtle.BidPrice &&
 			model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] <= model.ApplicationTurtle.AskPrice {
-			util.Info(fmt.Sprintf(`[%s等待波动]%f - %f amount:%f`, model.ApplicationTurtle.Symbol,
-				model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.Amount))
+			util.Info(fmt.Sprintf(`[%s等待波动]min:%f - max:%f amount:%f bid:%f - ask:%f `,
+				model.ApplicationTurtle.Symbol, model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.AskPrice,
+				model.ApplicationTurtle.Amount, model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
+				model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
 		} else {
 			// 当前的ask价，比之前carry的bid价还低，或者反过来当前的bid价比之前carry的ask价还高
 			if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] < model.ApplicationTurtle.BidPrice {
 				api.CancelOrder(model.ApplicationTurtle.AskWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealAskOrderId)
 				model.ApplicationTurtle.DealAskStatus = model.TurtleStatusCancel
 				model.ApplicationTurtle.DealBidStatus = model.TurtleStatusSuccess
-				util.Info(fmt.Sprintf(`[%s取消ASK]%f - %f amount:%f`, model.ApplicationTurtle.Symbol,
-					model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.Amount))
+				util.Info(fmt.Sprintf(`[%s取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`, model.ApplicationTurtle.Symbol,
+					model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.Amount,
+					model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
+					model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
 			} else if model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] > model.ApplicationTurtle.AskPrice {
 				api.CancelOrder(model.ApplicationTurtle.BidWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealBidOrderId)
 				model.ApplicationTurtle.DealBidStatus = model.TurtleStatusCancel
 				model.ApplicationTurtle.DealAskStatus = model.TurtleStatusSuccess
-				util.Info(fmt.Sprintf(`[%s取消BID]%f - %f amount:%f`, model.ApplicationTurtle.Symbol,
-					model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.Amount))
+				util.Info(fmt.Sprintf(`[%s取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, model.ApplicationTurtle.Symbol,
+					model.ApplicationTurtle.BidPrice, model.ApplicationTurtle.AskPrice, model.ApplicationTurtle.Amount,
+					model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
+					model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
 			}
 			model.ApplicationTurtle.DealBidAmount, model.ApplicationTurtle.DealBidStatus = api.QueryOrderById(
 				model.ApplicationTurtle.BidWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealBidOrderId)
@@ -153,8 +160,8 @@ var ProcessTurtle = func(symbol, market string) {
 				model.ApplicationTurtle.AskWeb, model.ApplicationTurtle.Symbol, model.ApplicationTurtle.DealAskOrderId)
 			util.Notice(fmt.Sprintf(`[%s捕获Turtle]ask: %f - bid %f`, model.ApplicationTurtle.Symbol,
 				model.ApplicationTurtle.DealAskAmount, model.ApplicationTurtle.DealBidAmount))
+			model.BidAskChannel <- *model.ApplicationTurtle
 			model.ApplicationTurtle = nil
-			model.BidAskChannel <- *carry
 		}
 	}
 }

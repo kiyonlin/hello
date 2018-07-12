@@ -75,6 +75,10 @@ func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, e
 
 func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
 	hash := md5.New()
+	if postData != nil {
+		time := strconv.FormatInt(util.GetNow().UnixNano(), 10)[0:13]
+		postData.Set(`time`, time)
+	}
 	toBeSign, _ := url.QueryUnescape(postData.Encode() + "&secret_key=" + model.ApplicationConfig.CoinbigSecret)
 	hash.Write([]byte(toBeSign))
 	sign := hex.EncodeToString(hash.Sum(nil))

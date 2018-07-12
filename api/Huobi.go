@@ -92,14 +92,14 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 		model.ApplicationConfig.GetSubscribes(model.Huobi), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
-func SignedRequestHuobi(method, path, postBody string, getParams map[string]string) []byte {
+func SignedRequestHuobi(method, path string, data map[string]string) []byte {
 	urlValues := &url.Values{}
 	urlValues.Set("AccessKeyId", model.ApplicationConfig.HuobiKey)
 	urlValues.Set("SignatureMethod", "HmacSHA256")
 	urlValues.Set("SignatureVersion", "2")
 	urlValues.Set("Timestamp", time.Now().UTC().Format("2006-01-02T15:04:05"))
-	if getParams != nil {
-		for key, value := range getParams {
+	if method == `GET` && data != nil {
+		for key, value := range data {
 			urlValues.Set(key, value)
 		}
 	}
@@ -110,13 +110,11 @@ func SignedRequestHuobi(method, path, postBody string, getParams map[string]stri
 	hash.Write([]byte(payload))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	urlValues.Set("Signature", sign)
-
 	var pemBytes = `-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIJUh+m2GyS9GKsEZ0/5WqM3owjYGtttQXPl9pR8nks+moAoGCCqGSM49
 AwEHoUQDQgAEF+5o7rybYv7/40CSReXKr2jxiW9iVE1+l/6vjnDSkyK8mCw220QM
 J2k98epEs68Y+OjaRp0uP8821WkP5tLM1Q==
 -----END EC PRIVATE KEY-----`
-
 	block, _ := pem.Decode([]byte(pemBytes))
 	ecdsaPk, _ := x509.ParseECPrivateKey(block.Bytes)
 	digest := sha256.Sum256([]byte(sign))
@@ -132,12 +130,20 @@ J2k98epEs68Y+OjaRp0uP8821WkP5tLM1Q==
 	requestUrl := model.ApplicationConfig.RestUrls[model.Huobi] + path + "?" + urlValues.Encode()
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	var postBody = ``
+	if method == `POST` && data != nil {
+		for key, value := range data {
+			urlValues.Set(key, value)
+		}
+		headers = map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
+		postBody = util.ToJson(urlValues)
+	}
 	responseBody, _ := util.HttpRequest(method, requestUrl, postBody, headers)
 	return responseBody
 }
 
 func GetSpotAccountId() (accountId string, err error) {
-	responseBody := SignedRequestHuobi(`GET`, "/v1/account/accounts", ``, nil)
+	responseBody := SignedRequestHuobi(`GET`, "/v1/account/accounts", nil)
 	accountJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		accounts, _ := accountJson.Get("data").Array()
@@ -158,13 +164,13 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 		model.HuobiAccountId, _ = GetSpotAccountId()
 	}
 	path := "/v1/order/orders/place"
-	postData := &url.Values{}
-	postData.Set("account-id", model.HuobiAccountId)
-	postData.Set("amount", amount)
-	postData.Set("symbol", strings.ToLower(strings.Replace(symbol, "_", "", 1)))
-	postData.Set("type", orderType)
-	postData.Set("price", price)
-	responseBody := SignedRequestHuobi(`POST`, path, util.ToJson(postData), nil)
+	postData := make(map[string]string)
+	postData["account-id"] = model.HuobiAccountId
+	postData["amount"] = amount
+	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	postData["type"] = orderType
+	postData["price"] = price
+	responseBody := SignedRequestHuobi(`POST`, path, postData)
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ := orderJson.Get("status").String()
@@ -181,14 +187,13 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 
 func CancelOrderHuobi(orderId string) {
 	path := fmt.Sprintf("/v1/order/orders/%s/submitcancel", orderId)
-	postData := &url.Values{}
-	responseBody := SignedRequestHuobi(`POST`, path, util.ToJson(postData), nil)
+	responseBody := SignedRequestHuobi(`POST`, path, nil)
 	util.Notice("huobi cancel order" + orderId + string(responseBody))
 }
 
 func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 	path := fmt.Sprintf("/v1/order/orders/%s", orderId)
-	responseBody := SignedRequestHuobi(`GET`, path, ``, nil)
+	responseBody := SignedRequestHuobi(`GET`, path, nil)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		status, _ = orderJson.GetPath("data", "state").String()
@@ -210,7 +215,7 @@ func GetAccountHuobi(accounts *model.Accounts) {
 	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountId)
 	postData := make(map[string]string)
 	postData["accountId-id"] = model.HuobiAccountId
-	responseBody := SignedRequestHuobi(`GET`, path, ``, postData)
+	responseBody := SignedRequestHuobi(`GET`, path, postData)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		accountType, _ := balanceJson.GetPath("data", "type").String()
