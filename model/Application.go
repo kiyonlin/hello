@@ -28,14 +28,14 @@ var CarryChannel = make(chan Carry, 50)
 var BidAskChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var ApplicationMarkets *Markets
-var ApplicationTurtle *Carry
+var TurtleCarries = make(map[string]map[string]*Carry)    // market - symbol - *carry
 var turtleDealPrice = make(map[string]map[string]float64) // market - symbol - price
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
 
-const CarryTypeTurtle  = `turtle`
+const CarryTypeTurtle = `turtle`
 
 var OrderStatusMap = map[string]string{
 	// Binance
@@ -83,6 +83,20 @@ var OrderStatusMap = map[string]string{
 	Coinbig + `6`: CarryStatusFail,    // 成交失败
 }
 
+func GetTurtleCarry(market, symbol string) (turtleCarry *Carry) {
+	if TurtleCarries[market] == nil {
+		return nil
+	}
+	return TurtleCarries[market][symbol]
+}
+
+func SetTurtleCarry(market, symbol string, turtleCarry *Carry) {
+	if TurtleCarries[market] == nil {
+		TurtleCarries[market] = make(map[string]*Carry)
+	}
+	TurtleCarries[market][symbol] = turtleCarry
+}
+
 func GetTurtleDealPrice(market, symbol string) (price float64) {
 	if turtleDealPrice[market] == nil {
 		return 0
@@ -90,7 +104,7 @@ func GetTurtleDealPrice(market, symbol string) (price float64) {
 	return turtleDealPrice[market][symbol]
 }
 
-func SetTurtleDealPrice(market, symbol string, price float64)  {
+func SetTurtleDealPrice(market, symbol string, price float64) {
 	if turtleDealPrice[market] == nil {
 		turtleDealPrice[market] = make(map[string]float64)
 	}

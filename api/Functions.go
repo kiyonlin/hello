@@ -190,7 +190,9 @@ func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode st
 	} else {
 		carry.DealAskStatus = model.CarryStatusWorking
 	}
-	carry.SideType = `ask`
+	if carry.SideType == `` {
+		carry.SideType = `ask`
+	}
 	model.BidAskChannel <- *carry
 	util.Notice(fmt.Sprintf(`%s ask %s price: %s amount %s [orderId: %s] errCode %s`,
 		carry.AskWeb ,carry.Symbol, price, amount, orderId, errCode))
@@ -227,7 +229,9 @@ func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode st
 	} else {
 		carry.DealBidStatus = model.CarryStatusWorking
 	}
-	carry.SideType = `bid`
+	if carry.SideType == `` {
+		carry.SideType = `bid`
+	}
 	model.BidAskChannel <- *carry
 	util.Notice(fmt.Sprintf(`%s bid %s price: %s amount %s [orderId: %s] errCode %s`,
 		carry.BidWeb ,carry.Symbol, price, amount, orderId, errCode))
