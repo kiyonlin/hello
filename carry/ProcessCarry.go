@@ -36,12 +36,22 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var turtleExtra = false
+var turtleCarrying = false
+
+func setTurtleCarrying(status bool)  {
+	turtleCarrying = status
+}
+
+func setTurtleExtra(status bool)  {
+	turtleExtra = status
+}
 
 func extraBid(carry *model.Carry, coin float64) {
-	if turtleExtra == true {
+	if turtleExtra {
 		return
 	}
-	turtleExtra = true
+	setTurtleExtra(true)
+	defer setTurtleExtra(false)
 	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0])
 	var amount float64
 	if carry.AskAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Bids[0][1] {
@@ -54,18 +64,20 @@ func extraBid(carry *model.Carry, coin float64) {
 	util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s status %s`,
 		carry.Symbol, coin, carry.AskAmount, orderId, status))
 	if orderId != `` && orderId != `0` {
+		model.SetTurtleDealPrice(carry.AskWeb, carry.Symbol,
+			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0])
 		time.Sleep(time.Second * 5)
 		api.CancelOrder(carry.AskWeb, carry.Symbol, orderId)
 		api.RefreshAccount(carry.AskWeb)
 	}
-	turtleExtra = false
 }
 
 func extraAsk(carry *model.Carry, money float64) {
-	if turtleExtra == true {
+	if turtleExtra {
 		return
 	}
-	turtleExtra = true
+	setTurtleExtra(true)
+	defer setTurtleExtra(false)
 	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0])
 	var amount float64
 	if carry.BidAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Asks[0][1] {
@@ -78,14 +90,20 @@ func extraAsk(carry *model.Carry, money float64) {
 	util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s status %s`,
 		carry.Symbol, money, carry.BidAmount, orderId, status))
 	if orderId != `` && orderId != `0` {
+		model.SetTurtleDealPrice(carry.BidWeb, carry.Symbol,
+			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0])
 		time.Sleep(time.Second * 5)
 		api.CancelOrder(carry.BidWeb, carry.Symbol, orderId)
 		api.RefreshAccount(carry.BidWeb)
 	}
-	turtleExtra = false
 }
 
 var ProcessTurtle = func(symbol, market string) {
+	if turtleCarrying {
+		return
+	}
+	setTurtleCarrying(true)
+	defer setTurtleCarrying(false)
 	carry, err := model.ApplicationMarkets.NewTurtleCarry(symbol, market)
 	if err != nil {
 		util.Notice(`can not create turtle ` + err.Error())
@@ -315,7 +333,7 @@ func Maintain() {
 	model.NewConfig()
 	err := configor.Load(model.ApplicationConfig, "./config.yml")
 	if err != nil {
-		print(err)
+		util.Notice(err.Error())
 		return
 	}
 	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
