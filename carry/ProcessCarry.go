@@ -148,10 +148,10 @@ var ProcessTurtle = func(symbol, market string) {
 		carry = model.GetTurtleCarry(market, symbol)
 		if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] >= carry.BidPrice &&
 			model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] <= carry.AskPrice {
-			util.Info(fmt.Sprintf(`[%s等待波动]min:%f - max:%f amount:%f bid:%f - ask:%f `,
-				carry.Symbol, carry.BidPrice, carry.AskPrice, carry.Amount,
-				model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
-				model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
+			//util.Info(fmt.Sprintf(`[%s等待波动]min:%f - max:%f amount:%f bid:%f - ask:%f `,
+			//	carry.Symbol, carry.BidPrice, carry.AskPrice, carry.Amount,
+			//	model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
+			//	model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
 		} else {
 			// 当前的ask价，比之前carry的bid价还低，或者反过来当前的bid价比之前carry的ask价还高
 			if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] < carry.BidPrice {
