@@ -143,10 +143,13 @@ var ProcessTurtle = func(symbol, market string) {
 			askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
 			bidPrice := fmt.Sprintf(`%f`, carry.BidPrice)
 			askPrice := fmt.Sprintf(`%f`, carry.AskPrice)
-			go api.DoAsk(carry, market, symbol, askPrice, askAmount)
-			go api.DoBid(carry, market, symbol, bidPrice, bidAmount)
+			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.SendAsk(market, symbol, askPrice, askAmount)
+			carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.SendBid(market, symbol, bidPrice, bidAmount)
 			util.Notice(`set new carry ` + carry.ToString())
-			model.SetTurtleCarry(market, symbol, carry)
+			if carry.DealAskStatus == model.CarryStatusWorking && carry.DealBidStatus == model.CarryStatusWorking {
+				model.SetTurtleCarry(market, symbol, carry)
+			}
+			model.CarryChannel <- *carry
 		}
 	} else {
 		carry = model.GetTurtleCarry(market, symbol)
