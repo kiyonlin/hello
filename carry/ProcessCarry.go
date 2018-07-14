@@ -360,6 +360,9 @@ func Maintain() {
 			carryHandlers[i] = ProcessCarry
 		case `turtle`:
 			carryHandlers[i] = ProcessTurtle
+		case `refresh`:
+			carryHandlers[i] = ProcessRefresh
+			go RefreshCarryServe()
 		}
 	}
 	for true {

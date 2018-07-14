@@ -20,6 +20,31 @@ func GetParameters(c *gin.Context) {
 }
 
 func SetParameters(c *gin.Context) {
+	pw := c.Query(`pw`)
+	if pw != `1234qwer` {
+		c.String(http.StatusOK, `密码错误`)
+		return
+	}
+	handle := c.Query("handle")
+	if handle != `` {
+		model.ApplicationConfig.Handle, _ = strconv.ParseInt(handle, 10, 64)
+	}
+	orderWait := c.Query("orderwait")
+	if orderWait != `` {
+		model.ApplicationConfig.OrderWait, _ = strconv.ParseInt(orderWait, 10, 64)
+	}
+	amountRate := c.Query("amountrate")
+	if amountRate != `` {
+		model.ApplicationConfig.AmountRate, _ = strconv.ParseFloat(amountRate, 64)
+	}
+	sellRate := c.Query(`sellrate`)
+	if sellRate != `` {
+		model.ApplicationConfig.SellRate, _ = strconv.ParseFloat(sellRate, 64)
+	}
+	ftMax := c.Query(`ftmax`)
+	if ftMax != `` {
+		model.ApplicationConfig.FtMax, _ = strconv.ParseFloat(ftMax, 64)
+	}
 	deduction := c.Query("deduction")
 	if len(strings.TrimSpace(deduction)) > 0 {
 		value, _ := strconv.ParseFloat(deduction, 64)

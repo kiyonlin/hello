@@ -27,6 +27,8 @@ var ApplicationDB *gorm.DB
 var CarryChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var InnerCarryChannel = make(chan Carry, 50)
+var RefreshCarryChannel = make(chan Carry, 50)
+
 var ApplicationMarkets *Markets
 var TurtleCarries = make(map[string]map[string]*Carry)    // market - symbol - *carry
 var turtleDealPrice = make(map[string]map[string]float64) // market - symbol - price
@@ -336,5 +338,7 @@ func (config *Config) ToString() string {
 	str += "env: " + config.Env + "\n"
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
 	str += "dbconnection: " + config.DBConnection
+	str += fmt.Sprintf(`handle: %d symbols: %s orderwait: %d amountrate: %f sellrate %f ftmax %f`,
+		config.Handle, config.Symbols[0], config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
 	return str
 }
