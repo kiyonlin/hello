@@ -17,11 +17,15 @@ func MaintainOrders() {
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
 		for _, carry := range carries {
 			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking {
-				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				if carry.SideType != `turtle` {
+					api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				}
 				carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			}
 			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
-				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				if carry.SideType != `turtle` {
+					api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				}
 				carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			}
 			model.CarryChannel <- carry
