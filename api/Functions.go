@@ -26,6 +26,7 @@ func CancelOrder(market string, symbol string, orderId string) {
 }
 
 func QueryOrderById(market, symbol, orderId string) (dealAmount float64, status string) {
+	util.Notice(fmt.Sprintf(`query order %s %s %s`, market, symbol, orderId))
 	switch market {
 	case model.Huobi:
 		dealAmount, status = QueryOrderHuobi(orderId)
