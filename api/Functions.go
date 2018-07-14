@@ -1,12 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
 	"strings"
-	"time"
-	"fmt"
 )
 
 func CancelOrder(market string, symbol string, orderId string) {
@@ -44,66 +43,7 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount float64, status 
 	return dealAmount, status
 }
 
-func QueryOrder(carry *model.Carry) {
-	if carry.DealBidOrderId != "" && carry.DealBidStatus == model.CarryStatusWorking {
-		switch carry.BidWeb {
-		case model.Huobi:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderHuobi(carry.DealBidOrderId)
-		case model.OKEX:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderOkex(carry.Symbol, carry.DealBidOrderId)
-		case model.Binance:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderBinance(carry.Symbol, carry.DealBidOrderId)
-		case model.Fcoin:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderFcoin(carry.Symbol, carry.DealBidOrderId)
-		case model.Coinpark:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderCoinpark(carry.DealBidOrderId)
-		case model.Coinbig:
-			carry.DealBidAmount, carry.DealBidStatus = QueryOrderCoinbig(carry.DealBidOrderId)
-		}
-	}
-	if carry.DealAskOrderId != "" && carry.DealAskStatus == model.CarryStatusWorking {
-		switch carry.AskWeb {
-		case model.Huobi:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderHuobi(carry.DealAskOrderId)
-		case model.OKEX:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderOkex(carry.Symbol, carry.DealAskOrderId)
-		case model.Binance:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderBinance(carry.Symbol, carry.DealAskOrderId)
-		case model.Fcoin:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderFcoin(carry.Symbol, carry.DealAskOrderId)
-		case model.Coinpark:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderCoinpark(carry.DealAskOrderId)
-		case model.Coinbig:
-			carry.DealAskAmount, carry.DealAskStatus = QueryOrderCoinbig(carry.DealAskOrderId)
-		}
-	}
-	model.CarryChannel <- *carry
-}
-
-func RefreshAccounts() {
-	for true {
-		markets := model.ApplicationConfig.Markets
-		for _, value := range markets {
-			switch value {
-			case model.Huobi:
-				GetAccountHuobi(model.ApplicationAccounts)
-			case model.OKEX:
-				GetAccountOkex(model.ApplicationAccounts)
-			case model.Binance:
-				GetAccountBinance(model.ApplicationAccounts)
-			case model.Fcoin:
-				GetAccountFcoin(model.ApplicationAccounts)
-			case model.Coinpark:
-				GetAccountCoinpark(model.ApplicationAccounts)
-			case model.Coinbig:
-				GetAccountCoinbig(model.ApplicationAccounts)
-			}
-		}
-		time.Sleep(time.Second * 20)
-	}
-}
-
-func RefreshAccount(market string)  {
+func RefreshAccount(market string) {
 	switch market {
 	case model.Huobi:
 		GetAccountHuobi(model.ApplicationAccounts)
@@ -120,8 +60,8 @@ func RefreshAccount(market string)  {
 	}
 }
 
-func SendAsk(market, symbol, price, amount string)(orderId, errCode string)  {
-	price = strings.TrimRight(price , `0`)
+func SendAsk(market, symbol, price, amount string) (orderId, errCode, status string) {
+	price = strings.TrimRight(price, `0`)
 	amount = strings.TrimRight(amount, `0`)
 	switch market {
 	case model.Huobi:
@@ -137,11 +77,18 @@ func SendAsk(market, symbol, price, amount string)(orderId, errCode string)  {
 	case model.Coinbig:
 		orderId, errCode = PlaceOrderCoinbig(symbol, `sell`, price, amount)
 	}
-	return orderId, errCode
+	if orderId == "0" || orderId == "" {
+		status = model.CarryStatusFail
+	} else {
+		status = model.CarryStatusWorking
+	}
+	util.Notice(fmt.Sprintf(`%s ask %s price: %s amount %s [orderId: %s] errCode %s`,
+		market, symbol, price, amount, orderId, errCode))
+	return orderId, errCode, status
 }
 
-func SendBid(market, symbol, price, amount string)(orderId, errCode string)  {
-	price = strings.TrimRight(price , `0`)
+func SendBid(market, symbol, price, amount string) (orderId, errCode, status string) {
+	price = strings.TrimRight(price, `0`)
 	amount = strings.TrimRight(amount, `0`)
 	switch market {
 	case model.Huobi:
@@ -157,85 +104,24 @@ func SendBid(market, symbol, price, amount string)(orderId, errCode string)  {
 	case model.Coinbig:
 		orderId, errCode = PlaceOrderCoinbig(symbol, `buy`, price, amount)
 	}
-	return orderId, errCode
-}
-
-func DoAsk(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-	price = strings.TrimRight(price , `0`)
-	amount = strings.TrimRight(amount, `0`)
-	switch carry.AskWeb {
-	case model.Huobi:
-		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "sell-limit", price, amount)
-		GetAccountHuobi(model.ApplicationAccounts)
-	case model.OKEX:
-		orderId, errCode = PlaceOrderOkex(carry.Symbol, "sell", price, amount)
-		GetAccountOkex(model.ApplicationAccounts)
-	case model.Binance:
-		orderId, errCode = PlaceOrderBinance(carry.Symbol, "SELL", price, amount)
-		GetAccountBinance(model.ApplicationAccounts)
-	case model.Fcoin:
-		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "sell", `limit`, price, amount)
-		GetAccountFcoin(model.ApplicationAccounts)
-	case model.Coinpark:
-		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 2, 2, price, amount)
-		GetAccountCoinpark(model.ApplicationAccounts)
-	case model.Coinbig:
-		orderId, errCode = PlaceOrderCoinbig(carry.Symbol, `sell`, price, amount)
-		GetAccountCoinbig(model.ApplicationAccounts)
-	}
-	carry.DealAskErrCode = errCode
-	carry.DealAskOrderId = orderId
 	if orderId == "0" || orderId == "" {
-		carry.DealAskStatus = model.CarryStatusFail
+		status = model.CarryStatusFail
 	} else {
-		carry.DealAskStatus = model.CarryStatusWorking
+		status = model.CarryStatusWorking
 	}
-	if carry.SideType == `` {
-		carry.SideType = `ask`
-	}
-	model.BidAskChannel <- *carry
-	util.Notice(fmt.Sprintf(`%s ask %s price: %s amount %s [orderId: %s] errCode %s`,
-		carry.AskWeb ,carry.Symbol, price, amount, orderId, errCode))
-	return orderId, errCode
-}
-
-func DoBid(carry *model.Carry, price string, amount string) (orderId, errCode string) {
-	price = strings.TrimRight(price , `0`)
-	amount = strings.TrimRight(amount, `0`)
-	switch carry.BidWeb {
-	case model.Huobi:
-		orderId, errCode = PlaceOrderHuobi(carry.Symbol, "buy-limit", price, amount)
-		GetAccountHuobi(model.ApplicationAccounts)
-	case model.OKEX:
-		orderId, errCode = PlaceOrderOkex(carry.Symbol, "buy", price, amount)
-		GetAccountOkex(model.ApplicationAccounts)
-	case model.Binance:
-		orderId, errCode = PlaceOrderBinance(carry.Symbol, "BUY", price, amount)
-		GetAccountBinance(model.ApplicationAccounts)
-	case model.Fcoin:
-		orderId, errCode = PlaceOrderFcoin(carry.Symbol, "buy", `limit`, price, amount)
-		GetAccountFcoin(model.ApplicationAccounts)
-	case model.Coinpark:
-		orderId, errCode, _ = PlaceOrderCoinpark(carry.Symbol, 1, 2, price, amount)
-		GetAccountCoinpark(model.ApplicationAccounts)
-	case model.Coinbig:
-		orderId, errCode = PlaceOrderCoinbig(carry.Symbol, `buy`, price, amount)
-		GetAccountCoinbig(model.ApplicationAccounts)
-	}
-	carry.DealBidErrCode = errCode
-	carry.DealBidOrderId = orderId
-	if orderId == "0" || orderId == "" {
-		carry.DealBidStatus = model.CarryStatusFail
-	} else {
-		carry.DealBidStatus = model.CarryStatusWorking
-	}
-	if carry.SideType == `` {
-		carry.SideType = `bid`
-	}
-	model.BidAskChannel <- *carry
 	util.Notice(fmt.Sprintf(`%s bid %s price: %s amount %s [orderId: %s] errCode %s`,
-		carry.BidWeb ,carry.Symbol, price, amount, orderId, errCode))
-	return orderId, errCode
+		market, symbol, price, amount, orderId, errCode))
+	return orderId, errCode, status
+}
+
+func DoAsk(carry *model.Carry, market, symbol, price string, amount string) {
+	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = SendAsk(market, symbol, price, amount)
+	model.InnerCarryChannel <- *carry
+}
+
+func DoBid(carry *model.Carry, market, symbol string, price string, amount string) {
+	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = SendBid(market, symbol, price, amount)
+	model.InnerCarryChannel <- *carry
 }
 
 func Maintain(accounts *model.Accounts, marketName string) {

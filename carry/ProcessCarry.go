@@ -60,9 +60,9 @@ func extraBid(carry *model.Carry, coin float64) {
 		amount = carry.AskAmount * 3
 	}
 	amountStr := fmt.Sprintf(`%f`, amount)
-	orderId, status := api.SendBid(carry.AskWeb, carry.Symbol, price, amountStr)
-	util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s status %s`,
-		carry.Symbol, coin, carry.AskAmount, orderId, status))
+	orderId, errCode, status := api.SendBid(carry.AskWeb, carry.Symbol, price, amountStr)
+	util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s errCode %s status %s`,
+		carry.Symbol, coin, carry.AskAmount, orderId, errCode, status))
 	if orderId != `` && orderId != `0` {
 		model.SetTurtleDealPrice(carry.AskWeb, carry.Symbol,
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0])
@@ -70,6 +70,8 @@ func extraBid(carry *model.Carry, coin float64) {
 		api.CancelOrder(carry.AskWeb, carry.Symbol, orderId)
 		api.RefreshAccount(carry.AskWeb)
 	}
+	model.CarryChannel <- model.Carry{Symbol: carry.Symbol, BidWeb: carry.BidWeb, BidAmount: amount,
+		BidPrice: model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0], DealBidStatus: model.CarryStatusWorking}
 }
 
 func extraAsk(carry *model.Carry, money float64) {
@@ -86,9 +88,9 @@ func extraAsk(carry *model.Carry, money float64) {
 		amount = carry.BidAmount * 3
 	}
 	amountStr := fmt.Sprintf(`%f`, amount)
-	orderId, status := api.SendAsk(carry.BidWeb, carry.Symbol, price, amountStr)
-	util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s status %s`,
-		carry.Symbol, money, carry.BidAmount, orderId, status))
+	orderId, errCode, status := api.SendAsk(carry.BidWeb, carry.Symbol, price, amountStr)
+	util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s errCode %s status %s`,
+		carry.Symbol, money, carry.BidAmount, orderId, errCode, status))
 	if orderId != `` && orderId != `0` {
 		model.SetTurtleDealPrice(carry.BidWeb, carry.Symbol,
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0])
@@ -96,6 +98,8 @@ func extraAsk(carry *model.Carry, money float64) {
 		api.CancelOrder(carry.BidWeb, carry.Symbol, orderId)
 		api.RefreshAccount(carry.BidWeb)
 	}
+	model.CarryChannel <- model.Carry{Symbol: carry.Symbol, AskWeb: carry.AskWeb, AskAmount: amount,
+		AskPrice: model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0], DealAskStatus: model.CarryStatusWorking}
 }
 
 var ProcessTurtle = func(symbol, market string) {
@@ -139,8 +143,8 @@ var ProcessTurtle = func(symbol, market string) {
 			askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
 			bidPrice := fmt.Sprintf(`%f`, carry.BidPrice)
 			askPrice := fmt.Sprintf(`%f`, carry.AskPrice)
-			go api.DoAsk(carry, askPrice, askAmount)
-			go api.DoBid(carry, bidPrice, bidAmount)
+			go api.DoAsk(carry, market, symbol, askPrice, askAmount)
+			go api.DoBid(carry, market, symbol, bidPrice, bidAmount)
 			util.Notice(`set new carry ` + carry.ToString())
 			model.SetTurtleCarry(market, symbol, carry)
 		}
@@ -172,7 +176,7 @@ var ProcessTurtle = func(symbol, market string) {
 			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			util.Notice(fmt.Sprintf(`[%s捕获Turtle]ask: %f - bid %f`, carry.Symbol, carry.DealAskAmount, carry.DealBidAmount))
-			model.BidAskChannel <- *carry
+			model.CarryChannel <- *carry
 			model.SetTurtleCarry(market, symbol, nil)
 		}
 	}
@@ -257,10 +261,10 @@ var ProcessCarry = func(symbol, market string) {
 		}
 	}
 	if doCarry {
-		go api.DoAsk(carry, strAskPrice, strLeftBalance)
-		go api.DoBid(carry, strBidPrice, strLeftBalance)
+		go api.DoAsk(carry, market, symbol, strAskPrice, strLeftBalance)
+		go api.DoBid(carry, market, symbol, strBidPrice, strLeftBalance)
 	} else {
-		model.BidAskChannel <- *carry
+		model.CarryChannel <- *carry
 	}
 }
 
@@ -338,10 +342,10 @@ func Maintain() {
 	defer model.ApplicationDB.Close()
 	model.ApplicationDB.AutoMigrate(&model.Carry{})
 	model.ApplicationDB.AutoMigrate(&model.Account{})
-	go api.RefreshAccounts()
-	go DBHandlerServe()
-	go BidAskUpdate()
-	go AccountDBHandlerServe()
+	go RefreshAccounts()
+	go OuterCarryServe()
+	go InnerCarryServe()
+	go AccountHandlerServe()
 	go MaintainOrders()
 	model.ApplicationMarkets = model.NewMarkets()
 	go controller.ParameterServe()

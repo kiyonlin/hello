@@ -25,8 +25,8 @@ var ApplicationConfig *Config
 var ApplicationAccounts = NewAccounts()
 var ApplicationDB *gorm.DB
 var CarryChannel = make(chan Carry, 50)
-var BidAskChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
+var InnerCarryChannel = make(chan Carry, 50)
 var ApplicationMarkets *Markets
 var TurtleCarries = make(map[string]map[string]*Carry)    // market - symbol - *carry
 var turtleDealPrice = make(map[string]map[string]float64) // market - symbol - price

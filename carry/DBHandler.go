@@ -18,19 +18,32 @@ func MaintainOrders() {
 		for _, carry := range carries {
 			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking {
 				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				api.QueryOrder(&carry)
+				carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			}
 			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
 				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				api.QueryOrder(&carry)
+				carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			}
+			model.CarryChannel <- carry
 			time.Sleep(time.Second * 1)
 		}
 		time.Sleep(time.Minute * 1)
 	}
 }
 
-func AccountDBHandlerServe() {
+func InnerCarryServe() {
+	for true {
+		orderCarry := <-model.InnerCarryChannel
+		util.Notice(fmt.Sprintf(`||||||[bid-ask] [%s %s] [%s %s]`, orderCarry.DealBidOrderId,
+			orderCarry.DealAskOrderId, orderCarry.DealBidStatus, orderCarry.DealAskStatus))
+		if orderCarry.DealBidStatus == `` || orderCarry.DealAskStatus == `` {
+			continue
+		}
+		model.CarryChannel <- orderCarry
+	}
+}
+
+func AccountHandlerServe() {
 	for true {
 		accounts := <-model.AccountChannel
 		cleared := false
@@ -47,31 +60,17 @@ func AccountDBHandlerServe() {
 	}
 }
 
-func BidAskUpdate() {
+func RefreshAccounts() {
 	for true {
-		var carryInDb model.Carry
-		carry := <-model.BidAskChannel
-		model.ApplicationDB.Where("ask_time = ? AND bid_time = ?", carry.AskTime, carry.BidTime).First(&carryInDb)
-		if model.ApplicationDB.NewRecord(&carryInDb) {
-			model.ApplicationDB.Create(&carry)
-		} else {
-			util.Notice(carry.DealAskOrderId + " update old " + carry.SideType + carry.ToString())
-			if carry.SideType == `ask` {
-				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
-					"deal_ask_order_id": carry.DealAskOrderId, "deal_ask_err_code": carry.DealAskErrCode,
-					"deal_ask_status": carry.DealAskStatus})
-			} else if carry.SideType == `bid` {
-				model.ApplicationDB.Model(&carryInDb).Updates(map[string]interface{}{
-					"deal_bid_order_id": carry.DealBidOrderId, "deal_bid_err_code": carry.DealBidErrCode,
-					"deal_bid_status": carry.DealBidStatus})
-			} else {
-				// TODO 处理其他更新类型
-			}
+		markets := model.ApplicationConfig.Markets
+		for _, value := range markets {
+			api.RefreshAccount(value)
 		}
+		time.Sleep(time.Second * 100)
 	}
 }
 
-func DBHandlerServe() {
+func OuterCarryServe() {
 	for true {
 		var carryInDb model.Carry
 		carry := <-model.CarryChannel
@@ -90,6 +89,12 @@ func DBHandlerServe() {
 			}
 			if carry.DealBidStatus != `` {
 				carryInDb.DealBidStatus = carry.DealBidStatus
+			}
+			if carry.DealAskOrderId != `` {
+				carryInDb.DealAskOrderId = carry.DealAskOrderId
+			}
+			if carry.DealBidOrderId != `` {
+				carryInDb.DealBidOrderId = carry.DealBidOrderId
 			}
 			model.ApplicationDB.Save(&carryInDb)
 		}
