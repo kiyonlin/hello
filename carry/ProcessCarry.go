@@ -148,6 +148,13 @@ var ProcessTurtle = func(symbol, market string) {
 			util.Notice(`set new carry ` + carry.ToString())
 			if carry.DealAskStatus == model.CarryStatusWorking && carry.DealBidStatus == model.CarryStatusWorking {
 				model.SetTurtleCarry(market, symbol, carry)
+			} else {
+				if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
+					api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				}
+				if carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {
+					api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				}
 			}
 			model.CarryChannel <- *carry
 		}
