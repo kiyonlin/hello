@@ -7,7 +7,6 @@ markets:
 #- coinbig
 #- btcdo
 
-
 symbols:
 - ft_usdt
 #- ft_btc
@@ -25,6 +24,9 @@ marketcost:
 functions:
 #- carry
 - turtle
+
+turtleleftcopies:
+- 10
 
 turtleleftamount:
 - 3.1 #ft

@@ -195,6 +195,7 @@ type Config struct {
 	Symbols          []string
 	Margins          []float64
 	Delays           []float64
+	TurtleLeftCopies []int
 	TurtleLeftAmount []float64
 	TurtlePriceWidth []float64
 	Functions        []string
@@ -309,6 +310,18 @@ func (config *Config) GetDelay(symbol string) (float64, error) {
 		}
 	}
 	return 0, errors.New("no such symbol " + symbol)
+}
+
+func (config *Config) GetTurtleLeftLimit(symbol string) float64 {
+	singleAmount := 0.0
+	copies := 0
+	for key, value := range config.Symbols {
+		if value == value {
+			singleAmount = config.TurtleLeftAmount[key]
+			copies = config.TurtleLeftCopies[key]
+		}
+	}
+	return float64(copies) * singleAmount
 }
 
 func (config *Config) ToString() string {

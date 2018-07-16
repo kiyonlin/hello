@@ -136,7 +136,7 @@ var ProcessTurtle = func(symbol, market string) {
 		money := rightAccount.Free
 		if carry.AskAmount > coin {
 			go extraBid(carry, coin)
-		} else if carry.BidAmount > money/carry.BidPrice {
+		} else if carry.BidAmount > money/carry.BidPrice || model.ApplicationConfig.GetTurtleLeftLimit(symbol) < coin {
 			go extraAsk(carry, money)
 		} else {
 			bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
