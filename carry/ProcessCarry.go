@@ -54,11 +54,11 @@ func extraBid(carry *model.Carry, coin float64) {
 	defer setTurtleExtra(false)
 	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0])
 	var amount float64
-	if carry.AskAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Bids[0][1] {
-		amount = model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Bids[0][1]
-	} else {
-		amount = carry.AskAmount * 3
-	}
+	//if carry.AskAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Bids[0][1] {
+	//	amount = model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Bids[0][1]
+	//} else {
+	amount = carry.AskAmount * 3
+	//}
 	amountStr := fmt.Sprintf(`%f`, amount)
 	orderId, errCode, status := api.SendBid(carry.AskWeb, carry.Symbol, price, amountStr)
 	util.Notice(fmt.Sprintf(`[%s持币不足]%f - %f order bid %s errCode %s status %s`,
@@ -66,7 +66,7 @@ func extraBid(carry *model.Carry, coin float64) {
 	if orderId != `` && orderId != `0` {
 		model.SetTurtleDealPrice(carry.AskWeb, carry.Symbol,
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb].Asks[0][0])
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Minute * 1)
 		api.CancelOrder(carry.AskWeb, carry.Symbol, orderId)
 		api.RefreshAccount(carry.AskWeb)
 	}
@@ -82,11 +82,11 @@ func extraAsk(carry *model.Carry, money float64) {
 	defer setTurtleExtra(false)
 	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0])
 	var amount float64
-	if carry.BidAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Asks[0][1] {
-		amount = model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Asks[0][1]
-	} else {
-		amount = carry.BidAmount * 3
-	}
+	//if carry.BidAmount*3 > model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Asks[0][1] {
+	//	amount = model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Asks[0][1]
+	//} else {
+	amount = carry.BidAmount * 3
+	//}
 	amountStr := fmt.Sprintf(`%f`, amount)
 	orderId, errCode, status := api.SendAsk(carry.BidWeb, carry.Symbol, price, amountStr)
 	util.Notice(fmt.Sprintf(`[%s持钱不足]%f - %f order bid %s errCode %s status %s`,
@@ -94,7 +94,7 @@ func extraAsk(carry *model.Carry, money float64) {
 	if orderId != `` && orderId != `0` {
 		model.SetTurtleDealPrice(carry.BidWeb, carry.Symbol,
 			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb].Bids[0][0])
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Minute * 1)
 		api.CancelOrder(carry.BidWeb, carry.Symbol, orderId)
 		api.RefreshAccount(carry.BidWeb)
 	}
