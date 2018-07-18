@@ -140,10 +140,10 @@ func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderI
 	if err == nil {
 		orderId, _ := orderJson.Get("data").String()
 		status, _ := orderJson.Get("status").Int()
+		util.Notice(fmt.Sprintf(`[挂单fcoin] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
+			symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
 		return orderId, strconv.Itoa(status)
 	}
-	util.Notice(fmt.Sprintf(`[挂单fcoin] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
-		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
 	return ``, err.Error()
 }
 
