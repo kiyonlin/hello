@@ -190,7 +190,6 @@ func GetSymbol(market, subscribe string) (symbol string) {
 
 type Config struct {
 	lock             sync.Mutex
-	Balance          float64
 	Env              string
 	DBConnection     string
 	Channels         int
@@ -199,11 +198,11 @@ type Config struct {
 	Markets          []string
 	Symbols          []string
 	Margins          []float64
-	Delays           []float64
-	TurtleLeftCopies []int
-	TurtleLeftAmount []float64
-	TurtlePriceWidth []float64
+	turtleLeftCopies []int
+	turtleLeftAmount []float64
+	turtlePriceWidth []float64
 	Functions        []string
+	Delays           []float64
 	Deduction        float64
 	MinUsdt          float64             // 折合usdt最小下单金额
 	MaxUsdt          float64             // 折合usdt最大下单金额
@@ -280,7 +279,7 @@ func (config *Config) GetMargin(symbol string) (float64, error) {
 func (config *Config) GetTurtleAmount(symbol string) (amount float64, err error) {
 	for i, value := range config.Symbols {
 		if value == symbol {
-			return config.TurtleLeftAmount[i], nil
+			return config.turtleLeftAmount[i], nil
 		}
 	}
 	return 0, errors.New("no such amount to the symbol " + symbol)
@@ -289,7 +288,7 @@ func (config *Config) GetTurtleAmount(symbol string) (amount float64, err error)
 func (config *Config) GetTurtlePriceWidth(symbol string) (priceWidth float64, err error) {
 	for i, value := range config.Symbols {
 		if value == symbol {
-			return config.TurtlePriceWidth[i], nil
+			return config.turtlePriceWidth[i], nil
 		}
 	}
 	return 0, errors.New(`no such price width to the symbol ` + symbol)
@@ -322,8 +321,8 @@ func (config *Config) GetTurtleLeftLimit(symbol string) float64 {
 	copies := 0
 	for key, value := range config.Symbols {
 		if value == value {
-			singleAmount = config.TurtleLeftAmount[key]
-			copies = config.TurtleLeftCopies[key]
+			singleAmount = config.turtleLeftAmount[key]
+			copies = config.turtleLeftCopies[key]
 		}
 	}
 	return float64(copies) * singleAmount
