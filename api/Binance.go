@@ -105,8 +105,8 @@ func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orde
 	postData.Set("quantity", amount)
 	if orderType == model.OrderTypeLimit {
 		postData.Set("price", price)
+		postData.Set("timeInForce", "GTC")
 	}
-	postData.Set("timeInForce", "GTC")
 	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
 	responseBody, _ := util.HttpRequest("POST",
