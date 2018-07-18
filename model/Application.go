@@ -17,7 +17,7 @@ const Coinpark = "coinpark"
 const Btcdo = `btcdo`
 
 const OrderTypeLimit = `limit`
-const OrderTypeMarket  = `market`
+const OrderTypeMarket = `market`
 const OrderSideBuy = `buy`
 const OrderSideSell = `sell`
 
@@ -277,6 +277,7 @@ func (config *Config) GetMargin(symbol string) (float64, error) {
 }
 
 func (config *Config) GetTurtleAmount(symbol string) (amount float64, err error) {
+	fmt.Println(fmt.Sprintf(`=========================%d`, len(config.turtleLeftAmount)))
 	for i, value := range config.Symbols {
 		if value == symbol {
 			return config.turtleLeftAmount[i], nil
