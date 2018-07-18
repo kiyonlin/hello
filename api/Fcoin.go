@@ -100,36 +100,66 @@ func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []b
 }
 
 // side: buy sell
-// type limit market
-func PlaceOrderFcoin(symbol, side, orderType, price, amount string) (orderId, errCode string) {
+// type: limit market
+// fcoin中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+	if orderSide == model.OrderSideBuy {
+		orderSide = `buy`
+	} else if orderSide == model.OrderSideSell {
+		orderSide = `sell`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
+		return ``, ``
+	}
+	if orderType == model.OrderTypeLimit {
+		orderType = `limit`
+	} else if orderType == model.OrderTypeMarket {
+		orderType = `market`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
+		return ``, ``
+	}
+	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeMarket {
+		// fcoin中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+		leftAmount, _ := strconv.ParseFloat(amount, 64)
+		leftPrice, _ := strconv.ParseFloat(price, 64)
+		money := leftAmount * leftPrice
+		amount = strconv.FormatFloat(money, 'f', 2, 64)
+	}
+
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	postData["type"] = orderType
-	postData["side"] = side
+	postData["side"] = orderSide
 	postData["amount"] = amount
 	if orderType == `limit` {
 		postData["price"] = price
 	}
 	responseBody := SignedRequestFcoin("POST", "/orders", postData)
-	util.Notice("fcoin place order" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderId, _ := orderJson.Get("data").String()
 		status, _ := orderJson.Get("status").Int()
 		return orderId, strconv.Itoa(status)
 	}
+	util.Notice(fmt.Sprintf(`[挂单fcoin] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
+		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
 	return ``, err.Error()
 }
 
-func CancelOrderFcoin(orderId string) int {
+func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 	responseBody := SignedRequestFcoin(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
 	json, err := util.NewJSON([]byte(responseBody))
 	status := -1
 	if err == nil {
 		status, _ = json.Get(`status`).Int()
+		msg, _ = json.Get(`msg`).String()
 	}
 	util.Notice("fcoin cancel order" + string(responseBody))
-	return status
+	if status == 0 {
+		return true, ``, msg
+	}
+	return false, strconv.FormatInt(int64(status), 10), msg
 }
 
 func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string) {
@@ -146,7 +176,7 @@ func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string)
 		status, _ = orderJson.Get("state").String()
 		status = model.OrderStatusMap[status]
 	}
-	util.Notice(fmt.Sprintf("%s %s fcoin query order %f %s",symbol, status, dealAmount, responseBody))
+	util.Notice(fmt.Sprintf("%s %s fcoin query order %f %s", symbol, status, dealAmount, responseBody))
 	return dealAmount, status
 }
 

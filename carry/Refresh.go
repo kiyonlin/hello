@@ -1,13 +1,13 @@
 package carry
 
 import (
+	"fmt"
+	"hello/api"
 	"hello/model"
 	"hello/util"
-	"strings"
-	"fmt"
 	"strconv"
+	"strings"
 	"time"
-	"hello/api"
 )
 
 // fcoin:// 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
@@ -16,26 +16,6 @@ var lastOrderTime int64
 var bidAskTimes int64
 var processing = false
 var handling = false
-
-func placeRefreshApiOrder(symbol, side, orderType, price, amount string) (orderId, errCode, msg string) {
-	switch model.ApplicationConfig.Markets[0] {
-	case model.Coinpark:
-		var orderSide = 0
-		if side == `buy` {
-			orderSide = 1
-		} else if side == `sell` {
-			orderSide = 2
-		}
-		return api.PlaceOrderCoinpark(symbol, orderSide, 2, price, amount)
-	case model.Fcoin:
-		orderId, errCode = api.PlaceOrderFcoin(symbol, side, orderType, price, amount)
-		return orderId, errCode, ``
-	case model.Coinbig:
-		orderId, errCode = api.PlaceOrderCoinbig(symbol, side, price, amount)
-		return orderId, errCode, ``
-	}
-	return ``, ``, ``
-}
 
 func getAccount() {
 	switch model.ApplicationConfig.Markets[0] {
@@ -73,25 +53,27 @@ func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) 
 	return askAmount, bidAmount
 }
 
-func placeRefreshOrder(carry *model.Carry, side, orderType, price, amount string) {
-	if side == `buy` {
-		carry.DealBidOrderId, carry.DealBidErrCode, _ = placeRefreshApiOrder(carry.Symbol, side, orderType, price, amount)
+func placeRefreshOrder(carry *model.Carry, orderSide, orderType, price, amount string) {
+	if orderSide == `buy` {
+		carry.DealBidOrderId, carry.DealBidErrCode, _ = api.PlaceOrder(orderSide, orderType,
+			model.ApplicationConfig.Markets[0], carry.Symbol, price, amount)
 		if carry.DealBidOrderId != `` && carry.DealBidOrderId != "0" {
 			carry.DealBidStatus = model.CarryStatusWorking
 		} else {
 			carry.DealBidStatus = model.CarryStatusFail
 		}
 		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
-			side, orderType, carry.Symbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
-	} else if side == `sell` {
-		carry.DealAskOrderId, carry.DealAskErrCode, _ = placeRefreshApiOrder(carry.Symbol, side, orderType, price, amount)
+			orderSide, orderType, carry.Symbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
+	} else if orderSide == `sell` {
+		carry.DealAskOrderId, carry.DealAskErrCode, _ = api.PlaceOrder(orderSide, orderType, carry.Symbol, orderType,
+			price, amount)
 		if carry.DealAskOrderId != `` && carry.DealAskOrderId != "0" {
 			carry.DealAskStatus = model.CarryStatusWorking
 		} else {
 			carry.DealAskStatus = model.CarryStatusFail
 		}
 		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
-			side, orderType, carry.Symbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
+			orderSide, orderType, carry.Symbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
 	}
 	if carry.DealAskErrCode == `2027` || carry.DealBidErrCode == `2027` {
 		go getAccount()
@@ -135,7 +117,8 @@ func placeExtraSell(carry *model.Carry) {
 		strPrice := strconv.FormatFloat(price, 'f', pricePrecision, 64)
 		amount := carry.Amount * model.ApplicationConfig.SellRate
 		strAmount := strconv.FormatFloat(amount, 'f', 2, 64)
-		orderId, errCode, msg := placeRefreshApiOrder(carry.Symbol, `sell`, `limit`, strPrice, strAmount)
+		orderId, errCode, msg := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
+			model.ApplicationConfig.Markets[0], carry.Symbol, strPrice, strAmount)
 		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %s 数量: %s 返回 %s %s %s`,
 			carry.Symbol, strPrice, strAmount, orderId, errCode, msg))
 	}
@@ -225,21 +208,11 @@ func cancelRefreshOrder(orderId string, mustCancel bool) {
 		time.Sleep(time.Second * 5)
 	}
 	for i := 0; i < 100; i++ {
-		var status = 0
-		switch model.ApplicationConfig.Markets[0] {
-		case model.Coinpark:
-			str, _ := api.CancelOrderCoinpark(orderId)
-			status64, _ := strconv.ParseInt(str, 10, 64)
-			status = int(status64)
-		case model.Fcoin:
-			status = api.CancelOrderFcoin(orderId)
-		case model.Coinbig:
-			status = api.CancelOrderCoinbig(orderId)
-		}
-		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %d `, orderId, i, status))
-		if status == 0 || !mustCancel {
+		result, errCode, _ := api.CancelOrder(model.ApplicationConfig.Markets[0], model.ApplicationConfig.Symbols[0], orderId)
+		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
+		if result || !mustCancel {
 			break
-		} else if status == 429 || status == 4003 {
+		} else if errCode == `429` || errCode == `4003` {
 			util.Notice(`調用次數繁忙`)
 		} else if i >= 3 {
 			break

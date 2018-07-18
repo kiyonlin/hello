@@ -1,17 +1,17 @@
 package api
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"github.com/gorilla/websocket"
+	"hello/model"
+	"hello/util"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
-	"net/url"
-	"encoding/hex"
-	"crypto/hmac"
-	"crypto/sha256"
-	"hello/model"
-	"hello/util"
-	"fmt"
 )
 
 var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) error {
@@ -79,19 +79,38 @@ func signBinance(postData *url.Values, secretKey string) {
 }
 
 // orderType: BUY SELL
-func PlaceOrderBinance(symbol string, orderType string, price string, amount string) (orderId, errCode string) {
+// 注意，binance中amount无论是市价还是限价，都值得是要买入或者卖出的左侧币种，而非右侧的钱，而参数中
+// 市价买单的amount指的是右侧钱的数量，所以需要转换
+func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+	if orderSide == model.OrderSideBuy {
+		orderSide = `BUY`
+	} else if orderSide == model.OrderSideSell {
+		orderSide = `SELL`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
+		return ``, ``
+	}
+	if orderType == model.OrderTypeMarket {
+		orderType = `MARKET`
+	} else if orderType == model.OrderTypeLimit {
+		orderType = `LIMIT`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
+		return ``, ``
+	}
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
-	postData.Set("type", "LIMIT")
-	postData.Set("side", orderType)
+	postData.Set("type", orderType)
+	postData.Set("side", orderSide)
 	postData.Set("quantity", amount)
-	postData.Set("price", price)
+	if orderType == model.OrderTypeLimit {
+		postData.Set("price", price)
+	}
 	postData.Set("timeInForce", "GTC")
 	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.Binance]+"/api/v3/order?", postData.Encode(), headers)
-	util.Notice(symbol + "挂单binance:" + price + orderType + amount + "返回" + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("orderId").Int()
@@ -103,12 +122,12 @@ func PlaceOrderBinance(symbol string, orderType string, price string, amount str
 			errCode = strconv.Itoa(errCodeInt)
 		}
 	}
-	util.Notice(symbol + "挂单binance:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" +
-		errCode + "orderId" + orderId)
+	util.Notice(fmt.Sprintf(`[挂单binance] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
+		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
 	return orderId, errCode
 }
 
-func CancelOrderBinance(symbol string, orderId string) {
+func CancelOrderBinance(symbol string, orderId string) (result bool, errCode, msg string) {
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("orderId", orderId)
@@ -117,6 +136,8 @@ func CancelOrderBinance(symbol string, orderId string) {
 	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("DELETE", requestUrl, "", headers)
 	util.Notice("binance cancel order" + string(responseBody))
+
+	return true, ``, ``
 }
 
 func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, status string) {

@@ -16,6 +16,11 @@ const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
 
+const OrderTypeLimit = `limit`
+const OrderTypeMarket  = `market`
+const OrderSideBuy = `buy`
+const OrderSideSell = `sell`
+
 var HuobiAccountId = ""
 var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)

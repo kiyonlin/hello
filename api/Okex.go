@@ -96,15 +96,37 @@ func signOkex(postData *url.Values, secretKey string) {
 }
 
 // orderType:  限价单（buy/sell） 市价单（buy_market/sell_market）
-func PlaceOrderOkex(symbol string, orderType string, price string, amount string) (orderId, errCode string) {
+// okex中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+	orderParam := ``
+	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeLimit {
+		orderParam = `buy`
+	} else if orderSide == model.OrderSideBuy && orderType == model.OrderTypeMarket {
+		orderParam = `buy_market`
+		// okex中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+		leftAmount, _ := strconv.ParseFloat(amount, 64)
+		leftPrice, _ := strconv.ParseFloat(price, 64)
+		money := leftAmount * leftPrice
+		amount = strconv.FormatFloat(money, 'f', 2, 64)
+	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeLimit {
+		orderParam = `sell`
+	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeMarket {
+		orderParam = `sell_market`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order side: %s order type: %s`, orderSide, orderType))
+		return ``, ``
+	}
 	postData := url.Values{}
 	postData.Set("api_key", model.ApplicationConfig.OkexKey)
 	postData.Set("symbol", symbol)
-	postData.Set("type", orderType)
-	postData.Set("price", price)
+	postData.Set("type", orderParam)
+	if !(orderType == model.OrderTypeMarket && orderSide == model.OrderSideSell){
+		postData.Set("price", price)
+	}
 	postData.Set("amount", amount)
 	signOkex(&postData, model.ApplicationConfig.OkexSecret)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
+		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", postData.Encode(), headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -118,21 +140,35 @@ func PlaceOrderOkex(symbol string, orderType string, price string, amount string
 			errCode = strconv.Itoa(errCodeInt)
 		}
 	}
-	util.Notice(symbol + "挂单okex:" + price + orderType + amount + "返回" + string(responseBody) + "errCode:" +
-		errCode + "orderId" + orderId)
+	util.Notice(fmt.Sprintf(`[挂单Okex] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
+		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
 	return orderId, errCode
 }
 
-func CancelOrderOkex(symbol string, orderId string) {
+func CancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg string){
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
 	postData.Set("api_key", model.ApplicationConfig.OkexKey)
 	signOkex(&postData, model.ApplicationConfig.OkexSecret)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
+		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST",
 		model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", postData.Encode(), headers)
 	util.Notice("okex cancel order" + orderId + string(responseBody))
+	orderJson, err := util.NewJSON([]byte(responseBody))
+	cancelResult := false
+	if err == nil {
+		successOrders, _ := orderJson.Get(`success`).Array()
+		for _, value := range successOrders {
+			if value.(string) == orderId {
+				cancelResult = true
+				break
+			}
+		}
+		return cancelResult, ``, ``
+	}
+	return false, err.Error(), err.Error()
 }
 
 func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status string) {

@@ -159,7 +159,26 @@ func GetSpotAccountId() (accountId string, err error) {
 }
 
 // orderType: buy-market：市价买, sell-market：市价卖, buy-limit：限价买, sell-limit：限价卖
-func PlaceOrderHuobi(symbol string, orderType string, price string, amount string) (orderId, errCode string) {
+// huobi中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+func placeOrderHuobi(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+	orderParam := ``
+	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeLimit {
+		orderParam = `buy-limit`
+	} else if orderSide == model.OrderSideBuy && orderType == model.OrderTypeMarket {
+		orderParam = `buy-market`
+		// huobi中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+		leftAmount, _ := strconv.ParseFloat(amount, 64)
+		leftPrice, _ := strconv.ParseFloat(price, 64)
+		money := leftAmount * leftPrice
+		amount = strconv.FormatFloat(money, 'f', 2, 64)
+	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeLimit {
+		orderParam = `sell-limit`
+	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeMarket {
+		orderParam = `sell-market`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order side: %s order type: %s`, orderSide, orderType))
+		return ``, ``
+	}
 	if model.HuobiAccountId == `` {
 		model.HuobiAccountId, _ = GetSpotAccountId()
 	}
@@ -168,8 +187,10 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 	postData["account-id"] = model.HuobiAccountId
 	postData["amount"] = amount
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	postData["type"] = orderType
-	postData["price"] = price
+	postData["type"] = orderParam
+	if orderType == model.OrderTypeLimit {
+		postData["price"] = price
+	}
 	responseBody := SignedRequestHuobi(`POST`, path, postData)
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
@@ -180,15 +201,27 @@ func PlaceOrderHuobi(symbol string, orderType string, price string, amount strin
 			errCode, _ = orderJson.Get("err-code").String()
 		}
 	}
-	util.Notice(symbol + "挂单huobi:" + price + orderType + amount + "返回" + string(responseBody) +
-		"errCode:" + errCode + "orderId" + orderId)
+	util.Notice(fmt.Sprintf(`[挂单huobi] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
+		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
 	return orderId, errCode
 }
 
-func CancelOrderHuobi(orderId string) {
+func CancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 	path := fmt.Sprintf("/v1/order/orders/%s/submitcancel", orderId)
 	responseBody := SignedRequestHuobi(`POST`, path, nil)
+	orderJson, err := util.NewJSON(responseBody)
 	util.Notice("huobi cancel order" + orderId + string(responseBody))
+	if err == nil {
+		status, _ := orderJson.Get("status").String()
+		if status == "ok" {
+			return true, ``, ``
+		} else if status == "error" {
+			errCode, _ = orderJson.Get("err-code").String()
+			msg, _ = orderJson.Get(`err-msg`).String()
+			return false, errCode, msg
+		}
+	}
+	return false, err.Error(), err.Error()
 }
 
 func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {

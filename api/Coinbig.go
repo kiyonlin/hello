@@ -134,10 +134,19 @@ func GetAccountCoinbig(accounts *model.Accounts) {
 }
 
 // orderType 买卖类型: 限价单(buy/sell) 市价单(buy_market/sell_market)
-func PlaceOrderCoinbig(symbol, orderType, price, amount string) (orderId, errCode string) {
+func placeOrderCoinbig(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+	orderParam := ``
+	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeLimit {
+		orderParam = `buy`
+	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeLimit {
+		orderParam = `sell`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order side: %s order type: %s`, orderSide, orderType))
+		return ``, ``
+	}
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
-	postData.Set(`type`, orderType)
+	postData.Set(`type`, orderParam)
 	postData.Set(`price`, price)
 	postData.Set(`amount`, amount)
 	postData.Set(`symbol`, symbol)
@@ -186,17 +195,21 @@ func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	return dealAmount, status
 }
 
-func CancelOrderCoinbig(orderId string) (status int) {
+func CancelOrderCoinbig(orderId string)  (result bool, errCode, msg string){
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
 	postData.Set(`order_id`, orderId)
 	responseBody := SignedRequestCoinbig(`POST`, `/cancel_order`, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
+	status := -1
 	if err == nil {
 		status, _ = orderJson.Get(`code`).Int()
 	}
+	if status == 0 {
+		result = true
+	}
 	util.Notice("coinbig cancel order" + string(responseBody))
-	return status
+	return result, ``, ``
 }
 
 //func CancelOrdersCoinbig(symbol string) {

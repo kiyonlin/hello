@@ -92,8 +92,7 @@ func SignedRequestCoinpark(method, path, cmds string) []byte {
 	postData.Set("cmds", cmds)
 	postData.Set("apikey", model.ApplicationConfig.CoinparkKey)
 	postData.Set("sign", sign)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest(method, model.ApplicationConfig.RestUrls[model.Coinpark]+path,
 		postData.Encode(), headers)
 	return responseBody
@@ -138,13 +137,27 @@ func GetAccountCoinpark(accounts *model.Accounts) {
 	Maintain(accounts, model.Coinpark)
 }
 
-// order_type 交易类型，2-限价单
 // order_side 交易方向，1-买，2-卖
-func PlaceOrderCoinpark(symbol string, side, orderType int, price, amount string) (orderId, errCode, errMsg string) {
+// order_type 交易类型，2-限价单
+func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (orderId, errCode, errMsg string) {
+	if orderSide == model.OrderSideBuy {
+		orderSide = `1`
+	} else if orderSide == model.OrderSideSell {
+		orderSide = `2`
+	}  else {
+		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
+		return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderSide)
+	}
+	if orderType == model.OrderTypeLimit {
+		orderType = `2`
+	} else {
+		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
+		return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderType)
+	}
 	symbol = strings.ToUpper(symbol)
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/trade",
-		"body":{"pair":"%s","account_type":0,"order_type":%d,"order_side":"%d","price":%s,"amount":"%s"}}]`,
-		symbol, orderType, side, price, amount)
+		"body":{"pair":"%s","account_type":0,"order_type":%s,"order_side":"%s","price":%s,"amount":"%s"}}]`,
+		symbol, orderType, orderSide, price, amount)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	util.Notice(`[place order]` + string(responseBody))
 	orderJson, _ := util.NewJSON([]byte(responseBody))
@@ -187,7 +200,7 @@ func QueryOrderCoinpark(orderId string) (dealAmount float64, status string) {
 	return dealAmount, status
 }
 
-func CancelOrderCoinpark(orderId string) (code, msg string) {
+func CancelOrderCoinpark(orderId string) (result bool, code, msg string) {
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/cancelTrade","body":{"orders_id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -197,13 +210,13 @@ func CancelOrderCoinpark(orderId string) (code, msg string) {
 		errorData := results[0].(map[string]interface{})[`error`]
 		resultData := results[0].(map[string]interface{})["result"]
 		if resultData != nil {
-			return `0`, resultData.(string)
+			return true, ``, resultData.(string)
 		}
 		if errorData != nil {
 			code = errorData.(map[string]interface{})[`code`].(string)
 			msg = errorData.(map[string]interface{})[`msg`].(string)
-			return code, msg
+			return false, code, msg
 		}
 	}
-	return ``, err.Error()
+	return false, err.Error(), err.Error()
 }
