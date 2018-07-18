@@ -64,7 +64,7 @@ func extraAsk(symbol, market string, amount float64) {
 	}
 	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0])
 	orderId, _, _ := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, price,
-		fmt.Sprintf(`%f`, amount))
+		strconv.FormatFloat(amount, 'f', 2, 64))
 	if orderId != `` && orderId != `0` {
 		extraBidAskDone = true
 	}
@@ -109,7 +109,7 @@ var ProcessTurtle = func(symbol, market string) {
 		} else if carry.BidAmount > money/carry.BidPrice {
 			extraAsk(carry.Symbol, carry.BidWeb, carry.BidAmount*3)
 		} else if model.ApplicationConfig.GetTurtleLeftLimit(symbol) < coin {
-			extraAsk(carry.Symbol, carry.BidWeb, coin - carry.BidAmount * 9)
+			extraAsk(carry.Symbol, carry.BidWeb, coin - carry.BidAmount * 7)
 		} else {
 			bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
 			askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
