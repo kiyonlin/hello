@@ -37,11 +37,12 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 		if json == nil {
 			return
 		}
-		symbol := json.Get("type").MustString()
-		if symbol == `hello` {
+		symbol := model.GetSymbol(model.Fcoin, json.Get("type").MustString())
+		symbolSettings := model.GetMarketSettings(model.Fcoin)
+		if symbolSettings == nil || symbolSettings[symbol] == nil {
+			util.Notice(symbol + ` not supported`)
 			return
 		}
-		symbol = model.GetSymbol(model.Fcoin, symbol)
 		if symbol != "" && symbol != "_" {
 			bidAsk := model.BidAsk{}
 			bidsLen := len(json.Get("bids").MustArray()) / 2
