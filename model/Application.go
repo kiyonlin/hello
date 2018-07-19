@@ -45,6 +45,7 @@ const CarryStatusWorking = "working"
 const CarryTypeTurtle = `turtle`
 
 var OrderStatusMap = map[string]string{
+	``: CarryStatusFail,
 	// Binance
 	"NEW":              CarryStatusWorking,
 	"PARTIALLY_FILLED": CarryStatusWorking,
