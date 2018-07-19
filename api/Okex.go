@@ -84,7 +84,7 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 		}
 	}
 	return WebSocketServe(model.ApplicationConfig.WSUrls[model.OKEX],
-		model.ApplicationConfig.GetSubscribes(model.OKEX), subscribeHandlerOkex, wsHandler, errHandler)
+		model.GetSubscribes(model.OKEX), subscribeHandlerOkex, wsHandler, errHandler)
 }
 
 func signOkex(postData *url.Values, secretKey string) {

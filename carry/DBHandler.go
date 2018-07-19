@@ -66,7 +66,7 @@ func AccountHandlerServe() {
 
 func RefreshAccounts() {
 	for true {
-		markets := model.ApplicationConfig.Markets
+		markets := model.GetMarkets()
 		for _, value := range markets {
 			api.RefreshAccount(value)
 		}

@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"strings"
@@ -29,6 +28,7 @@ var ApplicationConfig *Config
 
 var ApplicationAccounts = NewAccounts()
 var ApplicationDB *gorm.DB
+var ApplicationSettings []Setting
 var CarryChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var InnerCarryChannel = make(chan Carry, 50)
@@ -119,7 +119,7 @@ func SetTurtleDealPrice(market, symbol string, price float64) {
 }
 
 // TODO filter out unsupported symbol for each market
-func getWSSubscribe(market, symbol string) (subscribe string) {
+func GetWSSubscribe(market, symbol string) (subscribe string) {
 	switch market {
 	case Huobi: // xrp_btc: market.xrpbtc.depth.step0
 		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
@@ -189,51 +189,43 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
-	lock             sync.Mutex
-	Env              string
-	DBConnection     string
-	Channels         int
-	ChannelSlot      float64
-	MarketCost       []float64
-	Markets          []string
-	Symbols          []string
-	Margins          []float64
-	TurtleLeftCopies []int
-	TurtleLeftAmount []float64
-	TurtlePriceWidth []float64
-	Functions        []string
-	Delays           []float64
-	Deduction        float64
-	MinUsdt          float64             // 折合usdt最小下单金额
-	MaxUsdt          float64             // 折合usdt最大下单金额
-	subscribes       map[string][]string // marketName - subscribes
-	WSUrls           map[string]string   // marketName - ws url
-	RestUrls         map[string]string   // marketName - rest url
-	HuobiKey         string
-	HuobiSecret      string
-	OkexKey          string
-	OkexSecret       string
-	BinanceKey       string
-	BinanceSecret    string
-	CoinbigKey       string
-	CoinbigSecret    string
-	CoinparkKey      string
-	CoinparkSecret   string
-	FcoinKey         string
-	FcoinSecret      string
-	BtcdoKey         string
-	BtcdoSecret      string
-	OrderWait        int64   // fcoin/coinpark 刷单平均等待时间
-	AmountRate       float64 // 刷单填写数量比率
-	Handle           int64   // 0 不执行处理程序，1执行处理程序
-	SellRate         float64 // fcoin dk 额外卖单下单比例
-	FtMax            float64 // fcoin dk ft上限
-	InChina          int     // 1 in china, otherwise outter china
+	lock           sync.Mutex
+	Env            string
+	DBConnection   string
+	Channels       int
+	ChannelSlot    float64
+	Functions      []string
+	Delay          float64
+	Deduction      float64
+	MinUsdt        float64            // 折合usdt最小下单金额
+	MaxUsdt        float64            // 折合usdt最大下单金额
+	WSUrls         map[string]string  // marketName - ws url
+	RestUrls       map[string]string  // marketName - rest url
+	MarketCost     map[string]float64 // marketName - order cost
+	HuobiKey       string
+	HuobiSecret    string
+	OkexKey        string
+	OkexSecret     string
+	BinanceKey     string
+	BinanceSecret  string
+	CoinbigKey     string
+	CoinbigSecret  string
+	CoinparkKey    string
+	CoinparkSecret string
+	FcoinKey       string
+	FcoinSecret    string
+	BtcdoKey       string
+	BtcdoSecret    string
+	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
+	AmountRate     float64 // 刷单填写数量比率
+	Handle         int64   // 0 不执行处理程序，1执行处理程序
+	SellRate       float64 // fcoin dk 额外卖单下单比例
+	FtMax          float64 // fcoin dk ft上限
+	InChina        int     // 1 in china, otherwise outter china
 }
 
 func NewConfig() {
 	ApplicationConfig = &Config{}
-	ApplicationConfig.subscribes = make(map[string][]string)
 	ApplicationConfig.WSUrls = make(map[string]string)
 	ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
 	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
@@ -252,110 +244,40 @@ func NewConfig() {
 	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 	ApplicationConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
+	ApplicationConfig.MarketCost = make(map[string]float64)
+	ApplicationConfig.MarketCost[Fcoin] = 0
+	ApplicationConfig.MarketCost[Huobi] = 0.0005
+	ApplicationConfig.MarketCost[OKEX] = 0.0005
+	ApplicationConfig.MarketCost[Binance] = 0.0004
+	ApplicationConfig.MarketCost[Coinpark] = 0
+	ApplicationConfig.MarketCost[Coinbig] = 0
 }
 
-func (config *Config) GetSubscribes(marketName string) []string {
-	for _, v := range config.Markets {
-		if v == marketName {
-			config.subscribes[v] = make([]string, len(config.Symbols))
-			for i, symbol := range config.Symbols {
-				config.subscribes[v][i] = getWSSubscribe(marketName, symbol)
-			}
-			return config.subscribes[v]
-		}
+func GetSubscribes(marketName string) []string {
+	settings := GetMarketSettings(marketName)
+	subscribes := make([]string, len(settings))
+	i := 0
+	for symbol := range settings {
+		subscribes[i] = GetWSSubscribe(marketName, symbol)
+		i++
 	}
-	return nil
-}
-
-func (config *Config) GetMargin(symbol string) (float64, error) {
-	for i, value := range config.Symbols {
-		if value == symbol {
-			return config.Margins[i], nil
-		}
-	}
-	return 1, errors.New("no such symbol" + symbol)
-}
-
-func (config *Config) GetTurtleAmount(symbol string) (amount float64, err error) {
-	for i, value := range config.Symbols {
-		if value == symbol {
-			return config.TurtleLeftAmount[i], nil
-		}
-	}
-	return 0, errors.New("no such amount to the symbol " + symbol)
-}
-
-func (config *Config) GetTurtlePriceWidth(symbol string) (priceWidth float64, err error) {
-	for i, value := range config.Symbols {
-		if value == symbol {
-			return config.TurtlePriceWidth[i], nil
-		}
-	}
-	return 0, errors.New(`no such price width to the symbol ` + symbol)
-}
-
-func (config *Config) GetMarketCost(market string) (marketCost float64, err error) {
-	for i, value := range config.Markets {
-		if value == market {
-			return config.MarketCost[i], nil
-		}
-	}
-	return 1, errors.New(`no such base carry cost to the market ` + market)
-}
-
-func (config *Config) GetDelay(symbol string) (float64, error) {
-	if len(config.Delays) == 1 {
-		// return first delay as default delay
-		return config.Delays[0], nil
-	}
-	for i, value := range config.Symbols {
-		if value == symbol {
-			return config.Delays[i], nil
-		}
-	}
-	return 0, errors.New("no such symbol " + symbol)
-}
-
-func (config *Config) GetTurtleLeftLimit(symbol string) float64 {
-	singleAmount := 0.0
-	copies := 0
-	for key, value := range config.Symbols {
-		if value == value {
-			singleAmount = config.TurtleLeftAmount[key]
-			copies = config.TurtleLeftCopies[key]
-		}
-	}
-	return float64(copies) * singleAmount
+	return subscribes
 }
 
 func (config *Config) ToString() string {
 	str := "markets-carry cost:\n"
-	for _, value := range config.Markets {
-		marketCost, err := config.GetMarketCost(value)
-		if err == nil {
-			str += fmt.Sprintf("-%s base carry cost: %f\n", value, marketCost)
-		}
-	}
-	str += "symbols:\n"
-	for _, value := range config.Symbols {
-		str += "- " + value + "\n"
+	for key, value := range config.MarketCost {
+		str += fmt.Sprintf("-%s base carry cost: %f\n", key, value)
 	}
 	str += fmt.Sprintf("deduction: %f\n", config.Deduction)
-	str += "margins:\n"
-	for _, value := range config.Margins {
-		str += fmt.Sprintf("- %f\n", value)
-	}
-	str += "delays:\n"
-	for _, value := range config.Delays {
-		str += fmt.Sprintf("- %f\n", value)
-	}
+	str += fmt.Sprintf("delay: %f\n", config.Delay)
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
 	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
 	str += "env: " + config.Env + "\n"
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
 	str += "dbconnection: " + config.DBConnection
-	str += fmt.Sprintf(`handle: %d symbols: %s orderwait: %d amountrate: %f sellrate %f ftmax %f`,
-		config.Handle, config.Symbols[0], config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
+	str += fmt.Sprintf(`handle: %d orderwait: %d amountrate: %f sellrate %f ftmax %f`,
+		config.Handle, config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
 	return str
 }

@@ -79,8 +79,8 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		if discount < (leftTotalPercentage-leftBidPercentage)/leftTotalPercentage {
 			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
-		askCost, _ := ApplicationConfig.GetMarketCost(carry.AskWeb)
-		bidCost, _ := ApplicationConfig.GetMarketCost(carry.BidWeb)
+		askCost, _ := ApplicationConfig.MarketCost[carry.AskWeb]
+		bidCost, _ := ApplicationConfig.MarketCost[carry.BidWeb]
 		baseCost := (askCost + bidCost) / 2
 		dynamicMargin := baseCost + (configMargin-baseCost)*(1-discount)
 		util.SocketInfo(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
@@ -91,8 +91,8 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 }
 
 func (carry *Carry) CheckWorthSaveMargin() bool {
-	askCost, _ := ApplicationConfig.GetMarketCost(carry.AskWeb)
-	bidCost, _ := ApplicationConfig.GetMarketCost(carry.BidWeb)
+	askCost, _ := ApplicationConfig.MarketCost[carry.AskWeb]
+	bidCost, _ := ApplicationConfig.MarketCost[carry.BidWeb]
 	if (askCost+bidCost)/2 < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
 		return true
 	}
@@ -100,8 +100,7 @@ func (carry *Carry) CheckWorthSaveMargin() bool {
 }
 
 func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (bool, error) {
-	configMargin, _ := config.GetMargin(carry.Symbol)
-	dynamicMargin := getDynamicMargin(carry, configMargin)
+	dynamicMargin := getDynamicMargin(carry, GetMargin(carry.Symbol))
 	carry.Margin = dynamicMargin
 	margin := carry.AskPrice - carry.BidPrice
 	if margin > carry.AskPrice*dynamicMargin && carry.Amount > 0 {
@@ -116,9 +115,9 @@ func (carry *Carry) CheckWorthCarryTime(markets *Markets, config *Config) (bool,
 	bidTimeDelay := math.Abs(float64(now - carry.BidTime))
 	askTimeDelay := math.Abs(float64(now - carry.AskTime))
 	timeDiff := math.Abs(float64(carry.BidTime - carry.AskTime))
-	delay, _ := config.GetDelay(carry.Symbol)
-	if timeDiff > delay || bidTimeDelay > delay || askTimeDelay > delay {
-		message := strconv.Itoa(int(now)) + "时间问题，卖方" + carry.AskWeb + strconv.Itoa(int(carry.AskTime)) + "隔" + strconv.Itoa(int(askTimeDelay))
+	if timeDiff > config.Delay || bidTimeDelay > config.Delay || askTimeDelay > config.Delay {
+		message := strconv.Itoa(int(now)) + "时间问题，卖方" + carry.AskWeb + strconv.Itoa(int(carry.AskTime)) + "隔" +
+			strconv.Itoa(int(askTimeDelay))
 		message = message + "买方" + carry.BidWeb + strconv.Itoa(int(carry.BidTime)) + "隔" + strconv.Itoa(int(bidTimeDelay))
 		return false, errors.New(message)
 	}

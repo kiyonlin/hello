@@ -46,15 +46,8 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	if markets.BidAsks[symbol] == nil {
 		return nil, errors.New("no market data " + symbol)
 	}
-	amount, err := ApplicationConfig.GetTurtleAmount(symbol)
-	if err != nil {
-		return nil, err
-	}
-	priceWidth, err := ApplicationConfig.GetTurtlePriceWidth(symbol)
+	amount, priceWidth, _ := GetTurtleSetting(market, symbol)
 	bidAsks := markets.BidAsks[symbol][market]
-	if err != nil {
-		return nil, err
-	}
 	var bidPrice, askPrice float64
 	lastDealPrice := GetTurtleDealPrice(market, symbol)
 	if lastDealPrice > 0 {
@@ -97,7 +90,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	if len(currencies) != 2 {
 		return nil, errors.New(`invalid carry symbol`)
 	}
-	carry.Margin, _ = ApplicationConfig.GetMargin(symbol)
+	carry.Margin = GetMargin(symbol)
 	if carry.BidAmount < carry.AskAmount {
 		carry.Amount = carry.BidAmount
 	} else {

@@ -69,7 +69,7 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 		}
 	}
 	requestUrl := model.ApplicationConfig.WSUrls[model.Fcoin]
-	return WebSocketServe(requestUrl, model.ApplicationConfig.GetSubscribes(model.Fcoin), subscribeHandlerFcoin,
+	return WebSocketServe(requestUrl, model.GetSubscribes(model.Fcoin), subscribeHandlerFcoin,
 		wsHandler, errHandler)
 }
 

@@ -18,7 +18,7 @@ var processing = false
 var handling = false
 
 func getAccount() {
-	switch model.ApplicationConfig.Markets[0] {
+	switch model.GetMarkets()[0] {
 	case model.Coinpark:
 		api.GetAccountCoinpark(model.ApplicationAccounts)
 	case model.Fcoin:
@@ -56,7 +56,7 @@ func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) 
 func placeRefreshOrder(carry *model.Carry, orderSide, orderType, price, amount string) {
 	if orderSide == `buy` {
 		carry.DealBidOrderId, carry.DealBidErrCode, _ = api.PlaceOrder(orderSide, orderType,
-			model.ApplicationConfig.Markets[0], carry.Symbol, price, amount)
+			model.GetMarkets()[0], carry.Symbol, price, amount)
 		if carry.DealBidOrderId != `` && carry.DealBidOrderId != "0" {
 			carry.DealBidStatus = model.CarryStatusWorking
 		} else {
@@ -118,7 +118,7 @@ func placeExtraSell(carry *model.Carry) {
 		amount := carry.Amount * model.ApplicationConfig.SellRate
 		strAmount := strconv.FormatFloat(amount, 'f', 2, 64)
 		orderId, errCode, msg := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
-			model.ApplicationConfig.Markets[0], carry.Symbol, strPrice, strAmount)
+			model.GetMarkets()[0], carry.Symbol, strPrice, strAmount)
 		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %s 数量: %s 返回 %s %s %s`,
 			carry.Symbol, strPrice, strAmount, orderId, errCode, msg))
 	}
@@ -208,7 +208,14 @@ func cancelRefreshOrder(orderId string, mustCancel bool) {
 		time.Sleep(time.Second * 5)
 	}
 	for i := 0; i < 100; i++ {
-		result, errCode, _ := api.CancelOrder(model.ApplicationConfig.Markets[0], model.ApplicationConfig.Symbols[0], orderId)
+		market := model.GetMarkets()[0]
+		settings := model.GetMarketSettings(market)
+		var symbol string
+		for key := range settings {
+			symbol = key
+			break
+		}
+		result, errCode, _ := api.CancelOrder(market, symbol, orderId)
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
 		if result || !mustCancel {
 			break

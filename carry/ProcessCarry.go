@@ -104,12 +104,13 @@ var ProcessTurtle = func(symbol, market string) {
 		}
 		coin := leftAccount.Free
 		money := rightAccount.Free
+		_, _, turtleLeftLimit := model.GetTurtleSetting(carry.BidWeb, carry.Symbol)
 		if carry.AskAmount > coin {
 			extraBid(carry.Symbol, carry.AskWeb, carry.AskAmount*3)
 		} else if carry.BidAmount > money/carry.BidPrice {
 			extraAsk(carry.Symbol, carry.BidWeb, carry.BidAmount*3)
-		} else if model.ApplicationConfig.GetTurtleLeftLimit(symbol) < coin {
-			extraAsk(carry.Symbol, carry.BidWeb, coin - carry.BidAmount * 7)
+		} else if turtleLeftLimit < coin {
+			extraAsk(carry.Symbol, carry.BidWeb, coin-carry.BidAmount*7)
 		} else {
 			bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
 			askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
@@ -272,8 +273,6 @@ func createServer(markets *model.Markets, carryHandlers []api.CarryHandler, mark
 		channel, err = api.WsDepthServeCoinpark(markets, carryHandlers, WSErrHandler)
 	case model.Coinbig:
 		channel, err = api.WsDepthServeCoinbig(markets, carryHandlers, WSErrHandler)
-	case model.Btcdo:
-		channel, err = api.WsDepthServeBtcdo(markets, carryHandlers, WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())
@@ -288,8 +287,8 @@ func MaintainMarketChan(carryHandlers []api.CarryHandler) {
 		return
 	}
 	socketMaintaining = true
-	for _, marketName := range model.ApplicationConfig.Markets {
-		subscribes := model.ApplicationConfig.GetSubscribes(marketName)
+	for _, marketName := range model.GetMarkets() {
+		subscribes := model.GetSubscribes(marketName)
 		for _, subscribe := range subscribes {
 			for index := 0; index < model.ApplicationConfig.Channels; index++ {
 				channel := model.ApplicationMarkets.GetChan(marketName, index)
@@ -329,6 +328,8 @@ func Maintain() {
 	defer model.ApplicationDB.Close()
 	model.ApplicationDB.AutoMigrate(&model.Carry{})
 	model.ApplicationDB.AutoMigrate(&model.Account{})
+	model.ApplicationDB.AutoMigrate(&model.Setting{})
+	model.LoadSettings()
 	go RefreshAccounts()
 	go OuterCarryServe()
 	go InnerCarryServe()

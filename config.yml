@@ -1,61 +1,10 @@
-markets:
-#- huobi
-#- okex
-#- binance
-- fcoin
-#- coinpark
-#- coinbig
-#- btcdo
-
-symbols:
-- ft_usdt
-#- ft_btc
-#- eth_usdt
-#- eos_usdt
-#- eos_btc
-#- eth_btc
-#- eos_eth
-
 deduction: 0.8
-
-marketcost:
-- 0
 
 functions:
 #- carry
 - turtle
 
-turtleleftcopies:
-- 10
-
-turtleleftamount:
-- 3.1 #ft
-#- 3 #ft
-#- 0.1
-#- 7
-#- 7
-#- 0.1
-#- 0.1
-
-turtlepricewidth:
-- 0.001
-- 0.0000001
-#- 0.0005
-#- 0.01
-#- 0.01
-#- 0.0005
-#- 0.01
-
-margins: #差价，搬磚專用
-- 0.00001
-#- 0.0020
-#- 0.0020
-#- 0.0020
-#- 0.0020
-#- 0.0020
-
-delays: #按照毫秒计算时间差
-- 29000
+delay: 9000 #按照毫秒计算时间差
 channelslot: 30000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15
@@ -65,12 +14,13 @@ orderwait: 10000
 #env: local
 #dbconnection: host=10.10.102.65 port=5432 user=odoo dbname=odoo password=123456 sslmode=disable
 
-#env: aws
-#dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
+env: aws
+dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
+
 #env: ace
 #dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
-env: andrew
-dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+#env: andrew
+#dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 
 #sammi huobi
 huobikey: 003fe1c2-1a5a12e1-73668e50-6773e

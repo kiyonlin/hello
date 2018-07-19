@@ -54,7 +54,7 @@ func SetParameters(c *gin.Context) {
 	}
 	channelSlot := c.Query("channelslot")
 	if len(strings.TrimSpace(channelSlot)) > 0 {
-		value, _  :=  strconv.ParseFloat(channelSlot, 64)
+		value, _ := strconv.ParseFloat(channelSlot, 64)
 		if value > 0 {
 			model.ApplicationConfig.ChannelSlot = value
 		}
@@ -76,32 +76,10 @@ func SetParameters(c *gin.Context) {
 	if len(strings.TrimSpace(env)) > 0 {
 		model.ApplicationConfig.Env = env
 	}
-	markets := c.Query("markets")
-	if len(strings.TrimSpace(markets)) > 0 {
-		model.ApplicationConfig.Markets = strings.Split(strings.Replace(markets, " ", "", -1), ",")
-	}
-	symbols := c.Query("symbols")
-	if len(strings.TrimSpace(symbols)) > 0 {
-		model.ApplicationConfig.Symbols = strings.Split(strings.Replace(symbols, " ", "", -1), ",")
-	}
-	margins := c.Query("margins")
-	if len(strings.TrimSpace(margins)) > 0 {
-		strMargins := strings.Split(strings.Replace(margins, " ", "", -1), ",")
-		model.ApplicationConfig.Margins = make([]float64, len(strMargins))
-		for key, value := range strMargins {
-			floatValue, _ := strconv.ParseFloat(value, 64)
-			if floatValue > 0 {
-				model.ApplicationConfig.Margins[key] = floatValue
-			}
-		}
-	}
-	delays := c.Query("delays")
-	if len(strings.TrimSpace(delays)) > 0 {
-		strDelays := strings.Split(strings.Replace(delays, " ", "", -1), ",")
-		model.ApplicationConfig.Delays = make([]float64, len(strDelays))
-		for key, value := range strDelays {
-			model.ApplicationConfig.Delays[key], _ = strconv.ParseFloat(value, 64)
-		}
+	delay := c.Query("delay")
+	if len(strings.TrimSpace(delay)) > 0 {
+		strDelay := strings.Replace(delay, " ", "", -1)
+		model.ApplicationConfig.Delay, _ = strconv.ParseFloat(strDelay, 64)
 	}
 	c.String(http.StatusOK, model.ApplicationConfig.ToString())
 }
