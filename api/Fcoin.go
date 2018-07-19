@@ -156,7 +156,7 @@ func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 		status, _ = json.Get(`status`).Int()
 		msg, _ = json.Get(`msg`).String()
 	}
-	util.Notice("fcoin cancel order" + string(responseBody))
+	util.Notice(orderId + "fcoin cancel order" + string(responseBody))
 	if status == 0 {
 		return true, ``, msg
 	}
