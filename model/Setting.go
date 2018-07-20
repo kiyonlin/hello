@@ -59,5 +59,8 @@ func GetMargin(symbol string) float64 {
 			margins[value.Symbol] = value.Margin
 		}
 	}
+	if margins[symbol] == 0 { // 无值状态下的保护策略
+		margins[symbol] = 1
+	}
 	return margins[symbol]
 }

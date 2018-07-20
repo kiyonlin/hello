@@ -12,10 +12,16 @@ func ParameterServe() {
 	router := gin.Default()
 	router.GET("/get", GetParameters)
 	router.GET("/set", SetParameters)
+	router.GET(`/refresh`, RefreshParameters)
 	router.Run(":8080")
 }
 
 func GetParameters(c *gin.Context) {
+	c.String(http.StatusOK, model.ApplicationConfig.ToString())
+}
+
+func RefreshParameters(c *gin.Context) {
+	model.LoadSettings()
 	c.String(http.StatusOK, model.ApplicationConfig.ToString())
 }
 

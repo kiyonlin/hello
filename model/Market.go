@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"hello/util"
 	"math"
 	"strings"
@@ -47,6 +48,9 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 		return nil, errors.New("no market data " + symbol)
 	}
 	amount, priceWidth, _ := GetTurtleSetting(market, symbol)
+	if amount == 0 || priceWidth == 0 {
+		return nil, errors.New(fmt.Sprintf(`no amount: %f or no price width: %f`, amount, priceWidth))
+	}
 	bidAsks := markets.BidAsks[symbol][market]
 	var bidPrice, askPrice float64
 	lastDealPrice := GetTurtleDealPrice(market, symbol)
