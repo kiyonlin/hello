@@ -14,6 +14,7 @@ const Fcoin = "fcoin"
 const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
+const Bitmex  = `bitmex`
 
 const OrderTypeLimit = `limit`
 const OrderTypeMarket = `market`
@@ -135,6 +136,8 @@ func GetWSSubscribe(market, symbol string) (subscribe string) {
 		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
 	case Btcdo:
 		return strings.ToUpper(symbol)
+	case Bitmex:
+		return symbol
 	case Coinbig:
 		switch symbol {
 		case `btc_usdt`:
@@ -235,6 +238,7 @@ func NewConfig() {
 	ApplicationConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	ApplicationConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	ApplicationConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
+	ApplicationConfig.WSUrls[Bitmex] = `wss://www.bitmex.com/realtime/`
 	ApplicationConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
@@ -245,6 +249,7 @@ func NewConfig() {
 	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 	ApplicationConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
+	ApplicationConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
 	ApplicationConfig.MarketCost = make(map[string]float64)
 	ApplicationConfig.MarketCost[Fcoin] = 0
 	ApplicationConfig.MarketCost[Huobi] = 0.0005
