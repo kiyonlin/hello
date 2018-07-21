@@ -108,10 +108,6 @@ func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderI
 		orderSide = `buy`
 	} else if orderSide == model.OrderSideSell {
 		orderSide = `sell`
-		temp , _ := strconv.ParseFloat(amount, 64)
-		if temp > 10000 {
-			util.Notice(`大于一万的卖单不执行`)
-		}
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
 		return ``, ``
