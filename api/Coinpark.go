@@ -143,6 +143,10 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 		orderSide = `1`
 	} else if orderSide == model.OrderSideSell {
 		orderSide = `2`
+		temp, _ := strconv.ParseFloat(amount, 64)
+		if temp > 10000 {
+			util.Notice(`==sell==do not execute ` + amount )
+		}
 	}  else {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
 		return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderSide)
