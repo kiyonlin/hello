@@ -13,14 +13,12 @@ inchina: 1
 orderwait: 10000
 #env: local
 #dbconnection: host=10.10.102.65 port=5432 user=odoo dbname=odoo password=123456 sslmode=disable
-
-env: aws
-dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
-
+#env: simon
+#dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
 #env: ace
 #dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
-#env: andrew
-#dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+env: andrew
+dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 
 #sammi huobi
 huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
@@ -38,8 +36,8 @@ fcoinsecret: 54342819cbe148859f8d5ebdf384e607
 coinbigkey: 1E22104822C70BB607F159BAB6464C8E
 coinbigsecret: 57F20C33AEB2F29171B77239EDBBC102
 #yjsx_52.192.134.3,13.209.7.121,13.231.235.25,18.191.71.98
-coinparkkey: f2e3679a4f7eddf786ae57d38b84a7992b6b8d86
-coinparksecret: 8a6973ddfd9a5df5c4450ac61ab522293fe971e5
+coinparkkey: 7315c14b57b5c0818dc48d9635c4342cc0ac4295
+coinparksecret: 04943d9ed1735624bca2f3a88a216866b039b0ec
 # all ip
 btcdokey: AAAAAkNyFWrKUGQmFtUnYXe4TtxHNLlr
 btcdosecret: GjCgP2TEQ2sppUhjeiv8

@@ -100,6 +100,7 @@ var ProcessTurtle = func(symbol, market string) {
 		leftAccount := model.ApplicationAccounts.GetAccount(market, currencies[0])
 		rightAccount := model.ApplicationAccounts.GetAccount(market, currencies[1])
 		if leftAccount == nil || rightAccount == nil {
+			api.RefreshAccount(market)
 			return
 		}
 		coin := leftAccount.Free
