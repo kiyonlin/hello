@@ -156,7 +156,7 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	} else {
 		orderType = `2`
 		util.Info(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
-		return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderType)
+		//return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderType)
 	}
 	symbol = strings.ToUpper(symbol)
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/trade",
