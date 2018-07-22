@@ -31,7 +31,7 @@ func MaintainOrders() {
 			model.CarryChannel <- carry
 			time.Sleep(time.Second * 1)
 		}
-		time.Sleep(time.Minute * 1)
+		time.Sleep(time.Minute * 5)
 	}
 }
 
