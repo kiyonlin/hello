@@ -282,7 +282,6 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
 	str += "env: " + config.Env + "\n"
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
-	str += "dbconnection: " + config.DBConnection
 	str += fmt.Sprintf(`handle: %d orderwait: %d amountrate: %f sellrate %f ftmax %f`,
 		config.Handle, config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
 	return str
