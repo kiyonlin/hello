@@ -154,6 +154,7 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	if orderType == model.OrderTypeLimit {
 		orderType = `2`
 	} else {
+		orderType = `2`
 		util.Info(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
 		return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderType)
 	}
