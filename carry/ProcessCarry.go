@@ -115,14 +115,15 @@ var ProcessTurtle = func(symbol, market string) {
 		bidSide := model.OrderSideBuy
 		carry.SideType = model.CarryTypeTurtle
 		if carry.AskAmount > coin {
-			util.Notice(fmt.Sprintf(`[三倍buy]coin %f - ask %f`, coin, carry.AskAmount))
+			util.Notice(fmt.Sprintf(`[三倍buy]coin %f - ask %f %f - %f`, coin, carry.AskAmount,
+				carry.BidPrice, carry.AskPrice))
 			askSide = model.OrderSideBuy
 			bidSide = model.OrderSideBuy
 			askAmount = fmt.Sprintf(`%f`, carry.AskAmount*3)
 			carry.SideType = model.CarryTypeTurtleBothBuy
 		} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
-			util.Notice(fmt.Sprintf(`[三倍sell] [coin %f - limit %f] [bid %f - can %f]`,
-				coin, coinLimit, carry.BidAmount, money/carry.BidPrice))
+			util.Notice(fmt.Sprintf(`[三倍sell] [coin %f - limit %f] [bid %f - can %f] %f - %f`,
+				coin, coinLimit, carry.BidAmount, money/carry.BidPrice, carry.BidPrice, carry.AskPrice))
 			askSide = model.OrderSideSell
 			bidSide = model.OrderSideSell
 			bidAmount = fmt.Sprintf(`%f`, carry.BidAmount*3)
@@ -150,16 +151,20 @@ var ProcessTurtle = func(symbol, market string) {
 		carry = model.GetTurtleCarry(market, symbol)
 		marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0]
 		marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]
+		util.Notice(fmt.Sprintf(`carry bid %f - carry ask %f; market bid %f - market ask %f`,
+			carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
 		if carry.SideType == model.CarryTypeTurtleBothSell && marketBidPrice < carry.BidPrice { // 價格未能夾住
 			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
 			model.SetTurtleCarry(market, symbol, nil)
+			api.RefreshAccount(market)
 		} else if carry.SideType == model.CarryTypeTurtleBothBuy && marketAskPrice > carry.AskPrice {
 			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
 			model.SetTurtleCarry(market, symbol, nil)
+			api.RefreshAccount(market)
 		} else if marketAskPrice < carry.BidPrice {
 			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			model.SetTurtleDealPrice(carry.BidWeb, symbol, carry.BidPrice)
