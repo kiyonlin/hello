@@ -185,7 +185,8 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	return ``, ``, `response format err`
 }
 
-func QueryOrderCoinpark(orderId string) (dealAmount float64, status string) {
+//dealPrice 返回委托价格，市价单是0
+func QueryOrderCoinpark(orderId string) (dealAmount,dealPrice float64, status string) {
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/order","body":{"id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -195,14 +196,18 @@ func QueryOrderCoinpark(orderId string) (dealAmount float64, status string) {
 		resultData := results[0].(map[string]interface{})[`result`]
 		if resultData != nil {
 			strDealAmount := resultData.(map[string]interface{})[`deal_amount`].(string)
-			intStatus, _ := resultData.(map[string]interface{})[`status`].(json.Number).Int64()
-			status = model.OrderStatusMap[fmt.Sprintf(`%s%d`, model.Coinpark, intStatus)]
 			if strDealAmount != "" {
 				dealAmount, _ = strconv.ParseFloat(strDealAmount, 64)
 			}
+			strDealPrice := resultData.(map[string]interface{})[`price`].(string)
+			if strDealPrice != `` {
+				dealPrice, _ = strconv.ParseFloat(strDealPrice, 64)
+			}
+			intStatus, _ := resultData.(map[string]interface{})[`status`].(json.Number).Int64()
+			status = model.OrderStatusMap[fmt.Sprintf(`%s%d`, model.Coinpark, intStatus)]
 		}
 	}
-	return dealAmount, status
+	return dealAmount, dealPrice, status
 }
 
 func CancelOrderCoinpark(orderId string) (result bool, code, msg string) {

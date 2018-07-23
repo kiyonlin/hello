@@ -141,7 +141,7 @@ func CancelOrderBinance(symbol string, orderId string) (result bool, errCode, ms
 	return true, ``, ``
 }
 
-func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, status string) {
+func QueryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("orderId", orderId)
@@ -155,11 +155,15 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount float64, statu
 		if str != "" {
 			dealAmount, _ = strconv.ParseFloat(str, 64)
 		}
+		strDealPrice, _ := orderJson.Get(`price`).String()
+		if strDealPrice != `` {
+			dealPrice, _ = strconv.ParseFloat(strDealPrice, 64)
+		}
 		status, _ = orderJson.Get("status").String()
 		status = model.OrderStatusMap[status]
 	}
 	util.Notice(fmt.Sprintf("%s binance query order %f %s", status, dealAmount, responseBody))
-	return dealAmount, status
+	return dealAmount, dealPrice, status
 }
 
 func GetAccountBinance(accounts *model.Accounts) {

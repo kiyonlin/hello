@@ -172,13 +172,14 @@ func CancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg s
 	return false, err.Error(), err.Error()
 }
 
-func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status string) {
+func QueryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
 	postData.Set("api_key", model.ApplicationConfig.OkexKey)
 	signOkex(&postData, model.ApplicationConfig.OkexSecret)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do",
 		postData.Encode(), headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -188,12 +189,13 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount float64, status s
 			order := orders[0].(map[string]interface{})
 			if order["order_id"].(json.Number).String() == orderId {
 				dealAmount, _ = order["deal_amount"].(json.Number).Float64()
+				dealPrice, _ = order[`avg_price`].(json.Number).Float64()
 				status = model.OrderStatusMap[order["status"].(json.Number).String()]
 			}
 		}
 	}
 	util.Notice(fmt.Sprintf("%s okex query order %f %s", status, dealAmount, responseBody))
-	return dealAmount, status
+	return dealAmount, dealPrice, status
 }
 
 func GetAccountOkex(accounts *model.Accounts) {

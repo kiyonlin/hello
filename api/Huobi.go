@@ -224,7 +224,7 @@ func CancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 	return false, err.Error(), err.Error()
 }
 
-func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
+func QueryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status string) {
 	path := fmt.Sprintf("/v1/order/orders/%s", orderId)
 	responseBody := SignedRequestHuobi(`GET`, path, nil)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -235,9 +235,13 @@ func QueryOrderHuobi(orderId string) (dealAmount float64, status string) {
 		if str != "" {
 			dealAmount, _ = strconv.ParseFloat(str, 64)
 		}
+		strDealPrice, _ := orderJson.GetPath(`data`, `price`).String()
+		if strDealPrice != `` {
+			dealPrice, _ = strconv.ParseFloat(strDealPrice, 64)
+		}
 	}
 	util.Notice(fmt.Sprintf("%s huobi query order %f %s", status, dealAmount, responseBody))
-	return dealAmount, status
+	return dealAmount, dealPrice, status
 }
 
 func GetAccountHuobi(accounts *model.Accounts) {

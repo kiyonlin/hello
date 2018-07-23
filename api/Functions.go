@@ -30,15 +30,15 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 	util.Notice(fmt.Sprintf(`query order %s %s %s`, market, symbol, orderId))
 	switch market {
 	case model.Huobi:
-		dealAmount, status = QueryOrderHuobi(orderId)
+		dealAmount, dealPrice, status = QueryOrderHuobi(orderId)
 	case model.OKEX:
-		dealAmount, status = QueryOrderOkex(symbol, orderId)
+		dealAmount, dealPrice, status = QueryOrderOkex(symbol, orderId)
 	case model.Binance:
-		dealAmount, status = QueryOrderBinance(symbol, orderId)
+		dealAmount, dealPrice, status = QueryOrderBinance(symbol, orderId)
 	case model.Fcoin:
 		dealAmount, dealPrice, status = QueryOrderFcoin(symbol, orderId)
 	case model.Coinpark:
-		dealAmount, status = QueryOrderCoinpark(orderId)
+		dealAmount,dealPrice, status = QueryOrderCoinpark(orderId)
 	case model.Coinbig:
 		dealAmount, status = QueryOrderCoinbig(orderId)
 	}

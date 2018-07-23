@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"strings"
 	"sync"
+	"hello/util"
 )
 
 const OKEX = "okex"
@@ -117,7 +118,16 @@ func SetTurtleDealPrice(market, symbol string, price float64) {
 	if turtleDealPrice[market] == nil {
 		turtleDealPrice[market] = make(map[string]float64)
 	}
-	turtleDealPrice[market][symbol] = price
+	if	turtleDealPrice[market][symbol] == 0 {
+		turtleDealPrice[market][symbol] = price
+	}
+	if turtleDealPrice[market][symbol] != 0 && price != 0{
+		if turtleDealPrice[market][symbol] / price > 1.1 || turtleDealPrice[market][symbol] / price < 0.9 {
+			util.Notice(fmt.Sprintf(`[禁止]price异常%s %s %f`, market, symbol, price))
+		} else {
+			turtleDealPrice[market][symbol] = price
+		}
+	}
 }
 
 // TODO filter out unsupported symbol for each market
