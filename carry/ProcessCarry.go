@@ -176,7 +176,7 @@ var ProcessTurtle = func(symbol, market string) {
 				model.SetTurtleDealPrice(market, symbol, carry.BidPrice-priceWidth)
 			} else if marketBidPrice > carry.AskPrice {
 				model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
-			} else {
+			} else if marketBidPrice > carry.BidPrice {
 				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
 			}
@@ -189,7 +189,7 @@ var ProcessTurtle = func(symbol, market string) {
 				model.SetTurtleDealPrice(market, symbol, carry.AskPrice+priceWidth)
 			} else if marketAskPrice < carry.BidPrice {
 				model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
-			} else {
+			} else if marketAskPrice < carry.AskPrice {
 				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 				model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
 			}
