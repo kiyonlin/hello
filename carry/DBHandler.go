@@ -20,13 +20,13 @@ func MaintainOrders() {
 				if carry.SideType != `turtle` {
 					api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 				}
-				carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				carry.DealBidAmount, _, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			}
 			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
 				if carry.SideType != `turtle` {
 					api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				}
-				carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				carry.DealAskAmount, _, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			}
 			model.CarryChannel <- carry
 			time.Sleep(time.Second * 1)

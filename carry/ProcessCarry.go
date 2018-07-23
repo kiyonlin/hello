@@ -36,44 +36,47 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var turtleCarrying = false
+var turtleExtraDoing = false
 var extraBidAskDone = false
 
 func setTurtleCarrying(status bool) {
 	turtleCarrying = status
 }
 
-func extraBid(symbol, market string, amount float64) {
+func extraOrder(symbol, market, orderSide, orderType string, amount float64) {
 	if extraBidAskDone {
 		api.RefreshAccount(market)
 		return
 	}
+	turtleExtraDoing = true
 	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0])
-	orderId, _, _ := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, market, symbol, price,
-		fmt.Sprintf(`%f`, amount))
+	orderId, _, _ := api.PlaceOrder(orderSide, orderType, market, symbol, price, fmt.Sprintf(`%f`, amount))
 	if orderId != `` && orderId != `0` {
 		extraBidAskDone = true
+		for true {
+			dealAmount, dealPrice, _ := api.QueryOrderById(market, symbol, orderId)
+			if dealAmount >= amount*0.9 {
+				if dealPrice != 0 {
+					model.SetTurtleDealPrice(market, symbol, dealPrice)
+				}
+				util.Notice(fmt.Sprintf(`[extra price]%f`, dealPrice))
+				break
+			}
+			time.Sleep(time.Second * 3)
+		}
+		if orderSide == model.OrderSideSell {
+			model.CarryChannel <- model.Carry{Symbol: symbol, AskWeb: market, AskAmount: amount,
+				AskPrice: model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0], DealAskStatus: model.CarryStatusWorking}
+		} else if orderSide == model.OrderSideBuy {
+			model.CarryChannel <- model.Carry{Symbol: symbol, BidWeb: market, BidAmount: amount,
+				BidPrice: model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0], DealBidStatus: model.CarryStatusWorking}
+		}
 	}
-	model.CarryChannel <- model.Carry{Symbol: symbol, BidWeb: market, BidAmount: amount,
-		BidPrice: model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0], DealBidStatus: model.CarryStatusWorking}
-}
-
-func extraAsk(symbol, market string, amount float64) {
-	if extraBidAskDone {
-		api.RefreshAccount(market)
-		return
-	}
-	price := fmt.Sprintf(`%f`, model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0])
-	orderId, _, _ := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, price,
-		strconv.FormatFloat(amount, 'f', 2, 64))
-	if orderId != `` && orderId != `0` {
-		extraBidAskDone = true
-	}
-	model.CarryChannel <- model.Carry{Symbol: symbol, AskWeb: market, AskAmount: amount,
-		AskPrice: model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0], DealAskStatus: model.CarryStatusWorking}
+	turtleExtraDoing = false
 }
 
 var ProcessTurtle = func(symbol, market string) {
-	if turtleCarrying {
+	if turtleCarrying || turtleExtraDoing {
 		return
 	}
 	setTurtleCarrying(true)
@@ -111,9 +114,10 @@ var ProcessTurtle = func(symbol, market string) {
 			return
 		}
 		if carry.AskAmount > coin {
-			extraBid(carry.Symbol, carry.AskWeb, carry.AskAmount*3)
+			extraOrder(carry.Symbol, carry.AskWeb, model.OrderSideBuy, model.OrderTypeMarket, carry.AskAmount*3)
 		} else if carry.BidAmount > money/carry.BidPrice || turtleLeftLimit < coin {
-			extraAsk(carry.Symbol, carry.BidWeb, coin-(turtleLeftLimit/turtleAmount-3)*carry.BidAmount)
+			extraOrder(carry.Symbol, carry.BidWeb, model.OrderSideSell, model.OrderTypeMarket,
+				coin-(turtleLeftLimit/turtleAmount-3)*carry.BidAmount)
 		} else {
 			bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
 			askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
@@ -164,8 +168,8 @@ var ProcessTurtle = func(symbol, market string) {
 					model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
 					model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
 			}
-			carry.DealBidAmount, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			carry.DealAskAmount, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+			carry.DealBidAmount, _, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+			carry.DealAskAmount, _, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			util.Notice(fmt.Sprintf(`[%s捕获Turtle]ask: %f - bid %f`, carry.Symbol, carry.DealAskAmount, carry.DealBidAmount))
 			model.CarryChannel <- *carry
 			model.SetTurtleCarry(market, symbol, nil)

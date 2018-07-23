@@ -163,7 +163,7 @@ func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 	return false, strconv.FormatInt(int64(status), 10), msg
 }
 
-func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string) {
+func QueryOrderFcoin(symbol, orderId string) (dealAmount, dealPrice float64, status string) {
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	responseBody := SignedRequestFcoin(`GET`, `/orders/`+orderId, postData)
@@ -174,11 +174,15 @@ func QueryOrderFcoin(symbol, orderId string) (dealAmount float64, status string)
 		if str != "" {
 			dealAmount, _ = strconv.ParseFloat(str, 64)
 		}
+		strPrice, _ := orderJson.Get(`price`).String()
+		if strPrice != `` {
+			dealPrice, _ = strconv.ParseFloat(strPrice, 64)
+		}
 		status, _ = orderJson.Get("state").String()
 		status = model.OrderStatusMap[status]
 	}
 	util.Notice(fmt.Sprintf("%s %s fcoin query order %f %s", symbol, status, dealAmount, responseBody))
-	return dealAmount, status
+	return dealAmount, dealPrice, status
 }
 
 func GetAccountFcoin(accounts *model.Accounts) {

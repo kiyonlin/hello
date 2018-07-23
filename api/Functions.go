@@ -26,7 +26,7 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 	return false, `market-not-supported`, `market not supported ` + market
 }
 
-func QueryOrderById(market, symbol, orderId string) (dealAmount float64, status string) {
+func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float64, status string) {
 	util.Notice(fmt.Sprintf(`query order %s %s %s`, market, symbol, orderId))
 	switch market {
 	case model.Huobi:
@@ -36,13 +36,13 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount float64, status 
 	case model.Binance:
 		dealAmount, status = QueryOrderBinance(symbol, orderId)
 	case model.Fcoin:
-		dealAmount, status = QueryOrderFcoin(symbol, orderId)
+		dealAmount, dealPrice, status = QueryOrderFcoin(symbol, orderId)
 	case model.Coinpark:
 		dealAmount, status = QueryOrderCoinpark(orderId)
 	case model.Coinbig:
 		dealAmount, status = QueryOrderCoinbig(orderId)
 	}
-	return dealAmount, status
+	return dealAmount, dealPrice, status
 }
 
 func RefreshAccount(market string) {
