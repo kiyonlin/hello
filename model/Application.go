@@ -45,6 +45,8 @@ const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
 
 const CarryTypeTurtle = `turtle`
+const CarryTypeTurtleBothSell  = `turtle_both_sell`
+const CarryTypeTurtleBothBuy  = `turtle_both_buy`
 
 var OrderStatusMap = map[string]string{
 	``: CarryStatusFail,
