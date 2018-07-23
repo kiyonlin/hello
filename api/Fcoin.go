@@ -127,7 +127,6 @@ func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderI
 		money := leftAmount * leftPrice
 		amount = strconv.FormatFloat(money, 'f', 2, 64)
 	}
-
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	postData["type"] = orderType

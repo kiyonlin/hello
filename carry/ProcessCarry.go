@@ -116,11 +116,14 @@ var ProcessTurtle = func(symbol, market string) {
 		bidSide := model.OrderSideBuy
 		carry.SideType = model.CarryTypeTurtle
 		if carry.AskAmount > coin {
+			util.Notice(fmt.Sprintf(`[三倍buy]coin %f - ask %f`, coin, carry.AskAmount))
 			askSide = model.OrderSideBuy
 			bidSide = model.OrderSideBuy
 			askAmount = fmt.Sprintf(`%f`, carry.AskAmount*3)
 			carry.SideType = model.CarryTypeTurtleBothBuy
 		} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
+			util.Notice(fmt.Sprintf(`[三倍sell] [coin %f - limit %f] [bid %f - can %f]`,
+				coin, coinLimit, carry.BidAmount, money/carry.BidPrice))
 			askSide = model.OrderSideSell
 			bidSide = model.OrderSideSell
 			bidAmount = fmt.Sprintf(`%f`, carry.BidAmount*3)
