@@ -343,7 +343,6 @@ func Maintain() {
 	go OuterCarryServe()
 	go InnerCarryServe()
 	go AccountHandlerServe()
-	go MaintainOrders()
 	model.ApplicationMarkets = model.NewMarkets()
 	go controller.ParameterServe()
 
@@ -351,6 +350,7 @@ func Maintain() {
 	for i, value := range model.ApplicationConfig.Functions {
 		switch value {
 		case `carry`:
+			go MaintainOrders()
 			carryHandlers[i] = ProcessCarry
 		case `turtle`:
 			carryHandlers[i] = ProcessTurtle
