@@ -151,32 +151,48 @@ var ProcessTurtle = func(symbol, market string) {
 		carry = model.GetTurtleCarry(market, symbol)
 		marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0]
 		marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]
-		util.Notice(fmt.Sprintf(`carry bid %f - carry ask %f; market bid %f - market ask %f`,
-			carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
-		if carry.SideType == model.CarryTypeTurtleBothSell && marketBidPrice < carry.BidPrice { // 價格未能夾住
-			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			model.SetTurtleDealPrice(market, symbol, carry.BidPrice-priceWidth)
+		if carry.SideType == model.CarryTypeTurtle {
+			if marketAskPrice < carry.BidPrice {
+				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				model.SetTurtleDealPrice(carry.BidWeb, symbol, carry.BidPrice)
+				model.SetTurtleCarry(market, symbol, nil)
+				util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`, carry.Symbol,
+					carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
+			} else if marketBidPrice > carry.AskPrice {
+				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				model.SetTurtleDealPrice(carry.AskWeb, symbol, carry.AskPrice)
+				model.SetTurtleCarry(market, symbol, nil)
+				util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
+					carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
+			} else {
+				// do nothing
+			}
+		} else if carry.SideType == model.CarryTypeTurtleBothSell {
 			model.SetTurtleCarry(market, symbol, nil)
 			api.RefreshAccount(market)
-		} else if carry.SideType == model.CarryTypeTurtleBothBuy && marketAskPrice > carry.AskPrice {
-			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			model.SetTurtleDealPrice(market, symbol, carry.AskPrice+priceWidth)
+			if marketBidPrice < carry.BidPrice { // 價格未能夾住
+				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				model.SetTurtleDealPrice(market, symbol, carry.BidPrice-priceWidth)
+			} else if marketBidPrice > carry.AskPrice {
+				model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
+			} else {
+				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
+			}
+		} else if carry.SideType == model.CarryTypeTurtleBothBuy {
 			model.SetTurtleCarry(market, symbol, nil)
 			api.RefreshAccount(market)
-		} else if marketAskPrice < carry.BidPrice {
-			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-			model.SetTurtleDealPrice(carry.BidWeb, symbol, carry.BidPrice)
-			model.SetTurtleCarry(market, symbol, nil)
-			util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`, carry.Symbol,
-				carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
-		} else if marketBidPrice > carry.AskPrice {
-			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			model.SetTurtleDealPrice(carry.AskWeb, symbol, carry.AskPrice)
-			model.SetTurtleCarry(market, symbol, nil)
-			util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
-				carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
+			if marketAskPrice > carry.AskPrice {
+				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				model.SetTurtleDealPrice(market, symbol, carry.AskPrice+priceWidth)
+			} else if marketAskPrice < carry.BidPrice {
+				model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
+			} else {
+				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
+			}
 		}
 	}
 }
