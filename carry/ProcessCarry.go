@@ -112,9 +112,7 @@ var ProcessTurtle = func(symbol, market string) {
 		}
 		if carry.AskAmount > coin {
 			extraBid(carry.Symbol, carry.AskWeb, carry.AskAmount*3)
-		} else if carry.BidAmount > money/carry.BidPrice {
-			extraAsk(carry.Symbol, carry.BidWeb, carry.BidAmount*3)
-		} else if turtleLeftLimit < coin {
+		} else if carry.BidAmount > money/carry.BidPrice || turtleLeftLimit < coin {
 			extraAsk(carry.Symbol, carry.BidWeb, coin-(turtleLeftLimit/turtleAmount-3)*carry.BidAmount)
 		} else {
 			bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
