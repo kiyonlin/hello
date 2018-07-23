@@ -92,6 +92,7 @@ var ProcessTurtle = func(symbol, market string) {
 		util.Info(`turtle get carry not on time` + carry.ToString())
 		return
 	}
+	_, priceWidth, coinLimit := model.GetTurtleSetting(market, symbol)
 	if model.GetTurtleCarry(market, symbol) == nil {
 		currencies := strings.Split(carry.Symbol, `_`)
 		if len(currencies) != 2 {
@@ -106,7 +107,6 @@ var ProcessTurtle = func(symbol, market string) {
 		}
 		coin := leftAccount.Free
 		money := rightAccount.Free
-		_, _, coinLimit := model.GetTurtleSetting(market, symbol)
 		bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
 		askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
 		bidPrice := fmt.Sprintf(`%f`, carry.BidPrice)
@@ -156,13 +156,13 @@ var ProcessTurtle = func(symbol, market string) {
 		if carry.SideType == model.CarryTypeTurtleBothSell && marketBidPrice < carry.BidPrice { // 價格未能夾住
 			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
+			model.SetTurtleDealPrice(market, symbol, carry.BidPrice-priceWidth)
 			model.SetTurtleCarry(market, symbol, nil)
 			api.RefreshAccount(market)
 		} else if carry.SideType == model.CarryTypeTurtleBothBuy && marketAskPrice > carry.AskPrice {
 			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
+			model.SetTurtleDealPrice(market, symbol, carry.AskPrice+priceWidth)
 			model.SetTurtleCarry(market, symbol, nil)
 			api.RefreshAccount(market)
 		} else if marketAskPrice < carry.BidPrice {
