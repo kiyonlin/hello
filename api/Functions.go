@@ -6,6 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"strings"
+	"time"
 )
 
 func CancelOrder(market string, symbol string, orderId string) (result bool, errCode, msg string) {
@@ -83,6 +84,10 @@ func PlaceOrder(orderSide, orderType, market, symbol, price, amount string) (ord
 		orderId, errCode = placeOrderFcoin(orderSide, orderType, symbol, price, amount)
 	case model.Coinpark:
 		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, price, amount)
+		if errCode == `4003` {
+			util.Notice(`【發現4003錯誤】sleep 3 minutes`)
+			time.Sleep(time.Minute *3)
+		}
 	case model.Coinbig:
 		orderId, errCode = placeOrderCoinbig(orderSide, orderType, symbol, price, amount)
 	}

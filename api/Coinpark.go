@@ -144,7 +144,7 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	} else if orderSide == model.OrderSideSell {
 		orderSide = `2`
 		temp, _ := strconv.ParseFloat(amount, 64)
-		if temp > 10000 {
+		if temp > 20000 {
 			util.Notice(orderType + `==sell==do not execute ` + amount)
 			return ``, ``, orderType + `==sell==do not execute ` + amount
 		}
