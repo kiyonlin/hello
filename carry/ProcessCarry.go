@@ -173,6 +173,9 @@ var ProcessTurtle = func(symbol, market string) {
 			util.Notice(fmt.Sprintf(`[%s捕获Turtle]ask: %f - bid %f`, carry.Symbol, carry.DealAskAmount, carry.DealBidAmount))
 			model.CarryChannel <- *carry
 			model.SetTurtleCarry(market, symbol, nil)
+			if carry.AskWeb == model.Coinpark || carry.BidWeb == model.Coinpark {
+				time.Sleep(time.Second * 10)
+			}
 		}
 	}
 }
