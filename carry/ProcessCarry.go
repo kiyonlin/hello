@@ -107,6 +107,7 @@ var ProcessTurtle = func(symbol, market string) {
 		}
 		coin := leftAccount.Free
 		money := rightAccount.Free
+		_, _, coinLimit := model.GetTurtleSetting(market, symbol)
 		bidAmount := fmt.Sprintf(`%f`, carry.BidAmount)
 		askAmount := fmt.Sprintf(`%f`, carry.AskAmount)
 		bidPrice := fmt.Sprintf(`%f`, carry.BidPrice)
@@ -119,7 +120,7 @@ var ProcessTurtle = func(symbol, market string) {
 			bidSide = model.OrderSideBuy
 			askAmount = fmt.Sprintf(`%f`, carry.AskAmount*3)
 			carry.SideType = model.CarryTypeTurtleBothBuy
-		} else if carry.BidAmount > money/carry.BidPrice {
+		} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
 			askSide = model.OrderSideSell
 			bidSide = model.OrderSideSell
 			bidAmount = fmt.Sprintf(`%f`, carry.BidAmount*3)
@@ -145,29 +146,31 @@ var ProcessTurtle = func(symbol, market string) {
 		model.CarryChannel <- *carry
 	} else {
 		carry = model.GetTurtleCarry(market, symbol)
-		if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] >= carry.BidPrice &&
-			model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] <= carry.AskPrice {
-		} else {
-			// 当前的ask价，比之前carry的bid价还低，或者反过来当前的bid价比之前carry的ask价还高
-			if model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0] < carry.BidPrice {
-				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				model.SetTurtleDealPrice(carry.BidWeb, symbol, carry.BidPrice)
-				util.Info(fmt.Sprintf(`[%s取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`, carry.Symbol,
-					carry.BidPrice, carry.AskPrice, carry.Amount,
-					model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
-					model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
-			} else if model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0] > carry.AskPrice {
-				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				model.SetTurtleDealPrice(carry.AskWeb, symbol, carry.AskPrice)
-				util.Info(fmt.Sprintf(`[%s取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
-					carry.BidPrice, carry.AskPrice, carry.Amount,
-					model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0],
-					model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]))
-			}
-			carry.DealBidAmount, _, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			carry.DealAskAmount, _, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-			util.Notice(fmt.Sprintf(`[%s捕获Turtle]ask: %f - bid %f`, carry.Symbol, carry.DealAskAmount, carry.DealBidAmount))
-			model.CarryChannel <- *carry
+		marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0]
+		marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]
+
+		// 当前的ask价，比之前carry的bid价还低，或者反过来当前的bid价比之前carry的ask价还高
+		if marketAskPrice < carry.BidPrice {
+			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+			model.SetTurtleDealPrice(carry.BidWeb, symbol, carry.BidPrice)
+			model.SetTurtleCarry(market, symbol, nil)
+			util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`, carry.Symbol,
+				carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
+		} else if marketBidPrice > carry.AskPrice {
+			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+			model.SetTurtleDealPrice(carry.AskWeb, symbol, carry.AskPrice)
+			model.SetTurtleCarry(market, symbol, nil)
+			util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
+				carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
+		} else if carry.SideType == model.CarryTypeTurtleBothSell && marketBidPrice < carry.BidPrice { // 價格未能夾住
+			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+			model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
+			model.SetTurtleCarry(market, symbol, nil)
+		} else if carry.SideType == model.CarryTypeTurtleBothBuy && marketAskPrice > carry.AskPrice {
+			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+			model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
 			model.SetTurtleCarry(market, symbol, nil)
 		}
 	}
