@@ -213,8 +213,11 @@ func QueryOrderCoinpark(orderId string) (dealAmount,dealPrice float64, status st
 func CancelOrderCoinpark(orderId string) (result bool, code, msg string) {
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/cancelTrade","body":{"orders_id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
-	orderJson, _ := util.NewJSON([]byte(responseBody))
 	util.Notice(orderId + `[cancel order]` + string(responseBody))
+	if strings.TrimSpace(string(responseBody)) == `` {
+		return
+	}
+	orderJson, _ := util.NewJSON([]byte(responseBody))
 	orderJson = orderJson.Get("result")
 	if orderJson == nil {
 		util.Notice(`no result in response coinpark ` + orderId)
