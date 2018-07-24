@@ -39,7 +39,7 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 	case model.Fcoin:
 		dealAmount, dealPrice, status = QueryOrderFcoin(symbol, orderId)
 	case model.Coinpark:
-		dealAmount,dealPrice, status = QueryOrderCoinpark(orderId)
+		dealAmount, dealPrice, status = QueryOrderCoinpark(orderId)
 	case model.Coinbig:
 		dealAmount, status = QueryOrderCoinbig(orderId)
 	}
@@ -102,7 +102,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, price, amount string) (ord
 		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, price, amount)
 		if errCode == `4003` {
 			util.Notice(`【發現4003錯誤】sleep 3 minutes`)
-			time.Sleep(time.Minute *3)
+			time.Sleep(time.Minute * 3)
 		}
 	case model.Coinbig:
 		orderId, errCode = placeOrderCoinbig(orderSide, orderType, symbol, price, amount)
@@ -164,14 +164,6 @@ func GetPrice(symbol string) (buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.NewConfig()
 	}
-	symbol = strings.TrimSpace(strings.ToLower(symbol))
-	if symbol == `cp_usdt` && model.ApplicationMarkets.BidAsks[symbol] != nil {
-		if model.ApplicationMarkets.BidAsks[symbol][model.Coinpark] != nil {
-			if model.ApplicationMarkets.BidAsks[symbol][model.Coinpark].Bids != nil {
-				return model.ApplicationMarkets.BidAsks[symbol][model.Coinpark].Bids[0][0], nil
-			}
-		}
-	}
 	strs := strings.Split(symbol, "_")
 	if len(strs) != 2 {
 		return 0, errors.New(`wrong symbol ` + symbol)
@@ -180,6 +172,12 @@ func GetPrice(symbol string) (buy float64, err error) {
 	strs[1] = strings.TrimSpace(strs[1])
 	if strs[0] == strs[1] {
 		return 1, nil
+	}
+	symbol = strings.TrimSpace(strings.ToLower(symbol))
+	for _, bidAsks := range model.ApplicationMarkets.BidAsks[symbol] {
+		if bidAsks.Bids != nil {
+			return bidAsks.Bids[0][0], nil
+		}
 	}
 	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
 		return model.CurrencyPrice[symbol], nil

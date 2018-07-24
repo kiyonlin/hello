@@ -395,7 +395,6 @@ func Maintain() {
 	go OuterCarryServe()
 	go InnerCarryServe()
 	go AccountHandlerServe()
-	model.ApplicationMarkets = model.NewMarkets()
 	go controller.ParameterServe()
 
 	carryHandlers := make([]api.CarryHandler, len(model.ApplicationConfig.Functions))

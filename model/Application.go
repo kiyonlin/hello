@@ -3,9 +3,9 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"hello/util"
 	"strings"
 	"sync"
-	"hello/util"
 )
 
 const OKEX = "okex"
@@ -15,7 +15,7 @@ const Fcoin = "fcoin"
 const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
-const Bitmex  = `bitmex`
+const Bitmex = `bitmex`
 
 const OrderTypeLimit = `limit`
 const OrderTypeMarket = `market`
@@ -36,7 +36,7 @@ var AccountChannel = make(chan map[string]*Account, 50)
 var InnerCarryChannel = make(chan Carry, 50)
 var RefreshCarryChannel = make(chan Carry, 50)
 
-var ApplicationMarkets *Markets
+var ApplicationMarkets = NewMarkets()
 var TurtleCarries = make(map[string]map[string]*Carry)    // market - symbol - *carry
 var turtleDealPrice = make(map[string]map[string]float64) // market - symbol - price
 
@@ -45,8 +45,8 @@ const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
 
 const CarryTypeTurtle = `turtle`
-const CarryTypeTurtleBothSell  = `turtle_both_sell`
-const CarryTypeTurtleBothBuy  = `turtle_both_buy`
+const CarryTypeTurtleBothSell = `turtle_both_sell`
+const CarryTypeTurtleBothBuy = `turtle_both_buy`
 
 var OrderStatusMap = map[string]string{
 	``: CarryStatusFail,
@@ -120,11 +120,11 @@ func SetTurtleDealPrice(market, symbol string, price float64) {
 	if turtleDealPrice[market] == nil {
 		turtleDealPrice[market] = make(map[string]float64)
 	}
-	if	turtleDealPrice[market][symbol] == 0 {
+	if turtleDealPrice[market][symbol] == 0 {
 		turtleDealPrice[market][symbol] = price
 	}
-	if turtleDealPrice[market][symbol] != 0 && price != 0{
-		if turtleDealPrice[market][symbol] / price > 1.1 || turtleDealPrice[market][symbol] / price < 0.9 {
+	if turtleDealPrice[market][symbol] != 0 && price != 0 {
+		if turtleDealPrice[market][symbol]/price > 1.1 || turtleDealPrice[market][symbol]/price < 0.9 {
 			util.Notice(fmt.Sprintf(`[禁止]price异常%s %s %f`, market, symbol, price))
 		} else {
 			turtleDealPrice[market][symbol] = price
