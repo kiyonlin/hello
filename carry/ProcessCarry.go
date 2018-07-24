@@ -168,8 +168,6 @@ var ProcessTurtle = func(symbol, market string) {
 				// do nothing
 			}
 		} else if carry.SideType == model.CarryTypeTurtleBothSell {
-			model.SetTurtleCarry(market, symbol, nil)
-			api.RefreshAccount(market)
 			if marketBidPrice < carry.BidPrice { // 價格未能夾住
 				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
@@ -180,9 +178,9 @@ var ProcessTurtle = func(symbol, market string) {
 				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
 			}
-		} else if carry.SideType == model.CarryTypeTurtleBothBuy {
 			model.SetTurtleCarry(market, symbol, nil)
 			api.RefreshAccount(market)
+		} else if carry.SideType == model.CarryTypeTurtleBothBuy {
 			if marketAskPrice > carry.AskPrice {
 				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
@@ -193,6 +191,8 @@ var ProcessTurtle = func(symbol, market string) {
 				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 				model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
 			}
+			model.SetTurtleCarry(market, symbol, nil)
+			api.RefreshAccount(market)
 		}
 	}
 }
