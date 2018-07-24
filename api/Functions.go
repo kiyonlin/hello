@@ -179,15 +179,16 @@ func GetPrice(symbol string) (buy float64, err error) {
 			return bidAsks.Bids[0][0], nil
 		}
 	}
-	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
-		return model.CurrencyPrice[symbol], nil
-	}
-	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
-	if strs[0] == `ft` || strs[1] == `ft` || model.ApplicationConfig.InChina == 1 {
-		return getBuyPriceFcoin(symbol)
-	}
-	if strings.ToUpper(strs[0]) == `BIX` || strings.ToUpper(strs[1]) == `BIX` {
-		return getBuyPriceCoinpark(symbol)
-	}
-	return getBuyPriceOkex(symbol)
+	//if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
+	//	return model.CurrencyPrice[symbol], nil
+	//}
+	//model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
+	//if strs[0] == `ft` || strs[1] == `ft` || model.ApplicationConfig.InChina == 1 {
+	//	return getBuyPriceFcoin(symbol)
+	//}
+	//if strings.ToUpper(strs[0]) == `BIX` || strings.ToUpper(strs[1]) == `BIX` {
+	//	return getBuyPriceCoinpark(symbol)
+	//}
+	//return getBuyPriceOkex(symbol)
+	return 0, nil
 }
