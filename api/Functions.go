@@ -149,6 +149,13 @@ func GetPrice(symbol string) (buy float64, err error) {
 		model.NewConfig()
 	}
 	symbol = strings.TrimSpace(strings.ToLower(symbol))
+	if symbol == `cp_usdt` && model.ApplicationMarkets.BidAsks[symbol] != nil {
+		if model.ApplicationMarkets.BidAsks[symbol][model.Coinpark] != nil {
+			if model.ApplicationMarkets.BidAsks[symbol][model.Coinpark].Bids != nil {
+				return model.ApplicationMarkets.BidAsks[symbol][model.Coinpark].Bids[0][0], nil
+			}
+		}
+	}
 	strs := strings.Split(symbol, "_")
 	if len(strs) != 2 {
 		return 0, errors.New(`wrong symbol ` + symbol)
