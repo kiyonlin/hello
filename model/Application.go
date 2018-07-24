@@ -243,7 +243,8 @@ type Config struct {
 func NewConfig() {
 	ApplicationConfig = &Config{}
 	ApplicationConfig.WSUrls = make(map[string]string)
-	ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
+	//ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
+	ApplicationConfig.WSUrls[Huobi] = `wss://api.huobi.br.com/ws`
 	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
 	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
@@ -255,7 +256,8 @@ func NewConfig() {
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
 	ApplicationConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
-	ApplicationConfig.RestUrls[Huobi] = "https://api.huobi.pro"
+	//ApplicationConfig.RestUrls[Huobi] = "https://api.huobi.pro"
+	ApplicationConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	ApplicationConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"
 	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
