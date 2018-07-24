@@ -244,11 +244,10 @@ func QueryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status stri
 	return dealAmount, dealPrice, status
 }
 
-func GetAccountHuobi(accounts *model.Accounts) {
+func getAccountHuobi(accounts *model.Accounts) {
 	if model.HuobiAccountId == `` {
 		model.HuobiAccountId, _ = GetSpotAccountId()
 	}
-	accounts.ClearAccounts(model.Huobi)
 	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountId)
 	postData := make(map[string]string)
 	postData["accountId-id"] = model.HuobiAccountId
@@ -280,5 +279,4 @@ func GetAccountHuobi(accounts *model.Accounts) {
 			}
 		}
 	}
-	Maintain(accounts, model.Huobi)
 }

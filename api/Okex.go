@@ -198,8 +198,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float6
 	return dealAmount, dealPrice, status
 }
 
-func GetAccountOkex(accounts *model.Accounts) {
-	accounts.ClearAccounts(model.OKEX)
+func getAccountOkex(accounts *model.Accounts) {
 	postData := url.Values{}
 	postData.Set("api_key", model.ApplicationConfig.OkexKey)
 	signOkex(&postData, model.ApplicationConfig.OkexSecret)
@@ -237,7 +236,6 @@ func GetAccountOkex(accounts *model.Accounts) {
 			account.Frozen = balance
 		}
 	}
-	Maintain(accounts, model.OKEX)
 }
 
 func getBuyPriceOkex(symbol string) (buy float64, err error) {

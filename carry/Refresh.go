@@ -18,15 +18,9 @@ var processing = false
 var handling = false
 
 func getAccount() {
-	switch model.GetMarkets()[0] {
-	case model.Coinpark:
-		api.GetAccountCoinpark(model.ApplicationAccounts)
-	case model.Fcoin:
-		api.GetAccountFcoin(model.ApplicationAccounts)
-	case model.Coinbig:
-		api.GetAccountCoinbig(model.ApplicationAccounts)
-	}
+	api.RefreshAccount(model.GetMarkets()[0])
 }
+
 func calcPrice(bidPrice, askPrice float64, precision int) (num float64, err error) {
 	str := strconv.FormatFloat(bidPrice+(askPrice-bidPrice)*1/2, 'f', precision, 64)
 	return strconv.ParseFloat(str, 64)

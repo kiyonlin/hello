@@ -47,20 +47,36 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 }
 
 func RefreshAccount(market string) {
+	accounts := model.ApplicationAccounts.GetAccounts(market)
+	model.ApplicationAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
-		GetAccountHuobi(model.ApplicationAccounts)
+		getAccountHuobi(model.ApplicationAccounts)
+		if accounts != nil {
+			same := true
+			for key, value := range accounts {
+				if value != model.ApplicationAccounts.GetAccount(market, key) {
+					same = false
+					break
+				}
+			}
+			if same {
+				time.Sleep(time.Second * 15)
+				getAccountHuobi(model.ApplicationAccounts)
+			}
+		}
 	case model.OKEX:
-		GetAccountOkex(model.ApplicationAccounts)
+		getAccountOkex(model.ApplicationAccounts)
 	case model.Binance:
-		GetAccountBinance(model.ApplicationAccounts)
+		getAccountBinance(model.ApplicationAccounts)
 	case model.Fcoin:
-		GetAccountFcoin(model.ApplicationAccounts)
+		getAccountFcoin(model.ApplicationAccounts)
 	case model.Coinpark:
-		GetAccountCoinpark(model.ApplicationAccounts)
+		getAccountCoinpark(model.ApplicationAccounts)
 	case model.Coinbig:
-		GetAccountCoinbig(model.ApplicationAccounts)
+		getAccountCoinbig(model.ApplicationAccounts)
 	}
+	Maintain(model.ApplicationAccounts, market)
 }
 
 // orderSide: OrderSideBuy OrderSideSell

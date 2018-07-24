@@ -91,8 +91,7 @@ func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
 	return responseBody
 }
 
-func GetAccountCoinbig(accounts *model.Accounts) {
-	accounts.ClearAccounts(model.Coinbig)
+func getAccountCoinbig(accounts *model.Accounts) {
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
 	responseBody := SignedRequestCoinbig(`POST`, `/userinfo`, postData)
@@ -130,7 +129,6 @@ func GetAccountCoinbig(accounts *model.Accounts) {
 			}
 		}
 	}
-	Maintain(accounts, model.Coinbig)
 }
 
 // orderType 买卖类型: 限价单(buy/sell) 市价单(buy_market/sell_market)

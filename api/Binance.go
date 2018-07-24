@@ -166,8 +166,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice flo
 	return dealAmount, dealPrice, status
 }
 
-func GetAccountBinance(accounts *model.Accounts) {
-	accounts.ClearAccounts(model.Binance)
+func getAccountBinance(accounts *model.Accounts) {
 	postData := url.Values{}
 	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
@@ -190,5 +189,4 @@ func GetAccountBinance(accounts *model.Accounts) {
 			}
 		}
 	}
-	Maintain(accounts, model.Binance)
 }

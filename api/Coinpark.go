@@ -111,8 +111,7 @@ func getBuyPriceCoinpark(symbol string) (float64, error) {
 	return 0, err
 }
 
-func GetAccountCoinpark(accounts *model.Accounts) {
-	accounts.ClearAccounts(model.Coinpark)
+func getAccountCoinpark(accounts *model.Accounts) {
 	cmds := `[{"cmd":"transfer/assets","body":{"select":1}}]`
 	responseBody := SignedRequestCoinpark(`POST`, `/transfer`, cmds)
 	accountJson, err := util.NewJSON(responseBody)
@@ -133,7 +132,6 @@ func GetAccountCoinpark(accounts *model.Accounts) {
 			}
 		}
 	}
-	Maintain(accounts, model.Coinpark)
 }
 
 // order_side 交易方向，1-买，2-卖
