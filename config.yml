@@ -21,8 +21,10 @@ dbconnection: host=10.10.102.65 port=5432 user=odoo dbname=odoo password=123456 
 #dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 
 #sammi huobi
-huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
-huobisecret: 05d114f3-6f455bf3-a640f2c4-06050
+#huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
+#huobisecret: 05d114f3-6f455bf3-a640f2c4-06050
+huobikey: f5be33c8-e44026c8-4db512d3-908b3
+huobisecret: 1826ba5a-022a7442-07a876f8-1075e
 #sammi okex
 okexkey: bb709a25-4d5b-4d9a-83ba-17cb514506fc
 okexsecret: 7D0E1B435964B96D72728215CB369CD7
