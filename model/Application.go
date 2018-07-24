@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 	"hello/util"
-	"time"
 )
 
 const OKEX = "okex"
@@ -108,10 +107,6 @@ func SetTurtleCarry(market, symbol string, turtleCarry *Carry) {
 		TurtleCarries[market] = make(map[string]*Carry)
 	}
 	TurtleCarries[market][symbol] = turtleCarry
-	if market == Coinpark && turtleCarry == nil {
-		util.Notice(`[coinpark休息三秒]`)
-		time.Sleep(time.Second * 3)
-	}
 }
 
 func GetTurtleDealPrice(market, symbol string) (price float64) {
