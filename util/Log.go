@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -54,7 +53,6 @@ func getPath(name string) string {
 }
 
 func SocketInfo(message string) {
-	fmt.Println(message)
 	if socketCount%10000 == 0 {
 		if socketInfoFile != nil {
 			socketInfoFile.Close()
@@ -66,7 +64,6 @@ func SocketInfo(message string) {
 }
 
 func Info(message string) {
-	//fmt.Println(message)
 	if infoCount%10000 == 0 {
 		if infoFile != nil {
 			infoFile.Close()
