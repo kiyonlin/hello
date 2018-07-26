@@ -24,7 +24,7 @@ yjsx_@163.com zaq1@WSX google: O6TIWJNTPSXJ34IV
 liwei6797@gmail.com google: DZJALMAW272LS6KA
 
 # coinpark
-haoweizh@qq.com zaq1@WSX
+haoweizh@qq.com zaq1@WSX google: NNUECSZRMZUGU3CONJRVM6CQGVEGWNZW
 yjsx_@163.com zaq1@WSX google: GVGWIVJZM5QWKMTRKYYHAL22GFIEY4DV
 ws820714@163.com google: OV4C6TKGNNQUCQJXOZRTOVTCKRGXANSG
 
