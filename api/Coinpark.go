@@ -33,6 +33,7 @@ var subscribeHandlerCoinpark = func(subscribes []string, conn *websocket.Conn) e
 
 func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
+		fmt.Println(string(event))
 		depthJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -184,7 +185,8 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 }
 
 //dealPrice 返回委托价格，市价单是0
-func QueryOrderCoinpark(orderId string) (dealAmount,dealPrice float64, status string) {
+func QueryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status string) {
+	fmt.Println(`query order ` + orderId)
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/order","body":{"id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	fmt.Println(`query order ` + string(responseBody))
