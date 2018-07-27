@@ -46,21 +46,21 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 		if symbol != "" && symbol != "_" {
 			bidAsk := model.BidAsk{}
 			bidsLen := len(json.Get("bids").MustArray()) / 2
-			bidAsk.Bids = make([][]float64, bidsLen)
+			bidAsk.Bids = make([]model.Tick, bidsLen)
 			for i := 0; i < bidsLen; i++ {
-				bidAsk.Bids[i] = make([]float64, 2)
-				bidAsk.Bids[i][0], _ = json.Get("bids").GetIndex(i * 2).Float64()
-				bidAsk.Bids[i][1], _ = json.Get("bids").GetIndex(i*2 + 1).Float64()
+				price, _ := json.Get("bids").GetIndex(i * 2).Float64()
+				amount, _ := json.Get("bids").GetIndex(i*2 + 1).Float64()
+				bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 			}
 			asksLen := len(json.Get("asks").MustArray()) / 2
-			bidAsk.Asks = make([][]float64, asksLen)
+			bidAsk.Asks = make([]model.Tick, asksLen)
 			for i := 0; i < asksLen; i++ {
-				bidAsk.Asks[i] = make([]float64, 2)
-				bidAsk.Asks[i][0], _ = json.Get("asks").GetIndex(i * 2).Float64()
-				bidAsk.Asks[i][1], _ = json.Get("asks").GetIndex(i*2 + 1).Float64()
+				price, _ := json.Get("asks").GetIndex(i * 2).Float64()
+				amount, _ := json.Get("asks").GetIndex(i*2 + 1).Float64()
+				bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 			}
 			sort.Sort(bidAsk.Asks)
-			sort.Reverse(bidAsk.Bids)
+			sort.Sort(sort.Reverse(bidAsk.Bids))
 			bidAsk.Ts = json.Get("ts").MustInt()
 			if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
 				for _, handler := range carryHandlers {
@@ -206,20 +206,20 @@ func getAccountFcoin(accounts *model.Accounts) {
 	}
 }
 
-func getBuyPriceFcoin(symbol string) (buy float64, err error) {
-	model.CurrencyPrice[symbol] = 0
-	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
-		``, nil)
-	if err == nil {
-		orderJson, err := util.NewJSON([]byte(responseBody))
-		if err == nil {
-			orderJson = orderJson.Get(`data`)
-			tickerType, _ := orderJson.Get(`type`).String()
-			if strings.Contains(tickerType, requestSymbol) {
-				model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
-			}
-		}
-	}
-	return model.CurrencyPrice[symbol], nil
-}
+//func getBuyPriceFcoin(symbol string) (buy float64, err error) {
+//	model.CurrencyPrice[symbol] = 0
+//	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
+//	responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
+//		``, nil)
+//	if err == nil {
+//		orderJson, err := util.NewJSON([]byte(responseBody))
+//		if err == nil {
+//			orderJson = orderJson.Get(`data`)
+//			tickerType, _ := orderJson.Get(`type`).String()
+//			if strings.Contains(tickerType, requestSymbol) {
+//				model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
+//			}
+//		}
+//	}
+//	return model.CurrencyPrice[symbol], nil
+//}

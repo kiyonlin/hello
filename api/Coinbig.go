@@ -44,20 +44,20 @@ func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, e
 				bidAsk := model.BidAsk{}
 				bids, _ := dataJson.Get(`data`).Get(`bids`).Array()
 				asks, _ := dataJson.Get(`data`).Get(`asks`).Array()
-				bidAsk.Bids = make([][]float64, len(bids))
-				bidAsk.Asks = make([][]float64, len(asks))
+				bidAsk.Bids = make([]model.Tick, len(bids))
+				bidAsk.Asks = make([]model.Tick, len(asks))
 				for key, value := range bids {
-					bidAsk.Bids[key] = make([]float64, 2)
-					bidAsk.Bids[key][0], _ = strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
-					bidAsk.Bids[key][1], _ = strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
+					price, _ := strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
+					amount, _ := strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
+					bidAsk.Bids[key] = model.Tick{Price:price, Amount:amount}
 				}
 				for key, value := range asks {
-					bidAsk.Asks[key] = make([]float64, 2)
-					bidAsk.Asks[key][0], _ = strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
-					bidAsk.Asks[key][1], _ = strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
+					price, _ := strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
+					amount, _ := strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
+					bidAsk.Asks[key] = model.Tick{Price:price, Amount:amount}
 				}
 				sort.Sort(bidAsk.Asks)
-				sort.Reverse(bidAsk.Bids)
+				sort.Sort(sort.Reverse(bidAsk.Bids))
 				realTimeQueue, _ := dataJson.Get(`data`).Get(`RealTimeQueue`).Array()
 				ts, _ := realTimeQueue[0].(map[string]interface{})[`createTime`].(json.Number).Int64()
 				bidAsk.Ts = int(ts)

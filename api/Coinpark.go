@@ -33,7 +33,6 @@ var subscribeHandlerCoinpark = func(subscribes []string, conn *websocket.Conn) e
 
 func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		fmt.Println(string(event))
 		depthJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -54,24 +53,24 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, 
 				bidAsk := model.BidAsk{Ts: int(time)}
 				askArray := data[`asks`].([]interface{})
 				bidArray := data[`bids`].([]interface{})
-				bidAsk.Asks = make([][]float64, len(askArray))
-				bidAsk.Bids = make([][]float64, len(bidArray))
+				bidAsk.Asks = make([]model.Tick, len(bidArray))
+				bidAsk.Bids = make([]model.Tick, len(askArray))
 				for i, value := range bidArray {
-					bidAsk.Bids[i] = make([]float64, 2)
 					str := value.(map[string]interface{})["price"].(string)
-					bidAsk.Bids[i][0], _ = strconv.ParseFloat(str, 10)
+					price, _ := strconv.ParseFloat(str, 10)
 					str = value.(map[string]interface{})["volume"].(string)
-					bidAsk.Bids[i][1], _ = strconv.ParseFloat(str, 10)
+					amount, _ := strconv.ParseFloat(str, 10)
+					bidAsk.Bids[i] = model.Tick{Price:price, Amount:amount}
 				}
 				for i, value := range askArray {
-					bidAsk.Asks[i] = make([]float64, 2)
 					str := value.(map[string]interface{})["price"].(string)
-					bidAsk.Asks[i][0], _ = strconv.ParseFloat(str, 10)
+					price, _ := strconv.ParseFloat(str, 10)
 					str = value.(map[string]interface{})["volume"].(string)
-					bidAsk.Asks[i][1], _ = strconv.ParseFloat(str, 10)
+					amount, _ := strconv.ParseFloat(str, 10)
+					bidAsk.Asks[i] = model.Tick{Price:price, Amount:amount}
 				}
 				sort.Sort(bidAsk.Asks)
-				sort.Reverse(bidAsk.Bids)
+				sort.Sort(sort.Reverse(bidAsk.Bids))
 				if markets.SetBidAsk(symbol, model.Coinpark, &bidAsk) {
 					for _, handler := range carryHandlers {
 						handler(symbol, model.Coinpark)
@@ -116,6 +115,9 @@ func getAccountCoinpark(accounts *model.Accounts) {
 	cmds := `[{"cmd":"transfer/assets","body":{"select":1}}]`
 	responseBody := SignedRequestCoinpark(`POST`, `/transfer`, cmds)
 	accountJson, err := util.NewJSON(responseBody)
+	if accountJson == nil {
+		return
+	}
 	if err == nil {
 		results, err := accountJson.Get("result").Array()
 		if err == nil && len(results) > 0 {
@@ -165,6 +167,9 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	util.Notice(`[place order]` + string(responseBody))
 	orderJson, _ := util.NewJSON([]byte(responseBody))
+	if orderJson == nil {
+		return
+	}
 	if orderJson.Get(`result`) != nil {
 		results, err := orderJson.Get("result").Array()
 		if err == nil && len(results) > 0 {
@@ -186,13 +191,14 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 
 //dealPrice 返回委托价格，市价单是0
 func QueryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status string) {
-	fmt.Println(`query order ` + orderId)
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/order","body":{"id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
-	fmt.Println(`query order ` + string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	util.Notice(string(responseBody))
 	results, err := orderJson.Get("result").Array()
+	if orderJson == nil {
+		return
+	}
 	if err == nil && len(results) > 0 {
 		resultData := results[0].(map[string]interface{})[`result`]
 		if resultData != nil {
@@ -219,6 +225,9 @@ func CancelOrderCoinpark(orderId string) (result bool, code, msg string) {
 		return
 	}
 	orderJson, _ := util.NewJSON([]byte(responseBody))
+	if orderJson == nil {
+		util.Notice(`no result in response coinpark ` + orderId)
+	}
 	orderJson = orderJson.Get("result")
 	if orderJson == nil {
 		util.Notice(`no result in response coinpark ` + orderId)

@@ -64,7 +64,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 	errHandler ErrHandler) (chan struct{}, error) {
 	c, err := newConnection(url)
 	if err != nil {
-		util.SocketInfo("can not create web socket")
+		util.SocketInfo("can not create web socket" + err.Error())
 		errHandler(err)
 		return nil, err
 	}

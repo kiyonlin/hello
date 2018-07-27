@@ -1,15 +1,22 @@
 package model
 
-type PriceAmount [][]float64
+type Ticks []Tick
 
-func (priceAmount PriceAmount) Len() int {
-	return len(priceAmount)
+type Tick struct {
+	Id string
+	Symbol string
+	Price float64
+	Amount float64
 }
 
-func (priceAmount PriceAmount) Swap(i, j int) {
-	priceAmount[i], priceAmount[j] = priceAmount[j], priceAmount[i]
+func (ticks Ticks) Len() int {
+	return len(ticks)
 }
 
-func (priceAmount PriceAmount) Less(i, j int) bool {
-	return priceAmount[i][0] < priceAmount[j][0]
+func (ticks Ticks) Swap(i, j int) {
+	ticks[i], ticks[j] = ticks[j], ticks[i]
+}
+
+func (ticks Ticks) Less(i, j int) bool {
+	return ticks[i].Price < ticks[j].Price
 }

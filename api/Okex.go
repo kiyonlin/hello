@@ -58,21 +58,20 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 				symbol := model.GetSymbol(model.OKEX, message.Channel)
 				if symbol != "" {
 					bidAsk := model.BidAsk{}
-					bidAsk.Asks = make([][]float64, len(message.Data.Asks))
-					bidAsk.Bids = make([][]float64, len(message.Data.Bids))
+					bidAsk.Asks = make([]model.Tick, len(message.Data.Asks))
+					bidAsk.Bids = make([]model.Tick, len(message.Data.Bids))
 					for i, v := range message.Data.Bids {
 						price, _ := strconv.ParseFloat(v[0], 64)
 						amount, _ := strconv.ParseFloat(v[1], 64)
-						bidAsk.Bids[i] = []float64{price, amount}
+						bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 					}
 					for i, v := range message.Data.Asks {
 						price, _ := strconv.ParseFloat(v[0], 64)
 						amount, _ := strconv.ParseFloat(v[1], 64)
-						bidAsk.Asks[i] = []float64{price, amount}
+						bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 					}
-					//bidAsk.Bids = message.Data.Bids
 					sort.Sort(bidAsk.Asks)
-					sort.Reverse(bidAsk.Bids)
+					sort.Sort(sort.Reverse(bidAsk.Bids))
 					bidAsk.Ts = message.Data.Timestamp
 					if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
 						for _, handler := range carryHandlers {
@@ -238,16 +237,16 @@ func getAccountOkex(accounts *model.Accounts) {
 	}
 }
 
-func getBuyPriceOkex(symbol string) (buy float64, err error) {
-	model.CurrencyPrice[symbol] = 0
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+
-		"/ticker.do?symbol="+symbol, "", headers)
-	tickerJson, err := util.NewJSON(responseBody)
-	if err == nil {
-		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
-		model.CurrencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
-	}
-	return model.CurrencyPrice[symbol], err
-}
+//func getBuyPriceOkex(symbol string) (buy float64, err error) {
+//	model.CurrencyPrice[symbol] = 0
+//	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+//		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+//	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+
+//		"/ticker.do?symbol="+symbol, "", headers)
+//	tickerJson, err := util.NewJSON(responseBody)
+//	if err == nil {
+//		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
+//		model.CurrencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
+//	}
+//	return model.CurrencyPrice[symbol], err
+//}

@@ -33,27 +33,27 @@ func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, e
 		if symbol != "" {
 			bidAsk := model.BidAsk{}
 			bidsLen := len(json.Get("b").MustArray())
-			bidAsk.Bids = make([][]float64, bidsLen)
+			bidAsk.Bids = make([]model.Tick, bidsLen)
 			for i := 0; i < bidsLen; i++ {
 				item := json.Get("b").GetIndex(i)
-				bidAsk.Bids[i] = make([]float64, 2)
 				strPrice, _ := item.GetIndex(0).String()
 				strAmount, _ := item.GetIndex(1).String()
-				bidAsk.Bids[i][0], _ = strconv.ParseFloat(strPrice, 64)
-				bidAsk.Bids[i][1], _ = strconv.ParseFloat(strAmount, 64)
+				price, _ := strconv.ParseFloat(strPrice, 64)
+				amount, _ := strconv.ParseFloat(strAmount, 64)
+				bidAsk.Bids[i] = model.Tick{Price: price, Amount:amount}
 			}
 			asksLen := len(json.Get("a").MustArray())
-			bidAsk.Asks = make([][]float64, asksLen)
+			bidAsk.Asks = make([]model.Tick, asksLen)
 			for i := 0; i < asksLen; i++ {
 				item := json.Get("a").GetIndex(i)
-				bidAsk.Asks[i] = make([]float64, 2)
 				strPrice, _ := item.GetIndex(0).String()
 				strAmount, _ := item.GetIndex(1).String()
-				bidAsk.Asks[i][0], _ = strconv.ParseFloat(strPrice, 64)
-				bidAsk.Asks[i][1], _ = strconv.ParseFloat(strAmount, 64)
+				price, _ := strconv.ParseFloat(strPrice, 64)
+				amount, _ := strconv.ParseFloat(strAmount, 64)
+				bidAsk.Asks[i] = model.Tick{Price:price, Amount:amount}
 			}
 			sort.Sort(bidAsk.Asks)
-			sort.Reverse(bidAsk.Bids)
+			sort.Sort(sort.Reverse(bidAsk.Bids))
 			bidAsk.Ts = json.Get("E").MustInt()
 			if markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
 				for _, handler := range carryHandlers {

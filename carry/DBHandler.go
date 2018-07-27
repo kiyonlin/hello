@@ -47,9 +47,14 @@ func InnerCarryServe() {
 	}
 }
 
+var accountServing = false
 func AccountHandlerServe() {
 	for true {
 		accounts := <-model.AccountChannel
+		if accountServing {
+			continue
+		}
+		accountServing = true
 		cleared := false
 		for _, value := range accounts {
 			//util.Info(fmt.Sprintf(`%s add account %s %f`, value.Market, value.Currency, value.PriceInUsdt))
@@ -61,6 +66,7 @@ func AccountHandlerServe() {
 			}
 			model.ApplicationDB.Create(value)
 		}
+		accountServing = false
 	}
 }
 

@@ -151,8 +151,8 @@ var ProcessTurtle = func(symbol, market string) {
 		model.CarryChannel <- *carry
 	} else {
 		carry = model.GetTurtleCarry(market, symbol)
-		marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0][0]
-		marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]
+		marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
+		marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
 		if carry.SideType == model.CarryTypeTurtle {
 			if marketAskPrice < carry.BidPrice {
 				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
@@ -338,6 +338,8 @@ func createServer(markets *model.Markets, carryHandlers []api.CarryHandler, mark
 		channel, err = api.WsDepthServeCoinpark(markets, carryHandlers, WSErrHandler)
 	case model.Coinbig:
 		channel, err = api.WsDepthServeCoinbig(markets, carryHandlers, WSErrHandler)
+	case model.Bitmex:
+		channel, err = api.WsDepthServeBitmex(markets, carryHandlers, WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())

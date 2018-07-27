@@ -75,10 +75,16 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 			symbol := model.GetSymbol(model.Huobi, message.Ch)
 			if symbol != "" {
 				bidAsk := model.BidAsk{}
-				bidAsk.Asks = message.Tick.Asks
-				bidAsk.Bids = message.Tick.Bids
+				bidAsk.Asks = make([]model.Tick, len(message.Tick.Asks))
+				bidAsk.Bids = make([]model.Tick, len(message.Tick.Bids))
+				for key, value := range message.Tick.Asks {
+					bidAsk.Asks[key] = model.Tick{Price:value[0], Amount:value[1]}
+				}
+				for key, value := range message.Tick.Bids {
+					bidAsk.Bids[key] = model.Tick{Price:value[0], Amount:value[1]}
+				}
 				sort.Sort(bidAsk.Asks)
-				sort.Reverse(bidAsk.Bids)
+				sort.Sort(sort.Reverse(bidAsk.Bids))
 				bidAsk.Ts = message.Ts
 				if markets.SetBidAsk(symbol, model.Huobi, &bidAsk) {
 					for _, handler := range carryHandlers {

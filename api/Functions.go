@@ -23,6 +23,8 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 		return CancelOrderCoinpark(orderId)
 	case model.Coinbig:
 		return CancelOrderCoinbig(orderId)
+	case model.Bitmex:
+		return CancelOrderBitmex(orderId)
 	}
 	return false, `market-not-supported`, `market not supported ` + market
 }
@@ -42,6 +44,8 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 		dealAmount, dealPrice, status = QueryOrderCoinpark(orderId)
 	case model.Coinbig:
 		dealAmount, status = QueryOrderCoinbig(orderId)
+	case model.Bitmex:
+		dealAmount, dealPrice, status = QueryOrderBitmex(orderId)
 	}
 	return dealAmount, dealPrice, status
 }
@@ -75,6 +79,8 @@ func RefreshAccount(market string) {
 		getAccountCoinpark(model.ApplicationAccounts)
 	case model.Coinbig:
 		getAccountCoinbig(model.ApplicationAccounts)
+	case model.Bitmex:
+		getAccountBitmex(model.ApplicationAccounts)
 	}
 	Maintain(model.ApplicationAccounts, market)
 }
@@ -106,6 +112,8 @@ func PlaceOrder(orderSide, orderType, market, symbol, price, amount string) (ord
 		}
 	case model.Coinbig:
 		orderId, errCode = placeOrderCoinbig(orderSide, orderType, symbol, price, amount)
+	case model.Bitmex:
+		orderId, errCode = placeOrderBitmex(orderSide, orderType, symbol, price, amount)
 	}
 	if orderId == "0" || orderId == "" {
 		status = model.CarryStatusFail
@@ -176,7 +184,7 @@ func GetPrice(symbol string) (buy float64, err error) {
 	symbol = strings.TrimSpace(strings.ToLower(symbol))
 	for _, bidAsks := range model.ApplicationMarkets.BidAsks[symbol] {
 		if bidAsks.Bids != nil {
-			return bidAsks.Bids[0][0], nil
+			return bidAsks.Bids[0].Price, nil
 		}
 	}
 	//if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {

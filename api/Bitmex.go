@@ -5,18 +5,25 @@ import (
 	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
-)
+	"sort"
+	"encoding/json"
+	)
 
 var subscribeHandlerBitmex = func(subscribes []string, conn *websocket.Conn) error {
 	var err error = nil
-	subscribes = []string{`XBTU18`}
 	for _, v := range subscribes {
-		subscribeMsg := fmt.Sprintf(`{"op": "subscribe", "args": ["orderBookL2:%s"]}`, v)
-		err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMsg))
+		subBook := fmt.Sprintf(`{"op": "subscribe", "args": ["orderBookL2:%s"]}`, v)
+		err = conn.WriteMessage(websocket.TextMessage, []byte(subBook))
 		if err != nil {
 			util.SocketInfo("bitmex can not subscribe " + err.Error())
 			return err
 		}
+		//subOrder := fmt.Sprintf(`{"op": "subscribe", "args": ["order:%s"]}`, v)
+		//err = conn.WriteMessage(websocket.TextMessage, []byte(subOrder))
+		//if err != nil {
+		//	util.SocketInfo("bitmex can not subscribe " + err.Error())
+		//	return err
+		//}
 	}
 	return err
 }
@@ -30,15 +37,44 @@ func WsDepthServeBitmex(markets *model.Markets, carryHandlers []CarryHandler, er
 				util.SocketInfo("bitmex server ping client error " + err.Error())
 			}
 		}
+		if len(event) == 0 {
+			return
+		}
 		fmt.Println(string(event))
-		//depthJson, err := util.NewJSON(event)
-		//if err != nil {
-		//	errHandler(err)
-		//	return
-		//}
-		//if depthJson == nil {
-		//	return
-		//}
+		depthJson, depthErr := util.NewJSON(event)
+		if depthJson == nil {
+			return
+		}
+		action, actionErr := depthJson.Get(`action`).String()
+		data, dataErr := depthJson.Get(`data`).Array()
+		if depthErr != nil || actionErr != nil || dataErr != nil || data == nil {
+			util.SocketInfo(`bitmex parse err` + string(event))
+			return
+		}
+		switch action {
+		case `partial`:
+			bidAsks := model.BidAsk{Ts: int(util.GetNowUnixMillion())}
+			bidAsks.Asks = model.Ticks{}
+			bidAsks.Bids = model.Ticks{}
+			for _, value := range data {
+				symbol, _ := value.(map[string]interface{})[`symbol`].(string)
+				id, _ := value.(map[string]interface{})[`id`].(json.Number).Int64()
+				side, _ := value.(map[string]interface{})[`side`].(string)
+				size, _ := value.(map[string]interface{})[`size`].(json.Number).Float64()
+				price, _ := value.(map[string]interface{})[`price`].(json.Number).Float64()
+				bidAsk := model.Tick{Id: fmt.Sprintf(`%d`, id), Price: price, Amount: size, Symbol: symbol}
+				if side == `Buy` {
+					bidAsks.Bids = append(bidAsks.Bids, bidAsk)
+				} else if side == `Sell` {
+					bidAsks.Asks = append(bidAsks.Asks, bidAsk)
+				}
+			}
+			sort.Sort(bidAsks.Asks)
+			sort.Sort(sort.Reverse(bidAsks.Bids))
+		case `update`:
+		case `insert`:
+		case `delete`:
+		}
 		//depthArray, err := depthJson.Array()
 		//if err == nil && len(depthArray) > 0 {
 		//	data := depthArray[0].(map[string]interface{})[`data`].(map[string]interface{})
@@ -79,4 +115,23 @@ func WsDepthServeBitmex(markets *model.Markets, carryHandlers []CarryHandler, er
 	}
 	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Bitmex],
 		model.GetSubscribes(model.Bitmex), subscribeHandlerBitmex, wsHandler, errHandler)
+}
+
+func CancelOrderBitmex(orderId string) (result bool, errCode, msg string) {
+	fmt.Println(orderId)
+	return true, ``, ``
+}
+
+func QueryOrderBitmex(orderId string) (dealAmount, dealPrice float64, status string) {
+	fmt.Println(orderId)
+	return 0, 0, ``
+}
+
+func getAccountBitmex(accounts *model.Accounts) {
+	fmt.Println(accounts.TotalInUsdt)
+}
+
+func placeOrderBitmex(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+	fmt.Println(fmt.Sprintf(`%s%s%s%s%s`, orderSide, orderType, symbol, price, amount))
+	return ``, ``
 }

@@ -11,8 +11,8 @@ import (
 
 type BidAsk struct {
 	Ts   int
-	Bids PriceAmount
-	Asks PriceAmount
+	Bids Ticks
+	Asks Ticks
 }
 
 type Rule struct {
@@ -58,8 +58,8 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 		bidPrice = lastDealPrice - priceWidth
 		askPrice = lastDealPrice + priceWidth
 	} else {
-		bidPrice = bidAsks.Asks[0][0] - priceWidth
-		askPrice = bidAsks.Asks[0][0] + priceWidth
+		bidPrice = bidAsks.Asks[0].Price - priceWidth
+		askPrice = bidAsks.Asks[0].Price + priceWidth
 	}
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
 		BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking, DealAskStatus: CarryStatusWorking,
@@ -77,15 +77,15 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		if v == nil {
 			continue
 		}
-		if len(v.Bids) > 0 && carry.AskPrice < v.Bids[0][0] {
-			carry.AskPrice = v.Bids[0][0]
-			carry.AskAmount = v.Bids[0][1]
+		if len(v.Bids) > 0 && carry.AskPrice < v.Bids[0].Price {
+			carry.AskPrice = v.Bids[0].Price
+			carry.AskAmount = v.Bids[0].Amount
 			carry.AskWeb = k
 			carry.AskTime = int64(v.Ts)
 		}
-		if len(v.Asks) > 0 && (carry.BidPrice == 0 || carry.BidPrice > v.Asks[0][0]) {
-			carry.BidPrice = v.Asks[0][0]
-			carry.BidAmount = v.Asks[0][1]
+		if len(v.Asks) > 0 && (carry.BidPrice == 0 || carry.BidPrice > v.Asks[0].Price) {
+			carry.BidPrice = v.Asks[0].Price
+			carry.BidAmount = v.Asks[0].Amount
 			carry.BidWeb = k
 			carry.BidTime = int64(v.Ts)
 		}
