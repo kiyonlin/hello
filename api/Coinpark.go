@@ -53,8 +53,8 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, 
 				bidAsk := model.BidAsk{Ts: int(time)}
 				askArray := data[`asks`].([]interface{})
 				bidArray := data[`bids`].([]interface{})
-				bidAsk.Asks = make([]model.Tick, len(bidArray))
-				bidAsk.Bids = make([]model.Tick, len(askArray))
+				bidAsk.Asks = make([]model.Tick, len(askArray))
+				bidAsk.Bids = make([]model.Tick, len(bidArray))
 				for i, value := range bidArray {
 					str := value.(map[string]interface{})["price"].(string)
 					price, _ := strconv.ParseFloat(str, 10)
