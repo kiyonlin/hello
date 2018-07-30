@@ -89,7 +89,6 @@ func RefreshAccount(market string) {
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol, price, amount string) (orderId, errCode, status string) {
-	return ``, ``, ``
 	if strings.Contains(price, `.`) {
 		price = strings.TrimRight(price, `0`)
 	}
