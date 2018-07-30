@@ -60,14 +60,14 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, 
 					price, _ := strconv.ParseFloat(str, 10)
 					str = value.(map[string]interface{})["volume"].(string)
 					amount, _ := strconv.ParseFloat(str, 10)
-					bidAsk.Bids[i] = model.Tick{Price:price, Amount:amount}
+					bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 				}
 				for i, value := range askArray {
 					str := value.(map[string]interface{})["price"].(string)
 					price, _ := strconv.ParseFloat(str, 10)
 					str = value.(map[string]interface{})["volume"].(string)
 					amount, _ := strconv.ParseFloat(str, 10)
-					bidAsk.Asks[i] = model.Tick{Price:price, Amount:amount}
+					bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 				}
 				sort.Sort(bidAsk.Asks)
 				sort.Sort(sort.Reverse(bidAsk.Bids))
@@ -91,22 +91,23 @@ func SignedRequestCoinpark(method, path, cmds string) []byte {
 	postData.Set("cmds", cmds)
 	postData.Set("apikey", model.ApplicationConfig.CoinparkKey)
 	postData.Set("sign", sign)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest(method, model.ApplicationConfig.RestUrls[model.Coinpark]+path,
 		postData.Encode(), headers)
 	return responseBody
 }
 
 func getBuyPriceCoinpark(symbol string) (float64, error) {
-	cmd := fmt.Sprintf(`[{"cmd":"api/ticker","body":{"pair":"%s"}}]`, strings.ToUpper(symbol))
-	responseBody := SignedRequestCoinpark(`POST`, "/mdata", cmd)
+	symbol = strings.ToUpper(symbol)
+	//cmd := fmt.Sprintf(`[{"cmd":"api/ticker","body":{"pair":"%s"}}]`, strings.ToUpper(symbol))
+	//responseBody := SignedRequestCoinpark(`POST`, "/mdata", cmd)
+	responseBody, _ := util.HttpRequest(`GET`, fmt.Sprintf(`%s/mdata?cmd=ticker&pair=%s`,
+		model.ApplicationConfig.RestUrls[model.Coinpark], symbol), ``, nil)
 	accountJson, err := util.NewJSON(responseBody)
 	if err == nil {
-		results, err := accountJson.Get("result").Array()
-		if err == nil && len(results) > 0 {
-			strPrice := results[0].(map[string]interface{})["result"].(map[string]interface{})[`buy`].(string)
-			return strconv.ParseFloat(strPrice, 10)
-		}
+		strPrice, _ := accountJson.GetPath("result", `last`).String()
+		return strconv.ParseFloat(strPrice, 10)
 	}
 	return 0, err
 }

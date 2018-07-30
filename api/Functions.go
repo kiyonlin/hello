@@ -172,7 +172,6 @@ func GetPrice(symbol string) (buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.NewConfig()
 	}
-	symbol = strings.ToUpper(symbol)
 	strs := strings.Split(symbol, "_")
 	if len(strs) != 2 {
 		return 0, errors.New(`wrong symbol ` + symbol)
