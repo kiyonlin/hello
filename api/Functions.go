@@ -176,8 +176,8 @@ func GetPrice(symbol string) (buy float64, err error) {
 	if len(strs) != 2 {
 		return 0, errors.New(`wrong symbol ` + symbol)
 	}
-	strs[0] = strings.TrimSpace(strs[0])
-	strs[1] = strings.TrimSpace(strs[1])
+	strs[0] = strings.ToUpper(strings.TrimSpace(strs[0]))
+	strs[1] = strings.ToUpper(strings.TrimSpace(strs[1]))
 	if strs[0] == strs[1] {
 		return 1, nil
 	}
@@ -191,11 +191,11 @@ func GetPrice(symbol string) (buy float64, err error) {
 		return model.CurrencyPrice[symbol], nil
 	}
 	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
-	if strs[0] == `FT` || strs[1] == `FT` || model.ApplicationConfig.InChina == 1 {
-		return getBuyPriceFcoin(symbol)
-	}
 	if strs[0] == `BIX` || strs[1] == `BIX` || strs[0] == `CP` || strs[1] == `CP` {
 		return getBuyPriceCoinpark(symbol)
+	}
+	if strs[0] == `FT` || strs[1] == `FT` || model.ApplicationConfig.InChina == 1 {
+		return getBuyPriceFcoin(symbol)
 	}
 	return getBuyPriceOkex(symbol)
 }
