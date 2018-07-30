@@ -398,7 +398,6 @@ func Maintain() {
 	model.ApplicationDB.AutoMigrate(&model.Account{})
 	model.ApplicationDB.AutoMigrate(&model.Setting{})
 	model.LoadSettings()
-	go RefreshAccounts()
 	go OuterCarryServe()
 	go InnerCarryServe()
 	go AccountHandlerServe()
@@ -408,6 +407,7 @@ func Maintain() {
 	for i, value := range model.ApplicationConfig.Functions {
 		switch value {
 		case `carry`:
+			go RefreshAccounts()
 			go MaintainOrders()
 			carryHandlers[i] = ProcessCarry
 		case `turtle`:

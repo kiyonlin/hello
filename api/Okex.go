@@ -237,16 +237,16 @@ func getAccountOkex(accounts *model.Accounts) {
 	}
 }
 
-//func getBuyPriceOkex(symbol string) (buy float64, err error) {
-//	model.CurrencyPrice[symbol] = 0
-//	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-//		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-//	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+
-//		"/ticker.do?symbol="+symbol, "", headers)
-//	tickerJson, err := util.NewJSON(responseBody)
-//	if err == nil {
-//		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
-//		model.CurrencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
-//	}
-//	return model.CurrencyPrice[symbol], err
-//}
+func getBuyPriceOkex(symbol string) (buy float64, err error) {
+	model.CurrencyPrice[symbol] = 0
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+
+		"/ticker.do?symbol="+symbol, "", headers)
+	tickerJson, err := util.NewJSON(responseBody)
+	if err == nil {
+		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
+		model.CurrencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
+	}
+	return model.CurrencyPrice[symbol], err
+}

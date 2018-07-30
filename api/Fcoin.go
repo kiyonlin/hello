@@ -206,20 +206,20 @@ func getAccountFcoin(accounts *model.Accounts) {
 	}
 }
 
-//func getBuyPriceFcoin(symbol string) (buy float64, err error) {
-//	model.CurrencyPrice[symbol] = 0
-//	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
-//	responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
-//		``, nil)
-//	if err == nil {
-//		orderJson, err := util.NewJSON([]byte(responseBody))
-//		if err == nil {
-//			orderJson = orderJson.Get(`data`)
-//			tickerType, _ := orderJson.Get(`type`).String()
-//			if strings.Contains(tickerType, requestSymbol) {
-//				model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
-//			}
-//		}
-//	}
-//	return model.CurrencyPrice[symbol], nil
-//}
+func getBuyPriceFcoin(symbol string) (buy float64, err error) {
+	model.CurrencyPrice[symbol] = 0
+	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
+		``, nil)
+	if err == nil {
+		orderJson, err := util.NewJSON([]byte(responseBody))
+		if err == nil {
+			orderJson = orderJson.Get(`data`)
+			tickerType, _ := orderJson.Get(`type`).String()
+			if strings.Contains(tickerType, requestSymbol) {
+				model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
+			}
+		}
+	}
+	return model.CurrencyPrice[symbol], nil
+}

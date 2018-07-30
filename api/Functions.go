@@ -89,6 +89,7 @@ func RefreshAccount(market string) {
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol, price, amount string) (orderId, errCode, status string) {
+	return ``, ``, ``
 	if strings.Contains(price, `.`) {
 		price = strings.TrimRight(price, `0`)
 	}
@@ -172,6 +173,7 @@ func GetPrice(symbol string) (buy float64, err error) {
 	if model.ApplicationConfig == nil {
 		model.NewConfig()
 	}
+	symbol = strings.ToUpper(symbol)
 	strs := strings.Split(symbol, "_")
 	if len(strs) != 2 {
 		return 0, errors.New(`wrong symbol ` + symbol)
@@ -187,16 +189,15 @@ func GetPrice(symbol string) (buy float64, err error) {
 			return bidAsks.Bids[0].Price, nil
 		}
 	}
-	//if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
-	//	return model.CurrencyPrice[symbol], nil
-	//}
-	//model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
-	//if strs[0] == `ft` || strs[1] == `ft` || model.ApplicationConfig.InChina == 1 {
-	//	return getBuyPriceFcoin(symbol)
-	//}
-	//if strings.ToUpper(strs[0]) == `BIX` || strings.ToUpper(strs[1]) == `BIX` {
-	//	return getBuyPriceCoinpark(symbol)
-	//}
-	//return getBuyPriceOkex(symbol)
-	return 0, nil
+	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
+		return model.CurrencyPrice[symbol], nil
+	}
+	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
+	if strs[0] == `FT` || strs[1] == `FT` || model.ApplicationConfig.InChina == 1 {
+		return getBuyPriceFcoin(symbol)
+	}
+	if strs[0] == `BIX` || strs[1] == `BIX` || strs[0] == `CP` || strs[1] == `CP` {
+		return getBuyPriceCoinpark(symbol)
+	}
+	return getBuyPriceOkex(symbol)
 }

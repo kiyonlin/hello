@@ -97,19 +97,19 @@ func SignedRequestCoinpark(method, path, cmds string) []byte {
 	return responseBody
 }
 
-//func getBuyPriceCoinpark(symbol string) (float64, error) {
-//	cmd := fmt.Sprintf(`[{"cmd":"api/ticker","body":{"pair":"%s"}}]`, strings.ToUpper(symbol))
-//	responseBody := SignedRequestCoinpark(`POST`, "/mdata", cmd)
-//	accountJson, err := util.NewJSON(responseBody)
-//	if err == nil {
-//		results, err := accountJson.Get("result").Array()
-//		if err == nil && len(results) > 0 {
-//			strPrice := results[0].(map[string]interface{})["result"].(map[string]interface{})[`buy`].(string)
-//			return strconv.ParseFloat(strPrice, 10)
-//		}
-//	}
-//	return 0, err
-//}
+func getBuyPriceCoinpark(symbol string) (float64, error) {
+	cmd := fmt.Sprintf(`[{"cmd":"api/ticker","body":{"pair":"%s"}}]`, strings.ToUpper(symbol))
+	responseBody := SignedRequestCoinpark(`POST`, "/mdata", cmd)
+	accountJson, err := util.NewJSON(responseBody)
+	if err == nil {
+		results, err := accountJson.Get("result").Array()
+		if err == nil && len(results) > 0 {
+			strPrice := results[0].(map[string]interface{})["result"].(map[string]interface{})[`buy`].(string)
+			return strconv.ParseFloat(strPrice, 10)
+		}
+	}
+	return 0, err
+}
 
 func getAccountCoinpark(accounts *model.Accounts) {
 	cmds := `[{"cmd":"transfer/assets","body":{"select":1}}]`

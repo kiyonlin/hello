@@ -23,8 +23,8 @@ const OrderSideBuy = `buy`
 const OrderSideSell = `sell`
 
 var HuobiAccountId = ""
-//var CurrencyPrice = make(map[string]float64)
-//var GetBuyPriceTime = make(map[string]int64)
+var CurrencyPrice = make(map[string]float64)
+var GetBuyPriceTime = make(map[string]int64)
 
 var ApplicationConfig *Config
 
