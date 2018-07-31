@@ -4,6 +4,8 @@ functions:
 #- carry
 - turtle
 
+bnbmin: 505
+bnbbuy: 5
 delay: 6000 #按照毫秒计算时间差
 channelslot: 200000 #按照毫秒计算的检查时间间隔
 channels: 1

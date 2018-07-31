@@ -57,8 +57,6 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 	}
 	coin := leftAccount.Free
 	money := rightAccount.Free
-	bidAmount := strconv.FormatFloat(carry.BidAmount, 'f', util.GetPrecision(carry.BidAmount), 64)
-	askAmount := strconv.FormatFloat(carry.AskAmount, 'f', util.GetPrecision(carry.AskAmount), 64)
 	askSide := model.OrderSideSell
 	bidSide := model.OrderSideBuy
 	carry.SideType = model.CarryTypeTurtle
@@ -67,7 +65,6 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 			carry.BidPrice, carry.AskPrice))
 		askSide = model.OrderSideBuy
 		bidSide = model.OrderSideBuy
-		askAmount = strconv.FormatFloat(carry.AskAmount*3, 'f', util.GetPrecision(carry.AskAmount*3), 64)
 		carry.SideType = model.CarryTypeTurtleBothBuy
 		carry.AskAmount = carry.AskAmount * 3
 	} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
@@ -75,14 +72,13 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 			coin, coinLimit, carry.BidAmount, money/carry.BidPrice, carry.BidPrice, carry.AskPrice))
 		askSide = model.OrderSideSell
 		bidSide = model.OrderSideSell
-		bidAmount = strconv.FormatFloat(carry.BidAmount*3, 'f', util.GetPrecision(carry.BidAmount*3), 64)
 		carry.SideType = model.CarryTypeTurtleBothSell
 		carry.BidAmount = carry.BidAmount * 3
 	}
 	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(askSide,
-		model.OrderTypeLimit, market, symbol, carry.AskPrice, askAmount)
+		model.OrderTypeLimit, market, symbol, carry.AskPrice, carry.AskAmount)
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(bidSide,
-		model.OrderTypeLimit, market, symbol, carry.BidPrice, bidAmount)
+		model.OrderTypeLimit, market, symbol, carry.BidPrice, carry.BidAmount)
 	if carry.DealAskStatus == model.CarryStatusWorking && carry.DealBidStatus == model.CarryStatusWorking {
 		util.Notice(`set new carry ` + carry.ToString())
 		model.SetTurtleCarry(market, symbol, carry)
@@ -125,7 +121,7 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 		model.CarryChannel <- *carry
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
 			carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
-	} else if marketAskPrice == carry.BidPrice && lastDealTime-util.GetNowUnixMillion() > 60000 {
+	} else if marketAskPrice == carry.BidPrice && util.GetNowUnixMillion()-lastDealTime > 60000 {
 		dealBidAmount, _, _ := api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 		if dealBidAmount == carry.BidAmount && marketBidPrice == carry.AskPrice {
 			dealAskAmount, _, _ := api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
@@ -134,7 +130,7 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 				carry.DealAskStatus = model.CarryStatusSuccess
 				model.SetTurtleCarry(market, symbol, nil)
 				model.CarryChannel <- *carry
-				util.Info(fmt.Sprintf(`[双边成交]%s min:%f - max:%f bid:%f - ask:%f`, carry.Symbol,
+				util.Info(fmt.Sprintf(`[hill wait]%s min:%f - max:%f bid:%f - ask:%f`, carry.Symbol,
 					carry.BidPrice, carry.AskPrice, carry.BidAmount, carry.AskAmount))
 			}
 		}
@@ -278,7 +274,6 @@ var ProcessCarry = func(symbol, market string) {
 	planAmount, _ := calcAmount(carry.Amount)
 	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
-	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', util.GetPrecision(leftBalance), 64)
 	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
 	marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
 	if !carry.CheckWorthSaveMargin() {
@@ -315,8 +310,8 @@ var ProcessCarry = func(symbol, market string) {
 		}
 	}
 	if doCarry {
-		go api.Order(carry, model.OrderSideSell, model.OrderTypeLimit, market, symbol, carry.AskPrice, strLeftBalance)
-		go api.Order(carry, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, carry.BidPrice, strLeftBalance)
+		go api.Order(carry, model.OrderSideSell, model.OrderTypeLimit, market, symbol, carry.AskPrice, leftBalance)
+		go api.Order(carry, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, carry.BidPrice, leftBalance)
 	} else {
 		model.CarryChannel <- *carry
 	}

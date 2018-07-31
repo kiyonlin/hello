@@ -47,7 +47,7 @@ func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) 
 	return askAmount, bidAmount
 }
 
-func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price float64, amount string) {
+func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, amount float64) {
 	if orderSide == `buy` {
 		carry.DealBidOrderId, carry.DealBidErrCode, _ = api.PlaceOrder(orderSide, orderType,
 			model.GetMarkets()[0], carry.Symbol, price, amount)
@@ -94,11 +94,10 @@ func placeExtraSell(carry *model.Carry) {
 		}
 		price := carry.BidPrice * 0.999
 		amount := carry.Amount * model.ApplicationConfig.SellRate
-		strAmount := strconv.FormatFloat(amount, 'f', 2, 64)
 		orderId, errCode, msg := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
-			model.GetMarkets()[0], carry.Symbol, price, strAmount)
-		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %s 数量: %s 返回 %s %s %s`,
-			carry.Symbol, price, strAmount, orderId, errCode, msg))
+			model.GetMarkets()[0], carry.Symbol, price, amount)
+		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %f 数量: %f 返回 %s %s %s`,
+			carry.Symbol, price, amount, orderId, errCode, msg))
 	}
 }
 
@@ -162,10 +161,6 @@ var ProcessRefresh = func(symbol, market string) {
 			price = carry.AskPrice
 		}
 	}
-	strAskAmount := strconv.FormatFloat(askAmount, 'f', -1, 64)
-	strBidAmount := strconv.FormatFloat(bidAmount, 'f', -1, 64)
-	//carry.AskPrice = price
-	//carry.BidPrice = price
 	model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
 	model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
 	bidAskTimes++
@@ -174,8 +169,8 @@ var ProcessRefresh = func(symbol, market string) {
 		//rebalance(leftAccount, rightAccount, carry)
 		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {
-		go placeRefreshOrder(carry, `buy`, `limit`, price, strBidAmount)
-		go placeRefreshOrder(carry, `sell`, `limit`, price, strAskAmount)
+		go placeRefreshOrder(carry, `buy`, `limit`, price, bidAmount)
+		go placeRefreshOrder(carry, `sell`, `limit`, price, askAmount)
 		time.Sleep(time.Second * 5)
 	}
 }

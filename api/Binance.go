@@ -40,7 +40,7 @@ func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, e
 				strAmount, _ := item.GetIndex(1).String()
 				price, _ := strconv.ParseFloat(strPrice, 64)
 				amount, _ := strconv.ParseFloat(strAmount, 64)
-				bidAsk.Bids[i] = model.Tick{Price: price, Amount:amount}
+				bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 			}
 			asksLen := len(json.Get("a").MustArray())
 			bidAsk.Asks = make([]model.Tick, asksLen)
@@ -50,7 +50,7 @@ func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, e
 				strAmount, _ := item.GetIndex(1).String()
 				price, _ := strconv.ParseFloat(strPrice, 64)
 				amount, _ := strconv.ParseFloat(strAmount, 64)
-				bidAsk.Asks[i] = model.Tick{Price:price, Amount:amount}
+				bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 			}
 			sort.Sort(bidAsk.Asks)
 			sort.Sort(sort.Reverse(bidAsk.Bids))
@@ -80,8 +80,7 @@ func signBinance(postData *url.Values, secretKey string) {
 }
 
 // orderType: BUY SELL
-// 注意，binance中amount无论是市价还是限价，都值得是要买入或者卖出的左侧币种，而非右侧的钱，而参数中
-// 市价买单的amount指的是右侧钱的数量，所以需要转换
+// 注意，binance中amount无论是市价还是限价，都指的是要买入或者卖出的左侧币种，而非右侧的钱
 func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
 	if orderSide == model.OrderSideBuy {
 		orderSide = `BUY`

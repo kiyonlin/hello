@@ -3,9 +3,9 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
-		"strings"
-	"sync"
 	"hello/util"
+	"strings"
+	"sync"
 )
 
 const OKEX = "okex"
@@ -111,7 +111,7 @@ func SetTurtleCarry(market, symbol string, turtleCarry *Carry) {
 }
 
 func GetTurtleLastDealInfo(market, symbol string) (price float64, dealTime int64) {
-	if turtleDealPrice[market] == nil || turtleCarryTime[market] == nil{
+	if turtleDealPrice[market] == nil || turtleCarryTime[market] == nil {
 		return 0, 0
 	}
 	return turtleDealPrice[market][symbol], turtleCarryTime[market][symbol]
@@ -230,8 +230,8 @@ type Config struct {
 	BitmexSecret   string
 	FcoinKey       string
 	FcoinSecret    string
-	BtcdoKey       string
-	BtcdoSecret    string
+	BnbMin         float64
+	BnbBuy         float64
 	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate     float64 // 刷单填写数量比率
 	Handle         int64   // 0 不执行处理程序，1执行处理程序
