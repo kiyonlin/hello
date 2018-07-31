@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"hello/util"
 	"math"
-		"strings"
+	"strings"
 	"sync"
 )
 
@@ -58,8 +58,8 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 		bidPrice = lastDealPrice - priceWidth
 		askPrice = lastDealPrice + priceWidth
 	} else {
-		bidPrice = askPrice - priceWidth
-		askPrice = askPrice + priceWidth
+		bidPrice = bidAsks.Asks[0].Price - priceWidth
+		askPrice = bidAsks.Asks[0].Price + priceWidth
 	}
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
 		BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking, DealAskStatus: CarryStatusWorking,
