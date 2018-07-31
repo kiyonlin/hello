@@ -402,12 +402,12 @@ func Maintain() {
 	go InnerCarryServe()
 	go AccountHandlerServe()
 	go controller.ParameterServe()
+	go RefreshAccounts()
 
 	carryHandlers := make([]api.CarryHandler, len(model.ApplicationConfig.Functions))
 	for i, value := range model.ApplicationConfig.Functions {
 		switch value {
 		case `carry`:
-			go RefreshAccounts()
 			go MaintainOrders()
 			carryHandlers[i] = ProcessCarry
 		case `turtle`:
