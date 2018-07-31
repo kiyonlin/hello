@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hello/util"
 	"math"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -58,8 +59,14 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 		bidPrice = lastDealPrice - priceWidth
 		askPrice = lastDealPrice + priceWidth
 	} else {
-		bidPrice = bidAsks.Asks[0].Price - priceWidth
-		askPrice = bidAsks.Asks[0].Price + priceWidth
+		strAskPrice := strconv.FormatFloat(bidAsks.Asks[0].Price, 'f',
+			util.GetPrecision(bidAsks.Asks[0].Price), 64)
+		if strings.Contains(strAskPrice, `.`) {
+			strAskPrice = strings.TrimRight(strAskPrice, `0`)
+		}
+		askPrice, _ = strconv.ParseFloat(strAskPrice, 64)
+		bidPrice = askPrice - priceWidth
+		askPrice = askPrice + priceWidth
 	}
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
 		BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking, DealAskStatus: CarryStatusWorking,
