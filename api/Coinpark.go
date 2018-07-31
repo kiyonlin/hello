@@ -167,7 +167,7 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 		"body":{"pair":"%s","account_type":0,"order_type":%s,"order_side":"%s","price":%s,"amount":"%s"}}]`,
 		symbol, orderType, orderSide, price, amount)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
-	util.Notice(`[place order]` + string(responseBody))
+	util.Notice(cmds + `[place order]` + string(responseBody))
 	orderJson, _ := util.NewJSON([]byte(responseBody))
 	if orderJson == nil {
 		return
