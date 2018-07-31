@@ -64,7 +64,6 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
 		BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking, DealAskStatus: CarryStatusWorking,
 		BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts), SideType: CarryTypeTurtle}
-	util.Notice(`create turtle ` + carry.ToString())
 	return &carry, nil
 }
 

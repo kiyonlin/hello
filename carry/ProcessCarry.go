@@ -42,6 +42,7 @@ func setTurtleCarrying(status bool) {
 }
 
 func placeTurtle(market, symbol string, carry *model.Carry) {
+	util.Notice(`begin to place turtle ` + carry.ToString())
 	_, _, coinLimit := model.GetTurtleSetting(market, symbol)
 	currencies := strings.Split(carry.Symbol, `_`)
 	if len(currencies) != 2 {
