@@ -140,7 +140,7 @@ func PlaceOrder(orderSide, orderType, market, symbol string, price float64, amou
 	} else {
 		status = model.CarryStatusWorking
 	}
-	util.Notice(fmt.Sprintf(`[%s-%s] %s %s price: %s amount %s [orderId: %s] errCode %s`, orderSide, orderType,
+	util.Notice(fmt.Sprintf(`[%s-%s] %s %s price: %f amount %s [orderId: %s] errCode %s`, orderSide, orderType,
 		market, symbol, price, amount, orderId, errCode))
 	return orderId, errCode, status
 }
