@@ -47,7 +47,7 @@ func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) 
 	return askAmount, bidAmount
 }
 
-func placeRefreshOrder(carry *model.Carry, orderSide, orderType, price, amount string) {
+func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price float64, amount string) {
 	if orderSide == `buy` {
 		carry.DealBidOrderId, carry.DealBidErrCode, _ = api.PlaceOrder(orderSide, orderType,
 			model.GetMarkets()[0], carry.Symbol, price, amount)
@@ -76,21 +76,6 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType, price, amount s
 	model.CarryChannel <- *carry
 }
 
-func getDecimalLimit(symbol string) int {
-	switch symbol {
-	case `ft_usdt`:
-		return 6
-	case `ft_eth`:
-		return 8
-	case `ft_btc`:
-		return 8
-	case `eth_usdt`:
-		return 2
-	case `btc_usdt`:
-		return 2
-	}
-	return 100
-}
 func setProcessing(value bool) {
 	processing = value
 }
@@ -104,17 +89,16 @@ func placeExtraSell(carry *model.Carry) {
 	}
 	if account != nil && account.Free > model.ApplicationConfig.FtMax {
 		pricePrecision := util.GetPrecision(carry.BidPrice)
-		if pricePrecision > getDecimalLimit(carry.Symbol) {
-			pricePrecision = getDecimalLimit(carry.Symbol)
+		if pricePrecision > api.GetPriceDecimal(model.Fcoin, carry.Symbol) {
+			pricePrecision = api.GetPriceDecimal(model.Fcoin, carry.Symbol)
 		}
 		price := carry.BidPrice * 0.999
-		strPrice := strconv.FormatFloat(price, 'f', pricePrecision, 64)
 		amount := carry.Amount * model.ApplicationConfig.SellRate
 		strAmount := strconv.FormatFloat(amount, 'f', 2, 64)
 		orderId, errCode, msg := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
-			model.GetMarkets()[0], carry.Symbol, strPrice, strAmount)
+			model.GetMarkets()[0], carry.Symbol, price, strAmount)
 		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %s 数量: %s 返回 %s %s %s`,
-			carry.Symbol, strPrice, strAmount, orderId, errCode, msg))
+			carry.Symbol, price, strAmount, orderId, errCode, msg))
 	}
 }
 
@@ -160,8 +144,8 @@ var ProcessRefresh = func(symbol, market string) {
 	}
 	rightBalance := rightAccount.Free
 	pricePrecision := util.GetPrecision(carry.BidPrice)
-	if pricePrecision > getDecimalLimit(carry.Symbol) {
-		pricePrecision = getDecimalLimit(carry.Symbol)
+	if pricePrecision > api.GetPriceDecimal(carry.BidWeb, carry.Symbol) {
+		pricePrecision = api.GetPriceDecimal(carry.BidWeb, carry.Symbol)
 	}
 	price, _ := calcPrice(carry.BidPrice, carry.AskPrice, pricePrecision)
 	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.Symbol, leftBalance, rightBalance))
@@ -182,7 +166,6 @@ var ProcessRefresh = func(symbol, market string) {
 	strBidAmount := strconv.FormatFloat(bidAmount, 'f', -1, 64)
 	//carry.AskPrice = price
 	//carry.BidPrice = price
-	strPrice := strconv.FormatFloat(price, 'f', -1, 64)
 	model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
 	model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
 	bidAskTimes++
@@ -191,8 +174,8 @@ var ProcessRefresh = func(symbol, market string) {
 		//rebalance(leftAccount, rightAccount, carry)
 		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {
-		go placeRefreshOrder(carry, `buy`, `limit`, strPrice, strBidAmount)
-		go placeRefreshOrder(carry, `sell`, `limit`, strPrice, strAskAmount)
+		go placeRefreshOrder(carry, `buy`, `limit`, price, strBidAmount)
+		go placeRefreshOrder(carry, `sell`, `limit`, price, strAskAmount)
 		time.Sleep(time.Second * 5)
 	}
 }

@@ -59,8 +59,6 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 	money := rightAccount.Free
 	bidAmount := strconv.FormatFloat(carry.BidAmount, 'f', util.GetPrecision(carry.BidAmount), 64)
 	askAmount := strconv.FormatFloat(carry.AskAmount, 'f', util.GetPrecision(carry.AskAmount), 64)
-	bidPrice := strconv.FormatFloat(carry.BidPrice, 'f', util.GetPrecision(carry.BidPrice), 64)
-	askPrice := strconv.FormatFloat(carry.AskPrice, 'f', util.GetPrecision(carry.AskPrice), 64)
 	askSide := model.OrderSideSell
 	bidSide := model.OrderSideBuy
 	carry.SideType = model.CarryTypeTurtle
@@ -82,9 +80,9 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 		carry.BidAmount = carry.BidAmount * 3
 	}
 	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(askSide,
-		model.OrderTypeLimit, market, symbol, askPrice, askAmount)
+		model.OrderTypeLimit, market, symbol, carry.AskPrice, askAmount)
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(bidSide,
-		model.OrderTypeLimit, market, symbol, bidPrice, bidAmount)
+		model.OrderTypeLimit, market, symbol, carry.BidPrice, bidAmount)
 	if carry.DealAskStatus == model.CarryStatusWorking && carry.DealBidStatus == model.CarryStatusWorking {
 		util.Notice(`set new carry ` + carry.ToString())
 		model.SetTurtleCarry(market, symbol, carry)
@@ -281,8 +279,6 @@ var ProcessCarry = func(symbol, market string) {
 	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
 	strLeftBalance := strconv.FormatFloat(leftBalance, 'f', util.GetPrecision(leftBalance), 64)
-	strAskPrice := strconv.FormatFloat(carry.AskPrice, 'f', util.GetPrecision(carry.AskPrice), 64)
-	strBidPrice := strconv.FormatFloat(carry.BidPrice, 'f', util.GetPrecision(carry.BidPrice), 64)
 	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
 	marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
 	if !carry.CheckWorthSaveMargin() {
@@ -319,8 +315,8 @@ var ProcessCarry = func(symbol, market string) {
 		}
 	}
 	if doCarry {
-		go api.Order(carry, model.OrderSideSell, model.OrderTypeLimit, market, symbol, strAskPrice, strLeftBalance)
-		go api.Order(carry, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, strBidPrice, strLeftBalance)
+		go api.Order(carry, model.OrderSideSell, model.OrderTypeLimit, market, symbol, carry.AskPrice, strLeftBalance)
+		go api.Order(carry, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, carry.BidPrice, strLeftBalance)
 	} else {
 		model.CarryChannel <- *carry
 	}

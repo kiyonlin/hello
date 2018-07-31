@@ -5,9 +5,33 @@ import (
 	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
+	"strconv"
 	"strings"
 	"time"
 )
+
+// 根据不同的网站返回价格小数位
+func GetPriceDecimal(market, symbol string) int {
+	switch market {
+	case model.Fcoin:
+		switch symbol {
+		case `ft_usdt`:
+			return 6
+		case `ft_eth`, `ft_btc`:
+			return 8
+		case `eth_usdt`, `btc_usdt`:
+			return 2
+		}
+	case model.Coinpark:
+		switch symbol {
+		case `cp_usdt`:
+			return 4
+		case `cp_eth`, `cp_btc`:
+			return 8
+		}
+	}
+	return 8
+}
 
 func CancelOrder(market string, symbol string, orderId string) (result bool, errCode, msg string) {
 	switch market {
@@ -88,32 +112,28 @@ func RefreshAccount(market string) {
 // orderSide: OrderSideBuy OrderSideSell
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(orderSide, orderType, market, symbol, price, amount string) (orderId, errCode, status string) {
-	if strings.Contains(price, `.`) {
-		price = strings.TrimRight(price, `0`)
-	}
-	if strings.Contains(amount, `.`) {
-		amount = strings.TrimRight(amount, `0`)
-	}
+func PlaceOrder(orderSide, orderType, market, symbol string, price float64, amount string) (orderId, errCode, status string) {
+	precision := GetPriceDecimal(model.Coinpark, symbol)
+	strPrice := strconv.FormatFloat(price, 'f', precision, 64)
 	switch market {
 	case model.Huobi:
-		orderId, errCode = placeOrderHuobi(orderSide, orderType, symbol, price, amount)
+		orderId, errCode = placeOrderHuobi(orderSide, orderType, symbol, strPrice, amount)
 	case model.OKEX:
-		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, price, amount)
+		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, strPrice, amount)
 	case model.Binance:
-		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, price, amount)
+		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, amount)
 	case model.Fcoin:
-		orderId, errCode = placeOrderFcoin(orderSide, orderType, symbol, price, amount)
+		orderId, errCode = placeOrderFcoin(orderSide, orderType, symbol, strPrice, amount)
 	case model.Coinpark:
-		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, price, amount)
+		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, strPrice, amount)
 		if errCode == `4003` {
 			util.Notice(`【發現4003錯誤】sleep 3 minutes`)
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Coinbig:
-		orderId, errCode = placeOrderCoinbig(orderSide, orderType, symbol, price, amount)
+		orderId, errCode = placeOrderCoinbig(orderSide, orderType, symbol, strPrice, amount)
 	case model.Bitmex:
-		orderId, errCode = placeOrderBitmex(orderSide, orderType, symbol, price, amount)
+		orderId, errCode = placeOrderBitmex(orderSide, orderType, symbol, strPrice, amount)
 	}
 	if orderId == "0" || orderId == "" {
 		status = model.CarryStatusFail
@@ -125,7 +145,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, price, amount string) (ord
 	return orderId, errCode, status
 }
 
-func Order(carry *model.Carry, orderSide, orderType, market, symbol, price string, amount string) {
+func Order(carry *model.Carry, orderSide, orderType, market, symbol string, price float64, amount string) {
 	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = PlaceOrder(orderSide, orderType, market, symbol,
 		price, amount)
 	model.InnerCarryChannel <- *carry
