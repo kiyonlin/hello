@@ -41,39 +41,166 @@ func setTurtleCarrying(status bool) {
 	turtleCarrying = status
 }
 
-//func extraOrder(symbol, market, orderSide, orderType string, amount float64) {
-//	if extraBidAskDone {
-//		api.RefreshAccount(market)
-//		return
-//	}
-//	turtleExtraDoing = true
-//	price := strconv.FormatFloat(model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0], 'f',
-//		util.GetPrecision(model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0]), 64)
-//	strAmount := strconv.FormatFloat(amount, 'f', util.GetPrecision(amount), 64)
-//	orderId, _, _ := api.PlaceOrder(orderSide, orderType, market, symbol, price, strAmount)
-//	if orderId != `` && orderId != `0` {
-//		extraBidAskDone = true
-//		for true {
-//			dealAmount, dealPrice, _ := api.QueryOrderById(market, symbol, orderId)
-//			if dealAmount >= amount*0.9 {
-//				if dealPrice != 0 {
-//					model.SetTurtleDealPrice(market, symbol, dealPrice)
-//				}
-//				util.Notice(fmt.Sprintf(`[extra price]%f`, dealPrice))
-//				break
-//			}
-//			time.Sleep(time.Second * 3)
-//		}
-//		if orderSide == model.OrderSideSell {
-//			model.CarryChannel <- model.Carry{Symbol: symbol, AskWeb: market, AskAmount: amount,
-//				AskPrice: model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0], DealAskStatus: model.CarryStatusWorking}
-//		} else if orderSide == model.OrderSideBuy {
-//			model.CarryChannel <- model.Carry{Symbol: symbol, BidWeb: market, BidAmount: amount,
-//				BidPrice: model.ApplicationMarkets.BidAsks[symbol][market].Asks[0][0], DealBidStatus: model.CarryStatusWorking}
-//		}
-//	}
-//	turtleExtraDoing = false
-//}
+func placeTurtle(market, symbol string, carry *model.Carry) {
+	_, _, coinLimit := model.GetTurtleSetting(market, symbol)
+	currencies := strings.Split(carry.Symbol, `_`)
+	if len(currencies) != 2 {
+		util.Notice(`wrong symbol format ` + carry.Symbol)
+		return
+	}
+	leftAccount := model.ApplicationAccounts.GetAccount(market, currencies[0])
+	rightAccount := model.ApplicationAccounts.GetAccount(market, currencies[1])
+	if leftAccount == nil || rightAccount == nil {
+		api.RefreshAccount(market)
+		return
+	}
+	coin := leftAccount.Free
+	money := rightAccount.Free
+	bidAmount := strconv.FormatFloat(carry.BidAmount, 'f', util.GetPrecision(carry.BidAmount), 64)
+	askAmount := strconv.FormatFloat(carry.AskAmount, 'f', util.GetPrecision(carry.AskAmount), 64)
+	bidPrice := strconv.FormatFloat(carry.BidPrice, 'f', util.GetPrecision(carry.BidPrice), 64)
+	askPrice := strconv.FormatFloat(carry.AskPrice, 'f', util.GetPrecision(carry.AskPrice), 64)
+	askSide := model.OrderSideSell
+	bidSide := model.OrderSideBuy
+	carry.SideType = model.CarryTypeTurtle
+	if carry.AskAmount > coin {
+		util.Notice(fmt.Sprintf(`[三倍buy]coin %f - ask %f %f - %f`, coin, carry.AskAmount,
+			carry.BidPrice, carry.AskPrice))
+		askSide = model.OrderSideBuy
+		bidSide = model.OrderSideBuy
+		askAmount = strconv.FormatFloat(carry.AskAmount*3, 'f', util.GetPrecision(carry.AskAmount*3), 64)
+		carry.SideType = model.CarryTypeTurtleBothBuy
+		carry.AskAmount = carry.AskAmount * 3
+	} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
+		util.Notice(fmt.Sprintf(`[三倍sell] [coin %f - limit %f] [bid %f - can %f] %f - %f`,
+			coin, coinLimit, carry.BidAmount, money/carry.BidPrice, carry.BidPrice, carry.AskPrice))
+		askSide = model.OrderSideSell
+		bidSide = model.OrderSideSell
+		bidAmount = strconv.FormatFloat(carry.BidAmount*3, 'f', util.GetPrecision(carry.BidAmount*3), 64)
+		carry.SideType = model.CarryTypeTurtleBothSell
+		carry.BidAmount = carry.BidAmount * 3
+	}
+	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(askSide,
+		model.OrderTypeLimit, market, symbol, askPrice, askAmount)
+	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(bidSide,
+		model.OrderTypeLimit, market, symbol, bidPrice, bidAmount)
+	if carry.DealAskStatus == model.CarryStatusWorking && carry.DealBidStatus == model.CarryStatusWorking {
+		util.Notice(`set new carry ` + carry.ToString())
+		model.SetTurtleCarry(market, symbol, carry)
+		if carry.AskAmount == carry.BidAmount*3 || carry.BidAmount == carry.AskAmount*3 {
+			util.Notice(`[急漲急跌，休息1分鐘]`)
+			time.Sleep(time.Minute * 1)
+		}
+	} else {
+		if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
+			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+			api.RefreshAccount(carry.AskWeb)
+		}
+		if carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {
+			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+			api.RefreshAccount(carry.BidWeb)
+		}
+	}
+	model.CarryChannel <- *carry
+}
+
+func handleTurtle(market, symbol string, carry *model.Carry) {
+	_, lastDealTime := model.GetTurtleLastDealInfo(market, symbol)
+	marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
+	marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
+	if marketAskPrice < carry.BidPrice {
+		api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+		model.SetTurtleDealPrice(carry.BidWeb, symbol, carry.BidPrice)
+		model.SetTurtleCarry(market, symbol, nil)
+		carry.DealBidStatus = model.CarryStatusSuccess
+		carry.DealAskStatus = model.CarryStatusFail
+		model.CarryChannel <- *carry
+		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`,
+			carry.Symbol, carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
+	} else if marketBidPrice > carry.AskPrice {
+		api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+		model.SetTurtleDealPrice(carry.AskWeb, symbol, carry.AskPrice)
+		model.SetTurtleCarry(market, symbol, nil)
+		carry.DealBidStatus = model.CarryStatusFail
+		carry.DealAskStatus = model.CarryStatusSuccess
+		model.CarryChannel <- *carry
+		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
+			carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
+	} else if marketAskPrice == carry.BidPrice && lastDealTime-util.GetNowUnixMillion() > 60000 {
+		dealBidAmount, _, _ := api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+		if dealBidAmount == carry.BidAmount && marketBidPrice == carry.AskPrice {
+			dealAskAmount, _, _ := api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+			if dealAskAmount == carry.AskAmount {
+				carry.DealBidStatus = model.CarryStatusSuccess
+				carry.DealAskStatus = model.CarryStatusSuccess
+				model.SetTurtleCarry(market, symbol, nil)
+				model.CarryChannel <- *carry
+				util.Info(fmt.Sprintf(`[双边成交]%s min:%f - max:%f bid:%f - ask:%f`, carry.Symbol,
+					carry.BidPrice, carry.AskPrice, carry.BidAmount, carry.AskAmount))
+			}
+		}
+	}
+}
+
+func handleTurtleBothSell(market, symbol string, carry *model.Carry) {
+	_, priceWidth, _ := model.GetTurtleSetting(market, symbol)
+	marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
+	if marketBidPrice < carry.BidPrice { // 價格未能夾住
+		api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+		api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+		model.SetTurtleDealPrice(market, symbol, carry.BidPrice-priceWidth)
+		carry.DealBidStatus = model.CarryStatusFail
+		carry.DealAskStatus = model.CarryStatusFail
+		model.CarryChannel <- *carry
+		model.SetTurtleCarry(market, symbol, nil)
+		api.RefreshAccount(market)
+	} else if marketBidPrice > carry.AskPrice {
+		model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
+		carry.DealBidStatus = model.CarryStatusSuccess
+		carry.DealAskStatus = model.CarryStatusSuccess
+		model.CarryChannel <- *carry
+		model.SetTurtleCarry(market, symbol, nil)
+		api.RefreshAccount(market)
+	} else if marketBidPrice > carry.BidPrice {
+		api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+		model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
+		carry.DealBidStatus = model.CarryStatusSuccess
+		carry.DealAskStatus = model.CarryStatusFail
+		model.CarryChannel <- *carry
+		model.SetTurtleCarry(market, symbol, nil)
+		api.RefreshAccount(market)
+	}
+}
+
+func handleTurtleBothBuy(market, symbol string, carry *model.Carry) {
+	_, priceWidth, _ := model.GetTurtleSetting(market, symbol)
+	marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
+	if marketAskPrice > carry.AskPrice {
+		api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+		api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+		model.SetTurtleDealPrice(market, symbol, carry.AskPrice+priceWidth)
+		carry.DealBidStatus = model.CarryStatusFail
+		carry.DealAskStatus = model.CarryStatusFail
+		model.CarryChannel <- *carry
+		model.SetTurtleCarry(market, symbol, nil)
+		api.RefreshAccount(market)
+	} else if marketAskPrice < carry.BidPrice {
+		model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
+		carry.DealBidStatus = model.CarryStatusSuccess
+		carry.DealAskStatus = model.CarryStatusSuccess
+		model.CarryChannel <- *carry
+		model.SetTurtleCarry(market, symbol, nil)
+		api.RefreshAccount(market)
+	} else if marketAskPrice < carry.AskPrice {
+		api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+		model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
+		carry.DealBidStatus = model.CarryStatusFail
+		carry.DealAskStatus = model.CarryStatusSuccess
+		model.CarryChannel <- *carry
+		model.SetTurtleCarry(market, symbol, nil)
+		api.RefreshAccount(market)
+	}
+}
 
 var ProcessTurtle = func(symbol, market string) {
 	if turtleCarrying {
@@ -94,145 +221,17 @@ var ProcessTurtle = func(symbol, market string) {
 		util.Info(`turtle get carry not on time` + carry.ToString())
 		return
 	}
-	_, priceWidth, coinLimit := model.GetTurtleSetting(market, symbol)
 	if model.GetTurtleCarry(market, symbol) == nil {
-		currencies := strings.Split(carry.Symbol, `_`)
-		if len(currencies) != 2 {
-			util.Notice(`wrong symbol format ` + carry.Symbol)
-			return
-		}
-		leftAccount := model.ApplicationAccounts.GetAccount(market, currencies[0])
-		rightAccount := model.ApplicationAccounts.GetAccount(market, currencies[1])
-		if leftAccount == nil || rightAccount == nil {
-			api.RefreshAccount(market)
-			return
-		}
-		coin := leftAccount.Free
-		money := rightAccount.Free
-		bidAmount := strconv.FormatFloat(carry.BidAmount, 'f', util.GetPrecision(carry.BidAmount), 64)
-		askAmount := strconv.FormatFloat(carry.AskAmount, 'f', util.GetPrecision(carry.AskAmount), 64)
-		bidPrice := strconv.FormatFloat(carry.BidPrice, 'f', util.GetPrecision(carry.BidPrice), 64)
-		askPrice := strconv.FormatFloat(carry.AskPrice, 'f', util.GetPrecision(carry.AskPrice), 64)
-		askSide := model.OrderSideSell
-		bidSide := model.OrderSideBuy
-		carry.SideType = model.CarryTypeTurtle
-		if carry.AskAmount > coin {
-			util.Notice(fmt.Sprintf(`[三倍buy]coin %f - ask %f %f - %f`, coin, carry.AskAmount,
-				carry.BidPrice, carry.AskPrice))
-			askSide = model.OrderSideBuy
-			bidSide = model.OrderSideBuy
-			askAmount = strconv.FormatFloat(carry.AskAmount*3, 'f', util.GetPrecision(carry.AskAmount*3), 64)
-			carry.SideType = model.CarryTypeTurtleBothBuy
-			carry.AskAmount = carry.AskAmount * 3
-		} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
-			util.Notice(fmt.Sprintf(`[三倍sell] [coin %f - limit %f] [bid %f - can %f] %f - %f`,
-				coin, coinLimit, carry.BidAmount, money/carry.BidPrice, carry.BidPrice, carry.AskPrice))
-			askSide = model.OrderSideSell
-			bidSide = model.OrderSideSell
-			bidAmount = strconv.FormatFloat(carry.BidAmount*3, 'f', util.GetPrecision(carry.BidAmount*3), 64)
-			carry.SideType = model.CarryTypeTurtleBothSell
-			carry.BidAmount = carry.BidAmount * 3
-		}
-		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(askSide,
-			model.OrderTypeLimit, market, symbol, askPrice, askAmount)
-		carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(bidSide,
-			model.OrderTypeLimit, market, symbol, bidPrice, bidAmount)
-		if carry.DealAskStatus == model.CarryStatusWorking && carry.DealBidStatus == model.CarryStatusWorking {
-			util.Notice(`set new carry ` + carry.ToString())
-			model.SetTurtleCarry(market, symbol, carry)
-			if carry.AskAmount == carry.BidAmount * 3 || carry.BidAmount == carry.AskAmount * 3 {
-				util.Notice(`[急漲急跌，休息1分鐘]`)
-				time.Sleep(time.Minute * 1)
-			}
-		} else {
-			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				api.RefreshAccount(carry.AskWeb)
-			}
-			if carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {
-				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				api.RefreshAccount(carry.BidWeb)
-			}
-		}
-		model.CarryChannel <- *carry
+		placeTurtle(market, symbol, carry)
 	} else {
 		carry = model.GetTurtleCarry(market, symbol)
-		marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
-		marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
-		if carry.SideType == model.CarryTypeTurtle {
-			if marketAskPrice < carry.BidPrice {
-				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				model.SetTurtleDealPrice(carry.BidWeb, symbol, carry.BidPrice)
-				model.SetTurtleCarry(market, symbol, nil)
-				carry.DealBidStatus = model.CarryStatusSuccess
-				carry.DealAskStatus = model.CarryStatusFail
-				model.CarryChannel <- *carry
-				util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`,
-					carry.Symbol, carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
-			} else if marketBidPrice > carry.AskPrice {
-				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				model.SetTurtleDealPrice(carry.AskWeb, symbol, carry.AskPrice)
-				model.SetTurtleCarry(market, symbol, nil)
-				carry.DealBidStatus = model.CarryStatusFail
-				carry.DealAskStatus = model.CarryStatusSuccess
-				model.CarryChannel <- *carry
-				util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
-					carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
-			} else {
-				// do nothing
-			}
-		} else if carry.SideType == model.CarryTypeTurtleBothSell {
-			if marketBidPrice < carry.BidPrice { // 價格未能夾住
-				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				model.SetTurtleDealPrice(market, symbol, carry.BidPrice-priceWidth)
-				carry.DealBidStatus = model.CarryStatusFail
-				carry.DealAskStatus = model.CarryStatusFail
-				model.CarryChannel <- *carry
-				model.SetTurtleCarry(market, symbol, nil)
-				api.RefreshAccount(market)
-			} else if marketBidPrice > carry.AskPrice {
-				model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
-				carry.DealBidStatus = model.CarryStatusSuccess
-				carry.DealAskStatus = model.CarryStatusSuccess
-				model.CarryChannel <- *carry
-				model.SetTurtleCarry(market, symbol, nil)
-				api.RefreshAccount(market)
-			} else if marketBidPrice > carry.BidPrice {
-				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
-				carry.DealBidStatus = model.CarryStatusSuccess
-				carry.DealAskStatus = model.CarryStatusFail
-				model.CarryChannel <- *carry
-				model.SetTurtleCarry(market, symbol, nil)
-				api.RefreshAccount(market)
-			}
-		} else if carry.SideType == model.CarryTypeTurtleBothBuy {
-			if marketAskPrice > carry.AskPrice {
-				api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				model.SetTurtleDealPrice(market, symbol, carry.AskPrice+priceWidth)
-				carry.DealBidStatus = model.CarryStatusFail
-				carry.DealAskStatus = model.CarryStatusFail
-				model.CarryChannel <- *carry
-				model.SetTurtleCarry(market, symbol, nil)
-				api.RefreshAccount(market)
-			} else if marketAskPrice < carry.BidPrice {
-				model.SetTurtleDealPrice(market, symbol, carry.BidPrice)
-				carry.DealBidStatus = model.CarryStatusSuccess
-				carry.DealAskStatus = model.CarryStatusSuccess
-				model.CarryChannel <- *carry
-				model.SetTurtleCarry(market, symbol, nil)
-				api.RefreshAccount(market)
-			} else if marketAskPrice < carry.AskPrice {
-				api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-				model.SetTurtleDealPrice(market, symbol, carry.AskPrice)
-				carry.DealBidStatus = model.CarryStatusFail
-				carry.DealAskStatus = model.CarryStatusSuccess
-				model.CarryChannel <- *carry
-				model.SetTurtleCarry(market, symbol, nil)
-				api.RefreshAccount(market)
-			}
+		switch carry.SideType {
+		case model.CarryTypeTurtle:
+			handleTurtle(market, symbol, carry)
+		case model.CarryTypeTurtleBothSell:
+			handleTurtleBothSell(market, symbol, carry)
+		case model.CarryTypeTurtleBothBuy:
+			handleTurtleBothBuy(market, symbol, carry)
 		}
 	}
 }

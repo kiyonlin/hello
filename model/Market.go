@@ -53,7 +53,7 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	}
 	bidAsks := markets.BidAsks[symbol][market]
 	var bidPrice, askPrice float64
-	lastDealPrice := GetTurtleDealPrice(market, symbol)
+	lastDealPrice, _ := GetTurtleLastDealInfo(market, symbol)
 	if lastDealPrice > 0 {
 		bidPrice = lastDealPrice - priceWidth
 		askPrice = lastDealPrice + priceWidth

@@ -104,7 +104,7 @@ func getBuyPriceCoinpark(symbol string) (float64, error) {
 	//responseBody := SignedRequestCoinpark(`POST`, "/mdata", cmd)
 	responseBody, _ := util.HttpRequest(`GET`, fmt.Sprintf(`%s/mdata?cmd=ticker&pair=%s`,
 		model.ApplicationConfig.RestUrls[model.Coinpark], symbol), ``, nil)
-	util.Notice(`[account]` + string(responseBody))
+	util.Notice(symbol + `[account]` + string(responseBody))
 	accountJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		strPrice, _ := accountJson.GetPath("result", `last`).String()
