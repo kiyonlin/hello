@@ -166,6 +166,8 @@ func getSymbolWithSplit(original, split string) (symbol string) {
 		moneyCurrency = "usdt"
 	} else if strings.LastIndex(original, "eth")+3 == len(original) {
 		moneyCurrency = "eth"
+	} else if strings.LastIndex(original, `ft1808`)+6 == len(original) {
+		moneyCurrency = `ft1808`
 	}
 	return original[0:strings.LastIndex(original, moneyCurrency)] + split + moneyCurrency
 }

@@ -121,9 +121,10 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 		model.CarryChannel <- *carry
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
 			carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
-	} else if marketAskPrice == carry.BidPrice && util.GetNowUnixMillion()-lastDealTime > 60000 {
+	} else if (marketAskPrice == carry.BidPrice || marketBidPrice == carry.AskPrice) &&
+		util.GetNowUnixMillion()-lastDealTime > 10000 {
 		dealBidAmount, _, _ := api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-		if dealBidAmount == carry.BidAmount && marketBidPrice == carry.AskPrice {
+		if dealBidAmount == carry.BidAmount {
 			dealAskAmount, _, _ := api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 			if dealAskAmount == carry.AskAmount {
 				carry.DealBidStatus = model.CarryStatusSuccess
