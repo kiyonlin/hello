@@ -160,13 +160,13 @@ func GetWSSubscribe(market, symbol string) (subscribe string) {
 func getSymbolWithSplit(original, split string) (symbol string) {
 	original = strings.ToLower(original)
 	var moneyCurrency string
-	if strings.LastIndex(original, "btc")+3 == len(original) {
+	if strings.Contains(original, `btc`) && strings.LastIndex(original, "btc")+3 == len(original) {
 		moneyCurrency = "btc"
-	} else if strings.LastIndex(original, "usdt")+4 == len(original) {
+	} else if strings.Contains(original, `usdt`) && strings.LastIndex(original, "usdt")+4 == len(original) {
 		moneyCurrency = "usdt"
-	} else if strings.LastIndex(original, "eth")+3 == len(original) {
+	} else if strings.Contains(original, `eth`) && strings.LastIndex(original, "eth")+3 == len(original) {
 		moneyCurrency = "eth"
-	} else if strings.LastIndex(original, `ft1808`)+6 == len(original) {
+	} else if strings.Contains(original, `ft1808`) && strings.LastIndex(original, `ft1808`)+6 == len(original) {
 		moneyCurrency = `ft1808`
 	}
 	return original[0:strings.LastIndex(original, moneyCurrency)] + split + moneyCurrency
