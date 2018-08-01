@@ -122,7 +122,7 @@ func RefreshAccount(market string) {
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float64) (orderId, errCode, status string) {
-	precision := GetPriceDecimal(model.Coinpark, symbol)
+	precision := GetPriceDecimal(market, symbol)
 	strPrice := strconv.FormatFloat(price, 'f', precision, 64)
 	strAmount := strconv.FormatFloat(amount, 'f', 2, 64)
 	switch market {
