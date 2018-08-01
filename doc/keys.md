@@ -38,3 +38,4 @@ AWS：
 simon 52.192.134.3 haoweizh@qq.com sammi850810
 ace 13.231.235.25 ws820714@163.com ws@820714
 andrew 18.191.71.98 170321872@qq.com Neverforget9
+13.230.4.59 ubuntu dream_88888
