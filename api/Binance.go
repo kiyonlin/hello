@@ -22,9 +22,6 @@ var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) er
 
 func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		util.Notice(string(event))
-		str := string(event)
-		fmt.Println(str)
 		json, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -92,6 +89,7 @@ func signBinance(postData *url.Values, secretKey string) {
 // orderType: BUY SELL
 // 注意，binance中amount无论是市价还是限价，都指的是要买入或者卖出的左侧币种，而非右侧的钱
 func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+	postData := url.Values{}
 	if orderSide == model.OrderSideBuy {
 		orderSide = `BUY`
 	} else if orderSide == model.OrderSideSell {
@@ -104,19 +102,16 @@ func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orde
 		orderType = `MARKET`
 	} else if orderType == model.OrderTypeLimit {
 		orderType = `LIMIT`
+		postData.Set("price", price)
+		postData.Set("timeInForce", "GTC")
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
 		return ``, ``
 	}
-	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("type", orderType)
 	postData.Set("side", orderSide)
 	postData.Set("quantity", amount)
-	if orderType == model.OrderTypeLimit {
-		postData.Set("price", price)
-		postData.Set("timeInForce", "GTC")
-	}
 	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
 	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
 	responseBody, _ := util.HttpRequest("POST",
