@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+var lastTickId = int64(0)
+
 var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) error {
 	return nil
 }
@@ -21,41 +23,48 @@ var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) er
 func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		util.Notice(string(event))
+		str := string(event)
+		fmt.Println(str)
 		json, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
 			return
 		}
-		json = json.Get("data")
-		if json == nil {
-			return
-		}
-		symbol := model.GetSymbol(model.Binance, json.Get("s").MustString())
+		subscribe, _ := json.Get("stream").String()
+		symbol := model.GetSymbol(model.Binance, subscribe)
 		if symbol != "" {
+			json = json.Get("data")
+			if json == nil {
+				return
+			}
 			bidAsk := model.BidAsk{}
-			bidsLen := len(json.Get("b").MustArray())
-			bidAsk.Bids = make([]model.Tick, bidsLen)
-			for i := 0; i < bidsLen; i++ {
-				item := json.Get("b").GetIndex(i)
-				strPrice, _ := item.GetIndex(0).String()
-				strAmount, _ := item.GetIndex(1).String()
-				price, _ := strconv.ParseFloat(strPrice, 64)
-				amount, _ := strconv.ParseFloat(strAmount, 64)
+			tickId, _ := json.Get(`lastUpdateId`).Int64()
+			if tickId > lastTickId {
+				lastTickId = tickId
+				bidAsk.Ts = int(util.GetNowUnixMillion())
+			}
+			bids, _ := json.Get(`bids`).Array()
+			asks, _ := json.Get(`asks`).Array()
+			bidAsk.Bids = make([]model.Tick, len(bids))
+			for i, value := range bids {
+				if len(value.([]interface{})) < 2 {
+					return
+				}
+				price, _ := strconv.ParseFloat(value.([]interface{})[0].(string), 64)
+				amount, _ := strconv.ParseFloat(value.([]interface{})[1].(string), 64)
 				bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 			}
-			asksLen := len(json.Get("a").MustArray())
-			bidAsk.Asks = make([]model.Tick, asksLen)
-			for i := 0; i < asksLen; i++ {
-				item := json.Get("a").GetIndex(i)
-				strPrice, _ := item.GetIndex(0).String()
-				strAmount, _ := item.GetIndex(1).String()
-				price, _ := strconv.ParseFloat(strPrice, 64)
-				amount, _ := strconv.ParseFloat(strAmount, 64)
+			bidAsk.Asks = make([]model.Tick, len(asks))
+			for i, value := range asks {
+				if len(value.([]interface{})) < 2 {
+					return
+				}
+				price, _ := strconv.ParseFloat(value.([]interface{})[0].(string), 64)
+				amount, _ := strconv.ParseFloat(value.([]interface{})[1].(string), 64)
 				bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 			}
 			sort.Sort(bidAsk.Asks)
 			sort.Sort(sort.Reverse(bidAsk.Bids))
-			bidAsk.Ts = json.Get("E").MustInt()
 			if markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
 				for _, handler := range carryHandlers {
 					handler(symbol, model.Binance)
@@ -65,8 +74,8 @@ func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, e
 	}
 	requestUrl := model.ApplicationConfig.WSUrls[model.Binance]
 
-	for symbol := range model.GetMarketSettings(model.Binance) {
-		requestUrl += strings.ToLower(symbol) + "@depth/"
+	for _, subscribe := range model.GetSubscribes(model.Binance) {
+		requestUrl += subscribe + "/"
 	}
 	return WebSocketServe(requestUrl, model.GetSubscribes(model.Binance), subscribeHandlerBinance,
 		wsHandler, errHandler)

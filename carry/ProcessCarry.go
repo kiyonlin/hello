@@ -359,9 +359,9 @@ func MaintainMarketChan(carryHandlers []api.CarryHandler) {
 				if channel == nil {
 					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
 						carryHandlers, marketName))
-					util.SocketInfo(marketName + " create new channel" + subscribe)
+					util.SocketInfo(marketName + " create new channel " + subscribe)
 				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
-					util.SocketInfo(marketName + " reset channel" + subscribe)
+					util.SocketInfo(marketName + " reset channel " + subscribe)
 					model.ApplicationMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)

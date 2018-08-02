@@ -135,8 +135,8 @@ func GetWSSubscribe(market, symbol string) (subscribe string) {
 		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
 	case OKEX: // xrp_btc: ok_sub_spot_xrp_btc_depth_5
 		return "ok_sub_spot_" + symbol + "_depth_5"
-	case Binance: // xrp_btc: XRPBTC
-		return strings.ToUpper(strings.Replace(symbol, "_", "", 1))
+	case Binance: // xrp_btc: xrpbtc@depth5
+		return strings.ToLower(strings.Replace(symbol, "_", "", 1)) + `@depth5`
 	case Fcoin: // btc_usdt: depth.L20.btcusdt
 		return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
@@ -182,8 +182,12 @@ func GetSymbol(market, subscribe string) (symbol string) {
 		subscribe = strings.Replace(subscribe, "ok_sub_spot_", "", 1)
 		subscribe = strings.Replace(subscribe, "_depth_5", "", 1)
 		return subscribe
-	case Binance: // XRPBTC: xrp_btc
-		return getSymbolWithSplit(subscribe, "_")
+	case Binance: // eosusdt@depth5: xrp_btc
+		if strings.Index(subscribe, `@`) == -1 {
+			return ``
+		}
+		subscribe = subscribe[0:strings.Index(subscribe, `@`)]
+		return getSymbolWithSplit(subscribe, `_`)
 	case Fcoin: // btc_usdt: depth.L20.btcusdt
 		subscribe = strings.Replace(subscribe, "depth.L20.", "", 1)
 		return getSymbolWithSplit(subscribe, "_")
