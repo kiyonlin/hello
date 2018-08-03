@@ -109,6 +109,8 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 		model.SetTurtleCarry(market, symbol, nil)
 		carry.DealBidStatus = model.CarryStatusSuccess
 		carry.DealAskStatus = model.CarryStatusFail
+		carry.DealBidAmount = carry.BidAmount
+		carry.DealAskAmount, _, _ = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 		model.CarryChannel <- *carry
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f amount:%f bid:%f - ask:%f`,
 			carry.Symbol, carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
@@ -118,6 +120,8 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 		model.SetTurtleCarry(market, symbol, nil)
 		carry.DealBidStatus = model.CarryStatusFail
 		carry.DealAskStatus = model.CarryStatusSuccess
+		carry.DealAskAmount = carry.AskAmount
+		carry.DealBidAmount, _, _ = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 		model.CarryChannel <- *carry
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f amount:%f  bid:%f - ask:%f`, carry.Symbol,
 			carry.BidPrice, carry.AskPrice, carry.Amount, marketBidPrice, marketAskPrice))
@@ -129,6 +133,8 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 			if dealAskAmount == carry.AskAmount {
 				carry.DealBidStatus = model.CarryStatusSuccess
 				carry.DealAskStatus = model.CarryStatusSuccess
+				carry.DealAskAmount = dealAskAmount
+				carry.DealBidAmount = dealBidAmount
 				model.SetTurtleCarry(market, symbol, nil)
 				model.CarryChannel <- *carry
 				util.Info(fmt.Sprintf(`[hill wait]%s min:%f - max:%f bid:%f - ask:%f`, carry.Symbol,
