@@ -49,16 +49,23 @@ const CarryTypeTurtle = `turtle`
 const CarryTypeTurtleBothSell = `turtle_both_sell`
 const CarryTypeTurtleBothBuy = `turtle_both_buy`
 
+//var OrderStatusMap = map[string]map[string]string { // market - market status - united status
+//Binance:{
+//	"NEW":              CarryStatusWorking,
+//	"PARTIALLY_FILLED": CarryStatusWorking,
+//	"PENDING_CANCEL":   CarryStatusSuccess,
+//	"FILLED":           CarryStatusSuccess,
+//	"CANCELED":         CarryStatusFail,
+//	"REJECTED":         CarryStatusFail,
+//	"EXPIRED":          CarryStatusFail,},
+//Huobi:{},
+//OKEX: {},
+//Fcoin:{},
+//Coinpark:{},
+//}
+
 var OrderStatusMap = map[string]string{
 	``: CarryStatusFail,
-	// Binance
-	"NEW":              CarryStatusWorking,
-	"PARTIALLY_FILLED": CarryStatusWorking,
-	"PENDING_CANCEL":   CarryStatusSuccess,
-	"FILLED":           CarryStatusSuccess,
-	"CANCELED":         CarryStatusFail,
-	"REJECTED":         CarryStatusFail,
-	"EXPIRED":          CarryStatusFail,
 	// Huobi
 	"pre-submitted": CarryStatusWorking,
 	"submitting":    CarryStatusWorking,

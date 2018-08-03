@@ -61,19 +61,17 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 	bidSide := model.OrderSideBuy
 	carry.SideType = model.CarryTypeTurtle
 	if carry.AskAmount > coin {
-		util.Notice(fmt.Sprintf(`[2倍buy]coin %f - ask %f %f - %f`, coin, carry.AskAmount,
+		util.Notice(fmt.Sprintf(`[both buy]coin %f - ask %f %f - %f`, coin, carry.AskAmount,
 			carry.BidPrice, carry.AskPrice))
 		askSide = model.OrderSideBuy
 		bidSide = model.OrderSideBuy
 		carry.SideType = model.CarryTypeTurtleBothBuy
-		carry.AskAmount = carry.AskAmount * 2
 	} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
-		util.Notice(fmt.Sprintf(`[2倍sell] [coin %f - limit %f] [bid %f - can %f] %f - %f`,
+		util.Notice(fmt.Sprintf(`[both sell] [coin %f - limit %f] [bid %f - can %f] %f - %f`,
 			coin, coinLimit, carry.BidAmount, money/carry.BidPrice, carry.BidPrice, carry.AskPrice))
 		askSide = model.OrderSideSell
 		bidSide = model.OrderSideSell
 		carry.SideType = model.CarryTypeTurtleBothSell
-		carry.BidAmount = carry.BidAmount * 2
 	}
 	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(askSide,
 		model.OrderTypeLimit, market, symbol, carry.AskPrice, carry.AskAmount)
@@ -82,7 +80,7 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 	if carry.DealAskStatus == model.CarryStatusWorking && carry.DealBidStatus == model.CarryStatusWorking {
 		util.Notice(`set new carry ` + carry.ToString())
 		model.SetTurtleCarry(market, symbol, carry)
-		if carry.AskAmount == carry.BidAmount*2 || carry.BidAmount == carry.AskAmount*2 {
+		if carry.SideType == model.CarryTypeTurtleBothBuy || carry.SideType == model.CarryTypeTurtleBothSell {
 			util.Notice(`[急漲急跌，休息1分鐘]`)
 			time.Sleep(time.Minute * 1)
 		}
