@@ -52,18 +52,22 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 		return nil, errors.New(fmt.Sprintf(`no amount: %f or no price width: %f`, amount, priceWidth))
 	}
 	bidAsks := markets.BidAsks[symbol][market]
-	var bidPrice, askPrice float64
-	lastDealPrice, _ := GetTurtleLastDealInfo(market, symbol)
-	if lastDealPrice > 0 {
-		bidPrice = lastDealPrice - priceWidth
-		askPrice = lastDealPrice + priceWidth
+	var bidPrice, askPrice, bidAmount, askAmount float64
+	turtleStatus := GetTurtleStatus(market, symbol)
+	if turtleStatus != nil {
+		bidPrice = turtleStatus.LastDealPrice - priceWidth
+		askPrice = turtleStatus.LastDealPrice + priceWidth
+		bidAmount = amount - turtleStatus.ExtraBid
+		askAmount = amount - turtleStatus.ExtraAsk
 	} else {
 		bidPrice = bidAsks.Asks[0].Price - priceWidth
 		askPrice = bidAsks.Asks[0].Price + priceWidth
+		bidAmount = amount
+		askAmount = amount
 	}
-	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: amount, AskAmount: amount, Amount: amount,
-		BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking, DealAskStatus: CarryStatusWorking,
-		BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts), SideType: CarryTypeTurtle}
+	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: bidAmount, AskAmount: askAmount,
+		Amount: amount, BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking,
+		DealAskStatus: CarryStatusWorking, BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts), SideType: CarryTypeTurtle}
 	return &carry, nil
 }
 

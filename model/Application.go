@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"hello/util"
 	"strings"
 	"sync"
 )
@@ -27,7 +26,7 @@ var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
 
 var ApplicationConfig *Config
-
+var ApplicationTurtleStatus map[string]map[string]*TurtleStatus
 var ApplicationAccounts = NewAccounts()
 var ApplicationDB *gorm.DB
 var ApplicationSettings []Setting
@@ -38,8 +37,6 @@ var RefreshCarryChannel = make(chan Carry, 50)
 
 var ApplicationMarkets = NewMarkets()
 var TurtleCarries = make(map[string]map[string]*Carry)    // market - symbol - *carry
-var turtleDealPrice = make(map[string]map[string]float64) // market - symbol - price
-var turtleCarryTime = make(map[string]map[string]int64)   // market - symbol - carry time
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
@@ -115,24 +112,6 @@ func SetTurtleCarry(market, symbol string, turtleCarry *Carry) {
 		TurtleCarries[market] = make(map[string]*Carry)
 	}
 	TurtleCarries[market][symbol] = turtleCarry
-}
-
-func GetTurtleLastDealInfo(market, symbol string) (price float64, dealTime int64) {
-	if turtleDealPrice[market] == nil || turtleCarryTime[market] == nil {
-		return 0, 0
-	}
-	return turtleDealPrice[market][symbol], turtleCarryTime[market][symbol]
-}
-
-func SetTurtleDealPrice(market, symbol string, price float64) {
-	if turtleDealPrice[market] == nil {
-		turtleDealPrice[market] = make(map[string]float64)
-	}
-	if turtleCarryTime[market] == nil {
-		turtleCarryTime[market] = make(map[string]int64)
-	}
-	turtleDealPrice[market][symbol] = price
-	turtleCarryTime[market][symbol] = util.GetNowUnixMillion()
 }
 
 // TODO filter out unsupported symbol for each market
