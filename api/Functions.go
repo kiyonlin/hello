@@ -229,3 +229,11 @@ func GetPrice(symbol string) (buy float64, err error) {
 	}
 	return getBuyPriceOkex(symbol)
 }
+
+func CheckOrderValue(currency string, amount float64) (result bool) {
+	currencyPrice, _ := GetPrice(currency + `_usdt`)
+	if currencyPrice*amount < model.ApplicationConfig.MinUsdt {
+		return false
+	}
+	return true
+}
