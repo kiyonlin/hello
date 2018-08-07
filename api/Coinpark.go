@@ -213,7 +213,7 @@ func QueryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status s
 				dealPrice, _ = strconv.ParseFloat(strDealPrice, 64)
 			}
 			intStatus, _ := resultData.(map[string]interface{})[`status`].(json.Number).Int64()
-			status = model.OrderStatusMap[fmt.Sprintf(`%s%d`, model.Coinpark, intStatus)]
+			status = model.GetOrderStatus(model.Coinpark, fmt.Sprintf(`%s%d`, model.Coinpark, intStatus))
 		}
 	}
 	return dealAmount, dealPrice, status

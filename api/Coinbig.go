@@ -187,7 +187,7 @@ func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	if err == nil {
 		dealAmount, _ = orderJson.GetPath(`data`, `successAmount`).Float64()
 		intStatus, _ := orderJson.GetPath(`data`, "status").Int()
-		status = model.OrderStatusMap[fmt.Sprintf(`%s%d`, model.Coinbig, intStatus)]
+		status = model.GetOrderStatus(model.Coinbig, fmt.Sprintf(`%s%d`, model.Coinbig, intStatus))
 	}
 	util.Notice(fmt.Sprintf("%s coinbig query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, status

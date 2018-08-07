@@ -178,7 +178,7 @@ func QueryOrderFcoin(symbol, orderId string) (dealAmount, dealPrice float64, sta
 			dealPrice, _ = strconv.ParseFloat(strPrice, 64)
 		}
 		status, _ = orderJson.Get("state").String()
-		status = model.OrderStatusMap[status]
+		status = model.GetOrderStatus(model.Fcoin, status)
 	}
 	util.Notice(fmt.Sprintf("%s %s fcoin query order %f %s", symbol, status, dealAmount, responseBody))
 	return dealAmount, dealPrice, status

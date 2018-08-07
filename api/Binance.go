@@ -164,7 +164,7 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice flo
 			dealPrice, _ = strconv.ParseFloat(strDealPrice, 64)
 		}
 		status, _ = orderJson.Get("status").String()
-		status = model.OrderStatusMap[status]
+		status = model.GetOrderStatus(model.Binance, status)
 	}
 	util.Notice(fmt.Sprintf("%s binance query order %f %s", status, dealAmount, responseBody))
 	return dealAmount, dealPrice, status

@@ -36,7 +36,7 @@ var InnerCarryChannel = make(chan Carry, 50)
 var RefreshCarryChannel = make(chan Carry, 50)
 
 var ApplicationMarkets = NewMarkets()
-var TurtleCarries = make(map[string]map[string]*Carry)    // market - symbol - *carry
+var TurtleCarries = make(map[string]map[string]*Carry) // market - symbol - *carry
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
@@ -46,58 +46,63 @@ const CarryTypeTurtle = `turtle`
 const CarryTypeTurtleBothSell = `turtle_both_sell`
 const CarryTypeTurtleBothBuy = `turtle_both_buy`
 
-//var OrderStatusMap = map[string]map[string]string { // market - market status - united status
-//Binance:{
-//	"NEW":              CarryStatusWorking,
-//	"PARTIALLY_FILLED": CarryStatusWorking,
-//	"PENDING_CANCEL":   CarryStatusSuccess,
-//	"FILLED":           CarryStatusSuccess,
-//	"CANCELED":         CarryStatusFail,
-//	"REJECTED":         CarryStatusFail,
-//	"EXPIRED":          CarryStatusFail,},
-//Huobi:{},
-//OKEX: {},
-//Fcoin:{},
-//Coinpark:{},
-//}
+var orderStatusMap = map[string]map[string]string{ // market - market status - united status
+	Binance: {
+		"NEW":              CarryStatusWorking,
+		"PARTIALLY_FILLED": CarryStatusWorking,
+		"PENDING_CANCEL":   CarryStatusSuccess,
+		"FILLED":           CarryStatusSuccess,
+		"CANCELED":         CarryStatusFail,
+		"REJECTED":         CarryStatusFail,
+		"EXPIRED":          CarryStatusFail},
+	Huobi: {
+		`submitting`:       CarryStatusWorking, //已提交
+		`submitted`:        CarryStatusWorking, //已提交,
+		`partial-filled`:   CarryStatusWorking, //部分成交,
+		`partial-canceled`: CarryStatusSuccess, //部分成交撤销,
+		`filled`:           CarryStatusSuccess, //完全成交,
+		`canceled`:         CarryStatusFail},   //已撤销
+	OKEX: {
+		"-1": CarryStatusFail,    //已撤销
+		"0":  CarryStatusWorking, //未成交
+		"1":  CarryStatusWorking, //部分成交
+		"2":  CarryStatusSuccess, //完全成交
+		"3":  CarryStatusWorking, //撤单处理中
+	},
+	Fcoin: {
+		`submitted`:        CarryStatusWorking, //已提交
+		`partial_filled`:   CarryStatusWorking, //部分成交
+		`partial_canceled`: CarryStatusSuccess, //部分成交已撤销
+		`filled`:           CarryStatusSuccess, //完全成交
+		`canceled`:         CarryStatusFail,    //已撤销
+		`pending_cancel`:   CarryStatusWorking, //撤销已提交
+	},
+	Coinpark: {
+		`1`: CarryStatusWorking, //待成交
+		`2`: CarryStatusSuccess, //部分成交
+		`3`: CarryStatusSuccess, //完全成交
+		`4`: CarryStatusSuccess, //部分撤销
+		`5`: CarryStatusFail,    //完全撤销
+		`6`: CarryStatusWorking, //待撤销
+	},
+	Coinbig: {
+		`1`: CarryStatusWorking, //未成交
+		`2`: CarryStatusWorking, //部分成交,
+		`3`: CarryStatusSuccess, //完全成交,
+		`4`: CarryStatusFail,    //用户撤销,
+		`5`: CarryStatusSuccess, //部分撤回,
+		`6`: CarryStatusFail,    //成交失败
+	},
+}
 
-var OrderStatusMap = map[string]string{
-	``: CarryStatusFail,
-	// Huobi
-	"pre-submitted": CarryStatusWorking,
-	"submitting":    CarryStatusWorking,
-	// Huobi&Fcoin
-	"submitted":      CarryStatusWorking,
-	"partial-filled": CarryStatusSuccess,
-	// Huobi&Fcoin
-	"filled":           CarryStatusSuccess,
-	"partial-canceled": CarryStatusSuccess,
-	// Huobi&Fcoin
-	"canceled": CarryStatusFail,
-	// Okex
-	"-1": CarryStatusFail,    //已撤销
-	"0":  CarryStatusWorking, //未成交
-	"1":  CarryStatusWorking, //部分成交
-	"2":  CarryStatusSuccess, //完全成交
-	"3":  CarryStatusWorking, //撤单处理中
-	// Fcoin
-	"partial_filled":   CarryStatusSuccess,
-	"partial_canceled": CarryStatusSuccess,
-	"pending_cancel":   CarryStatusSuccess,
-	// Coinpark
-	Coinpark + `1`: CarryStatusWorking, // 待成交
-	Coinpark + `2`: CarryStatusSuccess, //部分成交
-	Coinpark + `3`: CarryStatusSuccess, //完全成交
-	Coinpark + `4`: CarryStatusSuccess, //部分撤销
-	Coinpark + `5`: CarryStatusFail,    //完全撤销
-	Coinpark + `6`: CarryStatusSuccess, //待撤销
-	// Coinbig
-	Coinbig + `1`: CarryStatusWorking, // 未成交
-	Coinbig + `2`: CarryStatusWorking, // 部分成交,
-	Coinbig + `3`: CarryStatusSuccess, // 完全成交,
-	Coinbig + `4`: CarryStatusSuccess, // 用户撤销,
-	Coinbig + `5`: CarryStatusSuccess, // 部分撤回,
-	Coinbig + `6`: CarryStatusFail,    // 成交失败
+func GetOrderStatus(market, marketStatus string) (status string) {
+	if orderStatusMap[market] == nil {
+		return CarryStatusFail
+	}
+	if orderStatusMap[market][marketStatus] == `` {
+		return CarryStatusFail
+	}
+	return orderStatusMap[market][marketStatus]
 }
 
 func GetTurtleCarry(market, symbol string) (turtleCarry *Carry) {

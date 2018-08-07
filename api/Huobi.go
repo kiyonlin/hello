@@ -236,7 +236,7 @@ func QueryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status stri
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		status, _ = orderJson.GetPath("data", "state").String()
-		status = model.OrderStatusMap[status]
+		status = model.GetOrderStatus(model.Huobi, status)
 		str, _ := orderJson.GetPath("data", "field-amount").String()
 		if str != "" {
 			dealAmount, _ = strconv.ParseFloat(str, 64)
