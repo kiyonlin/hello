@@ -21,6 +21,8 @@ func GetPriceDecimal(market, symbol string) int {
 			return 8
 		case `eth_usdt`, `btc_usdt`:
 			return 2
+		case `eos_usdt`:
+			return 4
 		}
 	case model.Coinpark:
 		switch symbol {
