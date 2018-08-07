@@ -234,6 +234,7 @@ func CheckOrderValue(currency string, amount float64) (result bool) {
 	currencyPrice, _ := GetPrice(currency + `_usdt`)
 	if currencyPrice*amount < model.ApplicationConfig.MinUsdt {
 		return false
+		util.Notice(fmt.Sprintf(`%s下单数量%f不足%f usdt`, currency, amount, model.ApplicationConfig.MinUsdt))
 	}
 	return true
 }
