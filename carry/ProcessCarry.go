@@ -145,6 +145,8 @@ func handleTurtle(market, symbol string, carry *model.Carry, turtleStatus *model
 		model.SetTurtleCarry(market, symbol, nil)
 	} else if (marketAskPrice == carry.BidPrice || marketBidPrice == carry.AskPrice) &&
 		util.GetNowUnixMillion()-turtleStatus.CarryTime > 10000 {
+		turtleStatus.CarryTime = util.GetNowUnixMillion()
+		model.SetTurtleStatus(market, symbol, turtleStatus)
 		if carry.DealBidStatus == model.CarryStatusWorking {
 			carry.DealBidAmount, _, _ = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 		} else if carry.DealBidStatus == model.CarryStatusSuccess {
@@ -272,23 +274,23 @@ var ProcessTurtle = func(symbol, market string) {
 	}
 	setTurtleCarrying(true)
 	defer setTurtleCarrying(false)
-	carry, err := model.ApplicationMarkets.NewTurtleCarry(symbol, market)
-	if err != nil {
-		util.Notice(`can not create turtle ` + err.Error())
-		return
-	}
-	if !carry.CheckWorthSaveMargin() {
-		util.Notice(`turtle利潤不足手續費` + carry.ToString())
-	}
-	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
-	if !timeOk {
-		util.Info(`turtle get carry not on time` + carry.ToString())
-		return
-	}
 	if model.GetTurtleCarry(market, symbol) == nil {
+		carry, err := model.ApplicationMarkets.NewTurtleCarry(symbol, market)
+		if err != nil {
+			util.Notice(`can not create turtle ` + err.Error())
+			return
+		}
+		if !carry.CheckWorthSaveMargin() {
+			util.Notice(`turtle利潤不足手續費` + carry.ToString())
+		}
+		timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
+		if !timeOk {
+			util.Info(`turtle get carry not on time` + carry.ToString())
+			return
+		}
 		placeTurtle(market, symbol, carry)
 	} else {
-		carry = model.GetTurtleCarry(market, symbol)
+		carry := model.GetTurtleCarry(market, symbol)
 		turtleStatus := model.GetTurtleStatus(market, symbol)
 		if turtleStatus == nil {
 			turtleStatus = &model.TurtleStatus{}

@@ -54,6 +54,8 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	bidAsks := markets.BidAsks[symbol][market]
 	var bidPrice, askPrice, bidAmount, askAmount float64
 	turtleStatus := GetTurtleStatus(market, symbol)
+	util.Notice(fmt.Sprintf(`get status when creating turtle extra bid %f - extra ask %f price %f`,
+		turtleStatus.ExtraBid, turtleStatus.ExtraAsk, turtleStatus.LastDealPrice))
 	if turtleStatus != nil && turtleStatus.LastDealPrice != 0{
 		bidPrice = turtleStatus.LastDealPrice - priceWidth
 		askPrice = turtleStatus.LastDealPrice + priceWidth
