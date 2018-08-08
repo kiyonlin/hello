@@ -17,12 +17,12 @@ func LoadSettings() {
 	ApplicationSettings = []Setting{}
 	ApplicationDB.Where(`valid = ?`, true).Find(&ApplicationSettings)
 	marketSymbolSetting = make(map[string]map[string]*Setting)
-	for _, value := range ApplicationSettings {
-		if marketSymbolSetting[value.Market] == nil {
-			marketSymbolSetting[value.Market] = make(map[string]*Setting)
+	for i := range ApplicationSettings {
+		if marketSymbolSetting[ApplicationSettings[i].Market] == nil {
+			marketSymbolSetting[ApplicationSettings[i].Market] = make(map[string]*Setting)
 		}
-		if marketSymbolSetting[value.Market][value.Symbol] == nil {
-			marketSymbolSetting[value.Market][value.Symbol] = &value
+		if marketSymbolSetting[ApplicationSettings[i].Market][ApplicationSettings[i].Symbol] == nil {
+			marketSymbolSetting[ApplicationSettings[i].Market][ApplicationSettings[i].Symbol] = &ApplicationSettings[i]
 		}
 	}
 }

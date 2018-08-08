@@ -15,12 +15,13 @@ inchina: 1
 orderwait: 10000
 #env: local
 #dbconnection: host=10.10.102.65 port=5432 user=odoo dbname=odoo password=123456 sslmode=disable
-#env: simon
+env: simon
+dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
 #dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=jack password=zaq12WSX sslmode=disable
 #env: ace
 #dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
-env: andrew
-dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+#env: andrew
+#dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
 #dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=bitmex password=zaq12WSX sslmode=disable
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
