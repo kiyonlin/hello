@@ -403,6 +403,8 @@ func createServer(markets *model.Markets, carryHandlers []api.CarryHandler, mark
 		channel, err = api.WsDepthServeHuobi(markets, carryHandlers, WSErrHandler)
 	case model.OKEX:
 		channel, err = api.WsDepthServeOkex(markets, carryHandlers, WSErrHandler)
+	case model.OKFUTURE:
+		channel, err = api.WsDepthServeOKFuture(markets, carryHandlers, WSErrHandler)
 	case model.Binance:
 		channel, err = api.WsDepthServeBinance(markets, carryHandlers, WSErrHandler)
 	case model.Fcoin:

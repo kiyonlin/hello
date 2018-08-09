@@ -41,6 +41,8 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 		return CancelOrderHuobi(orderId)
 	case model.OKEX:
 		return CancelOrderOkex(symbol, orderId)
+	case model.OKFUTURE:
+		return CancelOrderOkfuture(symbol, orderId)
 	case model.Binance:
 		return CancelOrderBinance(symbol, orderId)
 	case model.Fcoin:
@@ -62,6 +64,8 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 		dealAmount, dealPrice, status = QueryOrderHuobi(orderId)
 	case model.OKEX:
 		dealAmount, dealPrice, status = QueryOrderOkex(symbol, orderId)
+	case model.OKFUTURE:
+		dealAmount, dealPrice, status = QueryOrderOkfuture(symbol, orderId)
 	case model.Binance:
 		dealAmount, dealPrice, status = QueryOrderBinance(symbol, orderId)
 	case model.Fcoin:
@@ -97,6 +101,8 @@ func RefreshAccount(market string) {
 		}
 	case model.OKEX:
 		getAccountOkex(model.ApplicationAccounts)
+	case model.OKFUTURE:
+		getAccountOkfuture(model.ApplicationAccounts)
 	case model.Binance:
 		getAccountBinance(model.ApplicationAccounts)
 		if model.ApplicationConfig.BnbMin > 0 && model.ApplicationConfig.BnbBuy > 0 {
@@ -132,6 +138,8 @@ func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float
 		orderId, errCode = placeOrderHuobi(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKEX:
 		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, strPrice, strAmount)
+	case model.OKFUTURE:
+		orderId, errCode = placeOrderOkfuture(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Binance:
 		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:

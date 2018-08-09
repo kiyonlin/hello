@@ -8,6 +8,7 @@ import (
 )
 
 const OKEX = "okex"
+const OKFUTURE = `okfuture`
 const Huobi = "huobi"
 const Binance = "binance"
 const Fcoin = "fcoin"
@@ -126,6 +127,12 @@ func GetWSSubscribe(market, symbol string) (subscribe string) {
 		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
 	case OKEX: // xrp_btc: ok_sub_spot_xrp_btc_depth_5
 		return "ok_sub_spot_" + symbol + "_depth_5"
+	case OKFUTURE: // btc_this_week: ok_sub_futureusd_btc_depth_this_week
+		index := strings.Index(symbol, `_`)
+		if index != -1 {
+			return `ok_sub_futureusd_` + symbol[0:index] + `_depth` + symbol[index:]
+		}
+		return
 	case Binance: // xrp_btc: xrpbtc@depth5
 		return strings.ToLower(strings.Replace(symbol, "_", "", 1)) + `@depth5`
 	case Fcoin: // btc_usdt: depth.L20.btcusdt
@@ -173,6 +180,10 @@ func GetSymbol(market, subscribe string) (symbol string) {
 		subscribe = strings.Replace(subscribe, "ok_sub_spot_", "", 1)
 		subscribe = strings.Replace(subscribe, "_depth_5", "", 1)
 		return subscribe
+	case OKFUTURE: // ok_sub_futureusd_btc_depth_this_week: btc_this_week
+		subscribe = strings.Replace(subscribe, `ok_sub_futureusd_`, ``, 1)
+		subscribe = strings.Replace(subscribe, `_depth`, ``, 1)
+		return subscribe
 	case Binance: // eosusdt@depth5: xrp_btc
 		if strings.Index(subscribe, `@`) == -1 {
 			return ``
@@ -217,6 +228,8 @@ type Config struct {
 	HuobiSecret    string
 	OkexKey        string
 	OkexSecret     string
+	OkfutureKey    string
+	OkfutureSecret string
 	BinanceKey     string
 	BinanceSecret  string
 	CoinbigKey     string
@@ -243,6 +256,7 @@ func NewConfig() {
 	//ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
 	ApplicationConfig.WSUrls[Huobi] = `wss://api.huobi.br.com/ws`
 	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
+	ApplicationConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket`
 	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
 	ApplicationConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
@@ -257,6 +271,7 @@ func NewConfig() {
 	//ApplicationConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	ApplicationConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	ApplicationConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
+	ApplicationConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
 	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"
 	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
@@ -267,6 +282,7 @@ func NewConfig() {
 	ApplicationConfig.MarketCost[Fcoin] = 0
 	ApplicationConfig.MarketCost[Huobi] = 0.0005
 	ApplicationConfig.MarketCost[OKEX] = 0.0005
+	ApplicationConfig.MarketCost[OKFUTURE] = 0.0005
 	ApplicationConfig.MarketCost[Binance] = 0.0004
 	ApplicationConfig.MarketCost[Coinpark] = 0
 	ApplicationConfig.MarketCost[Coinbig] = 0
