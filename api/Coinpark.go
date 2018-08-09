@@ -160,7 +160,6 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	} else {
 		orderType = `2`
 		util.Info(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
-		//return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderType)
 	}
 	symbol = strings.ToUpper(symbol)
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/trade",
@@ -175,18 +174,24 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	if orderJson.Get(`result`) != nil {
 		results, err := orderJson.Get("result").Array()
 		if err == nil && len(results) > 0 {
-			errorData := results[0].(map[string]interface{})[`error`]
 			resultData := results[0].(map[string]interface{})["result"]
 			if resultData != nil {
 				str, _ := resultData.(json.Number).Int64()
 				return strconv.FormatInt(str, 10), ``, ``
 			}
-			if errorData != nil {
-				errCode = errorData.(map[string]interface{})[`code`].(string)
-				errMsg = errorData.(map[string]interface{})[`msg`].(string)
-				return ``, errCode, errMsg
-			}
 		}
+	}
+	errorJson := orderJson.Get(`error`)
+	if errorJson.Get(`error`) != nil {
+		errorCodeJson := errorJson.Get(`code`)
+		if errorCodeJson != nil {
+			errCode, _ = errorCodeJson.String()
+		}
+		errMsgJson := errorJson.Get(`msg`)
+		if errMsgJson != nil {
+			errMsg, _ = errMsgJson.String()
+		}
+		return ``, errCode, errMsg
 	}
 	return ``, ``, `response format err`
 }

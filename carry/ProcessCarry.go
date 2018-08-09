@@ -102,6 +102,8 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 			api.RefreshAccount(carry.BidWeb)
 		}
+		util.Notice(`[下單失敗，休息1分鐘]`)
+		time.Sleep(time.Minute * 1)
 	}
 	model.CarryChannel <- *carry
 }
