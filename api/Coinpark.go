@@ -80,7 +80,7 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, 
 		}
 	}
 	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Coinpark],
-		model.GetSubscribes(model.Coinpark), subscribeHandlerCoinpark, wsHandler, errHandler)
+		model.GetDepthSubscribes(model.Coinpark), subscribeHandlerCoinpark, wsHandler, errHandler)
 }
 
 func SignedRequestCoinpark(method, path, cmds string) []byte {

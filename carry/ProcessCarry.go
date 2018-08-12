@@ -394,8 +394,22 @@ var ProcessCarry = func(symbol, market string) {
 	}
 }
 
-func createServer(markets *model.Markets, carryHandlers []api.CarryHandler, marketName string) chan struct{} {
-	util.SocketInfo(" create chan for " + marketName)
+func createAccountInfoServer(marketName string) chan struct{} {
+	util.SocketInfo(` create account info chan for ` + marketName)
+	var channel chan struct{}
+	var err error
+	switch marketName {
+	case model.OKFUTURE:
+		channel, err = api.WsAccountServeOKFuture(WSErrHandler)
+	}
+	if err != nil {
+		util.SocketInfo(marketName + ` can not create server ` + err.Error())
+	}
+	return channel
+}
+
+func createMarketDepthServer(markets *model.Markets, carryHandlers []api.CarryHandler, marketName string) chan struct{} {
+	util.SocketInfo(" create depth chan for " + marketName)
 	var channel chan struct{}
 	var err error
 	switch marketName {
@@ -424,18 +438,24 @@ func createServer(markets *model.Markets, carryHandlers []api.CarryHandler, mark
 
 var socketMaintaining = false
 
-func MaintainMarketChan(carryHandlers []api.CarryHandler) {
+func MaintainAccountChan() {
+	for _, marketName := range model.GetMarkets() {
+		createAccountInfoServer(marketName)
+	}
+}
+
+func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
 	if socketMaintaining {
 		return
 	}
 	socketMaintaining = true
 	for _, marketName := range model.GetMarkets() {
-		subscribes := model.GetSubscribes(marketName)
+		subscribes := model.GetDepthSubscribes(marketName)
 		for _, subscribe := range subscribes {
 			for index := 0; index < model.ApplicationConfig.Channels; index++ {
 				channel := model.ApplicationMarkets.GetChan(marketName, index)
 				if channel == nil {
-					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
+					model.ApplicationMarkets.PutChan(marketName, index, createMarketDepthServer(model.ApplicationMarkets,
 						carryHandlers, marketName))
 					util.SocketInfo(marketName + " create new channel " + subscribe)
 				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
@@ -443,7 +463,7 @@ func MaintainMarketChan(carryHandlers []api.CarryHandler) {
 					model.ApplicationMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)
-					model.ApplicationMarkets.PutChan(marketName, index, createServer(model.ApplicationMarkets,
+					model.ApplicationMarkets.PutChan(marketName, index, createMarketDepthServer(model.ApplicationMarkets,
 						carryHandlers, marketName))
 				}
 				util.SocketInfo(marketName + " new channel reset done")
@@ -491,8 +511,9 @@ func Maintain() {
 			go RefreshCarryServe()
 		}
 	}
+	go MaintainAccountChan()
 	for true {
-		go MaintainMarketChan(carryHandlers)
+		go MaintainMarketDepthChan(carryHandlers)
 		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)
 	}
 }

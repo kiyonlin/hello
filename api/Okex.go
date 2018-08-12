@@ -83,15 +83,22 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 		}
 	}
 	return WebSocketServe(model.ApplicationConfig.WSUrls[model.OKEX],
-		model.GetSubscribes(model.OKEX), subscribeHandlerOkex, wsHandler, errHandler)
+		model.GetDepthSubscribes(model.OKEX), subscribeHandlerOkex, wsHandler, errHandler)
 }
 
-func signOkex(postData *url.Values, secretKey string) {
+func getSign(postData *url.Values) string {
 	hash := md5.New()
-	toBeSign, _ := url.QueryUnescape(postData.Encode() + "&secret_key=" + secretKey)
+	toBeSign, _ := url.QueryUnescape(postData.Encode() + "&secret_key=" + model.ApplicationConfig.OkexSecret)
 	hash.Write([]byte(toBeSign))
-	sign := hex.EncodeToString(hash.Sum(nil))
-	postData.Set("sign", strings.ToUpper(sign))
+	return strings.ToUpper(hex.EncodeToString(hash.Sum(nil)))
+}
+
+func sendSignRequest(method, path string, postData *url.Values) (response []byte) {
+	postData.Set("api_key", model.ApplicationConfig.OkexKey)
+	postData.Set("sign", getSign(postData))
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	responseBody, _ := util.HttpRequest(method, path, postData.Encode(), headers)
+	return responseBody
 }
 
 // orderType:  限价单（buy/sell） 市价单（buy_market/sell_market）
@@ -123,15 +130,10 @@ func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s order type: %s`, orderSide, orderType))
 		return ``, ``
 	}
-	postData.Set("api_key", model.ApplicationConfig.OkexKey)
 	postData.Set("symbol", symbol)
 	postData.Set("type", orderParam)
-	signOkex(&postData, model.ApplicationConfig.OkexSecret)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST",
-		model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", postData.Encode(), headers)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", &postData)
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("order_id").Int()
 		if orderIdInt != 0 {
@@ -151,14 +153,9 @@ func CancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg s
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
-	postData.Set("api_key", model.ApplicationConfig.OkexKey)
-	signOkex(&postData, model.ApplicationConfig.OkexSecret)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST",
-		model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", postData.Encode(), headers)
+	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", &postData)
 	util.Notice("okex cancel order" + orderId + string(responseBody))
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	cancelResult := false
 	if err == nil {
 		successOrders, _ := orderJson.Get(`success`).Array()
@@ -177,13 +174,8 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float6
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
-	postData.Set("api_key", model.ApplicationConfig.OkexKey)
-	signOkex(&postData, model.ApplicationConfig.OkexSecret)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
-		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do",
-		postData.Encode(), headers)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do", &postData)
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		orders, _ := orderJson.Get("orders").Array()
 		if len(orders) > 0 {
@@ -201,12 +193,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float6
 
 func getAccountOkex(accounts *model.Accounts) {
 	postData := url.Values{}
-	postData.Set("api_key", model.ApplicationConfig.OkexKey)
-	signOkex(&postData, model.ApplicationConfig.OkexSecret)
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent":
-		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("POST", model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do",
-		postData.Encode(), headers)
+	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do", &postData)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		free, _ := balanceJson.GetPath("info", "funds", "free").Map()
@@ -238,6 +225,26 @@ func getAccountOkex(accounts *model.Accounts) {
 			account.Frozen = balance
 		}
 	}
+}
+
+// from 转出账户(1：币币账户 3：合约账户 6：我的钱包)
+// to 转入账户(1：币币账户 3：合约账户 6：我的钱包)
+func FundTransferOkex(symbol, amount, from, to string) (result bool, errCode string) {
+	postData := url.Values{}
+	postData.Set(`symbol`, symbol)
+	postData.Set(`amount`, amount)
+	postData.Set(`from`, from)
+	postData.Set(`to`, to)
+	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/funds_transfer.do", &postData)
+	fmt.Println(string(responseBody))
+	resultJson, err := util.NewJSON(responseBody)
+	if err == nil {
+		result, _ = resultJson.Get(`result`).Bool()
+		code, _ := resultJson.Get(`error_code`).Float64()
+		errCode = strconv.FormatFloat(code, 'f', -1, 64)
+		return result, errCode
+	}
+	return false, err.Error()
 }
 
 func getBuyPriceOkex(symbol string) (buy float64, err error) {

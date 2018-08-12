@@ -71,10 +71,10 @@ func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, e
 	}
 	requestUrl := model.ApplicationConfig.WSUrls[model.Binance]
 
-	for _, subscribe := range model.GetSubscribes(model.Binance) {
+	for _, subscribe := range model.GetDepthSubscribes(model.Binance) {
 		requestUrl += subscribe + "/"
 	}
-	return WebSocketServe(requestUrl, model.GetSubscribes(model.Binance), subscribeHandlerBinance,
+	return WebSocketServe(requestUrl, model.GetDepthSubscribes(model.Binance), subscribeHandlerBinance,
 		wsHandler, errHandler)
 }
 func signBinance(postData *url.Values, secretKey string) {

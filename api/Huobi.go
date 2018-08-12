@@ -95,7 +95,7 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 		}
 	}
 	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Huobi],
-		model.GetSubscribes(model.Huobi), subscribeHandlerHuobi, wsHandler, errHandler)
+		model.GetDepthSubscribes(model.Huobi), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
 func SignedRequestHuobi(method, path string, data map[string]string) []byte {

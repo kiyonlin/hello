@@ -21,6 +21,8 @@ const OrderTypeLimit = `limit`
 const OrderTypeMarket = `market`
 const OrderSideBuy = `buy`
 const OrderSideSell = `sell`
+const OrderSideLiquidateLong = `liquidateLong`
+const OrderSideLiquidateShort = `liquidateShort`
 
 var HuobiAccountId = ""
 var CurrencyPrice = make(map[string]float64)
@@ -69,6 +71,14 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		"1":  CarryStatusWorking, //部分成交
 		"2":  CarryStatusSuccess, //完全成交
 		"3":  CarryStatusWorking, //撤单处理中
+	},
+	OKFUTURE: {
+		`0`:  CarryStatusWorking, //等待成交
+		`1`:  CarryStatusWorking, //部分成交
+		`2`:  CarryStatusSuccess, //全部成交
+		`-1`: CarryStatusFail,    //撤单
+		`4`:  CarryStatusWorking, //撤单处理中
+		`5`:  CarryStatusWorking, //撤单中)
 	},
 	Fcoin: {
 		`submitted`:        CarryStatusWorking, //已提交
@@ -121,7 +131,7 @@ func SetTurtleCarry(market, symbol string, turtleCarry *Carry) {
 }
 
 // TODO filter out unsupported symbol for each market
-func GetWSSubscribe(market, symbol string) (subscribe string) {
+func GetWSDepthSubscribe(market, symbol string) (subscribe string) {
 	switch market {
 	case Huobi: // xrp_btc: market.xrpbtc.depth.step0
 		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
@@ -228,8 +238,6 @@ type Config struct {
 	HuobiSecret    string
 	OkexKey        string
 	OkexSecret     string
-	OkfutureKey    string
-	OkfutureSecret string
 	BinanceKey     string
 	BinanceSecret  string
 	CoinbigKey     string
@@ -289,12 +297,21 @@ func NewConfig() {
 	ApplicationConfig.MarketCost[Bitmex] = 0.0005
 }
 
-func GetSubscribes(marketName string) []string {
+func GetAccountInfoSubscribe(marketName string) []string {
+	switch marketName {
+	case OKFUTURE:
+		//return []string{`ok_sub_futureusd_userinfo`}
+		return []string{`login`}
+}
+	return nil
+}
+
+func GetDepthSubscribes(marketName string) []string {
 	settings := GetMarketSettings(marketName)
 	subscribes := make([]string, len(settings))
 	i := 0
 	for symbol := range settings {
-		subscribes[i] = GetWSSubscribe(marketName, symbol)
+		subscribes[i] = GetWSDepthSubscribe(marketName, symbol)
 		i++
 	}
 	return subscribes

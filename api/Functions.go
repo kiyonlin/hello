@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"math"
 )
 
 // 根据不同的网站返回价格小数位
@@ -139,6 +140,11 @@ func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float
 	case model.OKEX:
 		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
+		contractAmount := math.Floor(amount * price / 100)
+		if contractAmount <= 0 {
+			return ``, `amount not enough`, model.CarryStatusFail
+		}
+		strAmount = strconv.FormatFloat(contractAmount, 'f', 0, 64)
 		orderId, errCode = placeOrderOkfuture(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Binance:
 		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)
