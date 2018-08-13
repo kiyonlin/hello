@@ -7,6 +7,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"strconv"
 )
 
 type BidAsk struct {
@@ -67,6 +68,10 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 		bidAmount = amount
 		askAmount = amount
 	}
+	strBidAmount := strconv.FormatFloat(bidAmount, 'f', 2, 64)
+	strAskAmount := strconv.FormatFloat(askAmount, 'f', 2, 64)
+	bidAmount, _ = strconv.ParseFloat(strBidAmount, 64)
+	askAmount, _ = strconv.ParseFloat(strAskAmount, 64)
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: bidAmount, AskAmount: askAmount,
 		Amount: amount, BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking,
 		DealAskStatus: CarryStatusWorking, BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts), SideType: CarryTypeTurtle}
