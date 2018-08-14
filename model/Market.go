@@ -48,9 +48,9 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	if markets.BidAsks[symbol] == nil {
 		return nil, errors.New("no market data " + symbol)
 	}
-	amount, priceWidth, _ := GetTurtleSetting(market, symbol)
-	if amount == 0 || priceWidth == 0 {
-		return nil, errors.New(fmt.Sprintf(`no amount: %f or no price width: %f`, amount, priceWidth))
+	setting := GetSetting(market, symbol)
+	if setting == nil {
+		return nil, errors.New(fmt.Sprintf(`no setting`))
 	}
 	bidAsks := markets.BidAsks[symbol][market]
 	var bidPrice, askPrice, bidAmount, askAmount float64
@@ -58,22 +58,22 @@ func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
 	if turtleStatus != nil && turtleStatus.LastDealPrice != 0{
 		util.Notice(fmt.Sprintf(`get status when creating turtle extra bid %f - extra ask %f price %f`,
 			turtleStatus.ExtraBid, turtleStatus.ExtraAsk, turtleStatus.LastDealPrice))
-		bidPrice = turtleStatus.LastDealPrice - priceWidth
-		askPrice = turtleStatus.LastDealPrice + priceWidth
-		bidAmount = amount - turtleStatus.ExtraBid
-		askAmount = amount - turtleStatus.ExtraAsk
+		bidPrice = turtleStatus.LastDealPrice - setting.TurtlePriceWidth
+		askPrice = turtleStatus.LastDealPrice + setting.TurtlePriceWidth
+		bidAmount = setting.TurtleLeftAmount - turtleStatus.ExtraBid
+		askAmount = setting.TurtleLeftAmount - turtleStatus.ExtraAsk
 	} else {
-		bidPrice = bidAsks.Asks[0].Price - priceWidth
-		askPrice = bidAsks.Asks[0].Price + priceWidth
-		bidAmount = amount
-		askAmount = amount
+		bidPrice = bidAsks.Asks[0].Price - setting.TurtlePriceWidth
+		askPrice = bidAsks.Asks[0].Price + setting.TurtlePriceWidth
+		bidAmount = setting.TurtleLeftAmount
+		askAmount = setting.TurtleLeftAmount
 	}
 	strBidAmount := strconv.FormatFloat(bidAmount, 'f', 2, 64)
 	strAskAmount := strconv.FormatFloat(askAmount, 'f', 2, 64)
 	bidAmount, _ = strconv.ParseFloat(strBidAmount, 64)
 	askAmount, _ = strconv.ParseFloat(strAskAmount, 64)
 	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: bidAmount, AskAmount: askAmount,
-		Amount: amount, BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking,
+		Amount: setting.TurtleLeftAmount, BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking,
 		DealAskStatus: CarryStatusWorking, BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts), SideType: CarryTypeTurtle}
 	return &carry, nil
 }

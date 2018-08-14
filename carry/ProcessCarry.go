@@ -43,7 +43,12 @@ func setTurtleCarrying(status bool) {
 
 func placeTurtle(market, symbol string, carry *model.Carry) {
 	util.Notice(`begin to place turtle ` + carry.ToString())
-	_, _, coinLimit := model.GetTurtleSetting(market, symbol)
+	setting := model.GetSetting(market, symbol)
+	if carry.BidPrice < setting.MinPrice || carry.AskPrice > setting.MaxPrice {
+		util.Notice(fmt.Sprintf(`超出限额min%f-max%f bid%f-ask%f`,
+			setting.MinPrice, setting.MaxPrice, carry.BidPrice, carry.AskPrice))
+		return
+	}
 	currencies := strings.Split(carry.Symbol, `_`)
 	if len(currencies) != 2 {
 		util.Notice(`wrong symbol format ` + carry.Symbol)
@@ -60,19 +65,24 @@ func placeTurtle(market, symbol string, carry *model.Carry) {
 	askSide := model.OrderSideSell
 	bidSide := model.OrderSideBuy
 	carry.SideType = model.CarryTypeTurtle
-	if carry.AskAmount > coin {
-		util.Notice(fmt.Sprintf(`[both buy]coin %f - ask %f %f - %f`, coin, carry.AskAmount,
-			carry.BidPrice, carry.AskPrice))
-		askSide = model.OrderSideBuy
-		bidSide = model.OrderSideBuy
-		carry.SideType = model.CarryTypeTurtleBothBuy
-	} else if carry.BidAmount > money/carry.BidPrice || coin > coinLimit {
-		util.Notice(fmt.Sprintf(`[both sell] [coin %f - limit %f] [bid %f - can %f] %f - %f`,
-			coin, coinLimit, carry.BidAmount, money/carry.BidPrice, carry.BidPrice, carry.AskPrice))
-		askSide = model.OrderSideSell
-		bidSide = model.OrderSideSell
-		carry.SideType = model.CarryTypeTurtleBothSell
+	if carry.AskAmount > coin || carry.BidAmount > money/carry.BidPrice {
+		util.Notice(fmt.Sprintf(`金额不足coin%f-ask%f money%f-bid%f`, coin, carry.AskAmount, money, carry.BidAmount))
+		return
 	}
+	//if carry.AskAmount > coin {
+	//	util.Notice(fmt.Sprintf(`[both buy]coin %f - ask %f %f - %f`, coin, carry.AskAmount,
+	//		carry.BidPrice, carry.AskPrice))
+	//	askSide = model.OrderSideBuy
+	//	bidSide = model.OrderSideBuy
+	//	carry.SideType = model.CarryTypeTurtleBothBuy
+	//} else if carry.BidAmount > money/carry.BidPrice || coin > float64(setting.TurtleLeftCopy) * setting.TurtleLeftAmount {
+	//	util.Notice(fmt.Sprintf(`[both sell] [coin %f - limit %f] [bid %f - can %f] %f - %f`,
+	//		coin, float64(setting.TurtleLeftCopy) * setting.TurtleLeftAmount, carry.BidAmount,
+	//		money/carry.BidPrice, carry.BidPrice, carry.AskPrice))
+	//	askSide = model.OrderSideSell
+	//	bidSide = model.OrderSideSell
+	//	carry.SideType = model.CarryTypeTurtleBothSell
+	//}
 	if api.CheckOrderValue(currencies[0], carry.AskAmount) {
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(askSide,
 			model.OrderTypeLimit, market, symbol, carry.AskPrice, carry.AskAmount)
@@ -175,7 +185,7 @@ func handleTurtle(market, symbol string, carry *model.Carry, turtleStatus *model
 }
 
 func handleTurtleBothSell(market, symbol string, carry *model.Carry, turtleStatus *model.TurtleStatus) {
-	_, priceWidth, _ := model.GetTurtleSetting(market, symbol)
+	setting := model.GetSetting(market, symbol)
 	marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
 	if marketBidPrice < carry.BidPrice { // 價格未能夾住
 		if carry.DealAskStatus != model.CarryStatusSuccess {
@@ -194,7 +204,7 @@ func handleTurtleBothSell(market, symbol string, carry *model.Carry, turtleStatu
 		carry.DealAskStatus = model.CarryStatusFail
 		model.CarryChannel <- *carry
 		model.SetTurtleCarry(market, symbol, nil)
-		turtleStatus := &model.TurtleStatus{LastDealPrice: carry.BidPrice - priceWidth,
+		turtleStatus := &model.TurtleStatus{LastDealPrice: carry.BidPrice - setting.TurtlePriceWidth,
 			ExtraAsk: turtleStatus.ExtraAsk + carry.DealAskAmount, ExtraBid: turtleStatus.ExtraBid + carry.DealBidAmount}
 		model.SetTurtleStatus(market, symbol, turtleStatus)
 		api.RefreshAccount(market)
@@ -225,7 +235,7 @@ func handleTurtleBothSell(market, symbol string, carry *model.Carry, turtleStatu
 }
 
 func handleTurtleBothBuy(market, symbol string, carry *model.Carry, turtleStatus *model.TurtleStatus) {
-	_, priceWidth, _ := model.GetTurtleSetting(market, symbol)
+	setting := model.GetSetting(market, symbol)
 	marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
 	if marketAskPrice > carry.AskPrice {
 		if carry.DealAskStatus == model.CarryStatusSuccess {
@@ -240,7 +250,7 @@ func handleTurtleBothBuy(market, symbol string, carry *model.Carry, turtleStatus
 		carry.DealAskStatus = model.CarryStatusFail
 		model.CarryChannel <- *carry
 		model.SetTurtleCarry(market, symbol, nil)
-		turtleStatus := &model.TurtleStatus{LastDealPrice: carry.AskPrice + priceWidth,
+		turtleStatus := &model.TurtleStatus{LastDealPrice: carry.AskPrice + setting.TurtlePriceWidth,
 			ExtraAsk: turtleStatus.ExtraAsk + carry.DealAskAmount, ExtraBid: turtleStatus.ExtraBid + carry.DealBidAmount}
 		model.SetTurtleStatus(market, symbol, turtleStatus)
 		api.RefreshAccount(market)
@@ -438,7 +448,7 @@ func createMarketDepthServer(markets *model.Markets, carryHandlers []api.CarryHa
 
 var socketMaintaining = false
 
-func MaintainAccountChan() {
+func _() {
 	for _, marketName := range model.GetMarkets() {
 		createAccountInfoServer(marketName)
 	}
@@ -511,7 +521,7 @@ func Maintain() {
 			go RefreshCarryServe()
 		}
 	}
-	go MaintainAccountChan()
+	//go MaintainAccountChan()
 	for true {
 		go MaintainMarketDepthChan(carryHandlers)
 		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)

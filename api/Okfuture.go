@@ -208,12 +208,8 @@ func QueryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice fl
 	for _, value := range orders {
 		order, _ := value.(map[string]interface{})[`order_id`].(json.Number).Int64()
 		if strconv.FormatInt(order, 10) == orderId {
-			contractAmount, _ := value.(map[string]interface{})[`deal_amount`].(json.Number).Float64()
+			dealAmount, _ = value.(map[string]interface{})[`deal_amount`].(json.Number).Float64()
 			contractPrice, _ := value.(map[string]interface{})[`price_avg`].(json.Number).Float64()
-			unitAmount, _ := value.(map[string]interface{})[`unit_amount`].(json.Number).Float64()
-			if contractAmount > 0 && contractPrice > 0 {
-				dealAmount = contractAmount * unitAmount / contractPrice
-			}
 			statusCode, _ := value.(map[string]interface{})[`status`].(json.Number).Float64()
 			status = model.GetOrderStatus(model.OKFUTURE, strconv.FormatFloat(statusCode, 'f', 0, 64))
 			return dealAmount, contractPrice, status
@@ -239,5 +235,10 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 	return false, ``, err.Error()
 }
 
-func getAccountOkfuture(accounts *model.Accounts) {
+func getPositionOkfuture(accounts *model.Accounts, symbol string) {
+	postData := url.Values{}
+	postData.Set(`symbol`, getSymbol(symbol))
+	postData.Set(`contract_type`, getContractType(symbol))
+	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKFUTURE]+"/future_position.do", &postData)
+	fmt.Println(string(responseBody))
 }

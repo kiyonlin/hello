@@ -102,8 +102,6 @@ func RefreshAccount(market string) {
 		}
 	case model.OKEX:
 		getAccountOkex(model.ApplicationAccounts)
-	case model.OKFUTURE:
-		getAccountOkfuture(model.ApplicationAccounts)
 	case model.Binance:
 		getAccountBinance(model.ApplicationAccounts)
 		if model.ApplicationConfig.BnbMin > 0 && model.ApplicationConfig.BnbBuy > 0 {

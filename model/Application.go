@@ -31,6 +31,7 @@ var GetBuyPriceTime = make(map[string]int64)
 var ApplicationConfig *Config
 var ApplicationTurtleStatus map[string]map[string]*TurtleStatus
 var ApplicationAccounts = NewAccounts()
+var ApplicationFutureAccount = make(map[string]map[string]FutureAccount) // market - symbol - future account
 var ApplicationDB *gorm.DB
 var ApplicationSettings []Setting
 var CarryChannel = make(chan Carry, 50)

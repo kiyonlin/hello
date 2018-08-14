@@ -7,6 +7,8 @@ type Setting struct {
 	TurtleLeftCopy   int
 	TurtleLeftAmount float64
 	TurtlePriceWidth float64
+	MinPrice         float64
+	MaxPrice         float64
 	Valid            bool
 	ID               uint `gorm:"primary_key"`
 }
@@ -41,16 +43,23 @@ func GetMarkets() []string {
 	return markets
 }
 
-func GetTurtleSetting(market, symbol string) (amount, priceWidth, leftLimit float64) {
+func GetSetting(market, symbol string) *Setting  {
 	if marketSymbolSetting[market] == nil {
-		return 0, 0, 0
+		return nil
 	}
-	if marketSymbolSetting[market][symbol] == nil {
-		return 0, 0, 0
-	}
-	setting := marketSymbolSetting[market][symbol]
-	return setting.TurtleLeftAmount, setting.TurtlePriceWidth, float64(setting.TurtleLeftCopy) * setting.TurtleLeftAmount
+	return marketSymbolSetting[market][symbol]
 }
+
+//func GetSetting(market, symbol string) (amount, priceWidth, leftLimit float64) {
+//	if marketSymbolSetting[market] == nil {
+//		return 0, 0, 0
+//	}
+//	if marketSymbolSetting[market][symbol] == nil {
+//		return 0, 0, 0
+//	}
+//	setting := marketSymbolSetting[market][symbol]
+//	return setting.TurtleLeftAmount, setting.TurtlePriceWidth, float64(setting.TurtleLeftCopy) * setting.TurtleLeftAmount
+//}
 
 func GetMargin(symbol string) float64 {
 	margins := make(map[string]float64)
