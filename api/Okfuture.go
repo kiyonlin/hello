@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"github.com/pkg/errors"
 )
 
 var subscribeHandlerOKFuture = func(subscribes []string, conn *websocket.Conn) error {
@@ -25,7 +26,7 @@ var subscribeHandlerOKFuture = func(subscribes []string, conn *websocket.Conn) e
 			subBook = fmt.Sprintf(`{'event':'addChannel','channel':'%s','parameters':{'api_key':'%s','sign':'%s'}}`,
 				v, model.ApplicationConfig.OkexKey, getSign(&postData))
 		}
-		fmt.Println(subBook)
+		//fmt.Println(subBook)
 		err = conn.WriteMessage(websocket.TextMessage, []byte(subBook))
 		if err != nil {
 			util.SocketInfo("okfuture can not subscribe " + err.Error())
@@ -47,7 +48,7 @@ func WsAccountServeOKFuture(errHandler ErrHandler) (chan struct{}, error) {
 		if len(event) == 0 {
 			return
 		}
-		fmt.Println(string(event))
+		//fmt.Println(string(event))
 	}
 	return WebSocketServe(model.ApplicationConfig.WSUrls[model.OKFUTURE],
 		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
@@ -78,6 +79,9 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 			bidMap := make(map[float64]*model.Tick)
 			askMap := make(map[float64]*model.Tick)
 			subscribe := value.(map[string]interface{})[`channel`].(string)
+			if !strings.Contains(subscribe, `_`) {
+				return
+			}
 			symbol := model.GetSymbol(model.OKFUTURE, subscribe)
 			if markets.BidAsks[symbol][model.OKFUTURE] != nil {
 				bidMap = markets.BidAsks[symbol][model.OKFUTURE].Asks.GetMap()
@@ -235,10 +239,27 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 	return false, ``, err.Error()
 }
 
-func getPositionOkfuture(accounts *model.Accounts, symbol string) {
+func getPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error){
 	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`contract_type`, getContractType(symbol))
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKFUTURE]+"/future_position.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKFUTURE]+
+		"/future_position.do", &postData)
 	fmt.Println(string(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
+	if err != nil {
+		return nil, err
+	}
+	result, _ := orderJson.Get(`result`).Bool()
+	if !result {
+		return nil, errors.New(`result false`)
+	}
+	holdings, _ := orderJson.Get(`holding`).Array()
+	if len(holdings) > 0 {
+		value := holdings[0].(map[string]interface{})
+		openLong, _ := value[`buy_available`].(json.Number).Float64()
+		openShort, _ := value[`sell_available`].(json.Number).Float64()
+		futureAccount = &model.FutureAccount{Market:market, Symbol:symbol, OpenedLong: openLong, OpenedShort:openShort}
+	}
+	return futureAccount, nil
 }

@@ -7,6 +7,9 @@ import (
 	"sync"
 )
 
+const OKEXBTCContractFaceValue = 100
+const OKEXOtherContractFaceValue = 10
+const OKLever = 10
 const OKEX = "okex"
 const OKFUTURE = `okfuture`
 const Huobi = "huobi"
@@ -31,7 +34,7 @@ var GetBuyPriceTime = make(map[string]int64)
 var ApplicationConfig *Config
 var ApplicationTurtleStatus map[string]map[string]*TurtleStatus
 var ApplicationAccounts = NewAccounts()
-var ApplicationFutureAccount = make(map[string]map[string]FutureAccount) // market - symbol - future account
+var ApplicationFutureAccount = make(map[string]map[string]*FutureAccount) // market - symbol - future account
 var ApplicationDB *gorm.DB
 var ApplicationSettings []Setting
 var CarryChannel = make(chan Carry, 50)
@@ -303,7 +306,7 @@ func GetAccountInfoSubscribe(marketName string) []string {
 	case OKFUTURE:
 		//return []string{`ok_sub_futureusd_userinfo`}
 		return []string{`login`}
-}
+	}
 	return nil
 }
 

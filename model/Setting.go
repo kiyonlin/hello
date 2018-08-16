@@ -3,12 +3,14 @@ package model
 type Setting struct {
 	Market           string
 	Symbol           string
-	Margin           float64
-	TurtleLeftCopy   int
-	TurtleLeftAmount float64
-	TurtlePriceWidth float64
-	MinPrice         float64
-	MaxPrice         float64
+	Margin           float64 // carry use
+	TurtleLeftCopy   int     // turtle use
+	TurtleLeftAmount float64 // turtle use
+	TurtlePriceWidth float64 // turtle use
+	MinPrice         float64 // turtle use
+	MaxPrice         float64 // turtle use
+	OpenShortMargin  float64 // future use
+	CloseShortMargin float64 // future use
 	Valid            bool
 	ID               uint `gorm:"primary_key"`
 }
@@ -43,23 +45,22 @@ func GetMarkets() []string {
 	return markets
 }
 
-func GetSetting(market, symbol string) *Setting  {
+func GetSymbols(market string) []string {
+	symbols := make([]string, len(marketSymbolSetting[market]))
+	i := 0
+	for key := range marketSymbolSetting[market] {
+		symbols[i] = key
+		i++
+	}
+	return symbols
+}
+
+func GetSetting(market, symbol string) *Setting {
 	if marketSymbolSetting[market] == nil {
 		return nil
 	}
 	return marketSymbolSetting[market][symbol]
 }
-
-//func GetSetting(market, symbol string) (amount, priceWidth, leftLimit float64) {
-//	if marketSymbolSetting[market] == nil {
-//		return 0, 0, 0
-//	}
-//	if marketSymbolSetting[market][symbol] == nil {
-//		return 0, 0, 0
-//	}
-//	setting := marketSymbolSetting[market][symbol]
-//	return setting.TurtleLeftAmount, setting.TurtlePriceWidth, float64(setting.TurtleLeftCopy) * setting.TurtleLeftAmount
-//}
 
 func GetMargin(symbol string) float64 {
 	margins := make(map[string]float64)

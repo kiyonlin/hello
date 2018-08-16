@@ -94,9 +94,14 @@ func getSign(postData *url.Values) string {
 }
 
 func sendSignRequest(method, path string, postData *url.Values) (response []byte) {
-	postData.Set("api_key", model.ApplicationConfig.OkexKey)
-	postData.Set("sign", getSign(postData))
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
+	if method == `GET` {
+		path += `?` + postData.Encode()
+	} else {
+		postData.Set("api_key", model.ApplicationConfig.OkexKey)
+		postData.Set("sign", getSign(postData))
+	}
 	responseBody, _ := util.HttpRequest(method, path, postData.Encode(), headers)
 	return responseBody
 }
@@ -229,10 +234,12 @@ func getAccountOkex(accounts *model.Accounts) {
 
 // from 转出账户(1：币币账户 3：合约账户 6：我的钱包)
 // to 转入账户(1：币币账户 3：合约账户 6：我的钱包)
-func FundTransferOkex(symbol, amount, from, to string) (result bool, errCode string) {
+func FundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
 	postData := url.Values{}
+	symbol = strings.Replace(symbol, `usdt`, `usd`, -1)
 	postData.Set(`symbol`, symbol)
-	postData.Set(`amount`, amount)
+	strAmount := strconv.FormatFloat(amount, 'f', GetAmountDecimal(model.OKEX), 64)
+	postData.Set(`amount`, strAmount)
 	postData.Set(`from`, from)
 	postData.Set(`to`, to)
 	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/funds_transfer.do", &postData)
@@ -259,4 +266,16 @@ func getBuyPriceOkex(symbol string) (buy float64, err error) {
 		model.CurrencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
 	}
 	return model.CurrencyPrice[symbol], err
+}
+
+func GetKLineOkex(symbol, timeSlot string, size int64) []interface{} {
+	postData := url.Values{}
+	postData.Set(`symbol`, symbol)
+	postData.Set(`type`, timeSlot)
+	postData.Set(`size`, strconv.FormatInt(size, 10))
+	responseBody := sendSignRequest(`GET`, model.ApplicationConfig.RestUrls[model.OKEX]+"/kline.do", &postData)
+	fmt.Println(string(responseBody))
+	dataJson, _ := util.NewJSON(responseBody)
+	data, _ := dataJson.Array()
+	return data
 }

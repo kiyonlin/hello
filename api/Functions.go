@@ -5,10 +5,10 @@ import (
 	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
+	"math"
 	"strconv"
 	"strings"
 	"time"
-	"math"
 )
 
 // 根据不同的网站返回价格小数位
@@ -32,6 +32,15 @@ func GetPriceDecimal(market, symbol string) int {
 		case `cp_eth`, `cp_btc`:
 			return 8
 		}
+	}
+	return 8
+}
+
+func GetAmountDecimal(market string) int {
+	switch market {
+	case model.OKEX:
+	case `eos_usdt`, `btc_usdt`:
+		return 4
 	}
 	return 8
 }
@@ -102,6 +111,19 @@ func RefreshAccount(market string) {
 		}
 	case model.OKEX:
 		getAccountOkex(model.ApplicationAccounts)
+	case model.OKFUTURE:
+		symbols := model.GetSymbols(market)
+		for _, value := range symbols {
+			futureAccount, err := getPositionOkfuture(market, value)
+			if err == nil {
+				if model.ApplicationFutureAccount[model.OKFUTURE] == nil {
+					model.ApplicationFutureAccount[model.OKFUTURE] = make(map[string]*model.FutureAccount)
+				}
+				model.ApplicationFutureAccount[model.OKFUTURE][value] = futureAccount
+			} else {
+				util.Notice(`[future account refresh error]` + market + value + err.Error())
+			}
+		}
 	case model.Binance:
 		getAccountBinance(model.ApplicationAccounts)
 		if model.ApplicationConfig.BnbMin > 0 && model.ApplicationConfig.BnbBuy > 0 {
@@ -112,7 +134,6 @@ func RefreshAccount(market string) {
 					0, model.ApplicationConfig.BnbBuy)
 			}
 		}
-
 	case model.Fcoin:
 		getAccountFcoin(model.ApplicationAccounts)
 	case model.Coinpark:
@@ -125,7 +146,7 @@ func RefreshAccount(market string) {
 	Maintain(model.ApplicationAccounts, market)
 }
 
-// orderSide: OrderSideBuy OrderSideSell
+// orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float64) (orderId, errCode, status string) {
@@ -138,10 +159,13 @@ func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float
 	case model.OKEX:
 		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
-		contractAmount := math.Floor(amount * price / 100)
-		if contractAmount <= 0 {
-			return ``, `amount not enough`, model.CarryStatusFail
+		contractAmount := math.Floor(amount * price / model.OKEXOtherContractFaceValue)
+		if strings.Contains(symbol, `btc`) {
+			contractAmount = math.Floor(amount * price / model.OKEXBTCContractFaceValue)
 		}
+		if contractAmount < 1 {
+			return ``, `amount not enough`, model.CarryStatusFail
+		} // 轉換成合約張數
 		strAmount = strconv.FormatFloat(contractAmount, 'f', 0, 64)
 		orderId, errCode = placeOrderOkfuture(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Binance:
