@@ -153,6 +153,6 @@ func testApi() {
 	//api.CancelOrder(`binance`, `eos_usdt`, `184201445`)
 }
 
-func main() {
+func _() {
 	testApi()
 }
