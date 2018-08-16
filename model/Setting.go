@@ -1,18 +1,14 @@
 package model
 
 type Setting struct {
-	Market           string
-	Symbol           string
-	Margin           float64 // carry use
-	TurtleLeftCopy   int     // turtle use
-	TurtleLeftAmount float64 // turtle use
-	TurtlePriceWidth float64 // turtle use
-	MinPrice         float64 // turtle use
-	MaxPrice         float64 // turtle use
-	OpenShortMargin  float64 // future use
-	CloseShortMargin float64 // future use
-	Valid            bool
-	ID               uint `gorm:"primary_key"`
+	Market            string
+	Symbol            string
+	Margin            float64 // carry use
+	OpenShortMargin   float64 // future use
+	CloseShortMargin  float64 // future use
+	TurtleBalanceRate float64
+	Valid             bool
+	ID                uint `gorm:"primary_key"`
 }
 
 var marketSymbolSetting map[string]map[string]*Setting // marketName - symbol - setting

@@ -9,7 +9,6 @@ import (
 	"hello/model"
 	"hello/util"
 	"strconv"
-	"time"
 )
 
 var lastPrice float64
@@ -36,38 +35,39 @@ func initMoney() {
 	balance = 10000
 	coin = 5000 / priceKLine[0].EndPrice
 	lastPrice = priceKLine[0].EndPrice
-	fmt.Println(fmt.Sprintf(`buy%f`, lastPrice))
+	//fmt.Println(fmt.Sprintf(`buy%f`, lastPrice))
 }
-func sell(klPoint KLinePoint, price float64) {
+
+func sell(_ KLinePoint, price float64) {
 	diff := coin*price - money
 	coin -= diff / 2 / price
 	money += (diff / 2) * (1 - tradeFee)
 	balance = money + coin*price
-	strTime := time.Unix(klPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
-	fmt.Println(fmt.Sprintf(`%s sell %f  money %f coin %f coin money %f in all %f`,
-		strTime, price, money, coin, coin*price, balance))
+	//strTime := time.Unix(klPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
+	//fmt.Println(fmt.Sprintf(`%s sell %f  money %f coin %f coin money %f in all %f`,
+	//	strTime, price, money, coin, coin*price, balance))
 	lastPrice = price
 	totalSell += lastPrice
 	countSell++
 }
 
-func buy(klPoint KLinePoint, price float64) {
+func buy(_ KLinePoint, price float64) {
 	diff := money - coin*price
 	coin += (diff / 2 / price) * (1 - tradeFee)
 	money -= diff / 2
 	balance = money + coin*price
-	strTime := time.Unix(klPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
-	fmt.Println(fmt.Sprintf(`%s buy %f  money %f coin %f coin money %f in all %f`,
-		strTime, price, money, coin, coin*price, balance))
+	//strTime := time.Unix(klPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
+	//fmt.Println(fmt.Sprintf(`%s buy %f  money %f coin %f coin money %f in all %f`,
+	//	strTime, price, money, coin, coin*price, balance))
 	lastPrice = price
 	totalBuy += lastPrice
 	countBuy++
 }
 
 func printBalance() {
-	fmt.Println(fmt.Sprintf(`buy1 %f sell1 %f count buy1 %d count sell1 %d avg buy1 %f avg sell1 %f`,
-		totalBuy, totalSell, countBuy, countSell, totalBuy/float64(countBuy), totalSell/float64(countSell)))
-	fmt.Println(fmt.Sprintf(`条数%d 净值%f`, len(priceKLine), coin*priceKLine[0].EndPrice+money))
+	//fmt.Println(fmt.Sprintf(`buy1 %f sell1 %f count buy1 %d count sell1 %d avg buy1 %f avg sell1 %f`,
+	//	totalBuy, totalSell, countBuy, countSell, totalBuy/float64(countBuy), totalSell/float64(countSell)))
+	//fmt.Println(fmt.Sprintf(`条数%d 净值%f`, len(priceKLine), coin*priceKLine[0].EndPrice+money))
 }
 
 func analyzeKLine(data []interface{}, percentage float64) {
@@ -101,7 +101,7 @@ func analyzeKLine(data []interface{}, percentage float64) {
 		if (priceKLine[i].HighPrice-lastPrice)*coin/balance > percentage {
 			sell(priceKLine[i], percentage*balance/coin+lastPrice)
 		}
-		if lastPrice-priceKLine[i].LowPrice > 0{
+		if (lastPrice-priceKLine[i].LowPrice)*coin/balance > percentage {
 			buy(priceKLine[i], lastPrice-percentage*balance/coin)
 		}
 	}
@@ -124,8 +124,28 @@ func testApi() {
 	//model.LoadSettings()
 	//setting := model.ApplicationFutureAccount[model.OKFUTURE][`btc_this_week`]
 	size := 2000
-	data := api.GetKLineOkex(`btc_usdt`, `1min`, int64(size))
-	analyzeKLine(data, 0.03)
+	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
+	slots := []string{`1min`, `5min`, `30min`, `1hour`, `6hour`, `12hour`, `1day`}
+	percentages := []float64{0.001, 0.003, 0.005, 0.01, 0.03, 0.05, 0.1, 0.3}
+	results := make(map[string]map[float64]map[string]float64)
+	for _, slot := range slots {
+		fmt.Print("\n" + slot)
+		results[slot] = make(map[float64]map[string]float64)
+		for _, percentage := range percentages {
+			results[slot][percentage] = make(map[string]float64)
+			fmt.Print(fmt.Sprintf("\n %f", percentage))
+			for _, symbol := range symbols {
+				data := api.GetKLineOkex(symbol, slot, int64(size))
+				analyzeKLine(data, percentage)
+				results[slot][percentage][symbol] = coin*priceKLine[0].EndPrice + money
+				fmt.Print(fmt.Sprintf(`	%s:%f `, symbol, results[slot][percentage][symbol]))
+			}
+		}
+	}
+	fmt.Println()
+	// 5min eth 0.009> eos 0.007 > btc 0.0018
+	// 1min btc 净值10004 eth 净值10008 eos 净值10005
+	// 30min eos 净值10638.965867
 	//result, errCode := api.FundTransferOkex(`eos_usd`, 21.3711, `3`, `1`)
 	//fmt.Println(fmt.Sprintf(`return %t %s`, result, errCode))
 	//fmt.Println(fmt.Sprintf(`market %s symbol %s %f %f`, setting.Market, setting.Symbol, setting.OpenedShort, setting.OpenedLong))

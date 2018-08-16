@@ -274,7 +274,7 @@ func GetKLineOkex(symbol, timeSlot string, size int64) []interface{} {
 	postData.Set(`type`, timeSlot)
 	postData.Set(`size`, strconv.FormatInt(size, 10))
 	responseBody := sendSignRequest(`GET`, model.ApplicationConfig.RestUrls[model.OKEX]+"/kline.do", &postData)
-	fmt.Println(string(responseBody))
+	//fmt.Println(string(responseBody))
 	dataJson, _ := util.NewJSON(responseBody)
 	data, _ := dataJson.Array()
 	return data

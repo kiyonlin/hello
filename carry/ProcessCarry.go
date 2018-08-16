@@ -231,8 +231,8 @@ func Maintain() {
 		case `carry`:
 			go MaintainOrders()
 			carryHandlers[i] = ProcessCarry
-		case `turtle`:
-			carryHandlers[i] = ProcessTurtle
+		case `balanceturtle`:
+			carryHandlers[i] = ProcessBalanceTurtle
 		case `refresh`:
 			carryHandlers[i] = ProcessRefresh
 			go RefreshCarryServe()

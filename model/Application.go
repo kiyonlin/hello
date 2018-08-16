@@ -43,15 +43,11 @@ var InnerCarryChannel = make(chan Carry, 50)
 var RefreshCarryChannel = make(chan Carry, 50)
 
 var ApplicationMarkets = NewMarkets()
-var TurtleCarries = make(map[string]map[string]*Carry) // market - symbol - *carry
+var BalanceTurtleCarries = make(map[string]map[string]*Carry) // market - symbol - *carry
 
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
-
-const CarryTypeTurtle = `turtle`
-const CarryTypeTurtleBothSell = `turtle_both_sell`
-const CarryTypeTurtleBothBuy = `turtle_both_buy`
 
 var orderStatusMap = map[string]map[string]string{ // market - market status - united status
 	Binance: {
@@ -120,18 +116,18 @@ func GetOrderStatus(market, marketStatus string) (status string) {
 	return orderStatusMap[market][marketStatus]
 }
 
-func GetTurtleCarry(market, symbol string) (turtleCarry *Carry) {
-	if TurtleCarries[market] == nil {
+func GetBalanceTurtleCarry(market, symbol string) (turtleCarry *Carry) {
+	if BalanceTurtleCarries[market] == nil {
 		return nil
 	}
-	return TurtleCarries[market][symbol]
+	return BalanceTurtleCarries[market][symbol]
 }
 
-func SetTurtleCarry(market, symbol string, turtleCarry *Carry) {
-	if TurtleCarries[market] == nil {
-		TurtleCarries[market] = make(map[string]*Carry)
+func SetBalanceTurtleCarry(market, symbol string, turtleCarry *Carry) {
+	if BalanceTurtleCarries[market] == nil {
+		BalanceTurtleCarries[market] = make(map[string]*Carry)
 	}
-	TurtleCarries[market][symbol] = turtleCarry
+	BalanceTurtleCarries[market][symbol] = turtleCarry
 }
 
 // TODO filter out unsupported symbol for each market
