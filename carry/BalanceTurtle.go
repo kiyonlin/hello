@@ -43,6 +43,7 @@ var ProcessBalanceTurtle = func(symbol, market string) {
 	} else {
 		carry := model.GetBalanceTurtleCarry(market, symbol)
 		handleTurtle(market, symbol, carry)
+		api.RefreshAccount(market)
 	}
 }
 
