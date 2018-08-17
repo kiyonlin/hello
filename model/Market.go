@@ -61,8 +61,9 @@ func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rig
 	bidBalance := bidPrice*leftAmount + rightAmount
 	bidAmount := leftRate * (lastBalance - bidBalance) / bidPrice
 	util.Notice(fmt.Sprintf(`比例coin - money %f - %f`, leftRate, rightRate))
+	now := util.GetNowUnixMillion()
 	return &Carry{Symbol: symbol, BidWeb: market, AskWeb: market, BidAmount: bidAmount, AskAmount: askAmount,
-		BidPrice: bidPrice, AskPrice: askPrice, SideType: CarryTypeBalance}, nil
+		BidPrice: bidPrice, AskPrice: askPrice, SideType: CarryTypeBalance, BidTime: now, AskTime: now}, nil
 }
 
 //func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
