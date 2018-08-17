@@ -188,8 +188,8 @@ func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float
 	} else {
 		status = model.CarryStatusWorking
 	}
-	util.Notice(fmt.Sprintf(`[%s-%s] %s %s price: %f amount %f [orderId: %s] errCode %s`, orderSide, orderType,
-		market, symbol, price, amount, orderId, errCode))
+	//util.Notice(fmt.Sprintf(`[%s-%s] %s %s price: %f amount %f [orderId: %s] errCode %s`, orderSide, orderType,
+	//	market, symbol, price, amount, orderId, errCode))
 	return orderId, errCode, status
 }
 
@@ -268,7 +268,8 @@ func GetPrice(symbol string) (buy float64, err error) {
 	return getBuyPriceOkex(symbol)
 }
 
-func CheckOrderValue(currency string, amount float64) (result bool) {
+//CheckOrderValue
+func _(currency string, amount float64) (result bool) {
 	currencyPrice, _ := GetPrice(currency + `_usdt`)
 	if currencyPrice*amount < model.ApplicationConfig.MinUsdt {
 		util.Notice(fmt.Sprintf(`%s下单数量%f不足%f usdt`, currency, amount, model.ApplicationConfig.MinUsdt))
