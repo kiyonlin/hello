@@ -2,9 +2,9 @@ package model
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"strings"
+		"strings"
 	"sync"
+	"github.com/jinzhu/gorm"
 )
 
 const OKEXBTCContractFaceValue = 100
@@ -20,34 +20,32 @@ const Coinpark = "coinpark"
 const Btcdo = `btcdo`
 const Bitmex = `bitmex`
 
+const CarryStatusSuccess = "success"
+const CarryStatusFail = "fail"
+const CarryStatusWorking = "working"
 const OrderTypeLimit = `limit`
 const OrderTypeMarket = `market`
 const OrderSideBuy = `buy`
 const OrderSideSell = `sell`
 const OrderSideLiquidateLong = `liquidateLong`
 const OrderSideLiquidateShort = `liquidateShort`
+const CarryTypeBalance = `balance`
+
+var AppDB *gorm.DB
+var AppSettings []Setting
+var AppConfig *Config
+var AppMarkets = NewMarkets()
+var AppAccounts = NewAccounts()
+var AppFutureAccount = make(map[string]map[string]*FutureAccount) // market - symbol - future account
 
 var HuobiAccountId = ""
-var CurrencyPrice = make(map[string]float64)
-var GetBuyPriceTime = make(map[string]int64)
-
-var ApplicationConfig *Config
-var ApplicationTurtleStatus map[string]map[string]*TurtleStatus
-var ApplicationAccounts = NewAccounts()
-var ApplicationFutureAccount = make(map[string]map[string]*FutureAccount) // market - symbol - future account
-var ApplicationDB *gorm.DB
-var ApplicationSettings []Setting
 var CarryChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var InnerCarryChannel = make(chan Carry, 50)
 var RefreshCarryChannel = make(chan Carry, 50)
-
-var ApplicationMarkets = NewMarkets()
+var CurrencyPrice = make(map[string]float64)
+var GetBuyPriceTime = make(map[string]int64)
 var BalanceTurtleCarries = make(map[string]map[string]*Carry) // market - symbol - *carry
-
-const CarryStatusSuccess = "success"
-const CarryStatusFail = "fail"
-const CarryStatusWorking = "working"
 
 var orderStatusMap = map[string]map[string]string{ // market - market status - united status
 	Binance: {
@@ -259,42 +257,42 @@ type Config struct {
 }
 
 func NewConfig() {
-	ApplicationConfig = &Config{}
-	ApplicationConfig.WSUrls = make(map[string]string)
-	//ApplicationConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
-	ApplicationConfig.WSUrls[Huobi] = `wss://api.huobi.br.com/ws`
-	ApplicationConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
-	ApplicationConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket`
-	ApplicationConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
-	ApplicationConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
-	ApplicationConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
-	ApplicationConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
-	ApplicationConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
-	//ApplicationConfig.WSUrls[Bitmex] = `wss://www.bitmex.com/realtime/`
-	ApplicationConfig.WSUrls[Bitmex] = `wss://testnet.bitmex.com/realtime`
-	ApplicationConfig.RestUrls = make(map[string]string)
+	AppConfig = &Config{}
+	AppConfig.WSUrls = make(map[string]string)
+	//AppConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
+	AppConfig.WSUrls[Huobi] = `wss://api.huobi.br.com/ws`
+	AppConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
+	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket`
+	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
+	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
+	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
+	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
+	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
+	//AppConfig.WSUrls[Bitmex] = `wss://www.bitmex.com/realtime/`
+	AppConfig.WSUrls[Bitmex] = `wss://testnet.bitmex.com/realtime`
+	AppConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
-	ApplicationConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
-	//ApplicationConfig.RestUrls[Huobi] = "https://api.huobi.pro"
-	ApplicationConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
-	ApplicationConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
-	ApplicationConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
-	ApplicationConfig.RestUrls[Binance] = "https://api.binance.com"
-	ApplicationConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
-	ApplicationConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
-	ApplicationConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
-	//ApplicationConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
-	ApplicationConfig.RestUrls[Bitmex] = ` https://testnet.bitmex.com/api/v1`
-	ApplicationConfig.MarketCost = make(map[string]float64)
-	ApplicationConfig.MarketCost[Fcoin] = 0
-	ApplicationConfig.MarketCost[Huobi] = 0.0005
-	ApplicationConfig.MarketCost[OKEX] = 0.0005
-	ApplicationConfig.MarketCost[OKFUTURE] = 0.0005
-	ApplicationConfig.MarketCost[Binance] = 0.0004
-	ApplicationConfig.MarketCost[Coinpark] = 0
-	ApplicationConfig.MarketCost[Coinbig] = 0
-	ApplicationConfig.MarketCost[Bitmex] = 0.0005
+	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
+	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
+	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
+	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
+	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
+	AppConfig.RestUrls[Binance] = "https://api.binance.com"
+	AppConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
+	AppConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
+	AppConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
+	//AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
+	AppConfig.RestUrls[Bitmex] = ` https://testnet.bitmex.com/api/v1`
+	AppConfig.MarketCost = make(map[string]float64)
+	AppConfig.MarketCost[Fcoin] = 0
+	AppConfig.MarketCost[Huobi] = 0.0005
+	AppConfig.MarketCost[OKEX] = 0.0005
+	AppConfig.MarketCost[OKFUTURE] = 0.0005
+	AppConfig.MarketCost[Binance] = 0.0004
+	AppConfig.MarketCost[Coinpark] = 0
+	AppConfig.MarketCost[Coinbig] = 0
+	AppConfig.MarketCost[Bitmex] = 0.0005
 }
 
 func GetAccountInfoSubscribe(marketName string) []string {

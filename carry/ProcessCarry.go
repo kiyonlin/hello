@@ -36,7 +36,7 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 }
 
 var ProcessCarry = func(symbol, market string) {
-	carry, err := model.ApplicationMarkets.NewCarry(symbol)
+	carry, err := model.AppMarkets.NewCarry(symbol)
 	if err != nil {
 		util.Notice(`can not create carry ` + err.Error())
 		return
@@ -47,13 +47,13 @@ var ProcessCarry = func(symbol, market string) {
 	currencies := strings.Split(carry.Symbol, "_")
 	leftBalance := 0.0
 	rightBalance := 0.0
-	account := model.ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
+	account := model.AppAccounts.GetAccount(carry.AskWeb, currencies[0])
 	if account == nil {
 		util.Info(`nil account ` + carry.AskWeb + currencies[0])
 		return
 	}
 	leftBalance = account.Free
-	account = model.ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
+	account = model.AppAccounts.GetAccount(carry.BidWeb, currencies[1])
 	if account == nil {
 		util.Info(`nil account ` + carry.BidWeb + currencies[1])
 		return
@@ -63,8 +63,8 @@ var ProcessCarry = func(symbol, market string) {
 	minAmount := 0.0
 	maxAmount := 0.0
 	if priceInUsdt != 0 {
-		minAmount = model.ApplicationConfig.MinUsdt / priceInUsdt
-		maxAmount = model.ApplicationConfig.MaxUsdt / priceInUsdt
+		minAmount = model.AppConfig.MinUsdt / priceInUsdt
+		maxAmount = model.AppConfig.MaxUsdt / priceInUsdt
 	}
 	if carry.Amount > maxAmount {
 		carry.Amount = maxAmount
@@ -78,8 +78,8 @@ var ProcessCarry = func(symbol, market string) {
 	planAmount, _ := calcAmount(carry.Amount)
 	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
-	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
-	marginOk, _ := carry.CheckWorthCarryMargin(model.ApplicationMarkets, model.ApplicationConfig)
+	timeOk, _ := carry.CheckWorthCarryTime(model.AppMarkets, model.AppConfig)
+	marginOk, _ := carry.CheckWorthCarryMargin(model.AppMarkets, model.AppConfig)
 	if !carry.CheckWorthSaveMargin() {
 		// no need to save carry with margin < base cost
 		return
@@ -95,15 +95,15 @@ var ProcessCarry = func(symbol, market string) {
 			carry.DealBidStatus = `NotWorth`
 			util.Info(`get carry no worth` + carry.ToString())
 		} else {
-			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
-			model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+			model.AppMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
+			model.AppMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
 			if leftBalance < minAmount {
 				carry.DealAskStatus = `NotEnough`
 				carry.DealBidStatus = `NotEnough`
 				util.Info(fmt.Sprintf(`leftB %f rightB/bidPrice %f/%f NotEnough %f - %f %s`, account.Free,
 					rightBalance, carry.BidPrice, leftBalance, minAmount, carry.ToString()))
 			} else {
-				if model.ApplicationConfig.Env == `test` {
+				if model.AppConfig.Env == `test` {
 					carry.DealAskStatus = `NotDo`
 					carry.DealBidStatus = `NotDo`
 				} else {
@@ -179,18 +179,18 @@ func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
 	for _, marketName := range model.GetMarkets() {
 		subscribes := model.GetDepthSubscribes(marketName)
 		for _, subscribe := range subscribes {
-			for index := 0; index < model.ApplicationConfig.Channels; index++ {
-				channel := model.ApplicationMarkets.GetChan(marketName, index)
+			for index := 0; index < model.AppConfig.Channels; index++ {
+				channel := model.AppMarkets.GetChan(marketName, index)
 				if channel == nil {
-					model.ApplicationMarkets.PutChan(marketName, index, createMarketDepthServer(model.ApplicationMarkets,
+					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets,
 						carryHandlers, marketName))
 					util.SocketInfo(marketName + " create new channel " + subscribe)
-				} else if model.ApplicationMarkets.RequireChanReset(marketName, subscribe) {
+				} else if model.AppMarkets.RequireChanReset(marketName, subscribe) {
 					util.SocketInfo(marketName + " reset channel " + subscribe)
-					model.ApplicationMarkets.PutChan(marketName, index, nil)
+					model.AppMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)
-					model.ApplicationMarkets.PutChan(marketName, index, createMarketDepthServer(model.ApplicationMarkets,
+					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets,
 						carryHandlers, marketName))
 				}
 				util.SocketInfo(marketName + " new channel reset done")
@@ -204,20 +204,20 @@ func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
 func Maintain() {
 	util.Notice("start carrying")
 	model.NewConfig()
-	err := configor.Load(model.ApplicationConfig, "./config.yml")
+	err := configor.Load(model.AppConfig, "./config.yml")
 	if err != nil {
 		util.Notice(err.Error())
 		return
 	}
-	model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
+	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	if err != nil {
 		util.Notice(err.Error())
 		return
 	}
-	defer model.ApplicationDB.Close()
-	model.ApplicationDB.AutoMigrate(&model.Carry{})
-	model.ApplicationDB.AutoMigrate(&model.Account{})
-	model.ApplicationDB.AutoMigrate(&model.Setting{})
+	defer model.AppDB.Close()
+	model.AppDB.AutoMigrate(&model.Carry{})
+	model.AppDB.AutoMigrate(&model.Account{})
+	model.AppDB.AutoMigrate(&model.Setting{})
 	model.LoadSettings()
 	go OuterCarryServe()
 	go InnerCarryServe()
@@ -225,8 +225,8 @@ func Maintain() {
 	go controller.ParameterServe()
 	go RefreshAccounts()
 
-	carryHandlers := make([]api.CarryHandler, len(model.ApplicationConfig.Functions))
-	for i, value := range model.ApplicationConfig.Functions {
+	carryHandlers := make([]api.CarryHandler, len(model.AppConfig.Functions))
+	for i, value := range model.AppConfig.Functions {
 		switch value {
 		case `carry`:
 			go MaintainOrders()
@@ -243,6 +243,6 @@ func Maintain() {
 	//go MaintainAccountChan()
 	for true {
 		go MaintainMarketDepthChan(carryHandlers)
-		time.Sleep(time.Duration(model.ApplicationConfig.ChannelSlot) * time.Millisecond)
+		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
 	}
 }

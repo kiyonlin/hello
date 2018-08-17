@@ -16,12 +16,12 @@ func setContractArbitraging(status bool) {
 }
 
 func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidPrice float64) {
-	if model.ApplicationFutureAccount[futureMarket] == nil ||
-		model.ApplicationFutureAccount[futureMarket][futureSymbol] == nil {
+	if model.AppFutureAccount[futureMarket] == nil ||
+		model.AppFutureAccount[futureMarket][futureSymbol] == nil {
 		util.Notice(futureMarket + ` fail to get future account ` + futureSymbol)
 		return
 	}
-	futureAccount := model.ApplicationFutureAccount[futureMarket][futureSymbol]
+	futureAccount := model.AppFutureAccount[futureMarket][futureSymbol]
 	if futureAccount.OpenedShort < 1 {
 		util.Notice(`[No opened short]`)
 	}
@@ -84,7 +84,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidP
 	} else {
 		carry.Amount = model.OKLever * model.OKEXOtherContractFaceValue * 1.01 / carry.BidPrice
 	}
-	account := model.ApplicationAccounts.GetAccount(market, `usdt`)
+	account := model.AppAccounts.GetAccount(market, `usdt`)
 	if account.Free < carry.Amount*carry.BidPrice {
 		time.Sleep(time.Minute)
 		util.Notice(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount, symbol))
@@ -136,8 +136,8 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	setContractArbitraging(true)
 	defer setContractArbitraging(false)
 	symbol := getSymbol(futureSymbol)
-	if model.ApplicationMarkets.BidAsks[symbol] == nil || model.ApplicationMarkets.BidAsks[symbol][model.OKEX] == nil ||
-		model.ApplicationMarkets.BidAsks[futureSymbol] == nil || model.ApplicationMarkets.BidAsks[futureSymbol][futureMarket] == nil {
+	if model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][model.OKEX] == nil ||
+		model.AppMarkets.BidAsks[futureSymbol] == nil || model.AppMarkets.BidAsks[futureSymbol][futureMarket] == nil {
 		util.Notice(`data not available`)
 		return
 	}
@@ -147,10 +147,10 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		return
 	}
 	setting := model.GetSetting(futureMarket, futureSymbol)
-	bidAsk := model.ApplicationMarkets.BidAsks[symbol][model.OKEX]
-	futureBidAsk := model.ApplicationMarkets.BidAsks[futureSymbol][futureMarket]
-	if util.GetNowUnixMillion()-int64(futureBidAsk.Ts) > int64(model.ApplicationConfig.Delay) ||
-		util.GetNowUnixMillion()-int64(bidAsk.Ts) > int64(model.ApplicationConfig.Delay) {
+	bidAsk := model.AppMarkets.BidAsks[symbol][model.OKEX]
+	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
+	if util.GetNowUnixMillion()-int64(futureBidAsk.Ts) > int64(model.AppConfig.Delay) ||
+		util.GetNowUnixMillion()-int64(bidAsk.Ts) > int64(model.AppConfig.Delay) {
 		util.Info(`bid ask not in time`)
 		return
 	}

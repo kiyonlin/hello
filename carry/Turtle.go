@@ -28,8 +28,8 @@ package carry
 //		util.Notice(`wrong symbol format ` + carry.Symbol)
 //		return
 //	}
-//	leftAccount := model.ApplicationAccounts.GetAccount(market, currencies[0])
-//	rightAccount := model.ApplicationAccounts.GetAccount(market, currencies[1])
+//	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
+//	rightAccount := model.AppAccounts.GetAccount(market, currencies[1])
 //	if leftAccount == nil || rightAccount == nil {
 //		api.RefreshAccount(market)
 //		return
@@ -93,8 +93,8 @@ package carry
 //}
 //
 //func handleTurtle(market, symbol string, carry *model.Carry, turtleStatus *model.TurtleStatus) {
-//	marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
-//	marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
+//	marketBidPrice := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price
+//	marketAskPrice := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
 //	if marketAskPrice < carry.BidPrice {
 //		if carry.DealAskStatus == model.CarryStatusWorking {
 //			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
@@ -160,7 +160,7 @@ package carry
 //
 //func handleTurtleBothSell(market, symbol string, carry *model.Carry, turtleStatus *model.TurtleStatus) {
 //	setting := model.GetSetting(market, symbol)
-//	marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
+//	marketBidPrice := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price
 //	if marketBidPrice < carry.BidPrice { // 價格未能夾住
 //		if carry.DealAskStatus != model.CarryStatusSuccess {
 //			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
@@ -210,7 +210,7 @@ package carry
 //
 //func handleTurtleBothBuy(market, symbol string, carry *model.Carry, turtleStatus *model.TurtleStatus) {
 //	setting := model.GetSetting(market, symbol)
-//	marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
+//	marketAskPrice := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
 //	if marketAskPrice > carry.AskPrice {
 //		if carry.DealAskStatus == model.CarryStatusSuccess {
 //			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
@@ -261,7 +261,7 @@ package carry
 //	setTurtleCarrying(true)
 //	defer setTurtleCarrying(false)
 //	if model.GetTurtleCarry(market, symbol) == nil {
-//		carry, err := model.ApplicationMarkets.NewTurtleCarry(symbol, market)
+//		carry, err := model.AppMarkets.NewTurtleCarry(symbol, market)
 //		if err != nil {
 //			util.Notice(`can not create turtle ` + err.Error())
 //			return
@@ -269,7 +269,7 @@ package carry
 //		if !carry.CheckWorthSaveMargin() {
 //			util.Notice(`turtle利潤不足手續費` + carry.ToString())
 //		}
-//		timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
+//		timeOk, _ := carry.CheckWorthCarryTime(model.AppMarkets, model.AppConfig)
 //		if !timeOk {
 //			util.Info(`turtle get carry not on time` + carry.ToString())
 //			return

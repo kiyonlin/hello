@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"hello/api"
 	"hello/util"
 	"math"
 	"strings"
@@ -44,34 +45,28 @@ func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidA
 	return false
 }
 
-func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rightAccount *Account, currentPrice float64) (*Carry, error) {
-	if markets.BidAsks[symbol] == nil {
-		return nil, errors.New(`no market data for ` + symbol)
-	}
+func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rightAccount *Account,
+	currentPrice, lastPrice float64) (*Carry, error) {
 	setting := GetSetting(market, symbol)
 	if setting == nil {
 		return nil, errors.New(fmt.Sprintf(market + ` has no setting for ` + symbol))
 	}
 	leftAmount := leftAccount.Free + leftAccount.Frozen
 	rightAmount := rightAccount.Free + rightAccount.Frozen
-	if leftAmount*currentPrice/rightAmount < 0.1 {
-		msg := fmt.Sprintf(`%s[幣太少]price %f coin amount %f money amount %f`, symbol, currentPrice, leftAmount, rightAmount)
-		util.Notice(msg)
+	askPrice := lastPrice * (1 + 2*setting.TurtleBalanceRate)
+	bidPrice := lastPrice * (1 - 2*setting.TurtleBalanceRate)
+	askAmount := (leftAmount*askPrice - rightAmount) * 0.5 / askPrice
+	bidAmount := (rightAmount - leftAmount*bidPrice) * 0.5 / bidPrice
+	if leftAmount*askPrice < rightAmount || leftAmount*bidPrice > rightAmount {
+		msg := fmt.Sprintf("%s[钱币配比异常]last price %f current price %f bid price %f ask price %f "+
+			"coin amount %f money amount %f", symbol, lastPrice, currentPrice, bidPrice, askPrice, leftAmount, rightAmount)
+		util.Notice(msg + `触发价格异常保护机制`)
 		time.Sleep(time.Minute)
-		return nil, errors.New(msg)
-	} else if rightAmount/leftAmount*currentPrice < 0.3 {
-		msg := fmt.Sprintf(`%s[錢太少]price %f coin amount %f money amount %f`, symbol, currentPrice, leftAmount, rightAmount)
-		util.Notice(msg)
-		time.Sleep(time.Minute)
+		api.RefreshAccount(market)
 		return nil, errors.New(msg)
 	}
-	lastPrice := rightAmount / leftAmount
-	sellPrice := lastPrice * (1 + 2*setting.TurtleBalanceRate)
-	sellAmount := (setting.TurtleBalanceRate * rightAmount) / sellPrice
-	buyPrice := lastPrice * (1 - 2*setting.TurtleBalanceRate)
-	buyAmount := (setting.TurtleBalanceRate * rightAmount) / buyPrice
-	return &Carry{Symbol: symbol, BidWeb: market, AskWeb: market, BidAmount: buyAmount, AskAmount: sellAmount,
-		BidPrice: buyPrice, AskPrice: sellPrice}, nil
+	return &Carry{Symbol: symbol, BidWeb: market, AskWeb: market, BidAmount: bidAmount, AskAmount: askAmount,
+		BidPrice: bidPrice, AskPrice: askPrice, SideType: CarryTypeBalance}, nil
 }
 
 //func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
@@ -151,7 +146,7 @@ func (markets *Markets) GetChan(marketName string, index int) chan struct{} {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if markets.marketWS[marketName] == nil {
-		markets.marketWS[marketName] = make([]chan struct{}, ApplicationConfig.Channels)
+		markets.marketWS[marketName] = make([]chan struct{}, AppConfig.Channels)
 	}
 	return markets.marketWS[marketName][index]
 }
@@ -163,7 +158,7 @@ func (markets *Markets) PutChan(marketName string, index int, channel chan struc
 	//	util.SocketInfo(" set channel for " + marketName)
 	//}
 	if markets.marketWS[marketName] == nil {
-		markets.marketWS[marketName] = make([]chan struct{}, ApplicationConfig.Channels)
+		markets.marketWS[marketName] = make([]chan struct{}, AppConfig.Channels)
 	}
 	markets.marketWS[marketName][index] = channel
 }
@@ -175,7 +170,7 @@ func (markets *Markets) RequireChanReset(marketName string, subscribe string) bo
 	if bidAsks != nil {
 		bidAsk := bidAsks[marketName]
 		if bidAsk != nil {
-			delay := ApplicationConfig.ChannelSlot
+			delay := AppConfig.ChannelSlot
 			if math.Abs(float64(util.GetNowUnixMillion()-int64(bidAsk.Ts))) < delay {
 				return false
 			}

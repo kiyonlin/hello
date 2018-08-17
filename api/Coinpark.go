@@ -79,21 +79,21 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, 
 			}
 		}
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Coinpark],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Coinpark],
 		model.GetDepthSubscribes(model.Coinpark), subscribeHandlerCoinpark, wsHandler, errHandler)
 }
 
 func SignedRequestCoinpark(method, path, cmds string) []byte {
-	hash := hmac.New(md5.New, []byte(model.ApplicationConfig.CoinparkSecret))
+	hash := hmac.New(md5.New, []byte(model.AppConfig.CoinparkSecret))
 	hash.Write([]byte(cmds))
 	sign := hex.EncodeToString(hash.Sum(nil))
 	postData := &url.Values{}
 	postData.Set("cmds", cmds)
-	postData.Set("apikey", model.ApplicationConfig.CoinparkKey)
+	postData.Set("apikey", model.AppConfig.CoinparkKey)
 	postData.Set("sign", sign)
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest(method, model.ApplicationConfig.RestUrls[model.Coinpark]+path,
+	responseBody, _ := util.HttpRequest(method, model.AppConfig.RestUrls[model.Coinpark]+path,
 		postData.Encode(), headers)
 	return responseBody
 }
@@ -103,7 +103,7 @@ func getBuyPriceCoinpark(symbol string) (float64, error) {
 	//cmd := fmt.Sprintf(`[{"cmd":"api/ticker","body":{"pair":"%s"}}]`, strings.ToUpper(symbol))
 	//responseBody := SignedRequestCoinpark(`POST`, "/mdata", cmd)
 	responseBody, _ := util.HttpRequest(`GET`, fmt.Sprintf(`%s/mdata?cmd=ticker&pair=%s`,
-		model.ApplicationConfig.RestUrls[model.Coinpark], symbol), ``, nil)
+		model.AppConfig.RestUrls[model.Coinpark], symbol), ``, nil)
 	util.Notice(symbol + `[account]` + string(responseBody))
 	accountJson, err := util.NewJSON(responseBody)
 	if err == nil {

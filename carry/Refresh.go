@@ -28,17 +28,17 @@ func calcPrice(bidPrice, askPrice float64, precision int) (num float64, err erro
 
 func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) (askAmount, bidAmount float64) {
 	amountPrecision := util.GetPrecision(carry.BidAmount)
-	if model.ApplicationConfig.Env == `dk` {
-		if leftBalance*model.ApplicationConfig.AmountRate > rightBalance/carry.BidPrice {
+	if model.AppConfig.Env == `dk` {
+		if leftBalance*model.AppConfig.AmountRate > rightBalance/carry.BidPrice {
 			carry.Amount = rightBalance / carry.BidPrice
 		} else {
-			carry.Amount = leftBalance * model.ApplicationConfig.AmountRate
+			carry.Amount = leftBalance * model.AppConfig.AmountRate
 		}
 		askAmount = carry.Amount
 		bidAmount = carry.Amount
 	} else {
-		askAmount = leftBalance * model.ApplicationConfig.AmountRate
-		bidAmount = rightBalance * model.ApplicationConfig.AmountRate / carry.BidPrice
+		askAmount = leftBalance * model.AppConfig.AmountRate
+		bidAmount = rightBalance * model.AppConfig.AmountRate / carry.BidPrice
 	}
 	strAskAmount := strconv.FormatFloat(askAmount, 'f', amountPrecision, 64)
 	strBidAmount := strconv.FormatFloat(bidAmount, 'f', amountPrecision, 64)
@@ -81,19 +81,19 @@ func setProcessing(value bool) {
 }
 
 func placeExtraSell(carry *model.Carry) {
-	account := model.ApplicationAccounts.GetAccount(model.Fcoin, `ft`)
+	account := model.AppAccounts.GetAccount(model.Fcoin, `ft`)
 	if account == nil {
 		util.Notice(`[额外卖单-nil account]`)
 	} else {
-		util.Notice(fmt.Sprintf(`[额外卖单]%f - %f`, account.Free, model.ApplicationConfig.FtMax))
+		util.Notice(fmt.Sprintf(`[额外卖单]%f - %f`, account.Free, model.AppConfig.FtMax))
 	}
-	if account != nil && account.Free > model.ApplicationConfig.FtMax {
+	if account != nil && account.Free > model.AppConfig.FtMax {
 		pricePrecision := util.GetPrecision(carry.BidPrice)
 		if pricePrecision > api.GetPriceDecimal(model.Fcoin, carry.Symbol) {
 			pricePrecision = api.GetPriceDecimal(model.Fcoin, carry.Symbol)
 		}
 		price := carry.BidPrice * 0.999
-		amount := carry.Amount * model.ApplicationConfig.SellRate
+		amount := carry.Amount * model.AppConfig.SellRate
 		orderId, errCode, msg := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
 			model.GetMarkets()[0], carry.Symbol, price, amount)
 		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %f 数量: %f 返回 %s %s %s`,
@@ -102,12 +102,12 @@ func placeExtraSell(carry *model.Carry) {
 }
 
 var ProcessRefresh = func(symbol, market string) {
-	carry, err := model.ApplicationMarkets.NewCarry(symbol)
+	carry, err := model.AppMarkets.NewCarry(symbol)
 	if err != nil {
 		util.Notice(`can not create carry for ` + symbol)
 		return
 	}
-	if model.ApplicationConfig.Handle == 0 || processing || handling {
+	if model.AppConfig.Handle == 0 || processing || handling {
 		return
 	}
 	setProcessing(true)
@@ -116,26 +116,26 @@ var ProcessRefresh = func(symbol, market string) {
 	if lastOrderTime == 0 {
 		lastOrderTime = now
 	}
-	if now-lastOrderTime < model.ApplicationConfig.OrderWait {
+	if now-lastOrderTime < model.AppConfig.OrderWait {
 		return
 	}
-	timeOk, _ := carry.CheckWorthCarryTime(model.ApplicationMarkets, model.ApplicationConfig)
+	timeOk, _ := carry.CheckWorthCarryTime(model.AppMarkets, model.AppConfig)
 	if !timeOk {
 		util.SocketInfo(`get carry not on time` + carry.ToString())
 		return
 	}
-	//if model.ApplicationConfig.Env != `dk` {
+	//if model.AppConfig.Env != `dk` {
 	//	go getAccount()
 	//}
 	currencies := strings.Split(carry.Symbol, "_")
-	leftAccount := model.ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
+	leftAccount := model.AppAccounts.GetAccount(carry.AskWeb, currencies[0])
 	if leftAccount == nil {
 		util.Notice(`nil account ` + carry.AskWeb + currencies[0])
 		//go getAccount()
 		return
 	}
 	leftBalance := leftAccount.Free
-	rightAccount := model.ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
+	rightAccount := model.AppAccounts.GetAccount(carry.BidWeb, currencies[1])
 	if rightAccount == nil {
 		util.Notice(`nil account ` + carry.BidWeb + currencies[1])
 		//go getAccount()
@@ -161,8 +161,8 @@ var ProcessRefresh = func(symbol, market string) {
 			price = carry.AskPrice
 		}
 	}
-	model.ApplicationMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
-	model.ApplicationMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+	model.AppMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
+	model.AppMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
 	bidAskTimes++
 	if bidAskTimes%30 == 0 {
 		getAccount()
@@ -197,7 +197,7 @@ func cancelRefreshOrder(orderId string, mustCancel bool) {
 			break
 		}
 		if i == 99 {
-			model.ApplicationConfig.Handle = 0
+			model.AppConfig.Handle = 0
 		}
 		time.Sleep(time.Second * 1)
 	}
@@ -216,7 +216,7 @@ func RefreshCarryServe() {
 			lastOrderTime = util.GetNowUnixMillion()
 			go cancelRefreshOrder(orderCarry.DealAskOrderId, false)
 			go cancelRefreshOrder(orderCarry.DealBidOrderId, false)
-			if model.ApplicationConfig.Env == `dk` {
+			if model.AppConfig.Env == `dk` {
 				go placeExtraSell(&orderCarry)
 			}
 		} else if orderCarry.DealAskStatus == model.CarryStatusWorking && orderCarry.DealBidStatus == model.CarryStatusFail {

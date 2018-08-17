@@ -26,15 +26,19 @@ var ProcessBalanceTurtle = func(symbol, market string) {
 		util.Notice(`wrong symbol format ` + symbol)
 		return
 	}
-	leftAccount := model.ApplicationAccounts.GetAccount(market, currencies[0])
-	rightAccount := model.ApplicationAccounts.GetAccount(market, currencies[1])
+	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
+	rightAccount := model.AppAccounts.GetAccount(market, currencies[1])
 	if leftAccount == nil || rightAccount == nil {
 		api.RefreshAccount(market)
 		return
 	}
 	currentPrice, _ := api.GetPrice(symbol)
+	lastPrice := model.GetBalanceTurtlePrice(market, symbol)
+	if lastPrice == 0 {
+		lastPrice = currentPrice
+	}
 	if model.GetBalanceTurtleCarry(market, symbol) == nil {
-		carry, err := model.ApplicationMarkets.NewBalanceTurtle(market, symbol, leftAccount, rightAccount, currentPrice)
+		carry, err := model.AppMarkets.NewBalanceTurtle(market, symbol, leftAccount, rightAccount, currentPrice, lastPrice)
 		if err != nil {
 			util.Notice(`can not create turtle ` + err.Error())
 			return
@@ -43,7 +47,6 @@ var ProcessBalanceTurtle = func(symbol, market string) {
 	} else {
 		carry := model.GetBalanceTurtleCarry(market, symbol)
 		handleTurtle(market, symbol, carry)
-		api.RefreshAccount(market)
 	}
 }
 
@@ -78,8 +81,8 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 }
 
 func handleTurtle(market, symbol string, carry *model.Carry) {
-	marketBidPrice := model.ApplicationMarkets.BidAsks[symbol][market].Bids[0].Price
-	marketAskPrice := model.ApplicationMarkets.BidAsks[symbol][market].Asks[0].Price
+	marketBidPrice := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price
+	marketAskPrice := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
 	if marketAskPrice < carry.BidPrice {
 		api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 		carry.DealAskAmount, _, _ = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
@@ -90,6 +93,8 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f bid:%f - ask:%f`,
 			carry.Symbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
 		model.SetBalanceTurtleCarry(market, symbol, nil)
+		model.SetBalanceTurtlePrice(market, symbol, carry.BidPrice)
+		api.RefreshAccount(market)
 	} else if marketBidPrice > carry.AskPrice {
 		api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
 		carry.DealBidAmount, _, _ = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
@@ -100,5 +105,7 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f bid:%f - ask:%f`,
 			carry.Symbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
 		model.SetBalanceTurtleCarry(market, symbol, nil)
+		model.SetBalanceTurtlePrice(market, symbol, carry.AskPrice)
+		api.RefreshAccount(market)
 	}
 }

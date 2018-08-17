@@ -1,13 +1,13 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"sort"
-	"encoding/json"
-	)
+)
 
 var subscribeHandlerBitmex = func(subscribes []string, conn *websocket.Conn) error {
 	var err error = nil
@@ -29,6 +29,7 @@ var subscribeHandlerBitmex = func(subscribes []string, conn *websocket.Conn) err
 }
 
 func WsDepthServeBitmex(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+	fmt.Println(fmt.Sprintf(`bitmex depth serve for %v %v `, markets, carryHandlers))
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		if util.GetNow().Unix()-lastPingTime > 5 { // ping bitmex server every 5 seconds
@@ -113,7 +114,7 @@ func WsDepthServeBitmex(markets *model.Markets, carryHandlers []CarryHandler, er
 		//	}
 		//}
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Bitmex],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Bitmex],
 		model.GetDepthSubscribes(model.Bitmex), subscribeHandlerBitmex, wsHandler, errHandler)
 }
 

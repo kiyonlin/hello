@@ -94,13 +94,13 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 			}
 		}
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Huobi],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Huobi],
 		model.GetDepthSubscribes(model.Huobi), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
 func SignedRequestHuobi(method, path string, data map[string]string) []byte {
 	urlValues := &url.Values{}
-	urlValues.Set("AccessKeyId", model.ApplicationConfig.HuobiKey)
+	urlValues.Set("AccessKeyId", model.AppConfig.HuobiKey)
 	urlValues.Set("SignatureMethod", "HmacSHA256")
 	urlValues.Set("SignatureVersion", "2")
 	urlValues.Set("Timestamp", time.Now().UTC().Format("2006-01-02T15:04:05"))
@@ -109,10 +109,10 @@ func SignedRequestHuobi(method, path string, data map[string]string) []byte {
 			urlValues.Set(key, value)
 		}
 	}
-	domain := strings.Replace(model.ApplicationConfig.RestUrls[model.Huobi], "https://", "",
-		len(model.ApplicationConfig.RestUrls[model.Huobi]))
+	domain := strings.Replace(model.AppConfig.RestUrls[model.Huobi], "https://", "",
+		len(model.AppConfig.RestUrls[model.Huobi]))
 	payload := fmt.Sprintf("%s\n%s\n%s\n%s", method, domain, path, urlValues.Encode())
-	hash := hmac.New(sha256.New, []byte(model.ApplicationConfig.HuobiSecret))
+	hash := hmac.New(sha256.New, []byte(model.AppConfig.HuobiSecret))
 	hash.Write([]byte(payload))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	urlValues.Set("Signature", sign)
@@ -133,7 +133,7 @@ J2k98epEs68Y+OjaRp0uP8821WkP5tLM1Q==
 	copy(privateSign[curveByteSize-len(rBytes):], rBytes)
 	copy(privateSign[curveByteSize*2-len(sBytes):], sBytes)
 	urlValues.Set(`PrivateSignature`, base64.StdEncoding.EncodeToString(privateSign))
-	requestUrl := model.ApplicationConfig.RestUrls[model.Huobi] + path + "?" + urlValues.Encode()
+	requestUrl := model.AppConfig.RestUrls[model.Huobi] + path + "?" + urlValues.Encode()
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	var postBody = ``

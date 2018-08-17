@@ -38,7 +38,7 @@ type Carry struct {
 }
 
 func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64) {
-	if ApplicationAccounts == nil {
+	if AppAccounts == nil {
 		return configMargin
 	}
 	if !strings.Contains(carry.Symbol, "_") {
@@ -46,32 +46,32 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		return 1
 	}
 	currencies := strings.Split(carry.Symbol, "_")
-	leftTotalPercentage := ApplicationAccounts.CurrencyPercentage[currencies[0]]
-	rightTotalPercentage := ApplicationAccounts.CurrencyPercentage[currencies[1]]
+	leftTotalPercentage := AppAccounts.CurrencyPercentage[currencies[0]]
+	rightTotalPercentage := AppAccounts.CurrencyPercentage[currencies[1]]
 	if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
 		return configMargin
 	}
 	var leftAskPercentage, rightAskPercentage, leftBidPercentage, rightBidPercentage float64
-	leftAskAccount := ApplicationAccounts.GetAccount(carry.AskWeb, currencies[0])
-	rightAskAccount := ApplicationAccounts.GetAccount(carry.AskWeb, currencies[1])
-	leftBidAccount := ApplicationAccounts.GetAccount(carry.BidWeb, currencies[0])
-	rightBidAccount := ApplicationAccounts.GetAccount(carry.BidWeb, currencies[1])
+	leftAskAccount := AppAccounts.GetAccount(carry.AskWeb, currencies[0])
+	rightAskAccount := AppAccounts.GetAccount(carry.AskWeb, currencies[1])
+	leftBidAccount := AppAccounts.GetAccount(carry.BidWeb, currencies[0])
+	rightBidAccount := AppAccounts.GetAccount(carry.BidWeb, currencies[1])
 	if leftAskAccount != nil {
 		// 计算假如本次carry完成后达到的占比
 		leftAskPercentage = (leftAskAccount.Free + leftAskAccount.Frozen - carry.Amount) *
-			leftAskAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.AskWeb]
+			leftAskAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.AskWeb]
 	}
 	if rightAskAccount != nil {
 		rightAskPercentage = (rightAskAccount.Free + rightAskAccount.Free + carry.Amount) *
-			rightAskAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.AskWeb]
+			rightAskAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.AskWeb]
 	}
 	if leftBidAccount != nil {
 		leftBidPercentage = (leftBidAccount.Free + leftBidAccount.Frozen + carry.Amount) *
-			leftBidAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.BidWeb]
+			leftBidAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.BidWeb]
 	}
 	if rightBidAccount != nil {
 		rightBidPercentage = (rightBidAccount.Free + rightBidAccount.Frozen - carry.Amount) *
-			rightBidAccount.PriceInUsdt / ApplicationAccounts.MarketTotal[carry.BidWeb]
+			rightBidAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.BidWeb]
 	}
 	if leftAskPercentage >= leftTotalPercentage && rightAskPercentage <= rightTotalPercentage && leftBidPercentage <=
 		leftTotalPercentage && rightBidPercentage >= rightTotalPercentage {
@@ -79,8 +79,8 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		if discount < (leftTotalPercentage-leftBidPercentage)/leftTotalPercentage {
 			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
 		}
-		askCost, _ := ApplicationConfig.MarketCost[carry.AskWeb]
-		bidCost, _ := ApplicationConfig.MarketCost[carry.BidWeb]
+		askCost, _ := AppConfig.MarketCost[carry.AskWeb]
+		bidCost, _ := AppConfig.MarketCost[carry.BidWeb]
 		baseCost := (askCost + bidCost) / 2
 		dynamicMargin := baseCost + (configMargin-baseCost)*(1-discount)
 		util.SocketInfo(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
@@ -91,8 +91,8 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 }
 
 func (carry *Carry) CheckWorthSaveMargin() bool {
-	askCost, _ := ApplicationConfig.MarketCost[carry.AskWeb]
-	bidCost, _ := ApplicationConfig.MarketCost[carry.BidWeb]
+	askCost, _ := AppConfig.MarketCost[carry.AskWeb]
+	bidCost, _ := AppConfig.MarketCost[carry.BidWeb]
 	if (askCost+bidCost)/2 < (carry.AskPrice-carry.BidPrice)/carry.AskPrice {
 		return true
 	}

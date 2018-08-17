@@ -69,7 +69,7 @@ func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, e
 			}
 		}
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.Coinbig],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Coinbig],
 		model.GetDepthSubscribes(model.Coinbig), subscribeHandlerCoinbig, wsHandler, errHandler)
 }
 
@@ -79,11 +79,11 @@ func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
 		time := strconv.FormatInt(util.GetNow().UnixNano(), 10)[0:13]
 		postData.Set(`time`, time)
 	}
-	toBeSign, _ := url.QueryUnescape(postData.Encode() + "&secret_key=" + model.ApplicationConfig.CoinbigSecret)
+	toBeSign, _ := url.QueryUnescape(postData.Encode() + "&secret_key=" + model.AppConfig.CoinbigSecret)
 	hash.Write([]byte(toBeSign))
 	sign := hex.EncodeToString(hash.Sum(nil))
 	postData.Set("sign", strings.ToUpper(sign))
-	uri := model.ApplicationConfig.RestUrls[model.Coinbig] + path
+	uri := model.AppConfig.RestUrls[model.Coinbig] + path
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	var responseBody []byte
@@ -93,7 +93,7 @@ func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
 
 func getAccountCoinbig(accounts *model.Accounts) {
 	postData := &url.Values{}
-	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 	responseBody := SignedRequestCoinbig(`POST`, `/userinfo`, postData)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
@@ -143,7 +143,7 @@ func placeOrderCoinbig(orderSide, orderType, symbol, price, amount string) (orde
 		return ``, ``
 	}
 	postData := &url.Values{}
-	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 	postData.Set(`type`, orderParam)
 	postData.Set(`price`, price)
 	postData.Set(`amount`, amount)
@@ -162,7 +162,7 @@ func placeOrderCoinbig(orderSide, orderType, symbol, price, amount string) (orde
 //// 批量下单接口，只支持限价单, side sell/buy
 //func PlaceOrdersCoinbig(symbol string, side []string, price, amount []float64) {
 //	postData := &url.Values{}
-//	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+//	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 //	postData.Set(`symbol`, symbol)
 //	data := `[`
 //	for i := 0; i < len(side); i++ {
@@ -180,7 +180,7 @@ func placeOrderCoinbig(orderSide, orderType, symbol, price, amount string) (orde
 //状态:1未成交,2部分成交,3完全成交,4用户撤销,5部分撤回,6成交失败
 func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	postData := &url.Values{}
-	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 	postData.Set(`orderId`, orderId)
 	responseBody := SignedRequestCoinbig(`POST`, `/getOrderInfoById`, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -195,7 +195,7 @@ func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 
 func CancelOrderCoinbig(orderId string)  (result bool, errCode, msg string){
 	postData := &url.Values{}
-	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 	postData.Set(`order_id`, orderId)
 	responseBody := SignedRequestCoinbig(`POST`, `/cancel_order`, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -212,7 +212,7 @@ func CancelOrderCoinbig(orderId string)  (result bool, errCode, msg string){
 
 //func CancelOrdersCoinbig(symbol string) {
 //	postData := &url.Values{}
-//	postData.Set(`apikey`, model.ApplicationConfig.CoinbigKey)
+//	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 //	postData.Set(`symbol`, symbol)
 //	responseBody := SignedRequestCoinbig(`POST`, `/cance_all_orders`, postData)
 //	fmt.Println(string(responseBody))

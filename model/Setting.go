@@ -14,15 +14,15 @@ type Setting struct {
 var marketSymbolSetting map[string]map[string]*Setting // marketName - symbol - setting
 
 func LoadSettings() {
-	ApplicationSettings = []Setting{}
-	ApplicationDB.Where(`valid = ?`, true).Find(&ApplicationSettings)
+	AppSettings = []Setting{}
+	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
 	marketSymbolSetting = make(map[string]map[string]*Setting)
-	for i := range ApplicationSettings {
-		if marketSymbolSetting[ApplicationSettings[i].Market] == nil {
-			marketSymbolSetting[ApplicationSettings[i].Market] = make(map[string]*Setting)
+	for i := range AppSettings {
+		if marketSymbolSetting[AppSettings[i].Market] == nil {
+			marketSymbolSetting[AppSettings[i].Market] = make(map[string]*Setting)
 		}
-		if marketSymbolSetting[ApplicationSettings[i].Market][ApplicationSettings[i].Symbol] == nil {
-			marketSymbolSetting[ApplicationSettings[i].Market][ApplicationSettings[i].Symbol] = &ApplicationSettings[i]
+		if marketSymbolSetting[AppSettings[i].Market][AppSettings[i].Symbol] == nil {
+			marketSymbolSetting[AppSettings[i].Market][AppSettings[i].Symbol] = &AppSettings[i]
 		}
 	}
 }
@@ -60,7 +60,7 @@ func GetSetting(market, symbol string) *Setting {
 
 func GetMargin(symbol string) float64 {
 	margins := make(map[string]float64)
-	for _, value := range ApplicationSettings {
+	for _, value := range AppSettings {
 		if margins[value.Symbol] < value.Margin {
 			margins[value.Symbol] = value.Margin
 		}

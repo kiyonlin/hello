@@ -82,13 +82,13 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 			}
 		}
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.OKEX],
+	return WebSocketServe(model.AppConfig.WSUrls[model.OKEX],
 		model.GetDepthSubscribes(model.OKEX), subscribeHandlerOkex, wsHandler, errHandler)
 }
 
 func getSign(postData *url.Values) string {
 	hash := md5.New()
-	toBeSign, _ := url.QueryUnescape(postData.Encode() + "&secret_key=" + model.ApplicationConfig.OkexSecret)
+	toBeSign, _ := url.QueryUnescape(postData.Encode() + "&secret_key=" + model.AppConfig.OkexSecret)
 	hash.Write([]byte(toBeSign))
 	return strings.ToUpper(hex.EncodeToString(hash.Sum(nil)))
 }
@@ -99,7 +99,7 @@ func sendSignRequest(method, path string, postData *url.Values) (response []byte
 	if method == `GET` {
 		path += `?` + postData.Encode()
 	} else {
-		postData.Set("api_key", model.ApplicationConfig.OkexKey)
+		postData.Set("api_key", model.AppConfig.OkexKey)
 		postData.Set("sign", getSign(postData))
 	}
 	responseBody, _ := util.HttpRequest(method, path, postData.Encode(), headers)
@@ -137,7 +137,7 @@ func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId
 	}
 	postData.Set("symbol", symbol)
 	postData.Set("type", orderParam)
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/trade.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/trade.do", &postData)
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("order_id").Int()
@@ -158,7 +158,7 @@ func CancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg s
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/cancel_order.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/cancel_order.do", &postData)
 	util.Notice("okex cancel order" + orderId + string(responseBody))
 	orderJson, err := util.NewJSON(responseBody)
 	cancelResult := false
@@ -179,7 +179,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float6
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/order_info.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/order_info.do", &postData)
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		orders, _ := orderJson.Get("orders").Array()
@@ -198,7 +198,7 @@ func QueryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float6
 
 func getAccountOkex(accounts *model.Accounts) {
 	postData := url.Values{}
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/userinfo.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/userinfo.do", &postData)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		free, _ := balanceJson.GetPath("info", "funds", "free").Map()
@@ -242,7 +242,7 @@ func FundTransferOkex(symbol string, amount float64, from, to string) (result bo
 	postData.Set(`amount`, strAmount)
 	postData.Set(`from`, from)
 	postData.Set(`to`, to)
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKEX]+"/funds_transfer.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/funds_transfer.do", &postData)
 	fmt.Println(string(responseBody))
 	resultJson, err := util.NewJSON(responseBody)
 	if err == nil {
@@ -258,7 +258,7 @@ func getBuyPriceOkex(symbol string) (buy float64, err error) {
 	model.CurrencyPrice[symbol] = 0
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	responseBody, _ := util.HttpRequest("GET", model.ApplicationConfig.RestUrls[model.OKEX]+
+	responseBody, _ := util.HttpRequest("GET", model.AppConfig.RestUrls[model.OKEX]+
 		"/ticker.do?symbol="+symbol, "", headers)
 	tickerJson, err := util.NewJSON(responseBody)
 	if err == nil {
@@ -273,7 +273,7 @@ func GetKLineOkex(symbol, timeSlot string, size int64) []interface{} {
 	postData.Set(`symbol`, symbol)
 	postData.Set(`type`, timeSlot)
 	postData.Set(`size`, strconv.FormatInt(size, 10))
-	responseBody := sendSignRequest(`GET`, model.ApplicationConfig.RestUrls[model.OKEX]+"/kline.do", &postData)
+	responseBody := sendSignRequest(`GET`, model.AppConfig.RestUrls[model.OKEX]+"/kline.do", &postData)
 	//fmt.Println(string(responseBody))
 	dataJson, _ := util.NewJSON(responseBody)
 	data, _ := dataJson.Array()

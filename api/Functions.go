@@ -91,59 +91,59 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 }
 
 func RefreshAccount(market string) {
-	accounts := model.ApplicationAccounts.GetAccounts(market)
-	model.ApplicationAccounts.ClearAccounts(market)
+	accounts := model.AppAccounts.GetAccounts(market)
+	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
-		getAccountHuobi(model.ApplicationAccounts)
+		getAccountHuobi(model.AppAccounts)
 		if accounts != nil {
 			same := true
 			for key, value := range accounts {
-				if value != model.ApplicationAccounts.GetAccount(market, key) {
+				if value != model.AppAccounts.GetAccount(market, key) {
 					same = false
 					break
 				}
 			}
 			if same {
 				time.Sleep(time.Second * 15)
-				getAccountHuobi(model.ApplicationAccounts)
+				getAccountHuobi(model.AppAccounts)
 			}
 		}
 	case model.OKEX:
-		getAccountOkex(model.ApplicationAccounts)
+		getAccountOkex(model.AppAccounts)
 	case model.OKFUTURE:
 		symbols := model.GetSymbols(market)
 		for _, value := range symbols {
 			futureAccount, err := getPositionOkfuture(market, value)
 			if err == nil {
-				if model.ApplicationFutureAccount[model.OKFUTURE] == nil {
-					model.ApplicationFutureAccount[model.OKFUTURE] = make(map[string]*model.FutureAccount)
+				if model.AppFutureAccount[model.OKFUTURE] == nil {
+					model.AppFutureAccount[model.OKFUTURE] = make(map[string]*model.FutureAccount)
 				}
-				model.ApplicationFutureAccount[model.OKFUTURE][value] = futureAccount
+				model.AppFutureAccount[model.OKFUTURE][value] = futureAccount
 			} else {
 				util.Notice(`[future account refresh error]` + market + value + err.Error())
 			}
 		}
 	case model.Binance:
-		getAccountBinance(model.ApplicationAccounts)
-		if model.ApplicationConfig.BnbMin > 0 && model.ApplicationConfig.BnbBuy > 0 {
-			account := model.ApplicationAccounts.GetAccount(model.Binance, `bnb`)
-			if account != nil && account.Free < model.ApplicationConfig.BnbMin {
-				util.Notice(fmt.Sprintf(`[bnb數量不足]%f - %f`, account.Free, model.ApplicationConfig.BnbMin))
+		getAccountBinance(model.AppAccounts)
+		if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
+			account := model.AppAccounts.GetAccount(model.Binance, `bnb`)
+			if account != nil && account.Free < model.AppConfig.BnbMin {
+				util.Notice(fmt.Sprintf(`[bnb數量不足]%f - %f`, account.Free, model.AppConfig.BnbMin))
 				PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, model.Binance, `bnb_usdt`,
-					0, model.ApplicationConfig.BnbBuy)
+					0, model.AppConfig.BnbBuy)
 			}
 		}
 	case model.Fcoin:
-		getAccountFcoin(model.ApplicationAccounts)
+		getAccountFcoin(model.AppAccounts)
 	case model.Coinpark:
-		getAccountCoinpark(model.ApplicationAccounts)
+		getAccountCoinpark(model.AppAccounts)
 	case model.Coinbig:
-		getAccountCoinbig(model.ApplicationAccounts)
+		getAccountCoinbig(model.AppAccounts)
 	case model.Bitmex:
-		getAccountBitmex(model.ApplicationAccounts)
+		getAccountBitmex(model.AppAccounts)
 	}
-	Maintain(model.ApplicationAccounts, market)
+	Maintain(model.AppAccounts, market)
 }
 
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
@@ -237,7 +237,7 @@ func Maintain(accounts *model.Accounts, marketName string) {
 }
 
 func GetPrice(symbol string) (buy float64, err error) {
-	if model.ApplicationConfig == nil {
+	if model.AppConfig == nil {
 		model.NewConfig()
 	}
 	strs := strings.Split(symbol, "_")
@@ -250,7 +250,7 @@ func GetPrice(symbol string) (buy float64, err error) {
 		return 1, nil
 	}
 	symbol = strings.TrimSpace(strings.ToLower(symbol))
-	for _, bidAsks := range model.ApplicationMarkets.BidAsks[symbol] {
+	for _, bidAsks := range model.AppMarkets.BidAsks[symbol] {
 		if bidAsks.Bids != nil {
 			return bidAsks.Bids[0].Price, nil
 		}
@@ -262,7 +262,7 @@ func GetPrice(symbol string) (buy float64, err error) {
 	if strs[0] == `BIX` || strs[1] == `BIX` || strs[0] == `CP` || strs[1] == `CP` {
 		return getBuyPriceCoinpark(symbol)
 	}
-	if strs[0] == `FT` || strs[1] == `FT` || model.ApplicationConfig.InChina == 1 {
+	if strs[0] == `FT` || strs[1] == `FT` || model.AppConfig.InChina == 1 {
 		return getBuyPriceFcoin(symbol)
 	}
 	return getBuyPriceOkex(symbol)
@@ -271,8 +271,8 @@ func GetPrice(symbol string) (buy float64, err error) {
 //CheckOrderValue
 func _(currency string, amount float64) (result bool) {
 	currencyPrice, _ := GetPrice(currency + `_usdt`)
-	if currencyPrice*amount < model.ApplicationConfig.MinUsdt {
-		util.Notice(fmt.Sprintf(`%s下单数量%f不足%f usdt`, currency, amount, model.ApplicationConfig.MinUsdt))
+	if currencyPrice*amount < model.AppConfig.MinUsdt {
+		util.Notice(fmt.Sprintf(`%s下单数量%f不足%f usdt`, currency, amount, model.AppConfig.MinUsdt))
 		return false
 	}
 	return true

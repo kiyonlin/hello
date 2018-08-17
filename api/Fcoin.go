@@ -69,13 +69,13 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 			}
 		}
 	}
-	requestUrl := model.ApplicationConfig.WSUrls[model.Fcoin]
+	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
 	return WebSocketServe(requestUrl, model.GetDepthSubscribes(model.Fcoin), subscribeHandlerFcoin,
 		wsHandler, errHandler)
 }
 
 func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []byte {
-	uri := model.ApplicationConfig.RestUrls[model.Fcoin] + path
+	uri := model.AppConfig.RestUrls[model.Fcoin] + path
 	time := strconv.FormatInt(util.GetNow().UnixNano(), 10)[0:13]
 	postData := &url.Values{}
 	for key, value := range postMap {
@@ -86,10 +86,10 @@ func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []b
 		toBeBase += postData.Encode()
 	}
 	based := base64.StdEncoding.EncodeToString([]byte(toBeBase))
-	hash := hmac.New(sha1.New, []byte(model.ApplicationConfig.FcoinSecret))
+	hash := hmac.New(sha1.New, []byte(model.AppConfig.FcoinSecret))
 	hash.Write([]byte(based))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-	headers := map[string]string{`FC-ACCESS-KEY`: model.ApplicationConfig.FcoinKey,
+	headers := map[string]string{`FC-ACCESS-KEY`: model.AppConfig.FcoinKey,
 		`FC-ACCESS-SIGNATURE`: sign, `FC-ACCESS-TIMESTAMP`: time, "Content-Type": "application/json"}
 	var responseBody []byte
 	if postMap == nil {
@@ -209,7 +209,7 @@ func getAccountFcoin(accounts *model.Accounts) {
 func getBuyPriceFcoin(symbol string) (buy float64, err error) {
 	model.CurrencyPrice[symbol] = 0
 	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody, err := util.HttpRequest(`GET`, model.ApplicationConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
+	responseBody, err := util.HttpRequest(`GET`, model.AppConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
 		``, nil)
 	if err == nil {
 		orderJson, err := util.NewJSON([]byte(responseBody))

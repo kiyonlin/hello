@@ -11,7 +11,7 @@ import (
 func MaintainOrders() {
 	for true {
 		var carries []model.Carry
-		model.ApplicationDB.Where(
+		model.AppDB.Where(
 			"deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).
 			Find(&carries)
 		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
@@ -60,11 +60,11 @@ func AccountHandlerServe() {
 			//util.Info(fmt.Sprintf(`%s add account %s %f`, value.Market, value.Currency, value.PriceInUsdt))
 			if !cleared {
 				//util.Info(`remove accounts ` + value.Market + util.GetNow().Format("2006-01-02"))
-				model.ApplicationDB.Delete(model.Account{}, "market = ? AND date(created_at) = ?",
+				model.AppDB.Delete(model.Account{}, "market = ? AND date(created_at) = ?",
 					value.Market, util.GetNow().Format("2006-01-02"))
 				cleared = true
 			}
-			model.ApplicationDB.Create(value)
+			model.AppDB.Create(value)
 		}
 		accountServing = false
 	}
@@ -84,9 +84,9 @@ func OuterCarryServe() {
 	for true {
 		var carryInDb model.Carry
 		carry := <-model.CarryChannel
-		model.ApplicationDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
-		if model.ApplicationDB.NewRecord(&carryInDb) {
-			model.ApplicationDB.Create(&carry)
+		model.AppDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
+		if model.AppDB.NewRecord(&carryInDb) {
+			model.AppDB.Create(&carry)
 		} else {
 			if carry.DealAskAmount != 0 {
 				carryInDb.DealAskAmount = carry.DealAskAmount
@@ -106,7 +106,7 @@ func OuterCarryServe() {
 			if carry.DealBidOrderId != `` {
 				carryInDb.DealBidOrderId = carry.DealBidOrderId
 			}
-			model.ApplicationDB.Save(&carryInDb)
+			model.AppDB.Save(&carryInDb)
 		}
 	}
 }

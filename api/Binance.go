@@ -69,7 +69,7 @@ func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, e
 			}
 		}
 	}
-	requestUrl := model.ApplicationConfig.WSUrls[model.Binance]
+	requestUrl := model.AppConfig.WSUrls[model.Binance]
 
 	for _, subscribe := range model.GetDepthSubscribes(model.Binance) {
 		requestUrl += subscribe + "/"
@@ -112,10 +112,10 @@ func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orde
 	postData.Set("type", orderType)
 	postData.Set("side", orderSide)
 	postData.Set("quantity", amount)
-	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
-	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
+	signBinance(&postData, model.AppConfig.BinanceSecret)
+	headers := map[string]string{"X-MBX-APIKEY": model.AppConfig.BinanceKey}
 	responseBody, _ := util.HttpRequest("POST",
-		model.ApplicationConfig.RestUrls[model.Binance]+"/api/v3/order?", postData.Encode(), headers)
+		model.AppConfig.RestUrls[model.Binance]+"/api/v3/order?", postData.Encode(), headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("orderId").Int()
@@ -136,9 +136,9 @@ func CancelOrderBinance(symbol string, orderId string) (result bool, errCode, ms
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("orderId", orderId)
-	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
-	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
-	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
+	signBinance(&postData, model.AppConfig.BinanceSecret)
+	headers := map[string]string{"X-MBX-APIKEY": model.AppConfig.BinanceKey}
+	requestUrl := model.AppConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("DELETE", requestUrl, "", headers)
 	util.Notice("binance cancel order" + string(responseBody))
 
@@ -149,9 +149,9 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice flo
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("orderId", orderId)
-	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
-	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
-	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
+	signBinance(&postData, model.AppConfig.BinanceSecret)
+	headers := map[string]string{"X-MBX-APIKEY": model.AppConfig.BinanceKey}
+	requestUrl := model.AppConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
@@ -172,9 +172,9 @@ func QueryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice flo
 
 func getAccountBinance(accounts *model.Accounts) {
 	postData := url.Values{}
-	signBinance(&postData, model.ApplicationConfig.BinanceSecret)
-	headers := map[string]string{"X-MBX-APIKEY": model.ApplicationConfig.BinanceKey}
-	requestUrl := model.ApplicationConfig.RestUrls[model.Binance] + "/api/v3/account?" + postData.Encode()
+	signBinance(&postData, model.AppConfig.BinanceSecret)
+	headers := map[string]string{"X-MBX-APIKEY": model.AppConfig.BinanceKey}
+	requestUrl := model.AppConfig.RestUrls[model.Binance] + "/api/v3/account?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers)
 	balanceJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {

@@ -17,14 +17,14 @@ var subscribeHandlerOKFuture = func(subscribes []string, conn *websocket.Conn) e
 	var err error = nil
 	for _, v := range subscribes {
 		postData := url.Values{}
-		postData.Set("api_key", model.ApplicationConfig.OkexKey)
+		postData.Set("api_key", model.AppConfig.OkexKey)
 		var subBook string
 		if v == `login` {
 			subBook = fmt.Sprintf(`{"event":"login","parameters":{"api_key":"%s","sign":"%s"}}`,
-				model.ApplicationConfig.OkexKey, getSign(&postData))
+				model.AppConfig.OkexKey, getSign(&postData))
 		} else {
 			subBook = fmt.Sprintf(`{'event':'addChannel','channel':'%s','parameters':{'api_key':'%s','sign':'%s'}}`,
-				v, model.ApplicationConfig.OkexKey, getSign(&postData))
+				v, model.AppConfig.OkexKey, getSign(&postData))
 		}
 		//fmt.Println(subBook)
 		err = conn.WriteMessage(websocket.TextMessage, []byte(subBook))
@@ -50,7 +50,7 @@ func WsAccountServeOKFuture(errHandler ErrHandler) (chan struct{}, error) {
 		}
 		//fmt.Println(string(event))
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.OKFUTURE],
+	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE],
 		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
@@ -130,7 +130,7 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 			}
 		}
 	}
-	return WebSocketServe(model.ApplicationConfig.WSUrls[model.OKFUTURE],
+	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE],
 		model.GetDepthSubscribes(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
@@ -182,7 +182,7 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 	postData.Set(`price`, price)
 	postData.Set(`type`, orderSide)
 	postData.Set(`match_price`, orderType)
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKFUTURE]+"/future_trade.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_trade.do", &postData)
 	fmt.Println(string(responseBody))
 	resultJson, err := util.NewJSON(responseBody)
 	if err == nil {
@@ -202,7 +202,7 @@ func QueryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice fl
 	//postData.Set(`page_length`, `50`)
 	//postData.Set(`current_page`, `1`)
 	postData.Set(`order_id`, orderId)
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do", &postData)
 	fmt.Println(string(responseBody))
 	orderJson, err := util.NewJSON(responseBody)
 	if err != nil {
@@ -228,7 +228,7 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`order_id`, orderId)
 	postData.Set(`contract_type`, getContractType(symbol))
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKFUTURE]+"/future_cancel.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_cancel.do", &postData)
 	fmt.Println(string(responseBody))
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
@@ -243,7 +243,7 @@ func getPositionOkfuture(market, symbol string) (futureAccount *model.FutureAcco
 	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`contract_type`, getContractType(symbol))
-	responseBody := sendSignRequest(`POST`, model.ApplicationConfig.RestUrls[model.OKFUTURE]+
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
 		"/future_position.do", &postData)
 	fmt.Println(string(responseBody))
 	orderJson, err := util.NewJSON(responseBody)

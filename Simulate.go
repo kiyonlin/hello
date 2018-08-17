@@ -110,19 +110,19 @@ func analyzeKLine(data []interface{}, percentage float64) {
 
 func testApi() {
 	model.NewConfig()
-	err := configor.Load(model.ApplicationConfig, "./config.yml")
+	err := configor.Load(model.AppConfig, "./config.yml")
 	if err != nil {
 		util.Notice(err.Error())
 		return
 	}
-	//model.ApplicationDB, err = gorm.Open("postgres", model.ApplicationConfig.DBConnection)
+	//model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	//if err != nil {
 	//	util.Notice(err.Error())
 	//	return
 	//}
-	//defer model.ApplicationDB.Close()
+	//defer model.AppDB.Close()
 	//model.LoadSettings()
-	//setting := model.ApplicationFutureAccount[model.OKFUTURE][`btc_this_week`]
+	//setting := model.AppFutureAccount[model.OKFUTURE][`btc_this_week`]
 	size := 2000
 	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
 	slots := []string{`1min`, `5min`, `30min`, `1hour`, `6hour`, `12hour`, `1day`}
