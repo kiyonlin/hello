@@ -3,13 +3,11 @@ package model
 import (
 	"errors"
 	"fmt"
-	"hello/api"
 	"hello/util"
 	"math"
 	"strings"
 	"sync"
-	"time"
-)
+		)
 
 type BidAsk struct {
 	Ts   int
@@ -61,8 +59,6 @@ func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rig
 		msg := fmt.Sprintf("%s[钱币配比异常]last price %f current price %f bid price %f ask price %f "+
 			"coin amount %f money amount %f", symbol, lastPrice, currentPrice, bidPrice, askPrice, leftAmount, rightAmount)
 		util.Notice(msg + `触发价格异常保护机制`)
-		time.Sleep(time.Minute)
-		api.RefreshAccount(market)
 		return nil, errors.New(msg)
 	}
 	return &Carry{Symbol: symbol, BidWeb: market, AskWeb: market, BidAmount: bidAmount, AskAmount: askAmount,

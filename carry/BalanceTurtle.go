@@ -39,8 +39,10 @@ var ProcessBalanceTurtle = func(symbol, market string) {
 	}
 	if model.GetBalanceTurtleCarry(market, symbol) == nil {
 		carry, err := model.AppMarkets.NewBalanceTurtle(market, symbol, leftAccount, rightAccount, currentPrice, lastPrice)
-		if err != nil {
+		if err != nil || carry == nil{
 			util.Notice(`can not create turtle ` + err.Error())
+			time.Sleep(time.Minute)
+			api.RefreshAccount(market)
 			return
 		}
 		placeTurtle(market, symbol, carry, leftAccount, rightAccount)
