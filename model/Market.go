@@ -7,7 +7,7 @@ import (
 	"math"
 	"strings"
 	"sync"
-		)
+)
 
 type BidAsk struct {
 	Ts   int
@@ -51,16 +51,16 @@ func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rig
 	}
 	leftAmount := leftAccount.Free + leftAccount.Frozen
 	rightAmount := rightAccount.Free + rightAccount.Frozen
+	lastBalance := leftAmount*lastPrice + rightAmount
+	leftRate := leftAmount * lastPrice / lastBalance
+	rightRate := rightAmount / lastBalance
 	askPrice := lastPrice * (1 + 2*setting.TurtleBalanceRate)
+	askBalance := askPrice*leftAmount + rightAmount
+	askAmount := rightRate * (askBalance - lastBalance) / askPrice
 	bidPrice := lastPrice * (1 - 2*setting.TurtleBalanceRate)
-	askAmount := (leftAmount*askPrice - rightAmount) * 0.5 / askPrice
-	bidAmount := (rightAmount - leftAmount*bidPrice) * 0.5 / bidPrice
-	if leftAmount*askPrice < rightAmount || leftAmount*bidPrice > rightAmount {
-		msg := fmt.Sprintf("%s[钱币配比异常]last price %f current price %f bid price %f ask price %f "+
-			"coin amount %f money amount %f", symbol, lastPrice, currentPrice, bidPrice, askPrice, leftAmount, rightAmount)
-		util.Notice(msg + `触发价格异常保护机制`)
-		return nil, errors.New(msg)
-	}
+	bidBalance := bidPrice*leftAmount + rightAmount
+	bidAmount := leftRate * (lastBalance - bidBalance) / bidPrice
+	util.Notice(fmt.Sprintf(`比例coin - money %f - %f`, leftRate, rightRate))
 	return &Carry{Symbol: symbol, BidWeb: market, AskWeb: market, BidAmount: bidAmount, AskAmount: askAmount,
 		BidPrice: bidPrice, AskPrice: askPrice, SideType: CarryTypeBalance}, nil
 }
