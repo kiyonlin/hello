@@ -66,7 +66,7 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 	model.SetBalanceTurtleCarry(market, symbol, carry)
 	if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` &&
 		carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {
-		util.Notice(`set new carry成功` + carry.ToString())
+		util.Notice(`[set new carry成功]` + carry.ToString())
 	} else {
 		api.RefreshAccount(market)
 		util.Notice(`[set new carry不平]` + carry.ToString())

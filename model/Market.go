@@ -59,7 +59,7 @@ func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rig
 	} else {
 		leftRate -= (leftRate - 0.5) / 10
 	}
-	rightRate = 0.5 - leftRate
+	rightRate = 1 - leftRate
 	askPrice := lastPrice * (1 + 2*setting.TurtleBalanceRate)
 	askBalance := askPrice*leftAmount + rightAmount
 	askAmount := rightRate * (askBalance - lastBalance) / askPrice
