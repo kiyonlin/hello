@@ -39,7 +39,7 @@ var ProcessBalanceTurtle = func(symbol, market string) {
 	}
 	if model.GetBalanceTurtleCarry(market, symbol) == nil {
 		carry, err := model.AppMarkets.NewBalanceTurtle(market, symbol, leftAccount, rightAccount, currentPrice, lastPrice)
-		if err != nil || carry == nil{
+		if err != nil || carry == nil {
 			util.Notice(`can not create turtle ` + err.Error())
 			time.Sleep(time.Minute)
 			api.RefreshAccount(market)
@@ -63,20 +63,13 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 		model.OrderTypeLimit, market, symbol, carry.AskPrice, carry.AskAmount)
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(model.OrderSideBuy,
 		model.OrderTypeLimit, market, symbol, carry.BidPrice, carry.BidAmount)
+	model.SetBalanceTurtleCarry(market, symbol, carry)
 	if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` &&
 		carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {
-		util.Notice(`set new carry ` + carry.ToString())
-		model.SetBalanceTurtleCarry(market, symbol, carry)
+		util.Notice(`set new carry成功` + carry.ToString())
 	} else {
-		if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-			api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-			api.RefreshAccount(carry.AskWeb)
-		}
-		if carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {
-			api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-			api.RefreshAccount(carry.BidWeb)
-		}
-		util.Notice(`[下單失敗，休息1分鐘]` + carry.ToString())
+		api.RefreshAccount(market)
+		util.Notice(`[set new carry失敗，休息1分鐘]` + carry.ToString())
 		time.Sleep(time.Minute * 1)
 	}
 	model.CarryChannel <- *carry
