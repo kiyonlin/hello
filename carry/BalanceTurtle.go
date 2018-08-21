@@ -57,6 +57,7 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 	if carry.AskAmount > leftAccount.Free || carry.BidAmount > rightAccount.Free/carry.BidPrice {
 		util.Notice(fmt.Sprintf(`金额不足coin%f-ask%f money%f-bid%f`, leftAccount.Free, carry.AskAmount,
 			rightAccount.Free, carry.BidAmount))
+		api.RefreshAccount(market)
 		return
 	}
 	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(model.OrderSideSell,
