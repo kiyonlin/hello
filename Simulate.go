@@ -21,7 +21,7 @@ var totalSell = 0.0
 var countSell = 0
 var balance = 10000.0
 
-const tradeFee = 0.0005
+const tradeFee = 0.0003
 
 type KLinePoint struct {
 	TS        int64
@@ -124,9 +124,10 @@ func testApi() {
 	//model.LoadSettings()
 	//setting := model.AppFutureAccount[model.OKFUTURE][`btc_this_week`]
 	size := 2000
-	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
-	slots := []string{`1min`, `5min`, `30min`, `1hour`, `6hour`, `12hour`, `1day`}
-	percentages := []float64{0.001, 0.003, 0.005, 0.01, 0.03, 0.05, 0.1, 0.3}
+	//symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
+	symbols := []string{`eth_btc`, `eth_usdt`, `eos_usdt`, `eos_eth`, `eos_btc`}
+	slots := []string{`1min`, `5min`,}
+	percentages := []float64{0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01}
 	results := make(map[string]map[float64]map[string]float64)
 	for _, slot := range slots {
 		fmt.Print("\n" + slot)
@@ -153,6 +154,6 @@ func testApi() {
 	//api.CancelOrder(`binance`, `eos_usdt`, `184201445`)
 }
 
-func _() {
+func main() {
 	testApi()
 }

@@ -78,7 +78,18 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 func handleTurtle(market, symbol string, carry *model.Carry) {
 	marketBidPrice := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price
 	marketAskPrice := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
-	if marketAskPrice < carry.BidPrice {
+	if marketAskPrice == carry.BidPrice {
+		carry.DealAskAmount, _, carry.DealAskStatus = api.QueryOrderById(market, symbol, carry.DealAskOrderId)
+		if carry.DealAskAmount == carry.AskAmount && marketBidPrice == carry.AskPrice {
+			carry.DealBidAmount, _, carry.DealBidStatus = api.QueryOrderById(market, symbol, carry.DealBidOrderId)
+			if carry.DealBidAmount == carry.BidAmount {
+				util.Notice(`[双边成交]` + carry.ToString())
+				model.CarryChannel <- *carry
+				model.SetBalanceTurtleCarry(market, symbol, nil)
+				api.RefreshAccount(market)
+			}
+		}
+	} else if marketAskPrice < carry.BidPrice {
 		api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 		carry.DealAskAmount, _, _ = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
 		carry.DealBidAmount = carry.BidAmount
