@@ -38,8 +38,8 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 	}
 	carry.AskAmount = carry.Amount
 	carry.BidAmount = carry.Amount / model.OKLever // 10倍杠杆
-	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(model.OrderSideLiquidateShort,
-		model.OrderTypeMarket, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount)
+	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
+		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
 		return
@@ -54,8 +54,8 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 		}
 		transfer, _ := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 		if transfer {
-			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(model.OrderSideSell,
-				model.OrderTypeMarket, market, symbol, carry.AskPrice, transferAmount)
+			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
+				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.AskPrice, transferAmount)
 			time.Sleep(time.Second)
 			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
 				time.Sleep(time.Second)
@@ -92,8 +92,8 @@ func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidP
 	}
 	carry.BidAmount = carry.Amount
 	carry.AskAmount = carry.Amount / model.OKLever // 10倍杠杆
-	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(model.OrderSideBuy,
-		model.OrderTypeMarket, market, symbol, carry.BidPrice, carry.BidAmount)
+	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
+		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, market, symbol, carry.BidPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, market, symbol, carry.BidPrice, carry.BidAmount))
 		return
@@ -104,8 +104,8 @@ func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidP
 	if carry.DealBidAmount > 0 {
 		transfer, _ := api.FundTransferOkex(symbol, carry.DealBidAmount, `1`, `3`)
 		if transfer {
-			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(model.OrderSideSell,
-				model.OrderTypeMarket, futureMarket, futureSymbol, carry.AskPrice, carry.AskAmount)
+			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
+				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol, carry.AskPrice, carry.AskAmount)
 			time.Sleep(time.Second)
 			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
 				time.Sleep(time.Second)

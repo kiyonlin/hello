@@ -60,10 +60,10 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 		api.RefreshAccount(market)
 		return
 	}
-	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus = api.PlaceOrder(model.OrderSideSell,
-		model.OrderTypeLimit, market, symbol, carry.AskPrice, carry.AskAmount)
-	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus = api.PlaceOrder(model.OrderSideBuy,
-		model.OrderTypeLimit, market, symbol, carry.BidPrice, carry.BidAmount)
+	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
+		api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, carry.AskPrice, carry.AskAmount)
+	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
+		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, carry.BidPrice, carry.BidAmount)
 	model.SetBalanceTurtleCarry(market, symbol, carry)
 	if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` &&
 		carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {

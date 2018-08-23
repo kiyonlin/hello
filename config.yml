@@ -52,5 +52,8 @@ coinbigsecret: 57F20C33AEB2F29171B77239EDBBC102
 coinparkkey: 7315c14b57b5c0818dc48d9635c4342cc0ac4295
 coinparksecret: 04943d9ed1735624bca2f3a88a216866b039b0ec
 #bitmex test
-bitmexkey: pS4bU4i2fUlEpdZjGzcjP83h
-bitmexsecret: yLl0t87-dSbwu_R4mLLIVkNRlI3d7Kr2a9ZgtRDUjbm07GQm
+#bitmexkey: pS4bU4i2fUlEpdZjGzcjP83h
+#bitmexsecret: yLl0t87-dSbwu_R4mLLIVkNRlI3d7Kr2a9ZgtRDUjbm07GQm
+#bitmex
+bitmexkey: Esp86jOtjFZH4Gprd_cdk4pE
+bitmexsecret: XC-m2-XMOJoX0FBfOcs60qkRprQcFDKMMfTyPpPBWOsKRccE

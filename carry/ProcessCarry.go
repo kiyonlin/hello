@@ -114,11 +114,22 @@ var ProcessCarry = func(symbol, market string) {
 		}
 	}
 	if doCarry {
-		go api.Order(carry, model.OrderSideSell, model.OrderTypeLimit, market, symbol, carry.AskPrice, leftBalance)
-		go api.Order(carry, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, carry.BidPrice, leftBalance)
+		go order(carry, model.OrderSideSell, model.OrderTypeLimit, market, symbol, carry.AskPrice, leftBalance)
+		go order(carry, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, carry.BidPrice, leftBalance)
 	} else {
 		model.CarryChannel <- *carry
 	}
+}
+
+func order(carry *model.Carry, orderSide, orderType, market, symbol string, price, amount float64) {
+	if orderSide == model.OrderSideSell {
+		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
+			api.PlaceOrder(orderSide, orderType, market, symbol, price, amount)
+	} else if orderSide == model.OrderSideBuy {
+		carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
+			api.PlaceOrder(orderSide, orderType, market, symbol, price, amount)
+	}
+	model.InnerCarryChannel <- *carry
 }
 
 func createAccountInfoServer(marketName string) chan struct{} {
