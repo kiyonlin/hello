@@ -87,7 +87,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidP
 	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
 	if carry.Amount <= 0 {
 		time.Sleep(time.Minute)
-		util.Notice(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount, symbol))
+		util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
 		return
 	}
 	carry.BidAmount = carry.Amount
