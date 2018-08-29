@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
-	"github.com/pkg/errors"
 )
 
 var subscribeHandlerOKFuture = func(subscribes []string, conn *websocket.Conn) error {
@@ -84,8 +84,8 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 			}
 			symbol := model.GetSymbol(model.OKFUTURE, subscribe)
 			if markets.BidAsks[symbol][model.OKFUTURE] != nil {
-				bidMap = markets.BidAsks[symbol][model.OKFUTURE].Asks.GetMap()
-				askMap = markets.BidAsks[symbol][model.OKFUTURE].Bids.GetMap()
+				bidMap = markets.BidAsks[symbol][model.OKFUTURE].Bids.GetMap()
+				askMap = markets.BidAsks[symbol][model.OKFUTURE].Asks.GetMap()
 			}
 			subscribeData := value.(map[string]interface{})[`data`].(map[string]interface{})
 			if subscribeData[`timestamp`] == nil || subscribeData[`asks`] == nil || subscribeData[`bids`] == nil {
@@ -239,7 +239,19 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 	return false, ``, err.Error()
 }
 
-func getPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error){
+func GetCurrencyOkfuture(currency string) (accountRights, keepDeposit float64) {
+	postData := url.Values{}
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/future_userinfo.do", &postData)
+	balanceJson, err := util.NewJSON(responseBody)
+	fmt.Println(string(responseBody))
+	if err == nil {
+		accountRights, _ = balanceJson.GetPath(`info`, currency, `account_rights`).Float64()
+		keepDeposit, _ = balanceJson.GetPath(`info`, currency, `keep_deposit`).Float64()
+	}
+	return accountRights, keepDeposit
+}
+
+func getPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error) {
 	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`contract_type`, getContractType(symbol))
@@ -259,7 +271,29 @@ func getPositionOkfuture(market, symbol string) (futureAccount *model.FutureAcco
 		value := holdings[0].(map[string]interface{})
 		openLong, _ := value[`buy_available`].(json.Number).Float64()
 		openShort, _ := value[`sell_available`].(json.Number).Float64()
-		futureAccount = &model.FutureAccount{Market:market, Symbol:symbol, OpenedLong: openLong, OpenedShort:openShort}
+		futureAccount = &model.FutureAccount{Market: market, Symbol: symbol, OpenedLong: openLong, OpenedShort: openShort}
 	}
 	return futureAccount, nil
+}
+
+func GetKLineOkexFuture(symbol, timeSlot string, size int64) []*model.KLinePoint {
+	postData := url.Values{}
+	symbol = getSymbol(symbol)
+	contractType := getContractType(symbol)
+	postData.Set(`symbol`, symbol)
+	postData.Set(`type`, timeSlot)
+	postData.Set(`contract_type`, contractType)
+	postData.Set(`size`, strconv.FormatInt(size, 10))
+	responseBody := sendSignRequest(`GET`, model.AppConfig.RestUrls[model.OKEX]+"/future_kline.do", &postData)
+	dataJson, _ := util.NewJSON(responseBody)
+	data, _ := dataJson.Array()
+	priceKLine := make([]*model.KLinePoint, len(data))
+	for key, value := range data {
+		ts, _ := value.([]interface{})[0].(json.Number).Int64()
+		price, _ := value.([]interface{})[4].(json.Number).Float64()
+		high, _ := value.([]interface{})[2].(json.Number).Float64()
+		low, _ := value.([]interface{})[3].(json.Number).Float64()
+		priceKLine[key] = &model.KLinePoint{TS: ts, EndPrice: price, HighPrice: high, LowPrice: low}
+	}
+	return priceKLine
 }

@@ -268,7 +268,7 @@ func getBuyPriceOkex(symbol string) (buy float64, err error) {
 	return model.CurrencyPrice[symbol], err
 }
 
-func GetKLineOkex(symbol, timeSlot string, size int64) []interface{} {
+func GetKLineOkex(symbol, timeSlot string, size int64) []*model.KLinePoint {
 	postData := url.Values{}
 	postData.Set(`symbol`, symbol)
 	postData.Set(`type`, timeSlot)
@@ -277,5 +277,16 @@ func GetKLineOkex(symbol, timeSlot string, size int64) []interface{} {
 	//fmt.Println(string(responseBody))
 	dataJson, _ := util.NewJSON(responseBody)
 	data, _ := dataJson.Array()
-	return data
+	priceKLine := make([]*model.KLinePoint, len(data))
+	for key, value := range data {
+		ts, _ := value.([]interface{})[0].(json.Number).Int64()
+		str := value.([]interface{})[4].(string)
+		strHigh := value.([]interface{})[2].(string)
+		strLow := value.([]interface{})[3].(string)
+		price, _ := strconv.ParseFloat(str, 64)
+		high, _ := strconv.ParseFloat(strHigh, 64)
+		low, _ := strconv.ParseFloat(strLow, 64)
+		priceKLine[key] = &model.KLinePoint{TS: ts, EndPrice: price, HighPrice: high, LowPrice: low}
+	}
+	return priceKLine
 }

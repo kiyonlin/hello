@@ -11,13 +11,6 @@ haoweizh 邮箱 haoweizh@qq.com 密码 Sammi850810
 yjsx_@163.com google秘钥726CEOZJ5C2EMLER
 陈然  13671965320  zaq12WSX  uid 40138994
 
-# okex
-
-# fcoin
-haoweizh@qq.com google: VXXW2HXKV4ISY5XNTYX5WYIHCQ6XQ3VK
-ws820714@163.com google: L35UYMP7DRZHLXXAJ47YLZZZO4CTWZOO
-yjsx_@163.com google: 52BNAADBEBVKJU6B6NMPUVBEHDWGPIWU
-
 # coinbig
 haoweizh@qq.com zaq1@WSX
 yjsx_@163.com zaq1@WSX google: O6TIWJNTPSXJ34IV

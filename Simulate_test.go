@@ -1,36 +1,34 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/configor"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"strconv"
+	"testing"
 )
 
 var lastPrice float64
 var money = 5000.0
 var coin = 0.0
-var priceKLine []KLinePoint
+
+//var priceKLine []KLinePoint
 var totalBuy = 0.0
 var countBuy = 0
 var totalSell = 0.0
 var countSell = 0
 var balance = 10000.0
+var lever = 1.0
+var doShort = true
+var size = 1560
+var data = make(map[string]map[string][]*model.KLinePoint) // symbol - slot - kline data
 
-const tradeFee = 0.0003
+const tradeFee = 0.00035
 
-type KLinePoint struct {
-	TS        int64
-	EndPrice  float64
-	HighPrice float64
-	LowPrice  float64
-}
-
-func initMoney() {
+func initMoney(priceKLine []*model.KLinePoint) {
+	doShort = true
 	money = 5000
 	balance = 10000
 	coin = 5000 / priceKLine[0].EndPrice
@@ -38,10 +36,10 @@ func initMoney() {
 	//fmt.Println(fmt.Sprintf(`buy%f`, lastPrice))
 }
 
-func sell(_ KLinePoint, price float64) {
+func sell(_ *model.KLinePoint, price float64) {
 	diff := coin*price - money
-	coin -= diff / 2 / price
-	money += (diff / 2) * (1 - tradeFee)
+	coin -= lever * diff / 2 / price
+	money += (lever * diff / 2) * (1 - tradeFee)
 	balance = money + coin*price
 	//strTime := time.Unix(klPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
 	//fmt.Println(fmt.Sprintf(`%s sell %f  money %f coin %f coin money %f in all %f`,
@@ -51,10 +49,10 @@ func sell(_ KLinePoint, price float64) {
 	countSell++
 }
 
-func buy(_ KLinePoint, price float64) {
+func buy(_ *model.KLinePoint, price float64) {
 	diff := money - coin*price
-	coin += (diff / 2 / price) * (1 - tradeFee)
-	money -= diff / 2
+	coin += (lever * diff / 2 / price) * (1 - tradeFee)
+	money -= lever * diff / 2
 	balance = money + coin*price
 	//strTime := time.Unix(klPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
 	//fmt.Println(fmt.Sprintf(`%s buy %f  money %f coin %f coin money %f in all %f`,
@@ -70,19 +68,7 @@ func printBalance() {
 	//fmt.Println(fmt.Sprintf(`条数%d 净值%f`, len(priceKLine), coin*priceKLine[0].EndPrice+money))
 }
 
-func analyzeKLine(data []interface{}, percentage float64) {
-	priceKLine = make([]KLinePoint, len(data))
-	for key, value := range data {
-		ts, _ := value.([]interface{})[0].(json.Number).Int64()
-		str := value.([]interface{})[4].(string)
-		strHigh := value.([]interface{})[2].(string)
-		strLow := value.([]interface{})[3].(string)
-		price, _ := strconv.ParseFloat(str, 64)
-		high, _ := strconv.ParseFloat(strHigh, 64)
-		low, _ := strconv.ParseFloat(strLow, 64)
-		klinePoint := KLinePoint{TS: ts, EndPrice: price, HighPrice: high, LowPrice: low}
-		priceKLine[key] = klinePoint
-	}
+func analyzeKLine(priceKLine []*model.KLinePoint, percentage float64) {
 	//initMoney()
 	//for i := 2; i < len(data)-1; i++ {
 	//	if priceKLine[i-1].EndPrice > priceKLine[i-2].EndPrice && priceKLine[i].EndPrice < priceKLine[i-1].EndPrice &&
@@ -96,8 +82,8 @@ func analyzeKLine(data []interface{}, percentage float64) {
 	//	}
 	//}
 	//printBalance()
-	initMoney()
-	for i := 1; i < len(data)-1; i++ {
+	initMoney(priceKLine)
+	for i := 1; i < len(priceKLine)-1; i++ {
 		if (priceKLine[i].HighPrice-lastPrice)*coin/balance > percentage {
 			sell(priceKLine[i], percentage*balance/coin+lastPrice)
 		}
@@ -106,6 +92,17 @@ func analyzeKLine(data []interface{}, percentage float64) {
 		}
 	}
 	printBalance()
+}
+
+func getData(symbol, timeSlot string) []*model.KLinePoint {
+	if data[symbol] == nil {
+		data[symbol] = make(map[string][]*model.KLinePoint)
+	}
+	if data[symbol][timeSlot] == nil {
+		priceKLine := api.GetKLineOkex(symbol, timeSlot, int64(size))
+		data[symbol][timeSlot] = priceKLine
+	}
+	return data[symbol][timeSlot]
 }
 
 func testApi() {
@@ -123,22 +120,27 @@ func testApi() {
 	//defer model.AppDB.Close()
 	//model.LoadSettings()
 	//setting := model.AppFutureAccount[model.OKFUTURE][`btc_this_week`]
-	size := 2000
 	//symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
-	symbols := []string{`eth_btc`, `eth_usdt`, `eos_usdt`, `eos_eth`, `eos_btc`}
-	slots := []string{`1min`, `5min`,}
-	percentages := []float64{0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.01}
+	symbols := []string{`btc_usdt`, `eos_eth`, `eos_usdt`}
+	slots := []string{`1min`, `5min`, `30min`, `1hour`, `6hour`}
+	percentages := []float64{0.001, 0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.1, 0.9}
 	results := make(map[string]map[float64]map[string]float64)
 	for _, slot := range slots {
-		fmt.Print("\n" + slot)
+		fmt.Print(fmt.Sprintf("\n%s 做空：%t", slot, doShort))
 		results[slot] = make(map[float64]map[string]float64)
 		for _, percentage := range percentages {
 			results[slot][percentage] = make(map[string]float64)
 			fmt.Print(fmt.Sprintf("\n %f", percentage))
 			for _, symbol := range symbols {
-				data := api.GetKLineOkex(symbol, slot, int64(size))
+				data := getData(symbol, slot)
 				analyzeKLine(data, percentage)
-				results[slot][percentage][symbol] = coin*priceKLine[0].EndPrice + money
+				beginPrice := data[0].EndPrice
+				endPrice := data[len(data)-1].EndPrice
+				//results[slot][percentage][symbol] = coin*priceKLine[0].EndPrice + money
+				results[slot][percentage][symbol] = coin*endPrice + money
+				if doShort {
+					results[slot][percentage][symbol] += (beginPrice - endPrice) / beginPrice * balance / 2
+				}
 				fmt.Print(fmt.Sprintf(`	%s:%f `, symbol, results[slot][percentage][symbol]))
 			}
 		}
@@ -154,6 +156,6 @@ func testApi() {
 	//api.CancelOrder(`binance`, `eos_usdt`, `184201445`)
 }
 
-func main() {
+func Test_simulation(t *testing.T) {
 	testApi()
 }

@@ -7,9 +7,9 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-const OKEXBTCContractFaceValue = 100
-const OKEXOtherContractFaceValue = 10
-const OKLever = 10
+const OKEXBTCContractFaceValue = 100.0
+const OKEXOtherContractFaceValue = 10.0
+const OKLever = 20
 const OKEX = "okex"
 const OKFUTURE = `okfuture`
 const Huobi = "huobi"

@@ -5,6 +5,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"strings"
 	"time"
 )
@@ -22,7 +23,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 		return
 	}
 	futureAccount := model.AppFutureAccount[futureMarket][futureSymbol]
-	if futureAccount.OpenedShort < 1 {
+	if futureAccount == nil || futureAccount.OpenedShort < 1 {
 		util.Notice(`[No opened short]`)
 	}
 	carry := &model.Carry{}
@@ -31,15 +32,15 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 	carry.BidWeb = futureMarket
 	carry.AskPrice = askPrice
 	carry.BidPrice = bidPrice
-	if strings.Contains(futureSymbol, `btc`) {
-		carry.Amount = model.OKLever * model.OKEXBTCContractFaceValue * 1.01 / carry.BidPrice
-	} else {
-		carry.Amount = model.OKLever * model.OKEXOtherContractFaceValue * 1.01 / carry.BidPrice
+	faceValue := model.OKEXOtherContractFaceValue
+	if strings.Contains(symbol, `btc`) {
+		faceValue = model.OKEXBTCContractFaceValue
 	}
+	carry.Amount = futureAccount.OpenedShort * faceValue / carry.AskPrice
 	carry.AskAmount = carry.Amount
-	carry.BidAmount = carry.Amount / model.OKLever // 10倍杠杆
+	carry.BidAmount = carry.Amount
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
-		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount)
+		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol, carry.AskPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
 		return
@@ -48,14 +49,11 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 	api.RefreshAccount(futureMarket)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transferAmount := carry.DealBidAmount * model.OKLever * model.OKEXOtherContractFaceValue / carry.BidPrice
-		if strings.Contains(futureSymbol, `btc`) {
-			transferAmount = carry.DealBidAmount * model.OKLever * model.OKEXBTCContractFaceValue / carry.BidPrice
-		}
+		transferAmount := 0.99 * carry.DealBidAmount * faceValue / carry.BidPrice
 		transfer, _ := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 		if transfer {
 			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
-				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.AskPrice, transferAmount)
+				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.BidPrice, transferAmount)
 			time.Sleep(time.Second)
 			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
 				time.Sleep(time.Second)
@@ -78,24 +76,26 @@ func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidP
 	carry.BidWeb = market
 	carry.AskPrice = askPrice
 	carry.BidPrice = bidPrice
-	// btc期貨面值100usd,十倍保证金为1000usd，按照101%買入，其他面值10usd
+	faceValue := model.OKEXOtherContractFaceValue
 	if strings.Contains(symbol, `btc`) {
-		carry.Amount = model.OKLever * model.OKEXBTCContractFaceValue * 1.01 / carry.BidPrice
-	} else {
-		carry.Amount = model.OKLever * model.OKEXOtherContractFaceValue * 1.01 / carry.BidPrice
+		faceValue = model.OKEXBTCContractFaceValue
 	}
 	account := model.AppAccounts.GetAccount(market, `usdt`)
-	if account.Free < carry.Amount*carry.BidPrice {
+	if account == nil {
+		util.Notice(`account nil`)
+	}
+	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
+	if carry.Amount <= 0 {
 		time.Sleep(time.Minute)
 		util.Notice(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount, symbol))
 		return
 	}
 	carry.BidAmount = carry.Amount
-	carry.AskAmount = carry.Amount / model.OKLever // 10倍杠杆
+	carry.AskAmount = carry.Amount
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
-		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, market, symbol, carry.BidPrice, carry.BidAmount)
+		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, market, symbol, carry.AskPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
-		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, market, symbol, carry.BidPrice, carry.BidAmount))
+		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, market, symbol, carry.AskPrice, carry.BidAmount))
 		return
 	}
 	time.Sleep(time.Second)
@@ -105,10 +105,9 @@ func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidP
 		transfer, _ := api.FundTransferOkex(symbol, carry.DealBidAmount, `1`, `3`)
 		if transfer {
 			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
-				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol, carry.AskPrice, carry.AskAmount)
+				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol, carry.BidPrice, carry.AskAmount)
 			time.Sleep(time.Second)
 			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-				time.Sleep(time.Second)
 				api.RefreshAccount(futureMarket)
 				carry.DealAskAmount, carry.AskPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealAskOrderId)
 			} else {
@@ -157,9 +156,10 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
 	if setting.OpenShortMargin < openShortMargin {
+		util.Notice(fmt.Sprintf(`[open short]%f>%f`, openShortMargin, setting.OpenShortMargin))
 		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk.Bids[0].Price, bidAsk.Asks[0].Price)
 	} else if setting.CloseShortMargin > closeShortMargin {
+		util.Notice(fmt.Sprintf(`[close short]%f<%f`, closeShortMargin, setting.CloseShortMargin))
 		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk.Bids[0].Price, futureBidAsk.Asks[0].Price)
 	}
-	fmt.Println(fmt.Sprintf(`%f %f %f %f`, openShortMargin, closeShortMargin, setting.OpenShortMargin, setting.CloseShortMargin))
 }

@@ -1,7 +1,7 @@
 functions:
 #- carry
-- balanceturtle
-#- arbitrary
+#- balanceturtle
+- arbitrary
 
 bnbmin: 2
 bnbbuy: 2
@@ -18,7 +18,7 @@ deduction: 0.8
 #env: local
 #dbconnection: host=10.10.102.65 port=5432 user=odoo dbname=odoo password=123456 sslmode=disable
 env: simon
-dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
+dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=test password=zaq12WSX sslmode=disable
 #dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=jack password=zaq12WSX sslmode=disable
 #env: ace
 #dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
@@ -31,11 +31,11 @@ dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com por
 huobikey: f5be33c8-e44026c8-4db512d3-908b3
 huobisecret: 1826ba5a-022a7442-07a876f8-1075e
 #sammi okex
-okexkey: 0b9a5af6-9e8f-47df-a0c6-5bb12d2431fa
-okexsecret: 3A3B33621B46EDA22AC5F08C244DBC13
+#okexkey: 0b9a5af6-9e8f-47df-a0c6-5bb12d2431fa
+#okexsecret: 3A3B33621B46EDA22AC5F08C244DBC13
 #simon okex
-#okexkey: f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c
-#okexsecret: 66786EDBC5F3230B7943DB520F86B492
+okexkey: f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c
+okexsecret: 66786EDBC5F3230B7943DB520F86B492
 #sammi binance
 #binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
 #binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
