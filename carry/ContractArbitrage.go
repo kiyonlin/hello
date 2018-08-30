@@ -39,6 +39,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 	carry.Amount = futureAccount.OpenedShort * faceValue / carry.AskPrice
 	carry.AskAmount = carry.Amount
 	carry.BidAmount = carry.Amount
+	util.Notice(`[close short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
 		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol, carry.AskPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
@@ -92,6 +93,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidP
 	}
 	carry.BidAmount = carry.Amount
 	carry.AskAmount = carry.Amount
+	util.Notice(`[open short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
 		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, market, symbol, carry.AskPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
@@ -155,11 +157,12 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	}
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
+	util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
+		setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
+		setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 	if setting.OpenShortMargin < openShortMargin {
-		util.Notice(fmt.Sprintf(`[open short]%f>%f`, openShortMargin, setting.OpenShortMargin))
 		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk.Bids[0].Price, bidAsk.Asks[0].Price)
 	} else if setting.CloseShortMargin > closeShortMargin {
-		util.Notice(fmt.Sprintf(`[close short]%f<%f`, closeShortMargin, setting.CloseShortMargin))
 		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk.Bids[0].Price, futureBidAsk.Asks[0].Price)
 	}
 }
