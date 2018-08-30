@@ -16,7 +16,7 @@ func setContractArbitraging(status bool) {
 	contractArbitraging = status
 }
 
-func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidPrice float64) {
+func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *model.BidAsk) {
 	if model.AppFutureAccount[futureMarket] == nil ||
 		model.AppFutureAccount[futureMarket][futureSymbol] == nil {
 		util.Notice(futureMarket + ` fail to get future account ` + futureSymbol)
@@ -30,8 +30,15 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 	carry.Symbol = futureSymbol
 	carry.AskWeb = market
 	carry.BidWeb = futureMarket
-	carry.AskPrice = askPrice
-	carry.BidPrice = bidPrice
+	carry.AskPrice = asks.Asks[0].Price
+	carry.BidPrice = bids.Bids[0].Price
+	carry.AskTime = int64(asks.Ts)
+	carry.BidTime = int64(bids.Ts)
+	checkTime, msg := carry.CheckWorthCarryTime()
+	if !checkTime {
+		util.Notice(msg.Error())
+		return
+	}
 	faceValue := model.OKEXOtherContractFaceValue
 	if strings.Contains(symbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
@@ -50,8 +57,8 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 	api.RefreshAccount(futureMarket)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transferAmount := 0.99 * carry.DealBidAmount * faceValue / carry.BidPrice
-		transfer, _ := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
+		transferAmount := 0.999 * carry.DealBidAmount * faceValue / carry.BidPrice
+		transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 		if transfer {
 			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
 				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.BidPrice, transferAmount)
@@ -64,19 +71,26 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, askPrice, bid
 				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 			}
 		} else {
-			util.Notice(`[transfer fail]`)
+			util.Notice(`[transfer fail]` + errCode)
 		}
 	}
 	model.CarryChannel <- *carry
 }
 
-func openShort(symbol, market, futureSymbol, futureMarket string, askPrice, bidPrice float64) {
+func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *model.BidAsk) {
 	carry := &model.Carry{}
 	carry.Symbol = futureSymbol
 	carry.AskWeb = futureMarket
 	carry.BidWeb = market
-	carry.AskPrice = askPrice
-	carry.BidPrice = bidPrice
+	carry.AskPrice = asks.Asks[0].Price
+	carry.BidPrice = bids.Bids[0].Price
+	carry.AskTime = int64(asks.Ts)
+	carry.BidTime = int64(bids.Ts)
+	checkTime, msg := carry.CheckWorthCarryTime()
+	if !checkTime {
+		util.Notice(msg.Error())
+		return
+	}
 	faceValue := model.OKEXOtherContractFaceValue
 	if strings.Contains(symbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
@@ -161,8 +175,8 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
 		setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 	if setting.OpenShortMargin < openShortMargin {
-		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk.Bids[0].Price, bidAsk.Asks[0].Price)
+		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
 	} else if setting.CloseShortMargin > closeShortMargin {
-		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk.Bids[0].Price, futureBidAsk.Asks[0].Price)
+		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
 	}
 }

@@ -119,7 +119,7 @@ var ProcessRefresh = func(symbol, market string) {
 	if now-lastOrderTime < model.AppConfig.OrderWait {
 		return
 	}
-	timeOk, _ := carry.CheckWorthCarryTime(model.AppMarkets, model.AppConfig)
+	timeOk, _ := carry.CheckWorthCarryTime()
 	if !timeOk {
 		util.SocketInfo(`get carry not on time` + carry.ToString())
 		return

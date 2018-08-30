@@ -110,12 +110,12 @@ func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (boo
 	return false, errors.New("利润不足")
 }
 
-func (carry *Carry) CheckWorthCarryTime(markets *Markets, config *Config) (bool, error) {
+func (carry *Carry) CheckWorthCarryTime() (bool, error) {
 	now := util.GetNowUnixMillion()
 	bidTimeDelay := math.Abs(float64(now - carry.BidTime))
 	askTimeDelay := math.Abs(float64(now - carry.AskTime))
 	timeDiff := math.Abs(float64(carry.BidTime - carry.AskTime))
-	if timeDiff > config.Delay || bidTimeDelay > config.Delay || askTimeDelay > config.Delay {
+	if timeDiff > AppConfig.Delay || bidTimeDelay > AppConfig.Delay || askTimeDelay > AppConfig.Delay {
 		message := strconv.Itoa(int(now)) + "时间问题，卖方" + carry.AskWeb + strconv.Itoa(int(carry.AskTime)) + "隔" +
 			strconv.Itoa(int(askTimeDelay))
 		message = message + "买方" + carry.BidWeb + strconv.Itoa(int(carry.BidTime)) + "隔" + strconv.Itoa(int(bidTimeDelay))

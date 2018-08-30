@@ -78,7 +78,7 @@ var ProcessCarry = func(symbol, market string) {
 	planAmount, _ := calcAmount(carry.Amount)
 	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
-	timeOk, _ := carry.CheckWorthCarryTime(model.AppMarkets, model.AppConfig)
+	timeOk, _ := carry.CheckWorthCarryTime()
 	marginOk, _ := carry.CheckWorthCarryMargin(model.AppMarkets, model.AppConfig)
 	if !carry.CheckWorthSaveMargin() {
 		// no need to save carry with margin < base cost
