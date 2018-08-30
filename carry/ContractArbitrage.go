@@ -64,7 +64,6 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.BidPrice, transferAmount)
 			time.Sleep(time.Second)
 			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-				time.Sleep(time.Second)
 				api.RefreshAccount(market)
 				carry.DealAskAmount, carry.AskPrice, _ = api.QueryOrderById(market, symbol, carry.DealAskOrderId)
 			} else {
@@ -101,7 +100,6 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	}
 	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
 	if carry.Amount <= 0 {
-		time.Sleep(time.Minute)
 		util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
 		return
 	}
