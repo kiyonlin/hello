@@ -11,13 +11,13 @@ import (
 )
 
 func Test_RefreshAccount(t *testing.T) {
-
 	model.NewConfig()
 	err := configor.Load(model.AppConfig, "./config.yml")
 	if err != nil {
 		util.Notice(err.Error())
 		return
 	}
+	api.RefreshAccount(model.Binance)
 	//accountRights, keepDeposit := api.GetCurrencyOkfuture(`eos`)
 	//fmt.Println(accountRights)
 	//fmt.Println(keepDeposit)

@@ -100,7 +100,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	}
 	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
 	if carry.Amount <= 0 {
-		util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
+		//util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
 		return
 	}
 	carry.BidAmount = carry.Amount
@@ -164,9 +164,9 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
-	util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
-		setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
-		setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
+	//util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
+	//	setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
+	//	setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 	if setting.OpenShortMargin < openShortMargin {
 		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
 	} else if setting.CloseShortMargin > closeShortMargin {
