@@ -164,11 +164,6 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	setting := model.GetSetting(futureMarket, futureSymbol)
 	bidAsk := model.AppMarkets.BidAsks[symbol][model.OKEX]
 	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
-	if util.GetNowUnixMillion()-int64(futureBidAsk.Ts) > int64(model.AppConfig.Delay) ||
-		util.GetNowUnixMillion()-int64(bidAsk.Ts) > int64(model.AppConfig.Delay) {
-		util.Info(`bid ask not in time`)
-		return
-	}
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
 	util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,

@@ -8,8 +8,8 @@ bnbbuy: 2
 
 orderwait: 10000
 delay: 6000 #按照毫秒计算时间差
-channelslot: 200000 #按照毫秒计算的检查时间间隔
-channels: 1
+channelslot: 60000 #按照毫秒计算的检查时间间隔
+channels: 2
 minusdt: 15
 maxusdt: 1500
 inchina: 0

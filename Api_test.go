@@ -21,7 +21,7 @@ func Test_RefreshAccount(t *testing.T) {
 	//accountRights, keepDeposit := api.GetCurrencyOkfuture(`eos`)
 	//fmt.Println(accountRights)
 	//fmt.Println(keepDeposit)
-	timeSlot := `1min`
+	timeSlot := `5min`
 	size := int64(1560)
 	kpointsFuture := api.GetKLineOkexFuture(`btc_this_week`, timeSlot, size)
 	kpoints := api.GetKLineOkex(`btc_usdt`, timeSlot, size)
