@@ -55,7 +55,7 @@ func WsAccountServeOKFuture(errHandler ErrHandler) (chan struct{}, error) {
 func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		if util.GetNow().Unix()-lastPingTime > 30 { // ping okfuture server every 30 seconds
+		if util.GetNow().Unix()-lastPingTime > 10 { // ping okfuture server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"event":"ping"}`)); err != nil {
 				util.SocketInfo("okfuture server ping client error " + err.Error())
