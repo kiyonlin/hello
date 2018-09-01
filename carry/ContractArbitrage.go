@@ -85,6 +85,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	account := model.AppAccounts.GetAccount(market, `usdt`)
 	if account == nil {
 		util.Notice(`account nil`)
+		return
 	}
 	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
 	if carry.Amount <= 0 {
