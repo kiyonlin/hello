@@ -17,10 +17,6 @@ var bidAskTimes int64
 var processing = false
 var handling = false
 
-func getAccount() {
-	api.RefreshAccount(model.GetMarkets()[0])
-}
-
 func calcPrice(bidPrice, askPrice float64, precision int) (num float64, err error) {
 	str := strconv.FormatFloat(bidPrice+(askPrice-bidPrice)*1/2, 'f', precision, 64)
 	return strconv.ParseFloat(str, 64)
@@ -70,7 +66,7 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, a
 			orderSide, orderType, carry.Symbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
 	}
 	if carry.DealAskErrCode == `2027` || carry.DealBidErrCode == `2027` {
-		go getAccount()
+		go api.RefreshAccount(model.GetMarkets()[0])
 	}
 	model.RefreshCarryChannel <- *carry
 	model.CarryChannel <- *carry
@@ -165,7 +161,7 @@ var ProcessRefresh = func(symbol, market string) {
 	model.AppMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
 	bidAskTimes++
 	if bidAskTimes%30 == 0 {
-		getAccount()
+		api.RefreshAccount(model.GetMarkets()[0])
 		//rebalance(leftAccount, rightAccount, carry)
 		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {

@@ -19,7 +19,8 @@ func setContractArbitraging(status bool) {
 func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *model.BidAsk) {
 	if model.AppFutureAccount[futureMarket] == nil ||
 		model.AppFutureAccount[futureMarket][futureSymbol] == nil {
-		util.Notice(futureMarket + ` fail to get future account ` + futureSymbol)
+		api.RefreshAccount(market)
+		util.Info(futureMarket + ` fail to get future account ` + futureSymbol)
 		return
 	}
 	futureAccount := model.AppFutureAccount[futureMarket][futureSymbol]
@@ -86,6 +87,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	account := model.AppAccounts.GetAccount(market, `usdt`)
 	if account == nil {
 		util.Info(`account nil`)
+		api.RefreshAccount(market)
 		return
 	}
 	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
