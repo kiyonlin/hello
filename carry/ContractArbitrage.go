@@ -26,7 +26,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	if futureAccount == nil || futureAccount.OpenedShort < 1 {
 		util.Notice(`[No opened short]`)
 	}
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: market, BidWeb: futureMarket, AskPrice: asks.Asks[0].Price,
+	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: asks.Asks[0].Price,
 		BidPrice: bids.Bids[0].Price, AskTime: int64(asks.Ts), BidTime: int64(bids.Ts)}
 	checkTime, msg := carry.CheckWorthCarryTime()
 	if !checkTime {
@@ -51,7 +51,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	api.RefreshAccount(futureMarket)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transferAmount := 0.999 * carry.DealBidAmount * faceValue / carry.BidPrice
+		transferAmount := 0.95 * carry.DealBidAmount * faceValue / carry.BidPrice
 		transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 		if transfer {
 			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
@@ -71,7 +71,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 }
 
 func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *model.BidAsk) {
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: asks.Asks[0].Price,
+	carry := &model.Carry{Symbol: futureSymbol, AskWeb: market, BidWeb: futureMarket, AskPrice: asks.Asks[0].Price,
 		BidPrice: bids.Bids[0].Price, AskTime: int64(asks.Ts), BidTime: int64(bids.Ts)}
 	checkTime, msg := carry.CheckWorthCarryTime()
 	if !checkTime {
@@ -84,7 +84,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	}
 	account := model.AppAccounts.GetAccount(market, `usdt`)
 	if account == nil {
-		util.Notice(`account nil`)
+		util.Info(`account nil`)
 		return
 	}
 	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice

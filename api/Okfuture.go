@@ -183,8 +183,11 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 	resultJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		//result, _ := resultJson.Get(`result`).Bool()
-		orderId, _ := resultJson.Get(`order_id`).Int64()
-		return strconv.FormatInt(orderId, 10), ``
+		oid, _ := resultJson.Get(`order_id`).Int64()
+		orderId = strconv.FormatInt(oid, 10)
+		util.Notice(fmt.Sprintf(`[挂单Ok future] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
+			symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
+		return orderId, ``
 	}
 	return orderId, errCode
 }
