@@ -24,7 +24,8 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	}
 	futureAccount := model.AppFutureAccount[futureMarket][futureSymbol]
 	if futureAccount == nil || futureAccount.OpenedShort < 1 {
-		util.Notice(`[No opened short]`)
+		util.Info(`[No opened short]`)
+		return
 	}
 	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: asks.Asks[0].Price,
 		BidPrice: bids.Bids[0].Price, AskTime: int64(asks.Ts), BidTime: int64(bids.Ts)}
