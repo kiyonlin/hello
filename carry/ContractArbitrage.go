@@ -51,7 +51,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	api.RefreshAccount(futureMarket)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transferAmount := 0.95 * carry.DealBidAmount * faceValue / carry.BidPrice
+		transferAmount := 0.98 * carry.DealBidAmount * faceValue / carry.BidPrice
 		transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 		if transfer {
 			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
