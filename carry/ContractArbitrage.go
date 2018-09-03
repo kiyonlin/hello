@@ -53,7 +53,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	api.RefreshAccount(futureMarket)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transferAmount := 0.999 * carry.DealBidAmount * faceValue / carry.BidPrice
+		transferAmount := 0.98 * carry.DealBidAmount * faceValue / carry.BidPrice
 		transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 		util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 		if transfer {
@@ -66,8 +66,6 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 			} else {
 				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 			}
-		} else {
-			util.Notice(fmt.Sprintf(`[transfer fail]amount %f error %s`, transferAmount, errCode))
 		}
 	}
 	model.CarryChannel <- *carry
@@ -121,8 +119,6 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 			} else {
 				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 			}
-		} else {
-			util.Notice(fmt.Sprintf(`[transfer fail]amount %f error %s`, carry.DealBidAmount, errCode))
 		}
 	}
 	model.CarryChannel <- *carry
