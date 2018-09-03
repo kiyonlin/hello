@@ -53,18 +53,22 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	api.RefreshAccount(futureMarket)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transferAmount := 0.98 * carry.DealBidAmount * faceValue / carry.BidPrice
-		transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
-		util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
-		if transfer {
-			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
-				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.BidPrice, transferAmount)
-			time.Sleep(time.Second)
-			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-				api.RefreshAccount(market)
-				carry.DealAskAmount, carry.AskPrice, _ = api.QueryOrderById(market, symbol, carry.DealAskOrderId)
-			} else {
-				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
+		transferAmount := carry.DealBidAmount * faceValue / carry.BidPrice
+		for i := 0; i < 20; i++ {
+			transferAmount = 0.995 * transferAmount
+			transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
+			util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
+			if transfer {
+				carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
+					api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.BidPrice, transferAmount)
+				time.Sleep(time.Second)
+				if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
+					api.RefreshAccount(market)
+					carry.DealAskAmount, carry.AskPrice, _ = api.QueryOrderById(market, symbol, carry.DealAskOrderId)
+				} else {
+					util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
+				}
+				break
 			}
 		}
 	}
