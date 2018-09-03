@@ -17,6 +17,7 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	api.QueryOrderById(model.OKFUTURE, `eos_this_week`, `1387377971907584`)
 	api.RefreshAccount(model.Binance)
 	//accountRights, keepDeposit := api.GetCurrencyOkfuture(`eos`)
 	//fmt.Println(accountRights)

@@ -53,8 +53,9 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	api.RefreshAccount(futureMarket)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transferAmount := 0.98 * carry.DealBidAmount * faceValue / carry.BidPrice
+		transferAmount := 0.999 * carry.DealBidAmount * faceValue / carry.BidPrice
 		transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
+		util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 		if transfer {
 			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
 				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.BidPrice, transferAmount)
@@ -66,7 +67,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 			}
 		} else {
-			util.Notice(`[transfer fail]` + errCode)
+			util.Notice(fmt.Sprintf(`[transfer fail]amount %f error %s`, transferAmount, errCode))
 		}
 	}
 	model.CarryChannel <- *carry
@@ -108,7 +109,8 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	api.RefreshAccount(market)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(market, symbol, carry.DealBidOrderId)
 	if carry.DealBidAmount > 0 {
-		transfer, _ := api.FundTransferOkex(symbol, carry.DealBidAmount, `1`, `3`)
+		transfer, errCode := api.FundTransferOkex(symbol, carry.DealBidAmount, `1`, `3`)
+		util.Notice(fmt.Sprintf(`transfer %f result %v %s`, carry.DealBidAmount, transfer, errCode))
 		if transfer {
 			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
 				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol, carry.BidPrice, carry.AskAmount)
@@ -120,7 +122,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 			}
 		} else {
-			util.Notice(`[transfer fail]`)
+			util.Notice(fmt.Sprintf(`[transfer fail]amount %f error %s`, carry.DealBidAmount, errCode))
 		}
 	}
 	model.CarryChannel <- *carry

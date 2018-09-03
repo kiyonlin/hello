@@ -243,7 +243,6 @@ func FundTransferOkex(symbol string, amount float64, from, to string) (result bo
 	postData.Set(`from`, from)
 	postData.Set(`to`, to)
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/funds_transfer.do", &postData)
-	fmt.Println(string(responseBody))
 	resultJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		result, _ = resultJson.Get(`result`).Bool()
