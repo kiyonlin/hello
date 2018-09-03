@@ -110,6 +110,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	time.Sleep(time.Second)
 	api.RefreshAccount(market)
 	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(market, symbol, carry.DealBidOrderId)
+	util.Notice(fmt.Sprintf(`try to transfer %f after sell at price %f`, carry.DealBidAmount, carry.BidPrice))
 	if carry.DealBidAmount > 0 {
 		transfer, errCode := api.FundTransferOkex(symbol, carry.DealBidAmount, `1`, `3`)
 		util.Notice(fmt.Sprintf(`transfer %f result %v %s`, carry.DealBidAmount, transfer, errCode))
