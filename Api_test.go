@@ -17,8 +17,8 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	amount, price, _ := api.QueryOrderById(model.OKFUTURE, `eos_this_week`, `1389451704415233`)
-	fmt.Println(fmt.Sprintf(`%f %f`, amount, price))
+	amount, price, status := api.QueryOrderById(model.OKFUTURE, `eos_this_week`, `1389451704415233`)
+	fmt.Println(fmt.Sprintf(`%f %f %s`, amount, price, status))
 	//api.RefreshAccount(model.Binance)
 	//accountRights, keepDeposit := api.GetCurrencyOkfuture(`eos`)
 	//fmt.Println(accountRights)
@@ -35,6 +35,6 @@ func Test_RefreshAccount(t *testing.T) {
 		fmt.Println(fmt.Sprintf(`%d: %s - %s = %f `, key, futureTime, currentTime,
 			100*(value.EndPrice-kpoints[key].EndPrice)/kpoints[key].EndPrice))
 	}
-	percentage = 100 *  percentage / float64(size)
+	percentage = 100 * percentage / float64(size)
 	fmt.Println(percentage)
 }

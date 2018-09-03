@@ -49,13 +49,20 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
 		return
 	}
-	time.Sleep(time.Second)
-	api.RefreshAccount(futureMarket)
-	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
+	for i := 0; i < 100; i++ {
+		api.RefreshAccount(futureMarket)
+		carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
+		if carry.DealBidStatus == model.CarryStatusSuccess {
+			break
+		}
+		util.Notice(fmt.Sprintf(`sleep after query bid order response amount %f price %f status %s`,
+			carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus))
+		time.Sleep(time.Second)
+	}
 	if carry.DealBidAmount > 0 {
 		transferAmount := carry.DealBidAmount * faceValue / carry.BidPrice
 		for i := 0; i < 20; i++ {
-			transferAmount = 0.995 * transferAmount
+			transferAmount = 0.996 * transferAmount
 			transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 			util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 			if transfer {
@@ -107,10 +114,16 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, market, symbol, carry.AskPrice, carry.BidAmount))
 		return
 	}
-	time.Sleep(time.Second)
-	api.RefreshAccount(market)
-	carry.DealBidAmount, carry.BidPrice, _ = api.QueryOrderById(market, symbol, carry.DealBidOrderId)
-	util.Notice(fmt.Sprintf(`try to transfer %f after sell at price %f`, carry.DealBidAmount, carry.BidPrice))
+	for i := 0; i < 100; i++ {
+		api.RefreshAccount(market)
+		carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.QueryOrderById(market, symbol, carry.DealBidOrderId)
+		if carry.DealBidStatus == model.CarryStatusSuccess {
+			break
+		}
+		util.Notice(fmt.Sprintf(`sleep after query bid order response amount %f price %f status %s`,
+			carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus))
+		time.Sleep(time.Second)
+	}
 	if carry.DealBidAmount > 0 {
 		transfer, errCode := api.FundTransferOkex(symbol, carry.DealBidAmount, `1`, `3`)
 		util.Notice(fmt.Sprintf(`transfer %f result %v %s`, carry.DealBidAmount, transfer, errCode))
