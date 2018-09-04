@@ -62,7 +62,6 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	if carry.DealBidAmount > 0 {
 		transferAmount := carry.DealBidAmount * faceValue / carry.BidPrice
 		for i := 0; i < 20; i++ {
-			transferAmount = 0.996 * transferAmount
 			transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 			util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 			if transfer {
@@ -77,6 +76,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 				}
 				break
 			}
+			transferAmount = 0.996 * transferAmount
 		}
 	}
 	model.CarryChannel <- *carry
