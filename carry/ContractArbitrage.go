@@ -28,7 +28,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 		util.Info(`[No opened short]`)
 		return
 	}
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: asks.Asks[0].Price,
+	carry := &model.Carry{Symbol: futureSymbol, AskWeb: market, BidWeb: futureMarket, AskPrice: asks.Asks[0].Price,
 		BidPrice: bids.Bids[0].Price, AskTime: int64(asks.Ts), BidTime: int64(bids.Ts)}
 	checkTime, msg := carry.CheckWorthCarryTime()
 	if !checkTime {
@@ -83,7 +83,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 }
 
 func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *model.BidAsk) {
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: market, BidWeb: futureMarket, AskPrice: asks.Asks[0].Price,
+	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: asks.Asks[0].Price,
 		BidPrice: bids.Bids[0].Price, AskTime: int64(asks.Ts), BidTime: int64(bids.Ts)}
 	checkTime, msg := carry.CheckWorthCarryTime()
 	if !checkTime {

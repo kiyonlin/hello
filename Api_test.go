@@ -17,6 +17,8 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, model.OKEX, `eos_usdt`, 7, 74.98)
+	api.FundTransferOkex(`eos_usdt`, 0.5, `3`, `1`)
 	amount, price, status := api.QueryOrderById(model.OKFUTURE, `eos_this_week`, `1389451704415233`)
 	fmt.Println(fmt.Sprintf(`%f %f %s`, amount, price, status))
 	//api.RefreshAccount(model.Binance)
