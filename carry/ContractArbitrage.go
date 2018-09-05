@@ -176,8 +176,9 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
 		setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 	if setting.OpenShortMargin < openShortMargin {
-		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
-	} else if setting.CloseShortMargin > closeShortMargin {
-		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
+		go openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
+	}
+	if setting.CloseShortMargin > closeShortMargin {
+		go closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
 	}
 }
