@@ -247,6 +247,25 @@ func GetCurrencyOkfuture(currency string) (accountRights, keepDeposit float64) {
 	return accountRights, keepDeposit
 }
 
+func GetrealProfitOkfuture(symbol string) (profit float64, err error) {
+	postData := url.Values{}
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
+		"/future_userinfo.do", &postData)
+	accountJson, err := util.NewJSON(responseBody)
+	if err != nil {
+		return 0, errors.New(`fail to get unreal profit`)
+	}
+	index := strings.Index(symbol, `_`)
+	if index == -1 {
+		return 0, errors.New(`wrong symbol format`)
+	}
+	accountJson = accountJson.GetPath(`info`, symbol[0:index], `profit_real`)
+	if accountJson != nil {
+		return accountJson.Float64()
+	}
+	return 0, errors.New(`no account data for ` + symbol[0:index])
+}
+
 func getPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error) {
 	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))

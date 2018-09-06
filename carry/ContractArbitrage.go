@@ -57,9 +57,11 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 			carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus))
 		time.Sleep(time.Second)
 	}
+	transferAmount := carry.DealBidAmount
+	realProfit, _ := api.GetrealProfitOkfuture(futureSymbol)
+	transferAmount -= realProfit
 	if carry.DealBidAmount > 0 {
-		transferAmount := carry.DealBidAmount
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 200; i++ {
 			transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 			util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 			if transfer {
@@ -99,7 +101,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 		api.RefreshAccount(market)
 		return
 	}
-	if account.Free <= 0 {
+	if account.Free*carry.BidPrice <= model.AppConfig.MinUsdt {
 		//util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
 		return
 	}
