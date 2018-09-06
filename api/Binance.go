@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
+	"math"
 	"net/url"
 	"sort"
 	"strconv"
@@ -87,7 +88,8 @@ func signBinance(postData *url.Values, secretKey string) {
 }
 
 // orderType: BUY SELL
-// 注意，binance中amount无论是市价还是限价，都指的是要买入或者卖出的左侧币种，而非右侧的钱
+// 注意，binance中amount无论是市价还是限价，都指的是要买入或者卖出的左侧币种，而非右侧的钱,所以在市价买入的时候
+// 要把参数从左侧的币换成右测的钱
 func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
 	postData := url.Values{}
 	if orderSide == model.OrderSideBuy {
@@ -100,6 +102,12 @@ func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orde
 	}
 	if orderType == model.OrderTypeMarket {
 		orderType = `MARKET`
+		if orderSide == model.OrderSideBuy {
+			amountFloat, _ := strconv.ParseFloat(amount, 64)
+			priceFloat, _ := strconv.ParseFloat(price, 64)
+			amountFloat = amountFloat / priceFloat
+			amount = strconv.FormatFloat(math.Floor(amountFloat*100)/100, 'f', 2, 64)
+		}
 	} else if orderType == model.OrderTypeLimit {
 		orderType = `LIMIT`
 		postData.Set("price", price)

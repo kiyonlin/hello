@@ -3,8 +3,8 @@ functions:
 #- balanceturtle
 - arbitrary
 
-bnbmin: 2
-bnbbuy: 2
+bnbmin: 20 #价值20usd的bnb
+bnbbuy: 20 #价值20usd的bnb
 
 orderwait: 10000
 delay: 6000 #按照毫秒计算时间差
@@ -40,11 +40,8 @@ huobisecret: 1826ba5a-022a7442-07a876f8-1075e
 okexkey: e420b730-d010-42ad-9ef5-13138fcfbc76
 okexsecret: 81702F932521EB4BCE507D5C42C338FB
 #sammi binance
-#binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
-#binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
-#jack binance
-binancekey: yAIAfvnOXnAfBD8jQfDe5AozVcbcTHCWADGTVWvk21KoKLtkcui96UCEiI0Ii3ix
-binancesecret: mc7b0yTTGKU4sSnaP2lagYHUJTLNyQ7LX5spGZzEnjYHdhdfhHauxgzmkimjQ1cs
+binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
+binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
 #ace fcoin
 fcoinkey: 7c26be189ddc4e59aeb6021cfbfc3415
 fcoinsecret: 54342819cbe148859f8d5ebdf384e607

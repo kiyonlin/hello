@@ -107,7 +107,7 @@ func sendSignRequest(method, path string, postData *url.Values) (response []byte
 }
 
 // orderType:  限价单（buy/sell） 市价单（buy_market/sell_market）
-// okex中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+// okex中amount在市价买单中指的是右侧的钱
 func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
 	orderParam := ``
 	postData := url.Values{}
@@ -117,12 +117,6 @@ func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId
 		postData.Set("amount", amount)
 	} else if orderSide == model.OrderSideBuy && orderType == model.OrderTypeMarket {
 		orderParam = `buy_market`
-		// okex中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
-		leftAmount, _ := strconv.ParseFloat(amount, 64)
-		leftPrice, _ := strconv.ParseFloat(price, 64)
-		money := leftAmount * leftPrice
-		amount = strconv.FormatFloat(money, 'f', 2, 64)
-		// 市价买单需传price作为买入总金额
 		postData.Set("price", amount)
 	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeLimit {
 		orderParam = `sell`

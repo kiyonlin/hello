@@ -130,7 +130,7 @@ func RefreshAccount(market string) {
 			account := model.AppAccounts.GetAccount(model.Binance, `bnb`)
 			if account != nil && account.Free < model.AppConfig.BnbMin {
 				util.Notice(fmt.Sprintf(`[bnb數量不足]%f - %f`, account.Free, model.AppConfig.BnbMin))
-				PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, model.Binance, `bnb_usdt`,
+				PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, model.Binance, `bnb_usdt`, ``,
 					0, model.AppConfig.BnbBuy)
 			}
 		}
@@ -149,8 +149,8 @@ func RefreshAccount(market string) {
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float64) (orderId, errCode, status string,
-	actualAmount, actualPrice float64) {
+func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, amount float64) (orderId, errCode,
+	status string, actualAmount, actualPrice float64) {
 	precision := GetPriceDecimal(market, symbol)
 	strPrice := strconv.FormatFloat(price, 'f', precision, 64)
 	strAmount := strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
@@ -160,14 +160,16 @@ func PlaceOrder(orderSide, orderType, market, symbol string, price, amount float
 	case model.OKEX:
 		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
-		contractAmount := math.Floor(amount * price / model.OKEXOtherContractFaceValue)
-		if strings.Contains(symbol, `btc`) {
-			contractAmount = math.Floor(amount * price / model.OKEXBTCContractFaceValue)
+		if amountType != model.AmountTypeContractNumber { // 轉換成合約張數
+			contractAmount := math.Floor(amount * price / model.OKEXOtherContractFaceValue)
+			if strings.Contains(symbol, `btc`) {
+				contractAmount = math.Floor(amount * price / model.OKEXBTCContractFaceValue)
+			}
+			if contractAmount < 1 {
+				return ``, `amount not enough`, model.CarryStatusFail, 0, 0
+			}
+			strAmount = strconv.FormatFloat(amount, 'f', 0, 64)
 		}
-		if contractAmount < 1 {
-			return ``, `amount not enough`, model.CarryStatusFail, 0, 0
-		} // 轉換成合約張數
-		strAmount = strconv.FormatFloat(contractAmount, 'f', 0, 64)
 		orderId, errCode = placeOrderOkfuture(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Binance:
 		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)

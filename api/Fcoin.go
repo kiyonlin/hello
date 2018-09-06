@@ -102,7 +102,7 @@ func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []b
 
 // side: buy sell
 // type: limit market
-// fcoin中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+// fcoin中amount在市价买单中指的是右侧的钱
 func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
 	if orderSide == model.OrderSideBuy {
 		orderSide = `buy`
@@ -119,13 +119,6 @@ func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderI
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
 		return ``, ``
-	}
-	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeMarket {
-		// fcoin中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
-		leftAmount, _ := strconv.ParseFloat(amount, 64)
-		leftPrice, _ := strconv.ParseFloat(price, 64)
-		money := leftAmount * leftPrice
-		amount = strconv.FormatFloat(money, 'f', 2, 64)
 	}
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))

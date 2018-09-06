@@ -5,7 +5,6 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"math"
 	"strings"
 	"time"
 )
@@ -39,12 +38,10 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	if strings.Contains(symbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	carry.Amount = futureAccount.OpenedShort * faceValue / carry.AskPrice
-	carry.AskAmount = carry.Amount
-	carry.BidAmount = carry.Amount
 	util.Notice(`[close short]` + carry.ToString())
-	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
-		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol, carry.AskPrice, carry.BidAmount)
+	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.BidPrice =
+		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol,
+			model.AmountTypeContractNumber, carry.AskPrice, futureAccount.OpenedShort)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
 		return
@@ -52,6 +49,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	for i := 0; i < 100; i++ {
 		api.RefreshAccount(futureMarket)
 		carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.QueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
+		carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
 		if carry.DealBidStatus == model.CarryStatusSuccess {
 			break
 		}
@@ -60,13 +58,14 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 		time.Sleep(time.Second)
 	}
 	if carry.DealBidAmount > 0 {
-		transferAmount := carry.DealBidAmount * faceValue / carry.BidPrice
+		transferAmount := carry.DealBidAmount
 		for i := 0; i < 20; i++ {
 			transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 			util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 			if transfer {
-				carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
-					api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, carry.BidPrice, transferAmount)
+				carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
+					api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, ``,
+						carry.BidPrice, transferAmount)
 				time.Sleep(time.Second)
 				if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
 					api.RefreshAccount(market)
@@ -100,16 +99,16 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 		api.RefreshAccount(market)
 		return
 	}
-	carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
-	if carry.Amount <= 0 {
+	if account.Free <= 0 {
 		//util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
 		return
 	}
-	carry.BidAmount = carry.Amount
-	carry.AskAmount = carry.Amount
+	//carry.Amount = faceValue * math.Floor(account.Free/faceValue/(1+1/model.OKLever)) / carry.AskPrice
+	//carry.BidAmount = carry.Amount
+	//carry.AskAmount = carry.Amount
 	util.Notice(`[open short]` + carry.ToString())
-	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
-		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, market, symbol, carry.AskPrice, carry.BidAmount)
+	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.BidPrice =
+		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, market, symbol, ``, carry.AskPrice, account.Free)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, market, symbol, carry.AskPrice, carry.BidAmount))
 		return
@@ -128,12 +127,14 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 		transfer, errCode := api.FundTransferOkex(symbol, carry.DealBidAmount, `1`, `3`)
 		util.Notice(fmt.Sprintf(`transfer %f result %v %s`, carry.DealBidAmount, transfer, errCode))
 		if transfer {
-			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
-				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol, carry.BidPrice, carry.AskAmount)
+			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
+				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol,
+					``, carry.BidPrice, carry.DealBidAmount)
 			time.Sleep(time.Second)
 			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
 				api.RefreshAccount(futureMarket)
 				carry.DealAskAmount, carry.AskPrice, _ = api.QueryOrderById(futureMarket, futureSymbol, carry.DealAskOrderId)
+				carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.AskPrice
 			} else {
 				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 			}

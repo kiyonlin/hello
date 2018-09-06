@@ -124,10 +124,10 @@ var ProcessCarry = func(symbol, market string) {
 func order(carry *model.Carry, orderSide, orderType, market, symbol string, price, amount float64) {
 	if orderSide == model.OrderSideSell {
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
-			api.PlaceOrder(orderSide, orderType, market, symbol, price, amount)
+			api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
 	} else if orderSide == model.OrderSideBuy {
 		carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
-			api.PlaceOrder(orderSide, orderType, market, symbol, price, amount)
+			api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
 	}
 	model.InnerCarryChannel <- *carry
 }

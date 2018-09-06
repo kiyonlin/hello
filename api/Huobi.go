@@ -78,10 +78,10 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 				bidAsk.Asks = make([]model.Tick, len(message.Tick.Asks))
 				bidAsk.Bids = make([]model.Tick, len(message.Tick.Bids))
 				for key, value := range message.Tick.Asks {
-					bidAsk.Asks[key] = model.Tick{Price:value[0], Amount:value[1]}
+					bidAsk.Asks[key] = model.Tick{Price: value[0], Amount: value[1]}
 				}
 				for key, value := range message.Tick.Bids {
-					bidAsk.Bids[key] = model.Tick{Price:value[0], Amount:value[1]}
+					bidAsk.Bids[key] = model.Tick{Price: value[0], Amount: value[1]}
 				}
 				sort.Sort(bidAsk.Asks)
 				sort.Sort(sort.Reverse(bidAsk.Bids))
@@ -165,18 +165,13 @@ func GetSpotAccountId() (accountId string, err error) {
 }
 
 // orderType: buy-market：市价买, sell-market：市价卖, buy-limit：限价买, sell-limit：限价卖
-// huobi中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
+// huobi中amount在市价买单中指的是右侧的钱
 func placeOrderHuobi(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
 	orderParam := ``
 	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeLimit {
 		orderParam = `buy-limit`
 	} else if orderSide == model.OrderSideBuy && orderType == model.OrderTypeMarket {
 		orderParam = `buy-market`
-		// huobi中amount在市价买单中指的是右侧的钱，而参数中amount指的是左侧币种的数目，所以需要转换
-		leftAmount, _ := strconv.ParseFloat(amount, 64)
-		leftPrice, _ := strconv.ParseFloat(price, 64)
-		money := leftAmount * leftPrice
-		amount = strconv.FormatFloat(money, 'f', 2, 64)
 	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeLimit {
 		orderParam = `sell-limit`
 	} else if orderSide == model.OrderSideSell && orderType == model.OrderTypeMarket {
