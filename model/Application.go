@@ -30,6 +30,8 @@ const OrderSideSell = `sell`
 const OrderSideLiquidateLong = `liquidateLong`
 const OrderSideLiquidateShort = `liquidateShort`
 const CarryTypeBalance = `balance`
+const CarryTypeOpenShort  = `openshort`
+const CarryTypeCloseShort  = `closeshort`
 
 var AppDB *gorm.DB
 var AppSettings []Setting
