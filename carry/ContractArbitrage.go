@@ -57,10 +57,10 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 			carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus))
 		time.Sleep(time.Second)
 	}
-	transferAmount := carry.DealBidAmount
-	realProfit, _ := api.GetrealProfitOkfuture(futureSymbol)
-	transferAmount -= realProfit
 	if carry.DealBidAmount > 0 {
+		transferAmount := carry.DealBidAmount
+		accountRights, realProfit, _ := api.GetAccountOkfuture(futureSymbol)
+		transferAmount = accountRights - realProfit
 		for i := 0; i < 200; i++ {
 			transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `3`, `1`)
 			util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
