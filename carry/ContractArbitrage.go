@@ -26,7 +26,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		holdings = futureAccount.OpenedShort
 	}
 	accountRights, _, _ := api.GetAccountOkfuture(futureSymbol)
-	arbitraryAmount := math.Floor(accountRights - holdings*faceValue)
+	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - holdings)
 	if arbitraryAmount > 0 {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
