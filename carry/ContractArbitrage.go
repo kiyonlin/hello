@@ -141,7 +141,6 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	}
 	keepShort := math.Round(realProfit / faceValue)
 	if futureAccount.OpenedShort <= keepShort {
-		util.Notice(fmt.Sprintf(`[Not enough holding]%f<=%f %s`, futureAccount.OpenedShort, keepShort, carry.ToString()))
 		return
 	}
 	util.Notice(`[close short]` + carry.ToString())
