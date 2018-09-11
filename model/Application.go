@@ -32,13 +32,13 @@ const CarryTypeBalance = `balance`
 const CarryTypeOpenShort = `openshort`
 const CarryTypeCloseShort = `closeshort`
 const AmountTypeContractNumber = `contractnumber`
+const AmountTypeCoinNumber = `coinnumber`
 
 var AppDB *gorm.DB
 var AppSettings []Setting
 var AppConfig *Config
 var AppMarkets = NewMarkets()
 var AppAccounts = NewAccounts()
-var AppFutureAccount = make(map[string]map[string]*FutureAccount) // market - symbol - future account
 
 var HuobiAccountId = ""
 var CarryChannel = make(chan Carry, 50)

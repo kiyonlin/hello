@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
+	"math"
 	"net/url"
 	"sort"
 	"strconv"
@@ -229,10 +230,15 @@ func getAccountOkex(accounts *model.Accounts) {
 // from 转出账户(1：币币账户 3：合约账户 6：我的钱包)
 // to 转入账户(1：币币账户 3：合约账户 6：我的钱包)
 func FundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
+	if amount <= 0 {
+		return false, `0 transfer amount`
+	}
 	postData := url.Values{}
 	symbol = strings.Replace(symbol, `usdt`, `usd`, -1)
 	postData.Set(`symbol`, symbol)
-	strAmount := strconv.FormatFloat(amount, 'f', GetAmountDecimal(model.OKEX), 64)
+	decimal := GetAmountDecimal(model.OKEX, symbol)
+	amount = math.Floor(amount*math.Pow(10, float64(decimal))) / math.Pow(10, float64(decimal))
+	strAmount := strconv.FormatFloat(amount, 'f', -1, 64)
 	postData.Set(`amount`, strAmount)
 	postData.Set(`from`, from)
 	postData.Set(`to`, to)

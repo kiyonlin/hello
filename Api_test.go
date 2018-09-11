@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+//func getDecimal() {
+//	amount := 0.123456789
+//	decimal := api.GetAmountDecimal(model.OKEX, `eos_usdt`)
+//	amount = math.Floor(amount*math.Pow(10, float64(decimal))) / math.Pow(10, float64(decimal))
+//	strAmount := strconv.FormatFloat(amount, 'f', -1, 64)
+//	fmt.Println(strAmount)
+//}
+
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	err := configor.Load(model.AppConfig, "./config.yml")
@@ -17,6 +25,8 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	accountRights, realProfit, _ := api.GetAccountOkfuture(`eos_this_week`)
+	fmt.Println(fmt.Sprintf(`rights %d %d`, accountRights, realProfit))
 	timeSlot := `1min`
 	size := int64(1560)
 	currency := `eos`

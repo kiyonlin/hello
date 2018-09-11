@@ -36,13 +36,15 @@ func GetPriceDecimal(market, symbol string) int {
 	return 8
 }
 
-func GetAmountDecimal(market string) int {
+func GetAmountDecimal(market, symbol string) int {
 	switch market {
 	case model.OKEX:
-	case `eos_usdt`, `btc_usdt`:
-		return 4
+		switch symbol {
+		case `eos_usdt`, `btc_usdt`:
+			return 4
+		}
 	}
-	return 8
+	return 4
 }
 
 func CancelOrder(market string, symbol string, orderId string) (result bool, errCode, msg string) {
@@ -90,6 +92,18 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 	return dealAmount, dealPrice, status
 }
 
+func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float64, status string) {
+	for i := 0; i < 100; i++ {
+		dealAmount, dealPrice, status = QueryOrderById(market, symbol, orderId)
+		if status == model.CarryStatusSuccess {
+			return dealAmount, dealPrice, status
+		}
+		time.Sleep(time.Second)
+	}
+	util.Notice(fmt.Sprintf(`can not query %s %s %s, return %s`, market, symbol, orderId, status))
+	return dealAmount, dealPrice, status
+}
+
 func RefreshAccount(market string) {
 	accounts := model.AppAccounts.GetAccounts(market)
 	model.AppAccounts.ClearAccounts(market)
@@ -111,19 +125,6 @@ func RefreshAccount(market string) {
 		}
 	case model.OKEX:
 		getAccountOkex(model.AppAccounts)
-	case model.OKFUTURE:
-		symbols := model.GetSymbols(market)
-		for _, value := range symbols {
-			futureAccount, err := getPositionOkfuture(market, value)
-			if err == nil {
-				if model.AppFutureAccount[model.OKFUTURE] == nil {
-					model.AppFutureAccount[model.OKFUTURE] = make(map[string]*model.FutureAccount)
-				}
-				model.AppFutureAccount[model.OKFUTURE][value] = futureAccount
-			} else {
-				util.Notice(`[future account refresh error]` + market + value + err.Error())
-			}
-		}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
 		if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
@@ -160,7 +161,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, 
 	case model.OKEX:
 		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
-		if amountType != model.AmountTypeContractNumber { // 轉換成合約張數
+		if amountType == model.AmountTypeCoinNumber {
 			contractAmount := math.Floor(amount * price / model.OKEXOtherContractFaceValue)
 			if strings.Contains(symbol, `btc`) {
 				contractAmount = math.Floor(amount * price / model.OKEXBTCContractFaceValue)
@@ -168,7 +169,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, 
 			if contractAmount < 1 {
 				return ``, `amount not enough`, model.CarryStatusFail, 0, 0
 			}
-			strAmount = strconv.FormatFloat(amount, 'f', 0, 64)
+			strAmount = strconv.FormatFloat(contractAmount, 'f', 0, 64)
 		}
 		orderId, errCode = placeOrderOkfuture(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Binance:
