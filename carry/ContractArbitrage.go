@@ -15,6 +15,41 @@ func setContractArbitraging(status bool) {
 	contractArbitraging = status
 }
 
+func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *model.BidAsk) {
+	faceValue := model.OKEXOtherContractFaceValue
+	if strings.Contains(futureSymbol, `btc`) {
+		faceValue = model.OKEXBTCContractFaceValue
+	}
+	futureAccount, _ := api.GetPositionOkfuture(futureMarket, futureSymbol)
+	holdings := 0.0
+	if futureAccount != nil {
+		holdings = futureAccount.OpenedShort
+	}
+	accountRights, _, _ := api.GetAccountOkfuture(futureSymbol)
+	arbitraryAmount := math.Floor(accountRights - holdings*faceValue)
+	if arbitraryAmount > 0 {
+		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
+			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
+		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
+			orderId, errCode, status, actualAmount, actualPrice))
+	}
+}
+
+func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
+	index := strings.Index(symbol, `_`)
+	if index == -1 {
+		return
+	}
+	currency := symbol[0:index]
+	accountCoin := model.AppAccounts.GetAccount(market, currency)
+	if accountCoin.Free*marketBidAsk.Bids[0].Price > model.AppConfig.MinUsdt {
+		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
+			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
+		util.Notice(fmt.Sprintf(`[!arbitrary!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
+			orderId, errCode, status, actualAmount, actualPrice))
+	}
+}
+
 func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *model.BidAsk) {
 	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: asks.Asks[0].Price,
 		BidPrice: bids.Bids[0].Price, AskTime: int64(asks.Ts), BidTime: int64(bids.Ts), SideType: model.CarryTypeOpenShort}
@@ -172,9 +207,11 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
-	util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
-		setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
-		setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
+	if util.GetNow().Second() == 0 {
+		util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
+			setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
+			setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
+	}
 	if setting.OpenShortMargin < openShortMargin {
 		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
 		if setting.CloseShortMargin > closeShortMargin {
@@ -184,5 +221,8 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		}
 	} else if setting.CloseShortMargin > closeShortMargin {
 		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
+	} else {
+		arbitraryMarket(model.OKEX, symbol, bidAsk)
+		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, futureBidAsk)
 	}
 }

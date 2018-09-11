@@ -25,11 +25,9 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	accountRights, realProfit, _ := api.GetAccountOkfuture(`eos_this_week`)
-	fmt.Println(fmt.Sprintf(`rights %d %d`, accountRights, realProfit))
 	timeSlot := `1min`
 	size := int64(1560)
-	currency := `eos`
+	currency := `eth`
 	kpointsFuture := api.GetKLineOkexFuture(currency+`_this_week`, timeSlot, size)
 	kpoints := api.GetKLineOkex(currency+`_usdt`, timeSlot, size)
 	percentage := 0.0
