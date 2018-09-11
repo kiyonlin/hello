@@ -26,6 +26,9 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		holdings = futureAccount.OpenedShort
 	}
 	accountRights, _, _ := api.GetAccountOkfuture(futureSymbol)
+	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 {
+		return
+	}
 	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - holdings)
 	if arbitraryAmount > 0 {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
@@ -42,6 +45,9 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 	}
 	currency := symbol[0:index]
 	accountCoin := model.AppAccounts.GetAccount(market, currency)
+	if accountCoin == nil || marketBidAsk == nil || marketBidAsk.Bids == nil || marketBidAsk.Bids.Len() < 1 {
+		return
+	}
 	if accountCoin.Free*marketBidAsk.Bids[0].Price > model.AppConfig.MinUsdt {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
