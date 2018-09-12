@@ -153,8 +153,6 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	}
 	carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.SyncQueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
-	util.Notice(fmt.Sprintf(`sleep after query bid order response amount %f price %f status %s`,
-		carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus))
 	accountRights, realProfit, _ := api.GetAccountOkfuture(futureSymbol)
 	if realProfit < 0 {
 		realProfit = 0
