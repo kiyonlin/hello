@@ -160,8 +160,12 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	if realProfit < 0 {
 		realProfit = 0
 	}
-	transfer, errCode := api.MustFundTransferOkex(symbol, accountRights-realProfit, `3`, `1`)
-	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, accountRights-realProfit, transfer, errCode))
+	transferAmount := accountRights - realProfit
+	if keepShort > 0 {
+		transferAmount = accountRights - keepShort*carry.AskPrice
+	}
+	transfer, errCode := api.MustFundTransferOkex(symbol, transferAmount, `3`, `1`)
+	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 	if transfer {
 		api.RefreshAccount(market)
 		index := strings.Index(symbol, `_`)
@@ -213,11 +217,6 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
-	if util.GetNow().Second() == 0 {
-		util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
-			setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
-			setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
-	}
 	if setting.OpenShortMargin < openShortMargin {
 		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
 		if setting.CloseShortMargin > closeShortMargin {
@@ -227,7 +226,10 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		}
 	} else if setting.CloseShortMargin > closeShortMargin {
 		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
-	} else if util.GetNow().Minute() == 0 { //每小时检查一次
+	} else if util.GetNow().Second() == 0 { //每小时检查一次
+		util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
+			setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
+			setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 		arbitraryMarket(model.OKEX, symbol, bidAsk)
 		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, futureBidAsk)
 	}

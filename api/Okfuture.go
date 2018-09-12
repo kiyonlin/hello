@@ -163,20 +163,20 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 		util.Notice(`wrong order side for placeOrderOkfuture ` + orderSide)
 		return
 	}
+	postData := url.Values{}
 	switch orderType {
 	case model.OrderTypeLimit:
 		orderType = `0`
+		postData.Set(`price`, price)
 	case model.OrderTypeMarket:
 		orderType = `1`
 	default:
 		util.Notice(`wrong order type for placeOrderOkfuture ` + orderType)
 		return
 	}
-	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`contract_type`, getContractType(symbol))
 	postData.Set(`amount`, amount)
-	postData.Set(`price`, price)
 	postData.Set(`type`, orderSide)
 	postData.Set(`match_price`, orderType)
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_trade.do", &postData)

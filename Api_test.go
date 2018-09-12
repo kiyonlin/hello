@@ -26,7 +26,7 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.QueryOrderById(model.OKFUTURE, `eos_usd`, `1441071312942080`)
+	api.GetAccountOkfuture(`eos_usdt`)
 	timeSlot := `1min`
 	size := int64(1560)
 	currency := `eos`
