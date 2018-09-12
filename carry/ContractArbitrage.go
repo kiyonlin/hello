@@ -227,7 +227,7 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		}
 	} else if setting.CloseShortMargin > closeShortMargin {
 		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
-	} else {
+	} else if util.GetNow().Minute() == 0 { //每小时检查一次
 		arbitraryMarket(model.OKEX, symbol, bidAsk)
 		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, futureBidAsk)
 	}
