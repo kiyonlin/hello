@@ -95,10 +95,14 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float64, status string) {
 	for i := 0; i < 100000; i++ {
 		dealAmount, dealPrice, status = QueryOrderById(market, symbol, orderId)
-		if status == model.CarryStatusSuccess {
+		if status == model.CarryStatusSuccess || status == model.CarryStatusFail {
 			return dealAmount, dealPrice, status
 		}
-		time.Sleep(time.Second * time.Duration(i))
+		if i > 10 {
+			cancelResult, cancelErrCode, cancelMsg := CancelOrder(market, symbol, orderId)
+			util.Notice(fmt.Sprintf(`[cancel order] %v %s %s`, cancelResult, cancelErrCode, cancelMsg))
+		}
+		time.Sleep(time.Second)
 	}
 	util.Notice(fmt.Sprintf(`can not query %s %s %s, return %s`, market, symbol, orderId, status))
 	return dealAmount, dealPrice, status

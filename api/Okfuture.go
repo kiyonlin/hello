@@ -163,17 +163,17 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 		util.Notice(`wrong order side for placeOrderOkfuture ` + orderSide)
 		return
 	}
-	postData := url.Values{}
 	switch orderType {
 	case model.OrderTypeLimit:
 		orderType = `0`
-		postData.Set(`price`, price)
 	case model.OrderTypeMarket:
 		orderType = `1`
 	default:
 		util.Notice(`wrong order type for placeOrderOkfuture ` + orderType)
 		return
 	}
+	postData := url.Values{}
+	postData.Set(`price`, price)
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`contract_type`, getContractType(symbol))
 	postData.Set(`amount`, amount)
@@ -190,6 +190,28 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 		return orderId, ``
 	}
 	return orderId, errCode
+}
+
+func QueryPendingOrderAmount(symbol string) (orderAmount int, err error){
+	postData := url.Values{}
+	postData.Set(`symbol`, getSymbol(symbol))
+	postData.Set(`contract_type`, getContractType(symbol))
+	postData.Set(`order_id`, `-1`)
+	postData.Set(`status`, `1`)
+	postData.Set(`current_page`, `1`)
+	postData.Set(`page_length`, `50`)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do", &postData)
+	fmt.Println(string(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
+	if err != nil {
+		return 0, err
+	}
+	orderJson = orderJson.Get(`orders`)
+	if orderJson != nil {
+		orders, _ := orderJson.Array()
+		return len(orders), nil
+	}
+	return 0, nil
 }
 
 //status: 订单状态(0等待成交 1部分成交 2全部成交 -1撤单 4撤单处理中 5撤单中)
