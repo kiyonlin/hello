@@ -93,7 +93,7 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 }
 
 func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float64, status string) {
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100000; i++ {
 		dealAmount, dealPrice, status = QueryOrderById(market, symbol, orderId)
 		if status == model.CarryStatusSuccess {
 			return dealAmount, dealPrice, status
