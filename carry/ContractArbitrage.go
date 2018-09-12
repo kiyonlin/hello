@@ -33,6 +33,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 	if arbitraryAmount > 0 {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
+		actualAmount, actualPrice, status = api.SyncQueryOrderById(futureMarket, futureSymbol, orderId)
 		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
 			orderId, errCode, status, actualAmount, actualPrice))
 	}
@@ -51,6 +52,8 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 	if accountCoin.Free*marketBidAsk.Bids[0].Price > model.AppConfig.MinUsdt {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
+		actualAmount, actualPrice, status = api.SyncQueryOrderById(market, symbol, orderId)
+		api.RefreshAccount(market)
 		util.Notice(fmt.Sprintf(`[!arbitrary!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
 			orderId, errCode, status, actualAmount, actualPrice))
 	}
@@ -92,7 +95,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, asks, bids *mo
 	if accountCoin != nil {
 		transferAmount += accountCoin.Free
 	}
-	transfer, errCode := api.FundTransferOkex(symbol, transferAmount, `1`, `3`)
+	transfer, errCode := api.MustFundTransferOkex(symbol, transferAmount, `1`, `3`)
 	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 	if transfer {
 		faceValue := model.OKEXOtherContractFaceValue
@@ -157,7 +160,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, asks, bids *m
 	if realProfit < 0 {
 		realProfit = 0
 	}
-	transfer, errCode := api.FundTransferOkex(symbol, accountRights-realProfit, `3`, `1`)
+	transfer, errCode := api.MustFundTransferOkex(symbol, accountRights-realProfit, `3`, `1`)
 	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, accountRights-realProfit, transfer, errCode))
 	if transfer {
 		api.RefreshAccount(market)

@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type OKEXMessage struct {
@@ -225,6 +226,19 @@ func getAccountOkex(accounts *model.Accounts) {
 			account.Frozen = balance
 		}
 	}
+}
+
+func MustFundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
+	for i := 0; i < 1000; i++ {
+		transfer, errCode := FundTransferOkex(symbol, amount, from, to)
+		if transfer {
+			return transfer, errCode
+		}
+		time.Sleep(time.Second)
+		util.Notice(fmt.Sprintf(`[fail when must transfer] %v`, transfer))
+		amount = amount * 0.999
+	}
+	return false, `>1000tries`
 }
 
 // from 转出账户(1：币币账户 3：合约账户 6：我的钱包)

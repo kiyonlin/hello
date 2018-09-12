@@ -251,6 +251,7 @@ func GetAccountOkfuture(symbol string) (accountRight, profit float64, err error)
 	postData := url.Values{}
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
 		"/future_userinfo.do", &postData)
+	util.Notice(string(responseBody))
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return 0, 0, errors.New(`fail to get unreal profit`)
