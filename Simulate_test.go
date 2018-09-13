@@ -8,6 +8,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"testing"
+	"time"
 )
 
 var lastPrice float64
@@ -34,6 +35,24 @@ func initMoney(priceKLine []*model.KLinePoint) {
 	coin = 5000 / priceKLine[0].EndPrice
 	lastPrice = priceKLine[0].EndPrice
 	//fmt.Println(fmt.Sprintf(`buy%f`, lastPrice))
+}
+
+func rsiSell(kPoint *model.KLinePoint, price float64) {
+	if coin > 0 {
+		money += coin * price
+		coin = 0
+		strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
+		fmt.Println(fmt.Sprintf(`%f sell %s %f at %f`, money, strTime, kPoint.RSI, price))
+	}
+}
+
+func rsiBuy(kPoint *model.KLinePoint) {
+	if money > 0 {
+		coin += money / kPoint.EndPrice
+		money = 0
+		strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
+		fmt.Println(fmt.Sprintf(`%f buy %s %f at %f`, coin*kPoint.EndPrice, strTime, kPoint.RSI, kPoint.EndPrice))
+	}
 }
 
 func sell(_ *model.KLinePoint, price float64) {
@@ -94,6 +113,26 @@ func analyzeKLine(priceKLine []*model.KLinePoint, percentage float64) {
 	printBalance()
 }
 
+func analyzeRSI(priceKLine []*model.KLinePoint, percentage float64) {
+	money = 10000
+	coin = 0
+	for i := 7; i < len(priceKLine); i++ {
+		upPercentage := (priceKLine[i].HighPrice - priceKLine[i-1].EndPrice) / priceKLine[i-1].EndPrice
+		downPercentage := (priceKLine[i-1].EndPrice - priceKLine[i].LowPrice) / priceKLine[i].LowPrice
+		if upPercentage > percentage {
+			rsiSell(priceKLine[i], priceKLine[i-1].EndPrice*(1+percentage))
+		}
+		if downPercentage > percentage {
+			rsiSell(priceKLine[i], priceKLine[i-1].EndPrice*(1-percentage))
+		}
+		if priceKLine[i].RSI < 20 {
+			rsiBuy(priceKLine[i])
+		} else if priceKLine[i].RSI > 80 {
+			rsiSell(priceKLine[i], priceKLine[i].EndPrice)
+		}
+	}
+}
+
 func getData(symbol, timeSlot string) []*model.KLinePoint {
 	if data[symbol] == nil {
 		data[symbol] = make(map[string][]*model.KLinePoint)
@@ -101,17 +140,28 @@ func getData(symbol, timeSlot string) []*model.KLinePoint {
 	if data[symbol][timeSlot] == nil {
 		priceKLine := api.GetKLineOkex(symbol, timeSlot, int64(size))
 		data[symbol][timeSlot] = priceKLine
+
+		diff := make([]float64, len(data[symbol][timeSlot])-1)
+		for i := 0; i < len(diff); i++ {
+			diff[i] = data[symbol][timeSlot][i+1].EndPrice - data[symbol][timeSlot][i].EndPrice
+		}
+		for i := 5; i < len(diff); i++ {
+			up := 0.0
+			down := 0.0
+			for j := i - 5; j <= i; j++ {
+				if diff[j] > 0 {
+					up += diff[j]
+				} else {
+					down -= diff[j]
+				}
+			}
+			data[symbol][timeSlot][i+1].RSI = 100 * up / (up + down)
+		}
 	}
 	return data[symbol][timeSlot]
 }
 
-func testApi() {
-	model.NewConfig()
-	err := configor.Load(model.AppConfig, "./config.yml")
-	if err != nil {
-		util.Notice(err.Error())
-		return
-	}
+func testBalance() {
 	//model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	//if err != nil {
 	//	util.Notice(err.Error())
@@ -156,6 +206,29 @@ func testApi() {
 	//api.CancelOrder(`binance`, `eos_usdt`, `184201445`)
 }
 
+func testRSI() {
+	symbols := []string{`eos_usdt`}
+	slots := []string{`1min`}
+	percentages := []float64{0.001, 0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.1, 0.9}
+	for _, slot := range slots {
+		for _, percentage := range percentages {
+			for _, symbol := range symbols {
+				data := getData(symbol, slot)
+				analyzeRSI(data, percentage)
+				fmt.Println(fmt.Sprintf(`%f %s %s %f`, percentage, slot, symbol, money+data[len(data)-1].EndPrice*coin))
+			}
+		}
+	}
+
+}
+
 func Test_simulation(t *testing.T) {
-	testApi()
+	model.NewConfig()
+	err := configor.Load(model.AppConfig, "./config.yml")
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+	//testBalance()
+	testRSI()
 }

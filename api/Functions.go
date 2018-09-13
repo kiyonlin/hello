@@ -98,7 +98,7 @@ func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice f
 		if status == model.CarryStatusSuccess || status == model.CarryStatusFail {
 			return dealAmount, dealPrice, status
 		}
-		if i > 0 {
+		if i > 10 {
 			cancelResult, cancelErrCode, cancelMsg := CancelOrder(market, symbol, orderId)
 			util.Notice(fmt.Sprintf(`[cancel order] %v %s %s`, cancelResult, cancelErrCode, cancelMsg))
 		}

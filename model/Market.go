@@ -14,6 +14,7 @@ type KLinePoint struct {
 	EndPrice  float64
 	HighPrice float64
 	LowPrice  float64
+	RSI       float64
 }
 
 type BidAsk struct {
