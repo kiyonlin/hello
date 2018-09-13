@@ -60,8 +60,8 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 }
 
 func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, bidAsk *model.BidAsk) {
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: futureBidAsk.Asks[0].Price,
-		BidPrice: bidAsk.Bids[0].Price, AskTime: int64(futureBidAsk.Ts), BidTime: int64(bidAsk.Ts), SideType: model.CarryTypeOpenShort}
+	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: futureBidAsk.Bids[0].Price,
+		BidPrice: bidAsk.Asks[0].Price, AskTime: int64(futureBidAsk.Ts), BidTime: int64(bidAsk.Ts), SideType: model.CarryTypeOpenShort}
 	checkTime, msg := carry.CheckWorthCarryTime()
 	if !checkTime {
 		util.Notice(msg.Error())
@@ -127,8 +127,8 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 }
 
 func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futureBidAsk *model.BidAsk) {
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: market, BidWeb: futureMarket, AskPrice: bidAsk.Asks[0].Price,
-		BidPrice: futureBidAsk.Bids[0].Price, AskTime: int64(bidAsk.Ts), BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeCloseShort}
+	carry := &model.Carry{Symbol: futureSymbol, AskWeb: market, BidWeb: futureMarket, AskPrice: bidAsk.Bids[0].Price,
+		BidPrice: futureBidAsk.Asks[0].Price, AskTime: int64(bidAsk.Ts), BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeCloseShort}
 	checkTime, msg := carry.CheckWorthCarryTime()
 	if !checkTime {
 		util.Notice(msg.Error())
