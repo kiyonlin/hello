@@ -170,7 +170,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 		realProfit = 0
 	}
 	transferAmount := accountRights - realProfit
-	if keepShort > 0 {
+	if keepShort > 0 && transferAmount > accountRights-keepShort*carry.AskPrice {
 		transferAmount = accountRights - keepShort*carry.AskPrice
 	}
 	transfer, errCode := api.MustFundTransferOkex(symbol, transferAmount, `3`, `1`)
