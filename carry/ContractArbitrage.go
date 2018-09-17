@@ -155,7 +155,8 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol,
 			model.AmountTypeContractNumber, carry.AskPrice, futureAccount.OpenedShort-keepShort)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
-		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
+		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`,
+			futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
 		return
 	}
 	carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.SyncQueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
