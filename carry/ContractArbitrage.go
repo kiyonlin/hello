@@ -130,7 +130,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 		futureAccount, _ := api.GetPositionOkfuture(futureMarket, futureSymbol)
 		sellAmount := accountRights
 		if futureAccount != nil {
-			sellAmount = accountRights - futureAccount.OpenedShort*faceValue
+			sellAmount = accountRights - futureAccount.OpenedShort*faceValue/futureBidAsk.Bids[0].Price
 		}
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
 			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol,
