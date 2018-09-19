@@ -197,14 +197,13 @@ func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
 						carryHandlers, marketName))
 					util.SocketInfo(marketName + " create new channel " + subscribe)
 				} else if model.AppMarkets.RequireChanReset(marketName, subscribe) {
-					util.SocketInfo(marketName + " reset channel " + subscribe)
 					model.AppMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)
 					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets,
 						carryHandlers, marketName))
+					util.SocketInfo(marketName + " reset channel " + subscribe)
 				}
-				util.SocketInfo(marketName + " new channel reset done")
 			}
 			break
 		}
