@@ -269,26 +269,28 @@ func GetCurrencyOkfuture(currency string) (accountRights, keepDeposit float64) {
 	return accountRights, keepDeposit
 }
 
-func GetAccountOkfuture(symbol string) (accountRight, profit float64, err error) {
+func GetAccountOkfuture(symbol string) (accountRight, profitReal, profitUnreal float64, err error) {
 	postData := url.Values{}
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
 		"/future_userinfo.do", &postData)
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
-		return 0, 0, errors.New(`fail to get unreal profit`)
+		return 0, 0, 0, errors.New(`fail to get unreal profit`)
 	}
 	index := strings.Index(symbol, `_`)
 	if index == -1 {
-		return 0, 0, errors.New(`wrong symbol format`)
+		return 0, 0, 0, errors.New(`wrong symbol format`)
 	}
 	accountRightsJson := accountJson.GetPath(`info`, symbol[0:index], `account_rights`)
 	realProfitJson := accountJson.GetPath(`info`, symbol[0:index], `profit_real`)
+	unrealProfitJson := accountJson.GetPath(`info`, symbol[0:index], `profit_unreal`)
 	if accountRightsJson == nil || realProfitJson == nil {
-		return 0, 0, errors.New(`no account data for ` + symbol[0:index])
+		return 0, 0, 0, errors.New(`no account data for ` + symbol[0:index])
 	}
-	accountRights, _ := accountRightsJson.Float64()
-	realProfit, _ := realProfitJson.Float64()
-	return accountRights, realProfit, nil
+	accountRight, _ = accountRightsJson.Float64()
+	profitReal, _ = realProfitJson.Float64()
+	profitUnreal, _ = unrealProfitJson.Float64()
+	return accountRight, profitReal, profitUnreal,nil
 }
 
 func GetPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error) {

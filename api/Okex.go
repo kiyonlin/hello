@@ -105,6 +105,7 @@ func sendSignRequest(method, path string, postData *url.Values) (response []byte
 		postData.Set("sign", getSign(postData))
 	}
 	responseBody, _ := util.HttpRequest(method, path, postData.Encode(), headers)
+	util.SocketInfo(fmt.Sprintf(`[%s] %s returns: %s`, path, postData.Encode(), string(responseBody)))
 	return responseBody
 }
 
@@ -235,7 +236,7 @@ func MustFundTransferOkex(symbol string, amount float64, from, to string) (resul
 			return transfer, errCode
 		}
 		time.Sleep(time.Second)
-		util.Notice(fmt.Sprintf(`[fail when must transfer] %v`, transfer))
+		util.Notice(fmt.Sprintf(fmt.Sprintf(`[fail when must transfer]%f %v`, amount, transfer)))
 		amount = amount * 0.999
 	}
 	return false, `>1000tries`

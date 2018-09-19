@@ -41,8 +41,8 @@ func rsiSell(kPoint *model.KLinePoint, price float64) {
 	if coin > 0 {
 		money += coin * price
 		coin = 0
-		strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
-		fmt.Println(fmt.Sprintf(`%f sell %s %f at %f`, money, strTime, kPoint.RSI, price))
+		//strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
+		//fmt.Println(fmt.Sprintf(`%f sell %s %f at %f`, money, strTime, kPoint.RSI, price))
 	}
 }
 
@@ -50,8 +50,8 @@ func rsiBuy(kPoint *model.KLinePoint) {
 	if money > 0 {
 		coin += money / kPoint.EndPrice
 		money = 0
-		strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
-		fmt.Println(fmt.Sprintf(`%f buy %s %f at %f`, coin*kPoint.EndPrice, strTime, kPoint.RSI, kPoint.EndPrice))
+		//strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
+		//fmt.Println(fmt.Sprintf(`%f buy %s %f at %f`, coin*kPoint.EndPrice, strTime, kPoint.RSI, kPoint.EndPrice))
 	}
 }
 
@@ -133,6 +133,13 @@ func analyzeRSI(priceKLine []*model.KLinePoint, percentage float64) {
 	}
 }
 
+func printKLine(kline []*model.KLinePoint) {
+	for _, kPoint := range kline {
+		strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
+		fmt.Println(fmt.Sprintf(`%s %f`, strTime, kPoint.EndPrice))
+	}
+}
+
 func getData(symbol, timeSlot string) []*model.KLinePoint {
 	if data[symbol] == nil {
 		data[symbol] = make(map[string][]*model.KLinePoint)
@@ -145,17 +152,34 @@ func getData(symbol, timeSlot string) []*model.KLinePoint {
 		for i := 0; i < len(diff); i++ {
 			diff[i] = data[symbol][timeSlot][i+1].EndPrice - data[symbol][timeSlot][i].EndPrice
 		}
+		avgUp := 0.0
+		avgDown := 0.0
 		for i := 5; i < len(diff); i++ {
 			up := 0.0
 			down := 0.0
-			for j := i - 5; j <= i; j++ {
+			j := i - 5
+			for ; j <= 5; j++ {
 				if diff[j] > 0 {
 					up += diff[j]
 				} else {
-					down -= diff[j]
+					down += diff[j]
 				}
 			}
-			data[symbol][timeSlot][i+1].RSI = 100 * up / (up + down)
+
+			if i > 5 {
+				if diff[i] > 0 {
+					up = diff[i]
+				} else {
+					down = diff[i]
+				}
+				avgUp = (avgUp*5 + up) / 6
+				avgDown = (avgDown*5 + down) / 6
+				data[symbol][timeSlot][i+1].RSI = 100 * avgUp / (avgUp - avgDown)
+			} else {
+				avgUp = up / 6
+				avgDown = down / 6
+				data[symbol][timeSlot][i+1].RSI = 100 * avgUp / (avgUp - avgDown)
+			}
 		}
 	}
 	return data[symbol][timeSlot]
@@ -171,8 +195,8 @@ func testBalance() {
 	//model.LoadSettings()
 	//setting := model.AppFutureAccount[model.OKFUTURE][`btc_this_week`]
 	//symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
-	symbols := []string{`btc_usdt`, `eos_eth`, `eos_usdt`}
-	slots := []string{`1min`, `5min`, `30min`, `1hour`, `6hour`}
+	symbols := []string{`eos_usdt`}
+	slots := []string{`5min`}
 	percentages := []float64{0.001, 0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.1, 0.9}
 	results := make(map[string]map[float64]map[string]float64)
 	for _, slot := range slots {
@@ -207,9 +231,9 @@ func testBalance() {
 }
 
 func testRSI() {
-	symbols := []string{`eos_usdt`}
-	slots := []string{`1min`}
-	percentages := []float64{0.001, 0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.1, 0.9}
+	symbols := []string{`btc_usdt`, `eos_usdt`}
+	slots := []string{`1min`, `5min`, `15min`, `30min`, `1hour`}
+	percentages := []float64{0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05}
 	for _, slot := range slots {
 		for _, percentage := range percentages {
 			for _, symbol := range symbols {

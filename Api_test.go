@@ -26,8 +26,11 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	amount, _ := api.QueryPendingOrderAmount(`eos_this_week`)
-	fmt.Println(amount)
+	symbol := `eos_this_week`
+	api.GetAccountOkfuture(symbol)
+	//api.GetAccountOkfuture(symbol)
+	//amount, _ := api.QueryPendingOrderAmount(symbol)
+	//fmt.Println(amount)
 	timeSlot := `1min`
 	size := int64(1560)
 	currency := `eos`

@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
 const OKEXOtherContractFaceValue = 10.0
 const OKEX = "okex"
@@ -31,6 +32,8 @@ const OrderSideLiquidateShort = `liquidateShort`
 const CarryTypeBalance = `balance`
 const CarryTypeOpenShort = `openshort`
 const CarryTypeCloseShort = `closeshort`
+const CarryTypeArbitrarySell = `arbitrarysell`
+const CarryTypeArbitraryBuy = `arbitrarybuy`
 const AmountTypeContractNumber = `contractnumber`
 const AmountTypeCoinNumber = `coinnumber`
 

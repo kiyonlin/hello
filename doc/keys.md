@@ -27,6 +27,10 @@ yjsx_@163.com zaq1@WSX google: ZNKWP7ARX5A2SWWA
 
 # idea 帐号 haoweizh 密码 Sammi850810
 
+# okex
+18116019183 D2GARDTYEQK74YPS
+13685789062 CYPTEQRCZ66PMP3Y
+
 AWS：
 simon 52.192.134.3 haoweizh@qq.com sammi850810
 ace 13.231.235.25 ws820714@163.com ws@820714
