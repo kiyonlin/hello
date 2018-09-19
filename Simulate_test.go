@@ -127,7 +127,7 @@ func analyzeRSI(priceKLine []*model.KLinePoint, percentage float64) {
 		}
 		if priceKLine[i].RSI < 20 {
 			rsiBuy(priceKLine[i])
-		} else if priceKLine[i].RSI > 80 {
+		} else if priceKLine[i].RSI > 70 {
 			rsiSell(priceKLine[i], priceKLine[i].EndPrice)
 		}
 	}
@@ -165,7 +165,6 @@ func getData(symbol, timeSlot string) []*model.KLinePoint {
 					down += diff[j]
 				}
 			}
-
 			if i > 5 {
 				if diff[i] > 0 {
 					up = diff[i]
@@ -195,9 +194,9 @@ func testBalance() {
 	//model.LoadSettings()
 	//setting := model.AppFutureAccount[model.OKFUTURE][`btc_this_week`]
 	//symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
-	symbols := []string{`eos_usdt`}
-	slots := []string{`5min`}
-	percentages := []float64{0.001, 0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.1, 0.9}
+	symbols := []string{`btc`, `eth_usdt`, `eos_usdt`}
+	slots := []string{`15min`}
+	percentages := []float64{0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04}
 	results := make(map[string]map[float64]map[string]float64)
 	for _, slot := range slots {
 		fmt.Print(fmt.Sprintf("\n%s 做空：%t", slot, doShort))
@@ -231,9 +230,9 @@ func testBalance() {
 }
 
 func testRSI() {
-	symbols := []string{`btc_usdt`, `eos_usdt`}
-	slots := []string{`1min`, `5min`, `15min`, `30min`, `1hour`}
-	percentages := []float64{0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05}
+	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
+	slots := []string{`15min`}
+	percentages := []float64{0.003, 0.005, 0.01, 0.03, 0.05}
 	for _, slot := range slots {
 		for _, percentage := range percentages {
 			for _, symbol := range symbols {

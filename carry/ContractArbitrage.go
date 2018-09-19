@@ -33,7 +33,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		return
 	}
 	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - holdings)
-	if arbitraryAmount > 0 {
+	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT/2 {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(futureMarket, futureSymbol, orderId)
@@ -43,7 +43,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, AskPrice: actualPrice, DealAskStatus: status,
 			AskTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		model.CarryChannel <- *carry
-	} else if arbitraryAmount < 0 {
+	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT/2 {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideLiquidateShort,
 			model.OrderTypeMarket, futureMarket, futureSymbol, model.AmountTypeContractNumber,
 			futureBidAsk.Asks[0].Price, -1*arbitraryAmount)
