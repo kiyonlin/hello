@@ -122,7 +122,7 @@ func RefreshAccount(market string) {
 		symbols := model.GetSymbols(model.OKFUTURE)
 		for _, symbol := range symbols {
 			accountRights, _, _, err := GetAccountOkfuture(symbol)
-			if err != nil {
+			if err == nil {
 				index := strings.Index(symbol, `_`)
 				if index != -1 {
 					currency := symbol[0:index]
