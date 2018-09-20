@@ -93,7 +93,7 @@ func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float
 }
 
 func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float64, status string) {
-	if orderId == `0` ||orderId == `` {
+	if orderId == `0` || orderId == `` {
 		return 0, 0, `fail`
 	}
 	for i := 0; i < 100; i++ {
@@ -112,26 +112,25 @@ func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice f
 }
 
 func RefreshAccount(market string) {
-	accounts := model.AppAccounts.GetAccounts(market)
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
 		getAccountHuobi(model.AppAccounts)
-		if accounts != nil {
-			same := true
-			for key, value := range accounts {
-				if value != model.AppAccounts.GetAccount(market, key) {
-					same = false
-					break
-				}
-			}
-			if same {
-				time.Sleep(time.Second * 15)
-				getAccountHuobi(model.AppAccounts)
-			}
-		}
 	case model.OKEX:
 		getAccountOkex(model.AppAccounts)
+	case model.OKFUTURE:
+		symbols := model.GetSymbols(model.OKFUTURE)
+		for _, symbol := range symbols {
+			accountRights, _, _, err := GetAccountOkfuture(symbol)
+			if err != nil {
+				index := strings.Index(symbol, `_`)
+				if index != -1 {
+					currency := symbol[0:index]
+					account := &model.Account{Market: model.OKFUTURE, Currency: currency, Free: accountRights, Frozen: 0}
+					model.AppAccounts.SetAccount(model.OKFUTURE, currency, account)
+				}
+			}
+		}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
 		if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
