@@ -23,13 +23,16 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 	if strings.Contains(futureSymbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	futureAccount, _ := api.GetPositionOkfuture(futureMarket, futureSymbol)
+	futureAccount, err := api.GetPositionOkfuture(futureMarket, futureSymbol)
+	if err != nil {
+		return
+	}
 	holdings := 0.0
 	if futureAccount != nil {
 		holdings = futureAccount.OpenedShort
 	}
-	accountRights, _, _, _ := api.GetAccountOkfuture(futureSymbol)
-	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 {
+	accountRights, _, _, err := api.GetAccountOkfuture(futureSymbol)
+	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || err != nil {
 		return
 	}
 	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - holdings)
@@ -126,12 +129,12 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 		if strings.Contains(symbol, `btc`) {
 			faceValue = model.OKEXBTCContractFaceValue
 		}
-		accountRights, _, _, _ := api.GetAccountOkfuture(futureSymbol)
-		futureAccount, _ := api.GetPositionOkfuture(futureMarket, futureSymbol)
-		sellAmount := accountRights
-		if futureAccount != nil {
-			sellAmount = accountRights - futureAccount.OpenedShort*faceValue/futureBidAsk.Bids[0].Price
+		accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
+		futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, futureSymbol)
+		if futureAccount == nil || accountErr == nil || positionErr == nil {
+			return
 		}
+		sellAmount := accountRights - futureAccount.OpenedShort*faceValue/futureBidAsk.Bids[0].Price
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
 			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol,
 				model.AmountTypeCoinNumber, carry.AskPrice, sellAmount)
@@ -139,9 +142,6 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 			carry.DealAskAmount, carry.AskPrice, carry.DealAskStatus = api.SyncQueryOrderById(futureMarket, futureSymbol,
 				carry.DealAskOrderId)
 			carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.AskPrice
-			//if carry.DealAskStatus == model.CarryStatusFail {
-			//	arbitraryFutureMarket(model.OKFUTURE, futureSymbol, futureBidAsk)
-			//}
 		} else {
 			util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 		}
@@ -165,11 +165,11 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 	if strings.Contains(symbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	futureAccount, err := api.GetPositionOkfuture(futureMarket, futureSymbol)
-	if futureAccount == nil || err != nil {
+	futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, futureSymbol)
+	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(futureSymbol)
+	if futureAccount == nil || positionErr != nil || accountErr != nil {
 		return
 	}
-	accountRights, realProfit, unrealProfit, _ := api.GetAccountOkfuture(futureSymbol)
 	transferAble := accountRights
 	if realProfit+unrealProfit > 0 {
 		transferAble = accountRights - realProfit - unrealProfit
@@ -190,13 +190,9 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 	carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.SyncQueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
 	model.CarryChannel <- *carry
-	//if carry.DealBidStatus != model.CarryStatusSuccess {
-	//	arbitraryFutureMarket(model.OKFUTURE, futureSymbol, futureBidAsk)
-	//	return
-	//}
-	accountRights, realProfit, unrealProfit, _ = api.GetAccountOkfuture(futureSymbol)
-	futureAccount, err = api.GetPositionOkfuture(futureMarket, futureSymbol)
-	if futureAccount == nil || err != nil {
+	futureAccount, positionErr = api.GetPositionOkfuture(futureMarket, futureSymbol)
+	accountRights, realProfit, unrealProfit, accountErr = api.GetAccountOkfuture(futureSymbol)
+	if futureAccount == nil || positionErr != nil || accountErr != nil {
 		return
 	}
 	transferAble = accountRights - faceValue*futureAccount.OpenedShort
