@@ -308,6 +308,7 @@ func GetPositionOkfuture(market, symbol string) (futureAccount *model.FutureAcco
 		return nil, errors.New(`result false`)
 	}
 	holdings, _ := orderJson.Get(`holding`).Array()
+	futureAccount = &model.FutureAccount{Market: market, Symbol: symbol}
 	if len(holdings) > 0 {
 		value := holdings[0].(map[string]interface{})
 		openLong, _ := value[`buy_available`].(json.Number).Float64()

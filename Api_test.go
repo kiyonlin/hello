@@ -27,10 +27,12 @@ func Test_RefreshAccount(t *testing.T) {
 		return
 	}
 	symbol := `eos_this_week`
-	api.GetAccountOkfuture(symbol)
+	futureAccount, positionErr := api.GetPositionOkfuture(model.OKFUTURE, symbol)
 	//api.GetAccountOkfuture(symbol)
 	//amount, _ := api.QueryPendingOrderAmount(symbol)
-	//fmt.Println(amount)
+	if positionErr == nil {
+		fmt.Println(futureAccount.OpenedShort)
+	}
 	timeSlot := `1min`
 	size := int64(1560)
 	currency := `eos`
