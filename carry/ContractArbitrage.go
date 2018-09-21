@@ -23,20 +23,15 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 	if strings.Contains(futureSymbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	futureAccount, err := api.GetPositionOkfuture(futureMarket, futureSymbol)
-	if err != nil {
+	futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, futureSymbol)
+	accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
+	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil ||
+		futureAccount == nil || positionErr != nil {
 		return
 	}
-	holdings := 0.0
-	if futureAccount != nil {
-		holdings = futureAccount.OpenedShort
-	}
-	accountRights, _, _, err := api.GetAccountOkfuture(futureSymbol)
-	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || err != nil {
-		return
-	}
+	holdings := futureAccount.OpenedShort
 	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - holdings)
-	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT/2 {
+	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(futureMarket, futureSymbol, orderId)
@@ -46,7 +41,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, AskPrice: actualPrice, DealAskStatus: status,
 			AskTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		model.CarryChannel <- *carry
-	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT/2 {
+	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideLiquidateShort,
 			model.OrderTypeMarket, futureMarket, futureSymbol, model.AmountTypeContractNumber,
 			futureBidAsk.Asks[0].Price, -1*arbitraryAmount)
@@ -267,20 +262,15 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
+	util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
+		setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
+		setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 	if setting.OpenShortMargin < openShortMargin {
-		pendingAmount, _ := api.QueryPendingOrderAmount(futureSymbol)
-		if pendingAmount > 0 {
-			util.Notice(fmt.Sprintf(`[wait pending future orders] %d`, pendingAmount))
-			return
-		}
 		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
 	} else if setting.CloseShortMargin > closeShortMargin {
 		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
 	}
 	if util.GetNow().Second() == 0 { //每分钟检查一次
-		util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
-			setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
-			setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 		arbitraryMarket(model.OKEX, symbol, bidAsk)
 		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, futureBidAsk)
 	}
