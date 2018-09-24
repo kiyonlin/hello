@@ -327,7 +327,10 @@ func GetKLineOkexFuture(symbol, timeSlot string, size int64) []*model.KLinePoint
 	postData.Set(`contract_type`, contractType)
 	postData.Set(`size`, strconv.FormatInt(size, 10))
 	responseBody := sendSignRequest(`GET`, model.AppConfig.RestUrls[model.OKEX]+"/future_kline.do", &postData)
-	dataJson, _ := util.NewJSON(responseBody)
+	dataJson, err := util.NewJSON(responseBody)
+	if err != nil || dataJson == nil {
+		return nil
+	}
 	data, _ := dataJson.Array()
 	priceKLine := make([]*model.KLinePoint, len(data))
 	for key, value := range data {

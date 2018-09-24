@@ -23,10 +23,10 @@ var countSell = 0
 var balance = 10000.0
 var lever = 1.0
 var doShort = true
-var size = 1560
+var size = 2000
 var data = make(map[string]map[string][]*model.KLinePoint) // symbol - slot - kline data
 
-const tradeFee = 0.00035
+const tradeFee = 0.00025
 
 func initMoney(priceKLine []*model.KLinePoint) {
 	doShort = true
@@ -38,20 +38,26 @@ func initMoney(priceKLine []*model.KLinePoint) {
 }
 
 func rsiSell(kPoint *model.KLinePoint, price float64) {
+	worth := coin*price + money
 	if coin > 0 {
-		money += coin * price
+		money += coin * price * (1 - tradeFee)
 		coin = 0
-		//strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
-		//fmt.Println(fmt.Sprintf(`%f sell %s %f at %f`, money, strTime, kPoint.RSI, price))
 	}
+	if money > 7*worth/4 {
+		return
+	}
+	money += worth / 4 * (1 - tradeFee)
+	coin -= worth / 4 / price
 }
 
-func rsiBuy(kPoint *model.KLinePoint) {
-	if money > 0 {
-		coin += money / kPoint.EndPrice
+func rsiBuy(kPoint *model.KLinePoint, price float64) {
+	worth := coin*price + money
+	if money >= worth/4 {
+		money -= worth / 4
+		coin += worth / 4 / price * (1 - tradeFee)
+	} else {
+		coin += money / price * (1 - tradeFee)
 		money = 0
-		//strTime := time.Unix(kPoint.TS/1000, 0).Format("2006-01-02 15:04:05")
-		//fmt.Println(fmt.Sprintf(`%f buy %s %f at %f`, coin*kPoint.EndPrice, strTime, kPoint.RSI, kPoint.EndPrice))
 	}
 }
 
@@ -88,19 +94,6 @@ func printBalance() {
 }
 
 func analyzeKLine(priceKLine []*model.KLinePoint, percentage float64) {
-	//initMoney()
-	//for i := 2; i < len(data)-1; i++ {
-	//	if priceKLine[i-1].EndPrice > priceKLine[i-2].EndPrice && priceKLine[i].EndPrice < priceKLine[i-1].EndPrice &&
-	//		priceKLine[i].EndPrice > priceKLine[i-2].EndPrice && (priceKLine[i].EndPrice-lastPrice)*coin/balance > percentage {
-	//		sell(priceKLine[i])
-	//	}
-	//	if priceKLine[i-1].EndPrice < priceKLine[i-2].EndPrice && priceKLine[i].EndPrice > priceKLine[i-1].EndPrice &&
-	//		priceKLine[i].EndPrice < priceKLine[i-2].EndPrice &&
-	//		(lastPrice-priceKLine[i].EndPrice)*coin/balance > percentage {
-	//		buy(priceKLine[i])
-	//	}
-	//}
-	//printBalance()
 	initMoney(priceKLine)
 	for i := 1; i < len(priceKLine)-1; i++ {
 		if (priceKLine[i].HighPrice-lastPrice)*coin/balance > percentage {
@@ -116,18 +109,18 @@ func analyzeKLine(priceKLine []*model.KLinePoint, percentage float64) {
 func analyzeRSI(priceKLine []*model.KLinePoint, percentage float64) {
 	money = 10000
 	coin = 0
-	for i := 7; i < len(priceKLine); i++ {
+	for i := 307; i < len(priceKLine); i++ {
 		upPercentage := (priceKLine[i].HighPrice - priceKLine[i-1].EndPrice) / priceKLine[i-1].EndPrice
 		downPercentage := (priceKLine[i-1].EndPrice - priceKLine[i].LowPrice) / priceKLine[i].LowPrice
 		if upPercentage > percentage {
-			rsiSell(priceKLine[i], priceKLine[i-1].EndPrice*(1+percentage))
-		}
-		if downPercentage > percentage {
-			rsiSell(priceKLine[i], priceKLine[i-1].EndPrice*(1-percentage))
-		}
-		if priceKLine[i].RSI < 20 {
-			rsiBuy(priceKLine[i])
-		} else if priceKLine[i].RSI > 70 {
+			money += coin * (priceKLine[i-1].EndPrice * (1 + percentage))
+			coin = 0
+		} else if downPercentage > percentage {
+			money += coin * (priceKLine[i-1].EndPrice * (1 - percentage))
+			coin = 0
+		} else if priceKLine[i].RSI < 20 {
+			rsiBuy(priceKLine[i], priceKLine[i].EndPrice)
+		} else if priceKLine[i].RSI > 80 {
 			rsiSell(priceKLine[i], priceKLine[i].EndPrice)
 		}
 	}
@@ -230,8 +223,8 @@ func testBalance() {
 }
 
 func testRSI() {
-	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
-	slots := []string{`15min`}
+	symbols := []string{`btc_usdt`}
+	slots := []string{`1min`, `5min`, `15min`, `30min`, `1hour`, `4hour`}
 	percentages := []float64{0.003, 0.005, 0.01, 0.03, 0.05}
 	for _, slot := range slots {
 		for _, percentage := range percentages {
