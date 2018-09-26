@@ -15,21 +15,38 @@ func setContractArbitraging(status bool) {
 	contractArbitraging = status
 }
 
+func getFutureSymbols(currency string) (futureSymbols []string) {
+	return []string{currency + `_this_week`, currency + `_next_week`, currency + `_quarter`}
+}
+
 func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *model.BidAsk) {
-	if checkPending(futureSymbol) {
+	index := strings.Index(futureSymbol, `_`)
+	if index < 0 {
 		return
+	}
+	currency := futureSymbol[0:index]
+	futureSymbols := getFutureSymbols(currency)
+	for _, value := range futureSymbols {
+		if checkPending(value) {
+			return
+		}
 	}
 	faceValue := model.OKEXOtherContractFaceValue
-	if strings.Contains(futureSymbol, `btc`) {
+	if strings.Contains(currency, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, futureSymbol)
 	accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
-	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil ||
-		futureAccount == nil || positionErr != nil {
+	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil {
 		return
 	}
-	holdings := futureAccount.OpenedShort
+	holdings := 0.0
+	for _, value := range futureSymbols {
+		futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, value)
+		if futureAccount == nil || positionErr != nil {
+			return
+		}
+		holdings += futureAccount.OpenedShort
+	}
 	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - holdings)
 	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
