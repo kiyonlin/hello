@@ -53,7 +53,7 @@ func getData(symbol, timeSlot string) []*model.KLinePoint {
 			}
 			max := (data[symbol][timeSlot][i+1].RSI/data[symbol][timeSlot][i].RSI)*5*down - 5*up
 			min := 5*up/(data[symbol][timeSlot][i+1].RSI/data[symbol][timeSlot][i].RSI) - 5*down
-			data[symbol][timeSlot][i+1].RSIExpectSell = data[symbol][timeSlot][i].EndPrice - min
+			data[symbol][timeSlot][i+1].RSIExpectBuy = data[symbol][timeSlot][i].EndPrice - min
 			data[symbol][timeSlot][i+1].RSIExpectSell = data[symbol][timeSlot][i+1].EndPrice + max
 		}
 	}
@@ -78,7 +78,7 @@ func sendMail(body string) {
 func ProcessInform() {
 	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
 	for true {
-		if util.GetNow().Minute()%15 != 1 {
+		if util.GetNow().Minute()%15 != 2 {
 			continue
 		}
 		body := util.GetNow().Format("2006-01-02 15:04:05")
