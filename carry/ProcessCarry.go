@@ -248,6 +248,8 @@ func Maintain() {
 			go RefreshCarryServe()
 		case `arbitrary`:
 			carryHandlers[i] = ProcessContractArbitrage
+		case `rsi`:
+			go ProcessInform()
 		}
 	}
 	//go MaintainAccountChan()

@@ -10,11 +10,13 @@ import (
 )
 
 type KLinePoint struct {
-	TS        int64
-	EndPrice  float64
-	HighPrice float64
-	LowPrice  float64
-	RSI       float64
+	TS            int64
+	EndPrice      float64
+	HighPrice     float64
+	LowPrice      float64
+	RSI           float64
+	RSIExpectBuy  float64
+	RSIExpectSell float64
 }
 
 type BidAsk struct {

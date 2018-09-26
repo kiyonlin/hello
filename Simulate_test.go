@@ -38,16 +38,16 @@ func initMoney(priceKLine []*model.KLinePoint) {
 }
 
 func rsiSell(kPoint *model.KLinePoint, price float64) {
-	worth := coin*price + money
+	//worth := coin*price + money
 	if coin > 0 {
 		money += coin * price * (1 - tradeFee)
 		coin = 0
 	}
-	if money > 7*worth/4 {
-		return
-	}
-	money += worth / 4 * (1 - tradeFee)
-	coin -= worth / 4 / price
+	//if money > 7*worth/4 {
+	//	return
+	//}
+	//money += worth / 4 * (1 - tradeFee)
+	//coin -= worth / 4 / price
 }
 
 func rsiBuy(kPoint *model.KLinePoint, price float64) {
@@ -109,18 +109,19 @@ func analyzeKLine(priceKLine []*model.KLinePoint, percentage float64) {
 func analyzeRSI(priceKLine []*model.KLinePoint, percentage float64) {
 	money = 10000
 	coin = 0
-	for i := 307; i < len(priceKLine); i++ {
+	for i := 300; i < len(priceKLine); i++ {
 		upPercentage := (priceKLine[i].HighPrice - priceKLine[i-1].EndPrice) / priceKLine[i-1].EndPrice
-		downPercentage := (priceKLine[i-1].EndPrice - priceKLine[i].LowPrice) / priceKLine[i].LowPrice
-		if upPercentage > percentage {
-			money += coin * (priceKLine[i-1].EndPrice * (1 + percentage))
-			coin = 0
-		} else if downPercentage > percentage {
-			money += coin * (priceKLine[i-1].EndPrice * (1 - percentage))
-			coin = 0
-		} else if priceKLine[i].RSI < 20 {
+		//downPercentage := (priceKLine[i-1].EndPrice - priceKLine[i].LowPrice) / priceKLine[i].LowPrice
+		//if upPercentage > percentage {
+		//	money += coin * (priceKLine[i-1].EndPrice * (1 + percentage))
+		//	coin = 0
+		//} else if downPercentage > percentage {
+		//	money += coin * (priceKLine[i-1].EndPrice * (1 - percentage))
+		//	coin = 0
+		//} else
+		if priceKLine[i].RSI < 25 {
 			rsiBuy(priceKLine[i], priceKLine[i].EndPrice)
-		} else if priceKLine[i].RSI > 80 {
+		} else if priceKLine[i].RSI > 70 && percentage >= upPercentage{
 			rsiSell(priceKLine[i], priceKLine[i].EndPrice)
 		}
 	}
@@ -223,9 +224,9 @@ func testBalance() {
 }
 
 func testRSI() {
-	symbols := []string{`btc_usdt`}
-	slots := []string{`1min`, `5min`, `15min`, `30min`, `1hour`, `4hour`}
-	percentages := []float64{0.003, 0.005, 0.01, 0.03, 0.05}
+	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
+	slots := []string{`15min`, `30min`}
+	percentages := []float64{0.0025, 0.003, 0.005, 0.01, 0.03, 0.05}
 	for _, slot := range slots {
 		for _, percentage := range percentages {
 			for _, symbol := range symbols {
