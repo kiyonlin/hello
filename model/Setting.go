@@ -1,5 +1,7 @@
 package model
 
+import "strings"
+
 type Setting struct {
 	Market            string
 	Symbol            string
@@ -41,14 +43,15 @@ func GetMarkets() []string {
 	return markets
 }
 
-func GetSymbols(market string) []string {
-	symbols := make([]string, len(marketSymbolSetting[market]))
-	i := 0
+func GetCurrencies(market string) map[string]string {
+	currencies := make(map[string]string)
 	for key := range marketSymbolSetting[market] {
-		symbols[i] = key
-		i++
+		index := strings.Index(key, `_`)
+		if index > 0 {
+			currencies[key[0:index]] = ``
+		}
 	}
-	return symbols
+	return currencies
 }
 
 func GetSetting(market, symbol string) *Setting {

@@ -119,16 +119,12 @@ func RefreshAccount(market string) {
 	case model.OKEX:
 		getAccountOkex(model.AppAccounts)
 	case model.OKFUTURE:
-		symbols := model.GetSymbols(model.OKFUTURE)
-		for _, symbol := range symbols {
-			accountRights, _, _, err := GetAccountOkfuture(symbol)
+		currencies := model.GetCurrencies(model.OKFUTURE)
+		for currency := range currencies {
+			accountRights, _, _, err := GetAccountOkfuture(currency)
 			if err == nil {
-				index := strings.Index(symbol, `_`)
-				if index != -1 {
-					currency := symbol[0:index]
-					account := &model.Account{Market: model.OKFUTURE, Currency: currency, Free: accountRights, Frozen: 0}
-					model.AppAccounts.SetAccount(model.OKFUTURE, currency, account)
-				}
+				account := &model.Account{Market: model.OKFUTURE, Currency: currency, Free: accountRights, Frozen: 0}
+				model.AppAccounts.SetAccount(model.OKFUTURE, currency, account)
 			}
 		}
 	case model.Binance:

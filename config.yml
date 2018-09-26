@@ -1,8 +1,8 @@
 functions:
 #- carry
 #- balanceturtle
-#- arbitrary
-- rsi
+- arbitrary
+#- rsi
 
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
@@ -16,7 +16,7 @@ maxusdt: 1500
 inchina: 0
 deduction: 0.8
 env: simon
-dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=test password=zaq12WSX sslmode=disable
+dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=two password=zaq12WSX sslmode=disable
 #dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=jack password=zaq12WSX sslmode=disable
 #env: ace
 #dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
