@@ -126,7 +126,7 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 		}
 		accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
 		futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, futureSymbol)
-		if futureAccount == nil || accountErr == nil || positionErr == nil {
+		if futureAccount == nil || accountErr != nil || positionErr != nil {
 			return
 		}
 		sellAmount := accountRights - futureAccount.OpenedShort*faceValue/futureBidAsk.Bids[0].Price
