@@ -293,6 +293,22 @@ func GetAccountOkfuture(currency string) (accountRight, profitReal, profitUnreal
 	return accountRight, profitReal, profitUnreal, nil
 }
 
+func GetAllHoldings(currency string) (allHoldings float64, err error) {
+	index := strings.Index(currency, `_`)
+	if index > 0 {
+		currency = currency[0:index]
+	}
+	futureSymbols := []string{currency + `_this_week`, currency + `_next_week`, currency + `_quarter`}
+	for _, value := range futureSymbols {
+		futureAccount, positionErr := GetPositionOkfuture(model.OKFUTURE, value)
+		if futureAccount == nil || positionErr != nil {
+			return 0, errors.New(`account or position nil`)
+		}
+		allHoldings += futureAccount.OpenedShort
+	}
+	return allHoldings, nil
+}
+
 func GetPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error) {
 	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))

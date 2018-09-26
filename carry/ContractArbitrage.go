@@ -15,39 +15,22 @@ func setContractArbitraging(status bool) {
 	contractArbitraging = status
 }
 
-func getFutureSymbols(currency string) (futureSymbols []string) {
-	return []string{currency + `_this_week`, currency + `_next_week`, currency + `_quarter`}
-}
-
 func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *model.BidAsk) {
-	index := strings.Index(futureSymbol, `_`)
-	if index < 0 {
+	if checkPending(futureSymbol) {
 		return
 	}
-	currency := futureSymbol[0:index]
-	futureSymbols := getFutureSymbols(currency)
-	for _, value := range futureSymbols {
-		if checkPending(value) {
-			return
-		}
-	}
 	faceValue := model.OKEXOtherContractFaceValue
-	if strings.Contains(currency, `btc`) {
+	if strings.Contains(futureSymbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
 	accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
-	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil {
+	allHoldings, allHoldingsErr := api.GetAllHoldings(futureSymbol)
+	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
+	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil ||
+		allHoldingsErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
 		return
 	}
-	holdings := 0.0
-	for _, value := range futureSymbols {
-		futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, value)
-		if futureAccount == nil || positionErr != nil {
-			return
-		}
-		holdings += futureAccount.OpenedShort
-	}
-	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - holdings)
+	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - allHoldings)
 	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
@@ -59,6 +42,9 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 			AskTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		model.CarryChannel <- *carry
 	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT {
+		if arbitraryAmount < futureSymbolHoldings.OpenedShort*-1 {
+			arbitraryAmount = futureSymbolHoldings.OpenedShort * -1
+		}
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideLiquidateShort,
 			model.OrderTypeMarket, futureMarket, futureSymbol, model.AmountTypeContractNumber,
 			futureBidAsk.Asks[0].Price, -1*arbitraryAmount)
@@ -142,11 +128,11 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 			faceValue = model.OKEXBTCContractFaceValue
 		}
 		accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
-		futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, futureSymbol)
-		if futureAccount == nil || accountErr != nil || positionErr != nil {
+		allHoldings, allHoldingErr := api.GetAllHoldings(futureSymbol)
+		if accountErr != nil || allHoldingErr != nil {
 			return
 		}
-		sellAmount := accountRights - futureAccount.OpenedShort*faceValue/futureBidAsk.Bids[0].Price
+		sellAmount := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
 			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol,
 				model.AmountTypeCoinNumber, carry.AskPrice, sellAmount)
@@ -177,9 +163,9 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 	if strings.Contains(symbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	futureAccount, positionErr := api.GetPositionOkfuture(futureMarket, futureSymbol)
+	allHoldings, allHoldingErr := api.GetAllHoldings(futureSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(futureSymbol)
-	if futureAccount == nil || positionErr != nil || accountErr != nil {
+	if allHoldingErr != nil || accountErr != nil {
 		return
 	}
 	transferAble := accountRights
@@ -187,7 +173,7 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 		transferAble = accountRights - realProfit - unrealProfit
 	}
 	keepShort := math.Round((realProfit + unrealProfit) / faceValue)
-	if futureAccount.OpenedShort <= keepShort || transferAble < model.ArbitraryCarryUSDT {
+	if allHoldings <= keepShort || transferAble < model.ArbitraryCarryUSDT {
 		return
 	}
 	util.Notice(`[close short]` + carry.ToString())
@@ -202,20 +188,21 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 	carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.SyncQueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
 	carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
 	model.CarryChannel <- *carry
-	futureAccount, positionErr = api.GetPositionOkfuture(futureMarket, futureSymbol)
+	allHoldings, allHoldingErr = api.GetAllHoldings(futureSymbol)
 	accountRights, realProfit, unrealProfit, accountErr = api.GetAccountOkfuture(futureSymbol)
-	if futureAccount == nil || positionErr != nil || accountErr != nil {
+	if allHoldingErr != nil || accountErr != nil {
 		return
 	}
-	transferAble = accountRights - faceValue*futureAccount.OpenedShort
+	transferAble = accountRights - faceValue*allHoldings
 	if transferAble > accountRights-(realProfit+unrealProfit) {
 		transferAble = accountRights - (realProfit + unrealProfit)
 	}
-	if transferAble < accountRights-futureAccount.OpenedShort*faceValue/futureBidAsk.Bids[0].Price {
-		transferAble = accountRights - futureAccount.OpenedShort*faceValue/futureBidAsk.Bids[0].Price
+	if transferAble < accountRights-allHoldings*faceValue/futureBidAsk.Bids[0].Price {
+		transferAble = accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
 	}
 	if transferAble <= 0 {
 		util.Notice(fmt.Sprintf(`transferAble %f <= 0`, transferAble))
+		return
 	}
 	transfer, errCode := api.MustFundTransferOkex(symbol, transferAble, `3`, `1`)
 	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAble, transfer, errCode))
