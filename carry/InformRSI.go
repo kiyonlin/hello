@@ -86,7 +86,7 @@ func ProcessInform() {
 		for _, symbol := range symbols {
 			klines := getData(symbol, `15min`)
 			kline := klines[len(klines)-1]
-			if kline.RSI < 35 || kline.RSI > 65 {
+			if kline.RSI < 30 || kline.RSI > 70 {
 				isSend = true
 			}
 			strTime := time.Unix(kline.TS/1000, 0).Format("2006-01-02 15:04:05")
@@ -95,6 +95,8 @@ func ProcessInform() {
 		}
 		if isSend {
 			sendMail(body)
+		} else {
+			fmt.Println(body + ` no need send`)
 		}
 		time.Sleep(time.Minute)
 		data = make(map[string]map[string][]*model.KLinePoint)
