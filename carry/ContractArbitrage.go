@@ -262,7 +262,7 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
 	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
 	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
-	util.Info(fmt.Sprintf(`[open short %t]%f - %f [close short %t] %f - %f`,
+	util.Info(fmt.Sprintf(`%s [open short %t]%f - %f [close short %t] %f - %f`, futureSymbol,
 		setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin,
 		setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
 	if setting.OpenShortMargin < openShortMargin {
