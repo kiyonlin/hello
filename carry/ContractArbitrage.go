@@ -30,7 +30,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		allHoldingsErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
 		return
 	}
-	util.Info(fmt.Sprintf(`arbitrary future with %s %f of %f`, futureSymbol, futureSymbolHoldings.OpenedShort, allHoldings))
+	//util.Info(fmt.Sprintf(`arbitrary future with %s %f of %f`, futureSymbol, futureSymbolHoldings.OpenedShort, allHoldings))
 	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - allHoldings)
 	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
@@ -42,13 +42,11 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, AskPrice: actualPrice, DealAskStatus: status,
 			AskTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		model.CarryChannel <- *carry
-	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT {
-		if arbitraryAmount < futureSymbolHoldings.OpenedShort*-1 {
-			arbitraryAmount = futureSymbolHoldings.OpenedShort * -1
-		}
+	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT && futureSymbolHoldings.OpenedShort*faceValue >
+		model.ArbitraryCarryUSDT {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideLiquidateShort,
 			model.OrderTypeMarket, futureMarket, futureSymbol, model.AmountTypeContractNumber,
-			futureBidAsk.Asks[0].Price, -1*arbitraryAmount)
+			futureBidAsk.Asks[0].Price, model.ArbitraryCarryUSDT/faceValue)
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(futureMarket, futureSymbol, orderId)
 		actualAmount = actualAmount * faceValue / actualPrice
 		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
