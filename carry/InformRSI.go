@@ -62,7 +62,7 @@ func getData(symbol, timeSlot string) []*model.KLinePoint {
 
 func sendMail(body string) {
 	auth := smtp.PlainAuth("", "94764906@qq.com", "urszfnsnanxebjga", "smtp.qq.com")
-	to := []string{"haoweizh@qq.com", `ws820714@163.com`}
+	to := []string{`ws820714@163.com`}
 	nickname := "財神爺"
 	user := "haoweizh@qq.com"
 	subject := `RSI 15min`
