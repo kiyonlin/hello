@@ -134,15 +134,17 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 			return
 		}
 		sellAmount := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
-		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
-			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol,
-				model.AmountTypeCoinNumber, carry.AskPrice, sellAmount)
-		if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-			carry.DealAskAmount, carry.AskPrice, carry.DealAskStatus = api.SyncQueryOrderById(futureMarket, futureSymbol,
-				carry.DealAskOrderId)
-			carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.AskPrice
-		} else {
-			util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
+		if sellAmount >= 0 {
+			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
+				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol,
+					model.AmountTypeCoinNumber, carry.AskPrice, sellAmount)
+			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
+				carry.DealAskAmount, carry.AskPrice, carry.DealAskStatus = api.SyncQueryOrderById(futureMarket, futureSymbol,
+					carry.DealAskOrderId)
+				carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.AskPrice
+			} else {
+				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
+			}
 		}
 		api.RefreshAccount(market)
 	}
