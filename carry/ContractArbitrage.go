@@ -174,15 +174,18 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 	if allHoldings <= keepShort {
 		return
 	}
-	liquidAmount := accountRights * futureBidAsk.Bids[0].Price / faceValue
+	liquidAmount := math.Round(accountRights * futureBidAsk.Bids[0].Price / faceValue)
 	if realProfit+unrealProfit > 0 {
-		liquidAmount = (accountRights - realProfit - unrealProfit) * futureBidAsk.Bids[0].Price / faceValue
+		liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * futureBidAsk.Bids[0].Price / faceValue)
 	}
 	if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
-		liquidAmount = model.ArbitraryCarryUSDT / faceValue
+		liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
 	}
 	if liquidAmount > futureSymbolHoldings.OpenedShort {
 		liquidAmount = futureSymbolHoldings.OpenedShort
+	}
+	if liquidAmount <= 0 {
+		return
 	}
 	util.Notice(`[close short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.BidPrice =
