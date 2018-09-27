@@ -165,22 +165,29 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 		faceValue = model.OKEXBTCContractFaceValue
 	}
 	allHoldings, allHoldingErr := api.GetAllHoldings(futureSymbol)
+	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(futureSymbol)
-	if allHoldingErr != nil || accountErr != nil {
+	if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
 		return
 	}
-	transferAble := accountRights
+	keepShort := math.Round((realProfit + unrealProfit) * futureBidAsk.Bids[0].Price / faceValue)
+	if allHoldings <= keepShort {
+		return
+	}
+	liquidAmount := accountRights * futureBidAsk.Bids[0].Price / faceValue
 	if realProfit+unrealProfit > 0 {
-		transferAble = accountRights - realProfit - unrealProfit
+		liquidAmount = (accountRights - realProfit - unrealProfit) * futureBidAsk.Bids[0].Price / faceValue
 	}
-	keepShort := math.Round((realProfit + unrealProfit) / faceValue)
-	if allHoldings <= keepShort || transferAble < model.ArbitraryCarryUSDT {
-		return
+	if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
+		liquidAmount = model.ArbitraryCarryUSDT / faceValue
+	}
+	if liquidAmount > futureSymbolHoldings.OpenedShort {
+		liquidAmount = futureSymbolHoldings.OpenedShort
 	}
 	util.Notice(`[close short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.BidPrice =
 		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol,
-			model.AmountTypeContractNumber, carry.BidPrice, model.ArbitraryCarryUSDT/faceValue)
+			model.AmountTypeContractNumber, carry.BidPrice, liquidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`,
 			futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
@@ -194,12 +201,9 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 	if allHoldingErr != nil || accountErr != nil {
 		return
 	}
-	transferAble = accountRights - faceValue*allHoldings
+	transferAble := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
 	if transferAble > accountRights-(realProfit+unrealProfit) {
 		transferAble = accountRights - (realProfit + unrealProfit)
-	}
-	if transferAble < accountRights-allHoldings*faceValue/futureBidAsk.Bids[0].Price {
-		transferAble = accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
 	}
 	if transferAble <= 0 {
 		util.Notice(fmt.Sprintf(`transferAble %f <= 0`, transferAble))
