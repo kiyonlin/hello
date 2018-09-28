@@ -36,7 +36,9 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(futureMarket, futureSymbol, orderId)
-		actualAmount = actualAmount * faceValue / actualPrice
+		if actualPrice > 0 {
+			actualAmount = actualAmount * faceValue / actualPrice
+		}
 		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
 			orderId, errCode, status, actualAmount, actualPrice))
 		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, AskPrice: actualPrice, DealAskStatus: status,
@@ -139,7 +141,9 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
 				carry.DealAskAmount, carry.AskPrice, carry.DealAskStatus = api.SyncQueryOrderById(futureMarket, futureSymbol,
 					carry.DealAskOrderId)
-				carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.AskPrice
+				if carry.AskPrice > 0 {
+					carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.AskPrice
+				}
 			} else {
 				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 			}
@@ -197,7 +201,9 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 		return
 	}
 	carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.SyncQueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
-	carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
+	if carry.BidPrice > 0 {
+		carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
+	}
 	model.CarryChannel <- *carry
 	allHoldings, allHoldingErr = api.GetAllHoldings(futureSymbol)
 	accountRights, realProfit, unrealProfit, accountErr = api.GetAccountOkfuture(futureSymbol)

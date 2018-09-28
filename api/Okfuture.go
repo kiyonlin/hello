@@ -201,7 +201,6 @@ func QueryPendingOrderAmount(symbol string) (orderAmount int, err error) {
 	postData.Set(`current_page`, `1`)
 	postData.Set(`page_length`, `50`)
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do", &postData)
-	fmt.Println(string(responseBody))
 	orderJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return 0, err
@@ -239,7 +238,7 @@ func QueryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice fl
 			return dealAmount, contractPrice, status
 		}
 	}
-	return dealAmount, dealPrice, status
+	return dealAmount, dealPrice, model.CarryStatusFail
 }
 
 func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, msg string) {
