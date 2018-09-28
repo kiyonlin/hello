@@ -18,7 +18,7 @@ func initLog(path string) (*log.Logger, *os.File, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return log.New(file, "", log.Ldate|log.Ltime), file, nil
+	return log.New(file, "", log.Ldate|log.Ltime|log.Ldate|log.Ltime), file, nil
 }
 
 //func removeOldFiles() {
