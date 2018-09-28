@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+const OKFUTURE_LEVER  = 20
 const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
 const OKEXOtherContractFaceValue = 10.0

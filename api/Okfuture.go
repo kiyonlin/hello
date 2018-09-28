@@ -305,6 +305,7 @@ func GetAllHoldings(currency string) (allHoldings float64, err error) {
 		}
 		allHoldings += futureAccount.OpenedShort
 	}
+	allHoldings *= (model.OKFUTURE_LEVER - 1) / model.OKFUTURE_LEVER
 	return allHoldings, nil
 }
 
