@@ -259,13 +259,13 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 	bestSellPrice := 0.0
 	bestBuyPrice := 0.0
 	for _, value := range settings {
-		if futureSymbol == value.Symbol || model.AppMarkets.BidAsks[value.Symbol] == nil ||
-			model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
+		if model.AppMarkets.BidAsks[value.Symbol] == nil || model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
 			continue
 		}
 		worth := model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Amount *
 			model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
-		if worth > model.ArbitraryCarryUSDT && model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price > bestSellPrice {
+		if worth > model.ArbitraryCarryUSDT &&
+			model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price > bestSellPrice {
 			bestSellPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
 			askSetting = value
 		}
@@ -273,8 +273,8 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 			model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
 		if worth > model.ArbitraryCarryUSDT &&
 			(bestBuyPrice == 0.0 || bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price) {
-			bidSetting = value
 			bestBuyPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
+			bidSetting = value
 		}
 	}
 	if bidSetting == nil || askSetting == nil || (futureSymbol != bidSetting.Symbol && futureSymbol != askSetting.Symbol) {
@@ -307,13 +307,17 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	setContractArbitraging(true)
 	defer setContractArbitraging(false)
 	symbol := getSymbol(futureSymbol)
-	carry := createCarry(symbol, futureSymbol, futureMarket)
-	if carry == nil || checkPending(futureSymbol) {
-		return
-	}
 	faceValue := model.OKEXOtherContractFaceValue
 	if strings.Contains(futureSymbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
+	}
+	if util.GetNow().Second() == 0 { //每分钟检查一次
+		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
+		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
+	}
+	carry := createCarry(symbol, futureSymbol, futureMarket)
+	if carry == nil || checkPending(futureSymbol) {
+		return
 	}
 	if carry.AskWeb == model.OKEX && carry.BidWeb == model.OKFUTURE {
 		closeShort(carry, faceValue)
@@ -321,10 +325,6 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		openShort(carry, faceValue)
 	} else if carry.AskWeb == model.OKFUTURE && carry.BidWeb == model.OKFUTURE {
 		jumpShort(carry, faceValue)
-	}
-	if util.GetNow().Second() == 0 { //每分钟检查一次
-		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
-		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
 	}
 	time.Sleep(time.Second * 3)
 }
