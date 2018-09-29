@@ -7,6 +7,7 @@ import (
 	"hello/util"
 	"math"
 	"strings"
+	"time"
 )
 
 var contractArbitraging = false
@@ -325,4 +326,5 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
 		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
 	}
+	time.Sleep(time.Second * 3)
 }

@@ -122,6 +122,7 @@ func RefreshAccount(market string) {
 		currencies := model.GetCurrencies(model.OKFUTURE)
 		for currency := range currencies {
 			GetAccountOkfuture(model.AppAccounts, currency)
+			time.Sleep(time.Millisecond * 500)
 		}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
