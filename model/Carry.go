@@ -12,6 +12,8 @@ import (
 
 type Carry struct {
 	Symbol         string
+	BidSymbol      string
+	AskSymbol      string
 	BidWeb         string
 	AskWeb         string
 	BidAmount      float64
@@ -21,6 +23,8 @@ type Carry struct {
 	DealAskAmount  float64
 	BidPrice       float64
 	AskPrice       float64
+	DealBidPrice   float64
+	DealAskPrice   float64
 	DealBidErrCode string
 	DealBidOrderId string
 	DealAskErrCode string

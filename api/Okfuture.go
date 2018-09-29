@@ -257,18 +257,18 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 	return false, ``, err.Error()
 }
 
-func GetCurrencyOkfuture(currency string) (accountRights, keepDeposit float64) {
-	postData := url.Values{}
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/future_userinfo.do", &postData)
-	balanceJson, err := util.NewJSON(responseBody)
-	if err == nil {
-		accountRights, _ = balanceJson.GetPath(`info`, currency, `account_rights`).Float64()
-		keepDeposit, _ = balanceJson.GetPath(`info`, currency, `keep_deposit`).Float64()
-	}
-	return accountRights, keepDeposit
-}
+//func GetCurrencyOkfuture(currency string) (accountrights, keepdeposit float64) {
+//	postdata := url.values{}
+//	responsebody := sendsignrequest(`post`, model.appconfig.resturls[model.okex]+"/future_userinfo.do", &postdata)
+//	balancejson, err := util.newjson(responsebody)
+//	if err == nil {
+//		accountrights, _ = balancejson.getpath(`info`, currency, `account_rights`).float64()
+//		keepdeposit, _ = balancejson.getpath(`info`, currency, `keep_deposit`).float64()
+//	}
+//	return accountrights, keepdeposit
+//}
 
-func GetAccountOkfuture(currency string) (accountRight, profitReal, profitUnreal float64, err error) {
+func GetAccountOkfuture(accounts *model.Accounts, currency string) (accountRight, profitReal, profitUnreal float64, err error) {
 	postData := url.Values{}
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
 		"/future_userinfo.do", &postData)
@@ -289,6 +289,12 @@ func GetAccountOkfuture(currency string) (accountRight, profitReal, profitUnreal
 	accountRight, _ = accountRightsJson.Float64()
 	profitReal, _ = realProfitJson.Float64()
 	profitUnreal, _ = unrealProfitJson.Float64()
+	account := accounts.GetAccount(model.OKFUTURE, currency)
+	if account == nil {
+		account = &model.Account{Market: model.OKFUTURE, Currency: currency}
+	}
+	account.Free = accountRight
+	accounts.SetAccount(model.OKFUTURE, currency, account)
 	return accountRight, profitReal, profitUnreal, nil
 }
 

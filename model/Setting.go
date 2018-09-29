@@ -54,6 +54,19 @@ func GetCurrencies(market string) map[string]string {
 	return currencies
 }
 
+func GetSettings(market, symbolPrefix string) (settings []*Setting) {
+	if marketSymbolSetting[market] == nil {
+		return nil
+	}
+	settings = make([]*Setting, 0)
+	for _, value := range marketSymbolSetting[market] {
+		if strings.Index(value.Symbol, symbolPrefix) == 0 {
+			settings = append(settings, value)
+		}
+	}
+	return settings
+}
+
 func GetSetting(market, symbol string) *Setting {
 	if marketSymbolSetting[market] == nil {
 		return nil

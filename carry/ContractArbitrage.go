@@ -15,15 +15,11 @@ func setContractArbitraging(status bool) {
 	contractArbitraging = status
 }
 
-func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *model.BidAsk) {
+func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *model.BidAsk, faceValue float64) {
 	if checkPending(futureSymbol) {
 		return
 	}
-	faceValue := model.OKEXOtherContractFaceValue
-	if strings.Contains(futureSymbol, `btc`) {
-		faceValue = model.OKEXBTCContractFaceValue
-	}
-	accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
+	accountRights, _, _, accountErr := api.GetAccountOkfuture(model.AppAccounts, futureSymbol)
 	allHoldings, allHoldingsErr := api.GetAllHoldings(futureSymbol)
 	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
 	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil ||
@@ -41,7 +37,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		}
 		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
 			orderId, errCode, status, actualAmount, actualPrice))
-		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, AskPrice: actualPrice, DealAskStatus: status,
+		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, DealAskPrice: actualPrice, DealAskStatus: status,
 			AskTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		model.CarryChannel <- *carry
 	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT && futureSymbolHoldings.OpenedShort*faceValue >
@@ -53,7 +49,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		actualAmount = actualAmount * faceValue / actualPrice
 		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
 			orderId, errCode, status, actualAmount, actualPrice))
-		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidPrice: actualPrice, DealBidStatus: status,
+		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, DealBidPrice: actualPrice, DealBidStatus: status,
 			BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitraryBuy, DealBidAmount: actualAmount}
 		model.CarryChannel <- *carry
 	}
@@ -73,7 +69,7 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(market, symbol, orderId)
-		carry := &model.Carry{Symbol: symbol, AskWeb: market, AskPrice: actualPrice, DealAskStatus: status,
+		carry := &model.Carry{Symbol: symbol, AskWeb: market, DealAskPrice: actualPrice, DealAskStatus: status,
 			AskTime: int64(marketBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		model.CarryChannel <- *carry
 		api.RefreshAccount(market)
@@ -82,27 +78,17 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 	}
 }
 
-func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, bidAsk *model.BidAsk) {
-	if checkPending(futureSymbol) {
-		return
-	}
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, BidWeb: market, AskPrice: futureBidAsk.Bids[0].Price,
-		BidPrice: bidAsk.Asks[0].Price, AskTime: int64(futureBidAsk.Ts), BidTime: int64(bidAsk.Ts), SideType: model.CarryTypeOpenShort}
-	checkTime, msg := carry.CheckWorthCarryTime()
-	if !checkTime {
-		util.Notice(msg.Error())
-		return
-	}
-	index := strings.Index(symbol, `_`)
+func openShort(carry *model.Carry, faceValue float64) {
+	index := strings.Index(carry.BidSymbol, `_`)
 	if index == -1 {
 		return
 	}
-	currency := symbol[0:index]
-	accountUsdt := model.AppAccounts.GetAccount(market, `usdt`)
-	accountCoin := model.AppAccounts.GetAccount(market, currency)
+	currency := carry.BidSymbol[0:index]
+	accountUsdt := model.AppAccounts.GetAccount(carry.BidWeb, `usdt`)
+	accountCoin := model.AppAccounts.GetAccount(carry.BidWeb, currency)
 	if accountUsdt == nil {
 		util.Info(`account nil`)
-		api.RefreshAccount(market)
+		api.RefreshAccount(carry.BidWeb)
 		return
 	}
 	if accountUsdt.Free <= model.AppConfig.MinUsdt || accountUsdt.Free <= model.ArbitraryCarryUSDT {
@@ -111,76 +97,66 @@ func openShort(symbol, market, futureSymbol, futureMarket string, futureBidAsk, 
 	}
 	util.Notice(`[open short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.BidPrice = api.PlaceOrder(
-		model.OrderSideBuy, model.OrderTypeMarket, market, symbol, ``, carry.BidPrice, model.ArbitraryCarryUSDT)
+		model.OrderSideBuy, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol, ``,
+		carry.BidPrice, model.ArbitraryCarryUSDT)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
-		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, market, symbol, carry.AskPrice, carry.BidAmount))
+		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, carry.BidWeb, carry.BidSymbol,
+			carry.AskPrice, carry.BidAmount))
 		return
 	}
-	carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.SyncQueryOrderById(market, symbol, carry.DealBidOrderId)
+	carry.DealBidAmount, carry.DealBidPrice, carry.DealBidStatus = api.SyncQueryOrderById(carry.BidWeb, carry.BidSymbol,
+		carry.DealBidOrderId)
+	api.RefreshAccount(carry.BidWeb)
+	model.CarryChannel <- *carry
 	transferAmount := carry.DealBidAmount
 	if accountCoin != nil {
 		transferAmount += accountCoin.Free
 	}
-	transfer, errCode := api.MustFundTransferOkex(symbol, transferAmount, `1`, `3`)
+	transfer, errCode := api.MustFundTransferOkex(carry.BidSymbol, transferAmount, `1`, `3`)
 	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 	if transfer {
-		faceValue := model.OKEXOtherContractFaceValue
-		if strings.Contains(symbol, `btc`) {
-			faceValue = model.OKEXBTCContractFaceValue
-		}
-		accountRights, _, _, accountErr := api.GetAccountOkfuture(futureSymbol)
-		allHoldings, allHoldingErr := api.GetAllHoldings(futureSymbol)
-		if accountErr != nil || allHoldingErr != nil {
-			return
-		}
-		sellAmount := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
-		if sellAmount >= 0 {
-			carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
-				api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, futureMarket, futureSymbol,
-					model.AmountTypeCoinNumber, carry.AskPrice, sellAmount)
-			if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-				carry.DealAskAmount, carry.AskPrice, carry.DealAskStatus = api.SyncQueryOrderById(futureMarket, futureSymbol,
-					carry.DealAskOrderId)
-				if carry.AskPrice > 0 {
-					carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.AskPrice
-				}
-			} else {
-				util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
+		buyShort(carry, faceValue)
+	}
+}
+
+func buyShort(carry *model.Carry, faceValue float64) {
+	accountRights, _, _, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.AskSymbol)
+	allHoldings, allHoldingErr := api.GetAllHoldings(carry.AskSymbol)
+	if accountErr != nil || allHoldingErr != nil {
+		return
+	}
+	sellAmount := accountRights - allHoldings*faceValue/carry.DealAskPrice
+	if sellAmount >= 0 {
+		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.DealAskPrice =
+			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, carry.AskWeb, carry.AskSymbol,
+				model.AmountTypeCoinNumber, carry.AskPrice, sellAmount)
+		if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
+			carry.DealAskAmount, carry.DealAskPrice, carry.DealAskStatus = api.SyncQueryOrderById(carry.AskWeb,
+				carry.AskSymbol, carry.DealAskOrderId)
+			if carry.DealAskPrice > 0 {
+				carry.DealAskAmount = faceValue * carry.DealAskAmount / carry.DealAskPrice
 			}
+		} else {
+			util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 		}
-		api.RefreshAccount(market)
 	}
 	model.CarryChannel <- *carry
 }
 
-func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futureBidAsk *model.BidAsk) {
-	if checkPending(futureSymbol) {
-		return
-	}
-	carry := &model.Carry{Symbol: futureSymbol, AskWeb: market, BidWeb: futureMarket, AskPrice: bidAsk.Bids[0].Price,
-		BidPrice: futureBidAsk.Asks[0].Price, AskTime: int64(bidAsk.Ts), BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeCloseShort}
-	checkTime, msg := carry.CheckWorthCarryTime()
-	if !checkTime {
-		util.Notice(msg.Error())
-		return
-	}
-	faceValue := model.OKEXOtherContractFaceValue
-	if strings.Contains(symbol, `btc`) {
-		faceValue = model.OKEXBTCContractFaceValue
-	}
-	allHoldings, allHoldingErr := api.GetAllHoldings(futureSymbol)
-	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
-	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(futureSymbol)
+func liquidShort(carry *model.Carry, faceValue float64) {
+	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
+	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, carry.BidSymbol)
+	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
 	if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
 		return
 	}
-	keepShort := math.Round((realProfit + unrealProfit) * futureBidAsk.Bids[0].Price / faceValue)
+	keepShort := math.Round((realProfit + unrealProfit) * carry.BidPrice / faceValue)
 	if allHoldings <= keepShort {
 		return
 	}
-	liquidAmount := math.Round(accountRights * futureBidAsk.Bids[0].Price / faceValue)
+	liquidAmount := math.Round(accountRights * carry.BidPrice / faceValue)
 	if realProfit+unrealProfit > 0 {
-		liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * futureBidAsk.Bids[0].Price / faceValue)
+		liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * carry.BidPrice / faceValue)
 	}
 	if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
 		liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
@@ -193,24 +169,34 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 	}
 	util.Notice(`[close short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.BidPrice =
-		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, futureMarket, futureSymbol,
+		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol,
 			model.AmountTypeContractNumber, carry.BidPrice, liquidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`,
-			futureMarket, futureSymbol, carry.BidPrice, carry.BidAmount))
+			carry.BidWeb, carry.BidSymbol, carry.BidPrice, carry.BidAmount))
 		return
 	}
-	carry.DealBidAmount, carry.BidPrice, carry.DealBidStatus = api.SyncQueryOrderById(futureMarket, futureSymbol, carry.DealBidOrderId)
+	carry.DealBidAmount, carry.DealBidPrice, carry.DealBidStatus = api.SyncQueryOrderById(carry.BidWeb, carry.BidSymbol,
+		carry.DealBidOrderId)
 	if carry.BidPrice > 0 {
 		carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
 	}
 	model.CarryChannel <- *carry
-	allHoldings, allHoldingErr = api.GetAllHoldings(futureSymbol)
-	accountRights, realProfit, unrealProfit, accountErr = api.GetAccountOkfuture(futureSymbol)
+}
+
+func jumpShort(carry *model.Carry, faceValue float64) {
+	liquidShort(carry, faceValue)
+	buyShort(carry, faceValue)
+}
+
+func closeShort(carry *model.Carry, faceValue float64) {
+	liquidShort(carry, faceValue)
+	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
+	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
 	if allHoldingErr != nil || accountErr != nil {
 		return
 	}
-	transferAble := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
+	transferAble := accountRights - allHoldings*faceValue/carry.BidPrice
 	if transferAble > accountRights-(realProfit+unrealProfit) {
 		transferAble = accountRights - (realProfit + unrealProfit)
 	}
@@ -218,25 +204,25 @@ func closeShort(symbol, market, futureSymbol, futureMarket string, bidAsk, futur
 		util.Notice(fmt.Sprintf(`transferAble %f <= 0`, transferAble))
 		return
 	}
-	transfer, errCode := api.MustFundTransferOkex(symbol, transferAble, `3`, `1`)
+	transfer, errCode := api.MustFundTransferOkex(carry.AskSymbol, transferAble, `3`, `1`)
 	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAble, transfer, errCode))
 	if transfer {
-		api.RefreshAccount(market)
-		index := strings.Index(symbol, `_`)
+		api.RefreshAccount(carry.AskWeb)
+		index := strings.Index(carry.AskSymbol, `_`)
 		if index == -1 {
 			return
 		}
-		currency := symbol[0:index]
-		account := model.AppAccounts.GetAccount(market, currency)
-		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.AskPrice =
-			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, market, symbol, model.AmountTypeCoinNumber,
-				carry.AskPrice, account.Free)
+		currency := carry.AskSymbol[0:index]
+		account := model.AppAccounts.GetAccount(carry.AskWeb, currency)
+		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.DealAskPrice =
+			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, carry.AskWeb, carry.AskSymbol,
+				model.AmountTypeCoinNumber, carry.AskPrice, account.Free)
 		if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-			carry.DealAskAmount, carry.AskPrice, _ = api.SyncQueryOrderById(market, symbol, carry.DealAskOrderId)
+			carry.DealAskAmount, carry.DealAskPrice, _ = api.SyncQueryOrderById(carry.AskWeb, carry.AskWeb, carry.DealAskOrderId)
 		} else {
 			util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 		}
-		api.RefreshAccount(market)
+		api.RefreshAccount(carry.AskWeb)
 	}
 	model.CarryChannel <- *carry
 }
@@ -258,39 +244,83 @@ func checkPending(symbol string) bool {
 	return false
 }
 
+func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
+	index := strings.Index(futureSymbol, `_`)
+	if futureMarket != model.OKFUTURE || index < 0 {
+		return nil
+	}
+	settings := model.GetSettings(futureMarket, futureSymbol[0:index+1])
+	symbolSetting := model.GetSetting(model.OKEX, symbol)
+	if symbolSetting != nil {
+		settings = append(settings, symbolSetting)
+	}
+	var bidSetting, askSetting *model.Setting
+	bestSellPrice := 0.0
+	bestBuyPrice := 0.0
+	for _, value := range settings {
+		if futureSymbol == value.Symbol || model.AppMarkets.BidAsks[value.Symbol] == nil ||
+			model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
+			continue
+		}
+		worth := model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Amount *
+			model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
+		if worth > model.ArbitraryCarryUSDT && model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price > bestSellPrice {
+			bestSellPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
+			askSetting = value
+		}
+		worth = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Amount *
+			model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
+		if worth > model.ArbitraryCarryUSDT &&
+			(bestBuyPrice == 0.0 || bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price) {
+			bidSetting = value
+			bestBuyPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
+		}
+	}
+	if bidSetting == nil || askSetting == nil || (futureSymbol != bidSetting.Symbol && futureSymbol != askSetting.Symbol) {
+		return nil
+	}
+	margin := (bestSellPrice - bestBuyPrice) / bestSellPrice
+	if margin < -1*askSetting.CloseShortMargin || margin < bidSetting.OpenShortMargin || margin < 0.0025 {
+		return nil
+	}
+	carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
+		BidWeb: bidSetting.Market, AskPrice: bestSellPrice, BidPrice: bestBuyPrice, SideType: model.CarryTypeFuture,
+		AskTime: int64(model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Ts),
+		BidTime: int64(model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Ts)}
+	checkTime, msg := carry.CheckWorthCarryTime()
+	if !checkTime {
+		util.Notice(msg.Error())
+		return nil
+	}
+	//util.Info(fmt.Sprintf(`%s [open short %t]%f - %f`, futureSymbol,
+	//	setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin))
+	return carry
+}
+
 var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
-	if contractArbitraging || futureMarket != model.OKFUTURE {
+	if contractArbitraging || futureMarket != model.OKFUTURE || checkPending(futureSymbol) {
 		return
 	}
 	setContractArbitraging(true)
 	defer setContractArbitraging(false)
 	symbol := getSymbol(futureSymbol)
-	if model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][model.OKEX] == nil ||
-		model.AppMarkets.BidAsks[futureSymbol] == nil || model.AppMarkets.BidAsks[futureSymbol][futureMarket] == nil {
-		util.Notice(`data not available`)
+	carry := createCarry(symbol, futureSymbol, futureMarket)
+	if carry == nil {
 		return
 	}
-	index := strings.Index(symbol, `_`)
-	if index <= 0 {
-		util.Notice(`wrong symbol without _`)
-		return
+	faceValue := model.OKEXOtherContractFaceValue
+	if strings.Contains(futureSymbol, `btc`) {
+		faceValue = model.OKEXBTCContractFaceValue
 	}
-	setting := model.GetSetting(futureMarket, futureSymbol)
-	bidAsk := model.AppMarkets.BidAsks[symbol][model.OKEX]
-	futureBidAsk := model.AppMarkets.BidAsks[futureSymbol][futureMarket]
-	openShortMargin := (futureBidAsk.Bids[0].Price - bidAsk.Asks[0].Price) / bidAsk.Asks[0].Price
-	closeShortMargin := (futureBidAsk.Asks[0].Price - bidAsk.Bids[0].Price) / bidAsk.Bids[0].Price
-	if setting.OpenShortMargin < openShortMargin {
-		util.Info(fmt.Sprintf(`%s [open short %t]%f - %f`, futureSymbol,
-			setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin))
-		openShort(symbol, model.OKEX, futureSymbol, futureMarket, futureBidAsk, bidAsk)
-	} else if setting.CloseShortMargin > closeShortMargin {
-		util.Info(fmt.Sprintf(`%s [close short %t] %f - %f`, futureSymbol,
-			setting.CloseShortMargin > closeShortMargin, closeShortMargin, setting.CloseShortMargin))
-		closeShort(symbol, model.OKEX, futureSymbol, futureMarket, bidAsk, futureBidAsk)
+	if carry.AskWeb == model.OKEX && carry.BidWeb == model.OKFUTURE {
+		closeShort(carry, faceValue)
+	} else if carry.AskWeb == model.OKFUTURE && carry.BidWeb == model.OKEX {
+		openShort(carry, faceValue)
+	} else if carry.AskWeb == model.OKFUTURE && carry.BidWeb == model.OKFUTURE {
+		jumpShort(carry, faceValue)
 	}
 	if util.GetNow().Second() == 0 { //每分钟检查一次
-		arbitraryMarket(model.OKEX, symbol, bidAsk)
-		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, futureBidAsk)
+		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
+		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
 	}
 }

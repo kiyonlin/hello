@@ -121,11 +121,7 @@ func RefreshAccount(market string) {
 	case model.OKFUTURE:
 		currencies := model.GetCurrencies(model.OKFUTURE)
 		for currency := range currencies {
-			accountRights, _, _, err := GetAccountOkfuture(currency)
-			if err == nil {
-				account := &model.Account{Market: model.OKFUTURE, Currency: currency, Free: accountRights, Frozen: 0}
-				model.AppAccounts.SetAccount(model.OKFUTURE, currency, account)
-			}
+			GetAccountOkfuture(model.AppAccounts, currency)
 		}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
