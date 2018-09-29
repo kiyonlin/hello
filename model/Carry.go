@@ -129,8 +129,8 @@ func (carry *Carry) CheckWorthCarryTime() (bool, error) {
 }
 
 func (carry *Carry) ToString() string {
-	return fmt.Sprintf("%s [%s->%s] 间隔%d - %d 数量%f ask %f bid %f 利润%f - %f 价格%f - %f",
-		carry.Symbol, carry.AskWeb, carry.BidWeb, time.Now().Unix()*1000-carry.AskTime,
+	return fmt.Sprintf("%s %s->%s [%s->%s] 间隔%d - %d 数量%f ask %f bid %f 利润%f - %f 价格%f - %f",
+		carry.Symbol, carry.BidSymbol, carry.AskSymbol, carry.AskWeb, carry.BidWeb, time.Now().Unix()*1000-carry.AskTime,
 		time.Now().Unix()*1000-carry.BidTime, carry.Amount, carry.AskAmount, carry.BidAmount,
 		(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.Margin, carry.BidPrice, carry.AskPrice)
 }
