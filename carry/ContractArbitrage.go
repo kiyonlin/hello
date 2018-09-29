@@ -219,7 +219,8 @@ func closeShort(carry *model.Carry, faceValue float64) {
 			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, carry.AskWeb, carry.AskSymbol,
 				model.AmountTypeCoinNumber, carry.AskPrice, account.Free)
 		if carry.DealAskOrderId != `` && carry.DealAskOrderId != `0` {
-			carry.DealAskAmount, carry.DealAskPrice, _ = api.SyncQueryOrderById(carry.AskWeb, carry.AskWeb, carry.DealAskOrderId)
+			carry.DealAskAmount, carry.DealAskPrice, _ = api.SyncQueryOrderById(carry.AskWeb, carry.AskSymbol,
+				carry.DealAskOrderId)
 		} else {
 			util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 		}
