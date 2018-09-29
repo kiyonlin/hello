@@ -238,7 +238,7 @@ func MustFundTransferOkex(symbol string, amount float64, from, to string) (resul
 		time.Sleep(time.Second * 3)
 		util.Notice(fmt.Sprintf(fmt.Sprintf(`[fail when must transfer]%s %s->%s %f %v`,
 			symbol, from, to, amount, transfer)))
-		amount = amount * (1.0 - i*0.01)
+		amount = amount * (1.0 - i*i*0.01)
 	}
 	return false, `>100tries`
 }
