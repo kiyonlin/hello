@@ -26,6 +26,8 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
 	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil ||
 		allHoldingsErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
+		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding %s %s %s`,
+			allHoldingsErr.Error(), accountErr.Error(), futureSymbolHoldingErr.Error()))
 		return
 	}
 	util.Info(fmt.Sprintf(`arbitrary future with %s %f of %f`, futureSymbol, futureSymbolHoldings.OpenedShort, allHoldings))
@@ -158,10 +160,13 @@ func liquidShort(carry *model.Carry, faceValue float64) bool {
 	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, carry.BidSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
 	if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
+		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding %s %s %s`,
+			allHoldingErr.Error(), accountErr.Error(), futureSymbolHoldingErr.Error()))
 		return false
 	}
 	keepShort := math.Round((realProfit + unrealProfit) * carry.BidPrice / faceValue)
 	if allHoldings <= keepShort {
+		util.Notice(fmt.Sprintf(`allholding <= keep %f %f`, allHoldings, keepShort))
 		return false
 	}
 	liquidAmount := math.Round(accountRights * carry.BidPrice / faceValue)
