@@ -314,7 +314,6 @@ func GetAllHoldings(currency string) (allHoldings float64, err error) {
 		time.Sleep(time.Millisecond * 500)
 	}
 	allHoldings = allHoldings * (model.OkfutureLever - 1) / model.OkfutureLever
-	util.Notice(fmt.Sprintf(`holding %s in all %f`, currency, allHoldings))
 	return allHoldings, nil
 }
 

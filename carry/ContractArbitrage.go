@@ -20,6 +20,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 	if checkPending(futureSymbol) {
 		return
 	}
+	util.Info(fmt.Sprintf(`check to arbitrary %s`, futureSymbol))
 	accountRights, _, _, accountErr := api.GetAccountOkfuture(model.AppAccounts, futureSymbol)
 	allHoldings, allHoldingsErr := api.GetAllHoldings(futureSymbol)
 	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
@@ -27,7 +28,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 		allHoldingsErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
 		return
 	}
-	//util.Info(fmt.Sprintf(`arbitrary future with %s %f of %f`, futureSymbol, futureSymbolHoldings.OpenedShort, allHoldings))
+	util.Info(fmt.Sprintf(`arbitrary future with %s %f of %f`, futureSymbol, futureSymbolHoldings.OpenedShort, allHoldings))
 	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - allHoldings)
 	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
