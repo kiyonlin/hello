@@ -113,6 +113,10 @@ func openShort(carry *model.Carry, faceValue float64) {
 	if accountCoin != nil {
 		transferAmount += accountCoin.Free
 	}
+	if transferAmount*carry.BidPrice <= model.AppConfig.MinUsdt {
+		util.Notice(fmt.Sprintf(`transferAble %f <= %f in usd`, transferAmount, model.AppConfig.MinUsdt))
+		return
+	}
 	transfer, errCode := api.MustFundTransferOkex(carry.BidSymbol, transferAmount, `1`, `3`)
 	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
 	if transfer {
@@ -201,8 +205,8 @@ func closeShort(carry *model.Carry, faceValue float64) {
 	if transferAble > accountRights-(realProfit+unrealProfit) {
 		transferAble = accountRights - (realProfit + unrealProfit)
 	}
-	if transferAble <= 0 {
-		util.Notice(fmt.Sprintf(`transferAble %f <= 0`, transferAble))
+	if transferAble*carry.BidPrice <= model.AppConfig.MinUsdt {
+		util.Notice(fmt.Sprintf(`transferAble %f <= %f`, transferAble, model.AppConfig.MinUsdt))
 		return
 	}
 	transfer, errCode := api.MustFundTransferOkex(carry.AskSymbol, transferAble, `3`, `1`)
