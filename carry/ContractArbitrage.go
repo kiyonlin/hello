@@ -204,6 +204,7 @@ func jumpShort(carry *model.Carry, faceValue float64) {
 
 func closeShort(carry *model.Carry, faceValue float64) {
 	if !liquidShort(carry, faceValue) {
+		util.Notice(fmt.Sprintf(`fail to liquid short %s`, carry.ToString()))
 		return
 	}
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
@@ -243,14 +244,6 @@ func closeShort(carry *model.Carry, faceValue float64) {
 		api.RefreshAccount(carry.AskWeb)
 	}
 	model.CarryChannel <- *carry
-}
-
-func getSymbol(symbol string) string {
-	index := strings.Index(symbol, `_`)
-	if index > 0 {
-		return symbol[0:index] + `_usdt`
-	}
-	return ``
 }
 
 func checkPending(symbol string) bool {
@@ -317,18 +310,36 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 	return carry
 }
 
+var lastArbitraryTime map[string]int64 // currency - time in million second
+
+func needArbitrary(currency string) bool {
+	if lastArbitraryTime == nil {
+		lastArbitraryTime = make(map[string]int64)
+	}
+	if util.GetNowUnixMillion()-lastArbitraryTime[currency] > 60000 {
+		lastArbitraryTime[currency] = util.GetNowUnixMillion()
+		return true
+	}
+	return false
+}
+
 var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	if contractArbitraging || futureMarket != model.OKFUTURE {
 		return
 	}
 	setContractArbitraging(true)
 	defer setContractArbitraging(false)
-	symbol := getSymbol(futureSymbol)
+	index := strings.Index(futureSymbol, `_`)
+	if index < 0 {
+		return
+	}
+	currency := futureSymbol[0:index]
+	symbol := currency + `_usdt`
 	faceValue := model.OKEXOtherContractFaceValue
 	if strings.Contains(futureSymbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	if util.GetNow().Second() == 0 { //每分钟检查一次
+	if needArbitrary(currency) { //每分钟检查一次
 		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
 		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
 	}
