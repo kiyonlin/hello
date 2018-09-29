@@ -230,7 +230,7 @@ func getAccountOkex(accounts *model.Accounts) {
 }
 
 func MustFundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
-	for i := 0; i < 100; i++ {
+	for i := 0.0; i < 100; i++ {
 		transfer, errCode := FundTransferOkex(symbol, amount, from, to)
 		if transfer {
 			return transfer, errCode
@@ -238,9 +238,9 @@ func MustFundTransferOkex(symbol string, amount float64, from, to string) (resul
 		time.Sleep(time.Second * 3)
 		util.Notice(fmt.Sprintf(fmt.Sprintf(`[fail when must transfer]%s %s->%s %f %v`,
 			symbol, from, to, amount, transfer)))
-		amount = amount * 0.99
+		amount = amount * (1.0 - i*0.01)
 	}
-	return false, `>1000tries`
+	return false, `>100tries`
 }
 
 // from 转出账户(1：币币账户 3：合约账户 6：我的钱包)
