@@ -114,21 +114,22 @@ func openShort(carry *model.Carry, faceValue float64) {
 		transferAmount += accountCoin.Free
 	}
 	if transferAmount*carry.BidPrice <= model.AppConfig.MinUsdt {
-		util.Notice(fmt.Sprintf(`transferAble %f <= %f in usd`, transferAmount, model.AppConfig.MinUsdt))
+		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f in usd`, carry.BidSymbol, transferAmount,
+			model.AppConfig.MinUsdt))
 		return
 	}
 	transfer, errCode := api.MustFundTransferOkex(carry.BidSymbol, transferAmount, `1`, `3`)
-	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAmount, transfer, errCode))
+	util.Notice(fmt.Sprintf(`%s transfer %f result %v %s`, carry.BidSymbol, transferAmount, transfer, errCode))
 	if transfer {
 		buyShort(carry, faceValue)
 	}
 }
 
-func buyShort(carry *model.Carry, faceValue float64) {
+func buyShort(carry *model.Carry, faceValue float64) bool {
 	accountRights, _, _, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.AskSymbol)
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.AskSymbol)
 	if accountErr != nil || allHoldingErr != nil {
-		return
+		return false
 	}
 	sellAmount := accountRights - allHoldings*faceValue/carry.DealAskPrice
 	if sellAmount >= 0 {
@@ -146,18 +147,19 @@ func buyShort(carry *model.Carry, faceValue float64) {
 		}
 	}
 	model.CarryChannel <- *carry
+	return true
 }
 
-func liquidShort(carry *model.Carry, faceValue float64) {
+func liquidShort(carry *model.Carry, faceValue float64) bool {
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
 	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, carry.BidSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
 	if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
-		return
+		return false
 	}
 	keepShort := math.Round((realProfit + unrealProfit) * carry.BidPrice / faceValue)
 	if allHoldings <= keepShort {
-		return
+		return false
 	}
 	liquidAmount := math.Round(accountRights * carry.BidPrice / faceValue)
 	if realProfit+unrealProfit > 0 {
@@ -170,7 +172,7 @@ func liquidShort(carry *model.Carry, faceValue float64) {
 		liquidAmount = futureSymbolHoldings.OpenedShort
 	}
 	if liquidAmount <= 0 {
-		return
+		return false
 	}
 	util.Notice(`[close short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.BidPrice =
@@ -179,7 +181,7 @@ func liquidShort(carry *model.Carry, faceValue float64) {
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`,
 			carry.BidWeb, carry.BidSymbol, carry.BidPrice, carry.BidAmount))
-		return
+		return false
 	}
 	carry.DealBidAmount, carry.DealBidPrice, carry.DealBidStatus = api.SyncQueryOrderById(carry.BidWeb, carry.BidSymbol,
 		carry.DealBidOrderId)
@@ -187,15 +189,20 @@ func liquidShort(carry *model.Carry, faceValue float64) {
 		carry.DealBidAmount = carry.DealBidAmount * faceValue / carry.BidPrice
 	}
 	model.CarryChannel <- *carry
+	return true
 }
 
 func jumpShort(carry *model.Carry, faceValue float64) {
-	liquidShort(carry, faceValue)
+	if !liquidShort(carry, faceValue) {
+		return
+	}
 	buyShort(carry, faceValue)
 }
 
 func closeShort(carry *model.Carry, faceValue float64) {
-	liquidShort(carry, faceValue)
+	if !liquidShort(carry, faceValue) {
+		return
+	}
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
 	if allHoldingErr != nil || accountErr != nil {
@@ -206,11 +213,11 @@ func closeShort(carry *model.Carry, faceValue float64) {
 		transferAble = accountRights - (realProfit + unrealProfit)
 	}
 	if transferAble*carry.BidPrice <= model.AppConfig.MinUsdt {
-		util.Notice(fmt.Sprintf(`transferAble %f <= %f`, transferAble, model.AppConfig.MinUsdt))
+		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, carry.BidWeb, transferAble, model.AppConfig.MinUsdt))
 		return
 	}
 	transfer, errCode := api.MustFundTransferOkex(carry.AskSymbol, transferAble, `3`, `1`)
-	util.Notice(fmt.Sprintf(`transfer %f result %v %s`, transferAble, transfer, errCode))
+	util.Notice(fmt.Sprintf(`%s transfer %f result %v %s`, carry.AskSymbol, transferAble, transfer, errCode))
 	if transfer {
 		api.RefreshAccount(carry.AskWeb)
 		index := strings.Index(carry.AskSymbol, `_`)

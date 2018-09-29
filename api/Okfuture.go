@@ -311,7 +311,8 @@ func GetAllHoldings(currency string) (allHoldings float64, err error) {
 		}
 		allHoldings += futureAccount.OpenedShort
 	}
-	allHoldings *= (model.OKFUTURE_LEVER - 1) / model.OKFUTURE_LEVER
+	allHoldings *= (model.OkfutureLever - 1) / model.OkfutureLever
+	util.Notice(fmt.Sprintf(`holding %s in all %f`, currency, allHoldings))
 	return allHoldings, nil
 }
 
@@ -330,7 +331,7 @@ func GetPositionOkfuture(market, symbol string) (futureAccount *model.FutureAcco
 		return nil, errors.New(`result false`)
 	}
 	holdings, _ := orderJson.Get(`holding`).Array()
-	futureAccount = &model.FutureAccount{Market: market, Symbol: symbol}
+	futureAccount = &model.FutureAccount{Market: market, Symbol: symbol, OpenedShort: 0, OpenedLong: 0}
 	if len(holdings) > 0 {
 		value := holdings[0].(map[string]interface{})
 		openLong, _ := value[`buy_available`].(json.Number).Float64()
