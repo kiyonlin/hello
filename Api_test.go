@@ -26,10 +26,7 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	a, p, s := api.SyncQueryOrderById(model.OKFUTURE, `eos_this_week`, `1528475898684416`)
-	fmt.Println(a)
-	fmt.Println(p)
-	fmt.Println(s)
+	api.GetAllHoldings(`bch`)
 	timeSlot := `1min`
 	size := int64(1560)
 	currency := `eos`
