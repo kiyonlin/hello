@@ -280,6 +280,8 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 		return nil
 	}
 	margin := (bestSellPrice - bestBuyPrice) / bestSellPrice
+	util.Info(fmt.Sprintf(`[%s->%s][%s->%s]%f[open %f- close %f]`, bidSetting.Market, askSetting.Market,
+		bidSetting.Symbol, askSetting.Symbol, margin, bidSetting.OpenShortMargin, askSetting.CloseShortMargin))
 	if margin < -1*askSetting.CloseShortMargin || margin < bidSetting.OpenShortMargin || margin < 0.0025 {
 		return nil
 	}
@@ -298,14 +300,14 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 }
 
 var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
-	if contractArbitraging || futureMarket != model.OKFUTURE || checkPending(futureSymbol) {
+	if contractArbitraging || futureMarket != model.OKFUTURE {
 		return
 	}
 	setContractArbitraging(true)
 	defer setContractArbitraging(false)
 	symbol := getSymbol(futureSymbol)
 	carry := createCarry(symbol, futureSymbol, futureMarket)
-	if carry == nil {
+	if carry == nil || checkPending(futureSymbol) {
 		return
 	}
 	faceValue := model.OKEXOtherContractFaceValue
