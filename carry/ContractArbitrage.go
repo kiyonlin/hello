@@ -26,8 +26,7 @@ func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *mode
 	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
 	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil ||
 		allHoldingsErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
-		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding %s %s %s`,
-			allHoldingsErr.Error(), accountErr.Error(), futureSymbolHoldingErr.Error()))
+		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
 		return
 	}
 	util.Info(fmt.Sprintf(`arbitrary future with %s %f of %f`, futureSymbol, futureSymbolHoldings.OpenedShort, allHoldings))
@@ -132,8 +131,7 @@ func buyShort(carry *model.Carry, faceValue float64) bool {
 	accountRights, _, _, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.AskSymbol)
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.AskSymbol)
 	if accountErr != nil || allHoldingErr != nil {
-		util.Notice(fmt.Sprintf(`fail to get allholdings and position %s %s`,
-			allHoldingErr.Error(), accountErr.Error()))
+		util.Notice(fmt.Sprintf(`fail to get allholdings and position`))
 		return false
 	}
 	sellAmount := accountRights - allHoldings*faceValue/carry.DealAskPrice
@@ -160,8 +158,7 @@ func liquidShort(carry *model.Carry, faceValue float64) bool {
 	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, carry.BidSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
 	if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
-		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding %s %s %s`,
-			allHoldingErr.Error(), accountErr.Error(), futureSymbolHoldingErr.Error()))
+		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
 		return false
 	}
 	keepShort := math.Round((realProfit + unrealProfit) * carry.BidPrice / faceValue)
@@ -215,8 +212,7 @@ func closeShort(carry *model.Carry, faceValue float64) {
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
 	if allHoldingErr != nil || accountErr != nil {
-		util.Notice(fmt.Sprintf(`fail to get allholdings and position %s %s`,
-			allHoldingErr.Error(), accountErr.Error()))
+		util.Notice(fmt.Sprintf(`fail to get allholdings and position`))
 		return
 	}
 	transferAble := accountRights - allHoldings*faceValue/carry.DealBidPrice
