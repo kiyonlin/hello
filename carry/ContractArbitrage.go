@@ -20,46 +20,28 @@ func recordCarry(carry *model.Carry) {
 	model.CarryChannel <- *carry
 }
 
-func arbitraryFutureMarket(futureMarket, futureSymbol string, futureBidAsk *model.BidAsk, faceValue float64) {
+func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, faceValue float64) {
 	if checkPending(futureSymbol) {
 		return
 	}
 	util.Info(fmt.Sprintf(`check to arbitrary %s`, futureSymbol))
-	accountRights, _, _, accountErr := api.GetAccountOkfuture(model.AppAccounts, futureSymbol)
+	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, futureSymbol)
 	allHoldings, allHoldingsErr := api.GetAllHoldings(futureSymbol)
-	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, futureSymbol)
-	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 || accountErr != nil ||
-		allHoldingsErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
+	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 ||
+		accountErr != nil || allHoldingsErr != nil {
 		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
 		return
 	}
-	util.Info(fmt.Sprintf(`arbitrary future with %s %f of %f`, futureSymbol, futureSymbolHoldings.OpenedShort, allHoldings))
-	arbitraryAmount := math.Floor(accountRights*futureBidAsk.Bids[0].Price/faceValue - allHoldings)
-	if arbitraryAmount*faceValue > model.ArbitraryCarryUSDT {
-		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
-			futureMarket, futureSymbol, model.AmountTypeContractNumber, futureBidAsk.Bids[0].Price, arbitraryAmount)
-		actualAmount, actualPrice, status = api.SyncQueryOrderById(futureMarket, futureSymbol, orderId)
-		if actualPrice > 0 {
-			actualAmount = actualAmount * faceValue / actualPrice
-		}
-		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
-			orderId, errCode, status, actualAmount, actualPrice))
-		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, DealAskPrice: actualPrice, DealAskStatus: status,
-			AskTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
-		recordCarry(carry)
-	} else if arbitraryAmount*faceValue < -1*model.ArbitraryCarryUSDT && futureSymbolHoldings.OpenedShort*faceValue >
-		model.ArbitraryCarryUSDT {
-		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideLiquidateShort,
-			model.OrderTypeMarket, futureMarket, futureSymbol, model.AmountTypeContractNumber,
-			futureBidAsk.Asks[0].Price, model.ArbitraryCarryUSDT/faceValue)
-		actualAmount, actualPrice, status = api.SyncQueryOrderById(futureMarket, futureSymbol, orderId)
-		actualAmount = actualAmount * faceValue / actualPrice
-		util.Notice(fmt.Sprintf(`[!arbitrary future!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
-			orderId, errCode, status, actualAmount, actualPrice))
-		carry := &model.Carry{Symbol: futureSymbol, AskWeb: futureMarket, DealBidPrice: actualPrice, DealBidStatus: status,
-			BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitraryBuy, DealBidAmount: actualAmount}
-		recordCarry(carry)
+	transferAble := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
+	if transferAble > accountRights-(realProfit+unrealProfit) {
+		transferAble = accountRights - (realProfit + unrealProfit)
 	}
+	if transferAble*futureBidAsk.Bids[0].Price <= model.AppConfig.MinUsdt {
+		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, model.OKFUTURE, transferAble, model.AppConfig.MinUsdt))
+		return
+	}
+	transfer, errCode := api.MustFundTransferOkex(futureSymbol, transferAble, `3`, `1`)
+	util.Notice(fmt.Sprintf(`[arbitrary transfer]%f %s 3~1 %v %s`, transferAble, futureSymbol, transfer, errCode))
 }
 
 func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
@@ -76,8 +58,9 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(market, symbol, orderId)
-		carry := &model.Carry{Symbol: symbol, AskWeb: market, DealAskPrice: actualPrice, DealAskStatus: status,
-			AskTime: int64(marketBidAsk.Ts), SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
+		carry := &model.Carry{BidSymbol: symbol, AskSymbol: symbol, AskWeb: market, DealAskPrice: actualPrice,
+			DealAskStatus: status, AskTime: int64(marketBidAsk.Ts), SideType: model.CarryTypeArbitrarySell,
+			DealAskAmount: actualAmount}
 		recordCarry(carry)
 		api.RefreshAccount(market)
 		util.Notice(fmt.Sprintf(`[!arbitrary!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
@@ -152,8 +135,9 @@ func buyShort(carry *model.Carry, faceValue float64) bool {
 		} else {
 			util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 		}
+		return true
 	}
-	return true
+	return false
 }
 
 func liquidShort(carry *model.Carry, faceValue float64) bool {
@@ -345,7 +329,7 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	}
 	if needArbitrary(currency) { //每分钟检查一次
 		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
-		arbitraryFutureMarket(model.OKFUTURE, futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
+		arbitraryFutureMarket(futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
 	}
 	carry := createCarry(symbol, futureSymbol, futureMarket)
 	if carry == nil || checkPending(futureSymbol) {

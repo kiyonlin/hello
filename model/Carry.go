@@ -11,7 +11,6 @@ import (
 )
 
 type Carry struct {
-	Symbol         string
 	BidSymbol      string
 	AskSymbol      string
 	BidWeb         string
@@ -45,11 +44,11 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 	if AppAccounts == nil {
 		return configMargin
 	}
-	if !strings.Contains(carry.Symbol, "_") {
-		util.Info(fmt.Sprintf("invalid carry %s %s %f %d", carry.Symbol, carry.BidWeb, carry.Amount, carry.BidTime))
+	if !strings.Contains(carry.BidSymbol, "_") {
+		util.Info(fmt.Sprintf("invalid carry %s %s %f %d", carry.BidSymbol, carry.BidWeb, carry.Amount, carry.BidTime))
 		return 1
 	}
-	currencies := strings.Split(carry.Symbol, "_")
+	currencies := strings.Split(carry.BidSymbol, "_")
 	leftTotalPercentage := AppAccounts.CurrencyPercentage[currencies[0]]
 	rightTotalPercentage := AppAccounts.CurrencyPercentage[currencies[1]]
 	if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
@@ -88,7 +87,7 @@ func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64
 		baseCost := (askCost + bidCost) / 2
 		dynamicMargin := baseCost + (configMargin-baseCost)*(1-discount)
 		util.SocketInfo(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
-			carry.Symbol, discount, dynamicMargin))
+			carry.BidSymbol, discount, dynamicMargin))
 		return dynamicMargin
 	}
 	return configMargin
@@ -104,7 +103,7 @@ func (carry *Carry) CheckWorthSaveMargin() bool {
 }
 
 func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (bool, error) {
-	dynamicMargin := getDynamicMargin(carry, GetMargin(carry.Symbol))
+	dynamicMargin := getDynamicMargin(carry, GetMargin(carry.BidSymbol))
 	carry.Margin = dynamicMargin
 	margin := carry.AskPrice - carry.BidPrice
 	if margin > carry.AskPrice*dynamicMargin && carry.Amount > 0 {
@@ -129,8 +128,8 @@ func (carry *Carry) CheckWorthCarryTime() (bool, error) {
 }
 
 func (carry *Carry) ToString() string {
-	return fmt.Sprintf("%s %s->%s [%s->%s] 间隔%d - %d 数量%f ask %f bid %f 利润%f - %f 价格%f - %f",
-		carry.Symbol, carry.BidSymbol, carry.AskSymbol, carry.AskWeb, carry.BidWeb, time.Now().Unix()*1000-carry.AskTime,
-		time.Now().Unix()*1000-carry.BidTime, carry.Amount, carry.AskAmount, carry.BidAmount,
-		(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.Margin, carry.BidPrice, carry.AskPrice)
+	return fmt.Sprintf("%s-%s %s->%s [%s->%s] 间隔%d - %d 数量%f ask %f bid %f 利润%f - %f 价格%f - %f",
+		carry.BidSymbol, carry.AskSymbol, carry.BidSymbol, carry.AskSymbol, carry.AskWeb, carry.BidWeb,
+		time.Now().Unix()*1000-carry.AskTime, time.Now().Unix()*1000-carry.BidTime, carry.Amount, carry.AskAmount,
+		carry.BidAmount, (carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.Margin, carry.BidPrice, carry.AskPrice)
 }

@@ -90,26 +90,26 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 			}
 		}
 	} else if marketAskPrice < carry.BidPrice {
-		api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
-		carry.DealAskAmount, _, _ = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+		api.CancelOrder(carry.AskWeb, carry.AskSymbol, carry.DealAskOrderId)
+		carry.DealAskAmount, _, _ = api.QueryOrderById(carry.AskWeb, carry.AskSymbol, carry.DealAskOrderId)
 		carry.DealBidAmount = carry.BidAmount
 		carry.DealBidStatus = model.CarryStatusSuccess
 		carry.DealAskStatus = model.CarryStatusFail
 		model.CarryChannel <- *carry
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消ASK]min:%f - max:%f bid:%f - ask:%f`,
-			carry.Symbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
+			carry.AskSymbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
 		model.SetBalanceTurtleCarry(market, symbol, nil)
 		model.SetBalanceTurtlePrice(market, symbol, carry.BidPrice)
 		api.RefreshAccount(market)
 	} else if marketBidPrice > carry.AskPrice {
-		api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
-		carry.DealBidAmount, _, _ = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+		api.CancelOrder(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
+		carry.DealBidAmount, _, _ = api.QueryOrderById(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
 		carry.DealAskAmount = carry.AskAmount
 		carry.DealBidStatus = model.CarryStatusFail
 		carry.DealAskStatus = model.CarryStatusSuccess
 		model.CarryChannel <- *carry
 		util.Info(fmt.Sprintf(`[%s捕获Turtle][取消BID]min:%f - max:%f bid:%f - ask:%f`,
-			carry.Symbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
+			carry.BidSymbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
 		model.SetBalanceTurtleCarry(market, symbol, nil)
 		model.SetBalanceTurtlePrice(market, symbol, carry.AskPrice)
 		api.RefreshAccount(market)

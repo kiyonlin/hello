@@ -44,7 +44,7 @@ var ProcessCarry = func(symbol, market string) {
 	if carry.AskWeb != market && carry.BidWeb != market {
 		util.Notice(`do not create a carry not related to ` + market)
 	}
-	currencies := strings.Split(carry.Symbol, "_")
+	currencies := strings.Split(carry.BidSymbol, "_")
 	leftBalance := 0.0
 	rightBalance := 0.0
 	account := model.AppAccounts.GetAccount(carry.AskWeb, currencies[0])
@@ -95,8 +95,8 @@ var ProcessCarry = func(symbol, market string) {
 			carry.DealBidStatus = `NotWorth`
 			util.Info(`get carry no worth` + carry.ToString())
 		} else {
-			model.AppMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
-			model.AppMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+			model.AppMarkets.BidAsks[carry.AskSymbol][carry.AskWeb] = nil
+			model.AppMarkets.BidAsks[carry.BidSymbol][carry.BidWeb] = nil
 			if leftBalance < minAmount {
 				carry.DealAskStatus = `NotEnough`
 				carry.DealBidStatus = `NotEnough`

@@ -2,10 +2,10 @@ package carry
 
 import (
 	"fmt"
+	"hello/api"
 	"hello/model"
 	"hello/util"
 	"time"
-	"hello/api"
 )
 
 func MaintainOrders() {
@@ -18,15 +18,17 @@ func MaintainOrders() {
 		for _, carry := range carries {
 			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking {
 				if carry.SideType != `turtle` {
-					api.CancelOrder(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+					api.CancelOrder(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
 				}
-				carry.DealBidAmount, _, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.Symbol, carry.DealBidOrderId)
+				carry.DealBidAmount, _, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.BidSymbol,
+					carry.DealBidOrderId)
 			}
 			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
 				if carry.SideType != `turtle` {
-					api.CancelOrder(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+					api.CancelOrder(carry.AskWeb, carry.AskSymbol, carry.DealAskOrderId)
 				}
-				carry.DealAskAmount, _, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.Symbol, carry.DealAskOrderId)
+				carry.DealAskAmount, _, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.AskSymbol,
+					carry.DealAskOrderId)
 			}
 			model.CarryChannel <- carry
 			time.Sleep(time.Second * 1)
@@ -48,6 +50,7 @@ func InnerCarryServe() {
 }
 
 var accountServing = false
+
 func AccountHandlerServe() {
 	for true {
 		accounts := <-model.AccountChannel

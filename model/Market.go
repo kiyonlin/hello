@@ -81,8 +81,9 @@ func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rig
 	bidAmount := leftRate * (lastBalance - bidBalance) / bidPrice
 	util.Notice(fmt.Sprintf(`比例coin - money %f - %f`, leftRate, rightRate))
 	now := util.GetNowUnixMillion()
-	return &Carry{Symbol: symbol, BidWeb: market, AskWeb: market, BidAmount: bidAmount, AskAmount: askAmount,
-		BidPrice: bidPrice, AskPrice: askPrice, SideType: CarryTypeBalance, BidTime: now, AskTime: now}, nil
+	return &Carry{BidSymbol: symbol, AskSymbol: symbol, BidWeb: market, AskWeb: market, BidAmount: bidAmount,
+		AskAmount: askAmount, BidPrice: bidPrice, AskPrice: askPrice, SideType: CarryTypeBalance, BidTime: now,
+		AskTime: now}, nil
 }
 
 //func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
@@ -124,7 +125,8 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 		return nil, errors.New("no market data " + symbol)
 	}
 	carry := Carry{}
-	carry.Symbol = symbol
+	carry.BidSymbol = symbol
+	carry.AskSymbol = symbol
 	for k, v := range markets.BidAsks[symbol] {
 		if v == nil {
 			continue
@@ -142,7 +144,7 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 			carry.BidTime = int64(v.Ts)
 		}
 	}
-	currencies := strings.Split(carry.Symbol, `_`)
+	currencies := strings.Split(carry.BidSymbol, `_`)
 	if len(currencies) != 2 {
 		return nil, errors.New(`invalid carry symbol`)
 	}

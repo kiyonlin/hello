@@ -249,12 +249,14 @@ func FundTransferOkex(symbol string, amount float64, from, to string) (result bo
 	if amount <= 0 {
 		return false, `0 transfer amount`
 	}
-	postData := url.Values{}
-	symbol = strings.Replace(symbol, `usdt`, `usd`, -1)
-	postData.Set(`symbol`, symbol)
 	decimal := GetAmountDecimal(model.OKEX, symbol)
 	amount = math.Floor(amount*math.Pow(10, float64(decimal))) / math.Pow(10, float64(decimal))
 	strAmount := strconv.FormatFloat(amount, 'f', -1, 64)
+	postData := url.Values{}
+	index := strings.Index(symbol, `_`)
+	if index > 0 {
+		postData.Set(`symbol`, symbol[0:index]+`_usd`)
+	}
 	postData.Set(`amount`, strAmount)
 	postData.Set(`from`, from)
 	postData.Set(`to`, to)

@@ -46,24 +46,24 @@ func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) 
 func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, amount float64) {
 	if orderSide == `buy` {
 		carry.DealBidOrderId, carry.DealBidErrCode, _, carry.BidAmount, carry.BidPrice =
-			api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.Symbol, ``, price, amount)
+			api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.BidSymbol, ``, price, amount)
 		if carry.DealBidOrderId != `` && carry.DealBidOrderId != "0" {
 			carry.DealBidStatus = model.CarryStatusWorking
 		} else {
 			carry.DealBidStatus = model.CarryStatusFail
 		}
 		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
-			orderSide, orderType, carry.Symbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
+			orderSide, orderType, carry.BidSymbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
 	} else if orderSide == `sell` {
 		carry.DealAskOrderId, carry.DealAskErrCode, _, carry.AskAmount, carry.AskPrice =
-			api.PlaceOrder(orderSide, orderType, carry.Symbol, orderType, ``, price, amount)
+			api.PlaceOrder(orderSide, orderType, carry.AskSymbol, orderType, ``, price, amount)
 		if carry.DealAskOrderId != `` && carry.DealAskOrderId != "0" {
 			carry.DealAskStatus = model.CarryStatusWorking
 		} else {
 			carry.DealAskStatus = model.CarryStatusFail
 		}
 		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
-			orderSide, orderType, carry.Symbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
+			orderSide, orderType, carry.AskSymbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
 	}
 	if carry.DealAskErrCode == `2027` || carry.DealBidErrCode == `2027` {
 		go api.RefreshAccount(model.GetMarkets()[0])
@@ -85,15 +85,15 @@ func placeExtraSell(carry *model.Carry) {
 	}
 	if account != nil && account.Free > model.AppConfig.FtMax {
 		pricePrecision := util.GetPrecision(carry.BidPrice)
-		if pricePrecision > api.GetPriceDecimal(model.Fcoin, carry.Symbol) {
-			pricePrecision = api.GetPriceDecimal(model.Fcoin, carry.Symbol)
+		if pricePrecision > api.GetPriceDecimal(model.Fcoin, carry.AskSymbol) {
+			pricePrecision = api.GetPriceDecimal(model.Fcoin, carry.AskSymbol)
 		}
 		price := carry.BidPrice * 0.999
 		amount := carry.Amount * model.AppConfig.SellRate
 		orderId, errCode, msg, _, _ := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
-			model.GetMarkets()[0], carry.Symbol, ``, price, amount)
+			model.GetMarkets()[0], carry.AskSymbol, ``, price, amount)
 		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %f 数量: %f 返回 %s %s %s`,
-			carry.Symbol, price, amount, orderId, errCode, msg))
+			carry.AskSymbol, price, amount, orderId, errCode, msg))
 	}
 }
 
@@ -123,7 +123,7 @@ var ProcessRefresh = func(symbol, market string) {
 	//if model.AppConfig.Env != `dk` {
 	//	go getAccount()
 	//}
-	currencies := strings.Split(carry.Symbol, "_")
+	currencies := strings.Split(carry.AskSymbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(carry.AskWeb, currencies[0])
 	if leftAccount == nil {
 		util.Notice(`nil account ` + carry.AskWeb + currencies[0])
@@ -139,11 +139,11 @@ var ProcessRefresh = func(symbol, market string) {
 	}
 	rightBalance := rightAccount.Free
 	pricePrecision := util.GetPrecision(carry.BidPrice)
-	if pricePrecision > api.GetPriceDecimal(carry.BidWeb, carry.Symbol) {
-		pricePrecision = api.GetPriceDecimal(carry.BidWeb, carry.Symbol)
+	if pricePrecision > api.GetPriceDecimal(carry.BidWeb, carry.BidSymbol) {
+		pricePrecision = api.GetPriceDecimal(carry.BidWeb, carry.BidSymbol)
 	}
 	price, _ := calcPrice(carry.BidPrice, carry.AskPrice, pricePrecision)
-	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.Symbol, leftBalance, rightBalance))
+	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.BidSymbol, leftBalance, rightBalance))
 	askAmount, bidAmount := getLeftRightAmounts(leftBalance, rightBalance, carry)
 	if price == carry.AskPrice || price == carry.BidPrice {
 		if carry.AskAmount*100 > askAmount && carry.BidAmount*100 > bidAmount {
@@ -157,8 +157,8 @@ var ProcessRefresh = func(symbol, market string) {
 			price = carry.AskPrice
 		}
 	}
-	model.AppMarkets.BidAsks[carry.Symbol][carry.AskWeb] = nil
-	model.AppMarkets.BidAsks[carry.Symbol][carry.BidWeb] = nil
+	model.AppMarkets.BidAsks[carry.AskSymbol][carry.AskWeb] = nil
+	model.AppMarkets.BidAsks[carry.BidSymbol][carry.BidWeb] = nil
 	bidAskTimes++
 	if bidAskTimes%30 == 0 {
 		api.RefreshAccount(model.GetMarkets()[0])
