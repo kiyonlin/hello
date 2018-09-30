@@ -328,8 +328,8 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
 	if needArbitrary(currency) { //每分钟检查一次
-		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
 		arbitraryFutureMarket(futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
+		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
 	}
 	carry := createCarry(symbol, futureSymbol, futureMarket)
 	if carry == nil || checkPending(futureSymbol) {
