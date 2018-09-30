@@ -29,8 +29,8 @@ dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com por
 huobikey: f5be33c8-e44026c8-4db512d3-908b3
 huobisecret: 1826ba5a-022a7442-07a876f8-1075e
 #sammi okex
-okexkey: 0b9a5af6-9e8f-47df-a0c6-5bb12d2431fa
-okexsecret: 3A3B33621B46EDA22AC5F08C244DBC13
+okexkey: b90179cb-9a1a-41be-a3c0-3784aaaa5ae2
+okexsecret: FA268A0824C7988E366435F82EF6BAC6
 #simon okex
 #okexkey: f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c
 #okexsecret: 66786EDBC5F3230B7943DB520F86B492

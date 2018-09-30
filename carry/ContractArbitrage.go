@@ -304,7 +304,7 @@ func needArbitrary(currency string) bool {
 	if lastArbitraryTime == nil {
 		lastArbitraryTime = make(map[string]int64)
 	}
-	if util.GetNowUnixMillion()-lastArbitraryTime[currency] > 60000 {
+	if util.GetNowUnixMillion()-lastArbitraryTime[currency] > 6000 {
 		lastArbitraryTime[currency] = util.GetNowUnixMillion()
 		return true
 	}
@@ -327,7 +327,7 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	if strings.Contains(futureSymbol, `btc`) {
 		faceValue = model.OKEXBTCContractFaceValue
 	}
-	if needArbitrary(currency) { //每分钟检查一次
+	if needArbitrary(currency) {
 		arbitraryFutureMarket(futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
 		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
 	}
