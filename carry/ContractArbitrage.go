@@ -37,7 +37,7 @@ func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, face
 		transferAble = accountRights - (realProfit + unrealProfit)
 	}
 	if transferAble*futureBidAsk.Bids[0].Price <= model.AppConfig.MinUsdt {
-		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, model.OKFUTURE, transferAble, model.AppConfig.MinUsdt))
+		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, futureSymbol, transferAble, model.AppConfig.MinUsdt))
 		return
 	}
 	transfer, errCode := api.MustFundTransferOkex(futureSymbol, transferAble, `3`, `1`)
