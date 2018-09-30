@@ -304,7 +304,7 @@ func needArbitrary(currency string) bool {
 	if lastArbitraryTime == nil {
 		lastArbitraryTime = make(map[string]int64)
 	}
-	if util.GetNowUnixMillion()-lastArbitraryTime[currency] > 6000 {
+	if util.GetNowUnixMillion()-lastArbitraryTime[currency] > 600000 {
 		lastArbitraryTime[currency] = util.GetNowUnixMillion()
 		return true
 	}
