@@ -73,9 +73,7 @@ func openShort(carry *model.Carry, faceValue float64) {
 	if index == -1 {
 		return
 	}
-	currency := carry.BidSymbol[0:index]
 	accountUsdt := model.AppAccounts.GetAccount(carry.BidWeb, `usdt`)
-	accountCoin := model.AppAccounts.GetAccount(carry.BidWeb, currency)
 	if accountUsdt == nil {
 		util.Info(`account nil`)
 		api.RefreshAccount(carry.BidWeb)
@@ -98,9 +96,6 @@ func openShort(carry *model.Carry, faceValue float64) {
 		carry.DealBidOrderId)
 	api.RefreshAccount(carry.BidWeb)
 	transferAmount := carry.DealBidAmount
-	if accountCoin != nil {
-		transferAmount += accountCoin.Free
-	}
 	if transferAmount*carry.DealBidPrice <= model.AppConfig.MinUsdt {
 		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f in usd`, carry.BidSymbol, transferAmount,
 			model.AppConfig.MinUsdt))
@@ -121,7 +116,7 @@ func buyShort(carry *model.Carry, faceValue float64) bool {
 		util.Notice(fmt.Sprintf(`fail to get allholdings and position`))
 		return false
 	}
-	sellAmount := accountRights - allHoldings*faceValue/carry.DealAskPrice
+	sellAmount := accountRights - allHoldings*faceValue/carry.AskPrice
 	if sellAmount >= 0 {
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.DealAskPrice =
 			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, carry.AskWeb, carry.AskSymbol,
