@@ -50,7 +50,7 @@ func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidA
 		return false
 	}
 	if bidAsk.Bids[0].Price > bidAsk.Asks[0].Price {
-		util.Notice(fmt.Sprintf(`[fatal error]%s %s bid %f > ask %f`,
+		util.Info(fmt.Sprintf(`[fatal error]%s %s bid %f > ask %f`,
 			symbol, marketName, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price))
 	}
 	if markets.BidAsks[symbol][marketName] == nil || markets.BidAsks[symbol][marketName].Ts < bidAsk.Ts {

@@ -56,7 +56,7 @@ func WsAccountServeOKFuture(errHandler ErrHandler) (chan struct{}, error) {
 func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		if util.GetNow().Unix()-lastPingTime > 10 { // ping okfuture server every 30 seconds
+		if util.GetNow().Unix()-lastPingTime > 20 { // ping okfuture server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"event":"ping"}`)); err != nil {
 				util.SocketInfo("okfuture server ping client error " + err.Error())
@@ -99,10 +99,9 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 				}
 				price, _ := ask.([]interface{})[0].(json.Number).Float64()
 				amount, _ := ask.([]interface{})[1].(json.Number).Float64()
+				askMap[price] = &model.Tick{Price: price, Amount: amount}
 				if amount == 0 {
 					delete(askMap, price)
-				} else {
-					askMap[price] = &model.Tick{Price: price, Amount: amount}
 				}
 			}
 			for _, bid := range bids {
@@ -111,16 +110,18 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 				}
 				price, _ := bid.([]interface{})[0].(json.Number).Float64()
 				amount, _ := bid.([]interface{})[1].(json.Number).Float64()
+				bidMap[price] = &model.Tick{Price: price, Amount: amount}
 				if amount == 0 {
 					delete(bidMap, price)
-				} else {
-					bidMap[price] = &model.Tick{Price: price, Amount: amount}
 				}
 			}
 			bidAsks.Bids = model.GetTicks(bidMap)
 			bidAsks.Asks = model.GetTicks(askMap)
 			sort.Sort(bidAsks.Asks)
 			sort.Sort(sort.Reverse(bidAsks.Bids))
+			if bidAsks.Bids[0].Price > bidAsks.Asks[0].Price {
+				fmt.Sprintf(`sdf`)
+			}
 			if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
 				for _, handler := range carryHandlers {
 					handler(symbol, model.OKFUTURE)

@@ -26,7 +26,6 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.RefreshAccount(model.OKEX)
 	timeSlot := `1min`
 	size := int64(1560)
 	currency := `eos`
