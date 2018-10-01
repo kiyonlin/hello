@@ -276,7 +276,8 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 	margin := (bestSellPrice - bestBuyPrice) / bestSellPrice
 	util.Info(fmt.Sprintf(`[%s->%s][%s->%s]%f[open %f- close %f]`, bidSetting.Market, askSetting.Market,
 		bidSetting.Symbol, askSetting.Symbol, margin, bidSetting.OpenShortMargin, askSetting.CloseShortMargin))
-	if margin < -1*askSetting.CloseShortMargin || margin < bidSetting.OpenShortMargin || margin < 0.0025 {
+	if bidSetting.Symbol == askSetting.Symbol || margin < -1*askSetting.CloseShortMargin ||
+		margin < bidSetting.OpenShortMargin || margin < 0.001 {
 		return nil
 	}
 	carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
