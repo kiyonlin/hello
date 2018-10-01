@@ -59,8 +59,8 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(market, symbol, orderId)
 		carry := &model.Carry{BidSymbol: symbol, AskSymbol: symbol, AskWeb: market, DealAskPrice: actualPrice,
-			DealAskStatus: status, AskTime: int64(marketBidAsk.Ts), SideType: model.CarryTypeArbitrarySell,
-			DealAskAmount: actualAmount}
+			AskPrice: marketBidAsk.Bids[0].Price, DealAskStatus: status, AskTime: int64(marketBidAsk.Ts),
+			SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		recordCarry(carry)
 		api.RefreshAccount(market)
 		util.Notice(fmt.Sprintf(`[!arbitrary!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
