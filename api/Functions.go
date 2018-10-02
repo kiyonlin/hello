@@ -153,7 +153,10 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, 
 	status string, actualAmount, actualPrice float64) {
 	precision := GetPriceDecimal(market, symbol)
 	strPrice := strconv.FormatFloat(price, 'f', precision, 64)
-	strAmount := strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
+	strAmount := strconv.FormatFloat(amount, 'f', precision, 64)
+	if amountType == model.AmountTypeContractNumber {
+		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
+	}
 	switch market {
 	case model.Huobi:
 		orderId, errCode = placeOrderHuobi(orderSide, orderType, symbol, strPrice, strAmount)
