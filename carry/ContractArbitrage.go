@@ -57,6 +57,11 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 	if accountCoin.Free*marketBidAsk.Bids[0].Price > model.AppConfig.MinUsdt {
 		orderId, errCode, status, actualAmount, actualPrice := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
 			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
+		if orderId == `` || orderId == `0` {
+			util.Notice(fmt.Sprintf(`[arbitrary sell fail]%s %s price%f amount%f`, market, symbol,
+				marketBidAsk.Bids[0].Price, accountCoin.Free))
+			return
+		}
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(market, symbol, orderId)
 		carry := &model.Carry{BidSymbol: symbol, AskSymbol: symbol, AskWeb: market, DealAskPrice: actualPrice,
 			AskPrice: marketBidAsk.Bids[0].Price, DealAskStatus: status, AskTime: int64(marketBidAsk.Ts),
