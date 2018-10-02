@@ -32,8 +32,7 @@ const OrderSideLiquidateLong = `liquidateLong`
 const OrderSideLiquidateShort = `liquidateShort`
 const CarryTypeBalance = `balance`
 const CarryTypeFuture = `future`
-const CarryTypeArbitrarySell = `arbitrarysell`
-const CarryTypeArbitraryBuy = `arbitrarybuy`
+const CarryTypeArbitrarySell = `arbitrarysell` //const CarryTypeArbitraryBuy = `arbitrarybuy`
 const AmountTypeContractNumber = `contractnumber`
 const AmountTypeCoinNumber = `coinnumber`
 
@@ -140,10 +139,15 @@ func GetWSDepthSubscribe(market, symbol string) (subscribe string) {
 		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
 	case OKEX: // xrp_btc: ok_sub_spot_xrp_btc_depth_5
 		return "ok_sub_spot_" + symbol + "_depth_5"
-	case OKFUTURE: // btc_this_week: ok_sub_futureusd_btc_depth_this_week
+	case OKFUTURE:
 		index := strings.Index(symbol, `_`)
 		if index != -1 {
-			return `ok_sub_futureusd_` + symbol[0:index] + `_depth` + symbol[index:]
+			// btc_this_week: ok_sub_futureusd_btc_depth_this_week
+			//return `ok_sub_futureusd_` + symbol[0:index] + `_depth` + symbol[index:]
+			// btc_this_week: ok_sub_futureusd_btc_ticker_this_week
+			//return `ok_sub_futureusd_` + symbol[0:index] + `_ticker` + symbol[index:]
+			// btc_this_week: ok_sub_futureusd_X_depth_Y_Z
+			return `ok_sub_futureusd_` + symbol[0:index] + `_depth` + symbol[index:] + `_5`
 		}
 		return
 	case Binance: // xrp_btc: xrpbtc@depth5

@@ -53,6 +53,47 @@ func WsAccountServeOKFuture(errHandler ErrHandler) (chan struct{}, error) {
 		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
+func parseByDepth(markets *model.Markets, bidAsks *model.BidAsk, symbol string, data interface{}) {
+	bidMap := make(map[float64]*model.Tick)
+	askMap := make(map[float64]*model.Tick)
+	if markets.BidAsks[symbol][model.OKFUTURE] != nil {
+		bidMap = markets.BidAsks[symbol][model.OKFUTURE].Bids.GetMap()
+		askMap = markets.BidAsks[symbol][model.OKFUTURE].Asks.GetMap()
+	}
+	subscribeData := data.(map[string]interface{})[`data`].(map[string]interface{})
+	if subscribeData[`timestamp`] == nil || subscribeData[`asks`] == nil || subscribeData[`bids`] == nil {
+		return
+	}
+	ts, _ := subscribeData[`timestamp`].(json.Number).Int64()
+	bidAsks.Ts = int(ts)
+	asks := subscribeData[`asks`].([]interface{})
+	bids := subscribeData[`bids`].([]interface{})
+	for _, ask := range asks {
+		if len(ask.([]interface{})) < 2 {
+			continue
+		}
+		price, _ := ask.([]interface{})[0].(json.Number).Float64()
+		amount, _ := ask.([]interface{})[2].(json.Number).Float64()
+		askMap[price] = &model.Tick{Price: price, Amount: amount}
+		if amount == 0 {
+			delete(askMap, price)
+		}
+	}
+	for _, bid := range bids {
+		if len(bid.([]interface{})) < 2 {
+			continue
+		}
+		price, _ := bid.([]interface{})[0].(json.Number).Float64()
+		amount, _ := bid.([]interface{})[2].(json.Number).Float64()
+		bidMap[price] = &model.Tick{Price: price, Amount: amount}
+		if amount == 0 {
+			delete(bidMap, price)
+		}
+	}
+	bidAsks.Bids = model.GetTicks(bidMap)
+	bidAsks.Asks = model.GetTicks(askMap)
+}
+
 func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
@@ -65,67 +106,28 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 		if len(event) == 0 {
 			return
 		}
-		subJson, err := util.NewJSON([]byte(event))
+		resultJson, err := util.NewJSON([]byte(event))
 		if err != nil {
 			return
 		}
-		data, _ := subJson.Array()
-		for _, value := range data {
-			bidAsks := &model.BidAsk{}
-			bidAsks.Asks = model.Ticks{}
-			bidAsks.Bids = model.Ticks{}
-			bidMap := make(map[float64]*model.Tick)
-			askMap := make(map[float64]*model.Tick)
-			subscribe := value.(map[string]interface{})[`channel`].(string)
-			if !strings.Contains(subscribe, `_`) {
-				return
-			}
-			symbol := model.GetSymbol(model.OKFUTURE, subscribe)
-			if markets.BidAsks[symbol][model.OKFUTURE] != nil {
-				bidMap = markets.BidAsks[symbol][model.OKFUTURE].Bids.GetMap()
-				askMap = markets.BidAsks[symbol][model.OKFUTURE].Asks.GetMap()
-			}
-			subscribeData := value.(map[string]interface{})[`data`].(map[string]interface{})
-			if subscribeData[`timestamp`] == nil || subscribeData[`asks`] == nil || subscribeData[`bids`] == nil {
-				continue
-			}
-			ts, _ := subscribeData[`timestamp`].(json.Number).Int64()
-			bidAsks.Ts = int(ts)
-			asks := subscribeData[`asks`].([]interface{})
-			bids := subscribeData[`bids`].([]interface{})
-			for _, ask := range asks {
-				if len(ask.([]interface{})) < 2 {
-					continue
-				}
-				price, _ := ask.([]interface{})[0].(json.Number).Float64()
-				amount, _ := ask.([]interface{})[1].(json.Number).Float64()
-				askMap[price] = &model.Tick{Price: price, Amount: amount}
-				if amount == 0 {
-					delete(askMap, price)
-				}
-			}
-			for _, bid := range bids {
-				if len(bid.([]interface{})) < 2 {
-					continue
-				}
-				price, _ := bid.([]interface{})[0].(json.Number).Float64()
-				amount, _ := bid.([]interface{})[1].(json.Number).Float64()
-				bidMap[price] = &model.Tick{Price: price, Amount: amount}
-				if amount == 0 {
-					delete(bidMap, price)
-				}
-			}
-			bidAsks.Bids = model.GetTicks(bidMap)
-			bidAsks.Asks = model.GetTicks(askMap)
-			sort.Sort(bidAsks.Asks)
-			sort.Sort(sort.Reverse(bidAsks.Bids))
-			if bidAsks.Bids[0].Price > bidAsks.Asks[0].Price {
-				fmt.Sprintf(`sdf`)
-			}
-			if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
-				for _, handler := range carryHandlers {
-					handler(symbol, model.OKFUTURE)
-				}
+		data, _ := resultJson.Array()
+		if len(data) <= 0 {
+			return
+		}
+		bidAsks := &model.BidAsk{}
+		bidAsks.Asks = model.Ticks{}
+		bidAsks.Bids = model.Ticks{}
+		subscribe := data[0].(map[string]interface{})[`channel`].(string)
+		if !strings.Contains(subscribe, `_`) {
+			return
+		}
+		symbol := model.GetSymbol(model.OKFUTURE, subscribe)
+		parseByDepth(markets, bidAsks, symbol, data[0])
+		sort.Sort(bidAsks.Asks)
+		sort.Sort(sort.Reverse(bidAsks.Bids))
+		if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
+			for _, handler := range carryHandlers {
+				handler(symbol, model.OKFUTURE)
 			}
 		}
 	}
