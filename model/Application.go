@@ -197,9 +197,10 @@ func GetSymbol(market, subscribe string) (symbol string) {
 		subscribe = strings.Replace(subscribe, "ok_sub_spot_", "", 1)
 		subscribe = strings.Replace(subscribe, "_depth_5", "", 1)
 		return subscribe
-	case OKFUTURE: // ok_sub_futureusd_btc_depth_this_week: btc_this_week
+	case OKFUTURE: // ok_sub_futureusd_btc_depth_this_week_5: btc_this_week
 		subscribe = strings.Replace(subscribe, `ok_sub_futureusd_`, ``, 1)
 		subscribe = strings.Replace(subscribe, `_depth`, ``, 1)
+		subscribe = strings.Replace(subscribe, `_5`, ``, 1)
 		return subscribe
 	case Binance: // eosusdt@depth5: xrp_btc
 		if strings.Index(subscribe, `@`) == -1 {
