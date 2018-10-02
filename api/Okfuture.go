@@ -53,45 +53,33 @@ func WsAccountServeOKFuture(errHandler ErrHandler) (chan struct{}, error) {
 		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
-func parseByDepth(markets *model.Markets, bidAsks *model.BidAsk, symbol string, data interface{}) {
-	bidMap := make(map[float64]*model.Tick)
-	askMap := make(map[float64]*model.Tick)
-	if markets.BidAsks[symbol][model.OKFUTURE] != nil {
-		bidMap = markets.BidAsks[symbol][model.OKFUTURE].Bids.GetMap()
-		askMap = markets.BidAsks[symbol][model.OKFUTURE].Asks.GetMap()
-	}
+func parseByDepth(bidAsks *model.BidAsk, data interface{}) {
 	subscribeData := data.(map[string]interface{})[`data`].(map[string]interface{})
 	if subscribeData[`timestamp`] == nil || subscribeData[`asks`] == nil || subscribeData[`bids`] == nil {
 		return
 	}
 	ts, _ := subscribeData[`timestamp`].(json.Number).Int64()
 	bidAsks.Ts = int(ts)
-	asks := subscribeData[`asks`].([]interface{})
-	bids := subscribeData[`bids`].([]interface{})
-	for _, ask := range asks {
-		if len(ask.([]interface{})) < 2 {
+	askValues := subscribeData[`asks`].([]interface{})
+	bidValues := subscribeData[`bids`].([]interface{})
+	bidAsks.Asks = make([]model.Tick, len(askValues))
+	bidAsks.Bids = make([]model.Tick, len(bidValues))
+	for index, value := range askValues {
+		if len(value.([]interface{})) < 2 {
 			continue
 		}
-		price, _ := ask.([]interface{})[0].(json.Number).Float64()
-		amount, _ := ask.([]interface{})[2].(json.Number).Float64()
-		askMap[price] = &model.Tick{Price: price, Amount: amount}
-		if amount == 0 {
-			delete(askMap, price)
-		}
+		price, _ := value.([]interface{})[0].(json.Number).Float64()
+		amount, _ := value.([]interface{})[2].(json.Number).Float64()
+		bidAsks.Asks[index] = model.Tick{Price: price, Amount: amount}
 	}
-	for _, bid := range bids {
-		if len(bid.([]interface{})) < 2 {
+	for index, value := range bidValues {
+		if len(value.([]interface{})) < 2 {
 			continue
 		}
-		price, _ := bid.([]interface{})[0].(json.Number).Float64()
-		amount, _ := bid.([]interface{})[2].(json.Number).Float64()
-		bidMap[price] = &model.Tick{Price: price, Amount: amount}
-		if amount == 0 {
-			delete(bidMap, price)
-		}
+		price, _ := value.([]interface{})[0].(json.Number).Float64()
+		amount, _ := value.([]interface{})[2].(json.Number).Float64()
+		bidAsks.Bids[index] = model.Tick{Price: price, Amount: amount}
 	}
-	bidAsks.Bids = model.GetTicks(bidMap)
-	bidAsks.Asks = model.GetTicks(askMap)
 }
 
 func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
@@ -122,7 +110,7 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 			return
 		}
 		symbol := model.GetSymbol(model.OKFUTURE, subscribe)
-		parseByDepth(markets, bidAsks, symbol, data[0])
+		parseByDepth(bidAsks, data[0])
 		sort.Sort(bidAsks.Asks)
 		sort.Sort(sort.Reverse(bidAsks.Bids))
 		if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
