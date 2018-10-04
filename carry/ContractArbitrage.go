@@ -47,6 +47,7 @@ func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, face
 		carry := &model.Carry{BidSymbol: futureSymbol, BidWeb: model.OKFUTURE, BidPrice: futureBidAsk.Asks[0].Price,
 			BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitraryBuy}
 		liquidShort(carry, faceValue)
+		recordCarry(carry)
 	}
 }
 
