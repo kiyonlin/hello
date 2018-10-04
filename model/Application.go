@@ -31,7 +31,8 @@ const OrderSideLiquidateLong = `liquidateLong`
 const OrderSideLiquidateShort = `liquidateShort`
 const CarryTypeBalance = `balance`
 const CarryTypeFuture = `future`
-const CarryTypeArbitrarySell = `arbitrarysell` //const CarryTypeArbitraryBuy = `arbitrarybuy`
+const CarryTypeArbitrarySell = `arbitrarysell`
+const CarryTypeArbitraryBuy = `arbitrarybuy`
 const AmountTypeContractNumber = `contractnumber`
 const AmountTypeCoinNumber = `coinnumber`
 

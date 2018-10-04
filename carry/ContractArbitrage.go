@@ -33,15 +33,21 @@ func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, face
 		return
 	}
 	transferAble := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
-	if transferAble > accountRights-(realProfit+unrealProfit) {
-		transferAble = accountRights - (realProfit + unrealProfit)
+	if transferAble > 0 {
+		if transferAble > accountRights-(realProfit+unrealProfit) {
+			transferAble = accountRights - (realProfit + unrealProfit)
+		}
+		if transferAble*futureBidAsk.Bids[0].Price <= model.AppConfig.MinUsdt {
+			util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, futureSymbol, transferAble, model.AppConfig.MinUsdt))
+			return
+		}
+		transfer, errCode := api.MustFundTransferOkex(futureSymbol, transferAble, `3`, `1`)
+		util.Notice(fmt.Sprintf(`[arbitrary transfer]%f %s 3->1 %v %s`, transferAble, futureSymbol, transfer, errCode))
+	} else if transferAble*(-1) < faceValue {
+		carry := &model.Carry{BidSymbol: futureSymbol, BidWeb: model.OKFUTURE, BidPrice: futureBidAsk.Asks[0].Price,
+			BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitraryBuy}
+		liquidShort(carry, faceValue)
 	}
-	if transferAble*futureBidAsk.Bids[0].Price <= model.AppConfig.MinUsdt {
-		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, futureSymbol, transferAble, model.AppConfig.MinUsdt))
-		return
-	}
-	transfer, errCode := api.MustFundTransferOkex(futureSymbol, transferAble, `3`, `1`)
-	util.Notice(fmt.Sprintf(`[arbitrary transfer]%f %s 3~1 %v %s`, transferAble, futureSymbol, transfer, errCode))
 }
 
 func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
@@ -63,7 +69,7 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 			return
 		}
 		actualAmount, actualPrice, status = api.SyncQueryOrderById(market, symbol, orderId)
-		carry := &model.Carry{BidSymbol: symbol, AskSymbol: symbol, AskWeb: market, DealAskPrice: actualPrice,
+		carry := &model.Carry{AskSymbol: symbol, AskWeb: market, DealAskPrice: actualPrice,
 			AskPrice: marketBidAsk.Bids[0].Price, DealAskStatus: status, AskTime: int64(marketBidAsk.Ts),
 			SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		recordCarry(carry)
@@ -93,8 +99,8 @@ func openShort(carry *model.Carry, faceValue float64) {
 		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol, ``,
 			carry.BidPrice, model.ArbitraryCarryUSDT)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
-		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`, carry.BidWeb, carry.BidSymbol,
-			carry.AskPrice, carry.BidAmount))
+		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount in usd %f`, carry.BidWeb, carry.BidSymbol,
+			carry.AskPrice, model.ArbitraryCarryUSDT))
 		return
 	}
 	carry.DealBidAmount, carry.DealBidPrice, carry.DealBidStatus = api.SyncQueryOrderById(carry.BidWeb, carry.BidSymbol,
@@ -157,22 +163,22 @@ func liquidShort(carry *model.Carry, faceValue float64) bool {
 	if realProfit+unrealProfit > 0 {
 		liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * carry.BidPrice / faceValue)
 	}
-	if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
-		liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
-	}
 	if liquidAmount > futureSymbolHoldings.OpenedShort {
 		liquidAmount = futureSymbolHoldings.OpenedShort
+	}
+	if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
+		liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
 	}
 	if liquidAmount <= 0 {
 		return false
 	}
-	util.Notice(`[close short]` + carry.ToString())
+	util.Notice(`[liquid short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.DealBidPrice =
 		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol,
 			model.AmountTypeContractNumber, carry.BidPrice, liquidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
-		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount%f`,
-			carry.BidWeb, carry.BidSymbol, carry.BidPrice, carry.BidAmount))
+		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount in contract number %f`,
+			carry.BidWeb, carry.BidSymbol, carry.BidPrice, liquidAmount))
 		return false
 	}
 	carry.DealBidAmount, carry.DealBidPrice, carry.DealBidStatus = api.SyncQueryOrderById(carry.BidWeb, carry.BidSymbol,
@@ -187,15 +193,16 @@ func jumpShort(carry *model.Carry, faceValue float64) {
 	if !liquidShort(carry, faceValue) {
 		return
 	}
+	util.Notice(`[jump short]` + carry.ToString())
 	buyShort(carry, faceValue)
 	recordCarry(carry)
 }
 
 func closeShort(carry *model.Carry, faceValue float64) {
 	if !liquidShort(carry, faceValue) {
-		//util.Notice(fmt.Sprintf(`fail to liquid short %s`, carry.ToString()))
 		return
 	}
+	util.Notice(`[close short]` + carry.ToString())
 	defer recordCarry(carry)
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
 	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
