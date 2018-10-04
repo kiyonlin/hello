@@ -304,7 +304,6 @@ func GetAllHoldings(currency string) (allHoldings float64, err error) {
 		allHoldings += futureAccount.OpenedShort
 		time.Sleep(time.Millisecond * 500)
 	}
-	allHoldings = allHoldings + allHoldings/model.OkfutureLever
 	return allHoldings, nil
 }
 
