@@ -44,10 +44,13 @@ func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, face
 		transfer, errCode := api.MustFundTransferOkex(futureSymbol, transferAble, `3`, `1`)
 		util.Notice(fmt.Sprintf(`[arbitrary transfer]%f %s 3->1 %v %s`, transferAble, futureSymbol, transfer, errCode))
 	} else if transferAble*(-1) < faceValue {
+		util.Notice(fmt.Sprintf(`[%s]%s price at %f %f ~ %f`,
+			model.CarryTypeArbitraryBuy, futureSymbol, futureBidAsk.Asks[0].Price, transferAble, faceValue))
 		carry := &model.Carry{BidSymbol: futureSymbol, BidWeb: model.OKFUTURE, BidPrice: futureBidAsk.Asks[0].Price,
 			BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitraryBuy}
-		liquidShort(carry, faceValue)
-		recordCarry(carry)
+		if liquidShort(carry, faceValue) {
+			recordCarry(carry)
+		}
 	}
 }
 
