@@ -56,10 +56,13 @@ func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, face
 	} else if transferAble*(-1) < faceValue {
 		util.Notice(fmt.Sprintf(`[%s]%s price at %f %f ~ %f`,
 			model.CarryTypeArbitraryBuy, futureSymbol, futureBidAsk.Asks[0].Price, transferAble, faceValue))
-		carry := &model.Carry{BidSymbol: futureSymbol, BidWeb: model.OKFUTURE, BidPrice: futureBidAsk.Asks[0].Price,
-			BidTime: int64(futureBidAsk.Ts), BidAmount: 1, SideType: model.CarryTypeArbitraryBuy}
-		if liquidShort(carry, faceValue) {
-			recordCarry(carry)
+		bidAmount := getBidAmount(model.OKFUTURE, futureSymbol, faceValue, futureBidAsk.Asks[0].Price)
+		if bidAmount > 0 {
+			carry := &model.Carry{BidSymbol: futureSymbol, BidWeb: model.OKFUTURE, BidPrice: futureBidAsk.Asks[0].Price,
+				BidTime: int64(futureBidAsk.Ts), BidAmount: 1, SideType: model.CarryTypeArbitraryBuy}
+			if liquidShort(carry, faceValue) {
+				recordCarry(carry)
+			}
 		}
 	}
 }
