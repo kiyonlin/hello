@@ -22,14 +22,14 @@ var totalSell = 0.0
 var countSell = 0
 var balance = 10000.0
 var lever = 1.0
-var doShort = true
-var size = 2000
+var doShort = false
+var size = 1560
 var data = make(map[string]map[string][]*model.KLinePoint) // symbol - slot - kline data
 
 const tradeFee = 0.00025
 
 func initMoney(priceKLine []*model.KLinePoint) {
-	doShort = true
+	doShort = false
 	money = 5000
 	balance = 10000
 	coin = 5000 / priceKLine[0].EndPrice
@@ -121,7 +121,7 @@ func analyzeRSI(priceKLine []*model.KLinePoint, percentage float64) {
 		//} else
 		if priceKLine[i].RSI < 25 {
 			rsiBuy(priceKLine[i], priceKLine[i].EndPrice)
-		} else if priceKLine[i].RSI > 70 && percentage >= upPercentage{
+		} else if priceKLine[i].RSI > 70 && percentage >= upPercentage {
 			rsiSell(priceKLine[i], priceKLine[i].EndPrice)
 		}
 	}
@@ -188,8 +188,8 @@ func testBalance() {
 	//model.LoadSettings()
 	//setting := model.AppFutureAccount[model.OKFUTURE][`btc_this_week`]
 	//symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
-	symbols := []string{`btc`, `eth_usdt`, `eos_usdt`}
-	slots := []string{`15min`}
+	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
+	slots := []string{`1min`, `15min`, `30min`}
 	percentages := []float64{0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.04}
 	results := make(map[string]map[float64]map[string]float64)
 	for _, slot := range slots {
@@ -246,6 +246,6 @@ func Test_simulation(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	//testBalance()
-	testRSI()
+	testBalance()
+	//testRSI()
 }

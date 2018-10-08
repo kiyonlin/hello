@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jinzhu/configor"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
 	"hello/model"
 	"hello/util"
@@ -25,6 +26,9 @@ func Test_RefreshAccount(t *testing.T) {
 	if err != nil {
 		util.Notice(err.Error())
 		return
+	}
+	for i := 0; i < 50; i++ {
+		api.GetKLineOkexFuture(`btc_this_week`, `1min`, 100)
 	}
 	timeSlot := `1min`
 	size := int64(1560)

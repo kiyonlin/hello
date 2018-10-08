@@ -1,6 +1,9 @@
 package model
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 type Setting struct {
 	Market            string
@@ -11,6 +14,8 @@ type Setting struct {
 	TurtleBalanceRate float64
 	Valid             bool
 	ID                uint `gorm:"primary_key"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 var marketSymbolSetting map[string]map[string]*Setting // marketName - symbol - setting

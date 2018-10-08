@@ -171,7 +171,8 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 	postData.Set(`amount`, amount)
 	postData.Set(`type`, orderSide)
 	postData.Set(`match_price`, orderType)
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_trade.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_trade.do",
+		&postData, 100)
 	resultJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		//result, _ := resultJson.Get(`result`).Bool()
@@ -192,7 +193,8 @@ func QueryPendingOrderAmount(symbol string) (orderAmount int, err error) {
 	postData.Set(`status`, `1`)
 	postData.Set(`current_page`, `1`)
 	postData.Set(`page_length`, `50`)
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do",
+		&postData, 100)
 	orderJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return 0, err
@@ -214,7 +216,8 @@ func QueryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice fl
 	//postData.Set(`page_length`, `50`)
 	//postData.Set(`current_page`, `1`)
 	postData.Set(`order_id`, orderId)
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do",
+		&postData, 100)
 	orderJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return 0, -1, err.Error()
@@ -239,7 +242,8 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`order_id`, orderId)
 	postData.Set(`contract_type`, getContractType(symbol))
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_cancel.do", &postData)
+	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_cancel.do",
+		&postData, 200)
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		result, _ = orderJson.Get(`result`).Bool()
@@ -263,7 +267,7 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 func GetAccountOkfuture(accounts *model.Accounts, currency string) (accountRight, profitReal, profitUnreal float64, err error) {
 	postData := url.Values{}
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
-		"/future_userinfo.do", &postData)
+		"/future_userinfo.do", &postData, 400)
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return 0, 0, 0, errors.New(`fail to get unreal profit`)
@@ -312,7 +316,7 @@ func GetPositionOkfuture(market, symbol string) (futureAccount *model.FutureAcco
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`contract_type`, getContractType(symbol))
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
-		"/future_position.do", &postData)
+		"/future_position.do", &postData, 200)
 	orderJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return nil, err
@@ -340,7 +344,8 @@ func GetKLineOkexFuture(symbol, timeSlot string, size int64) []*model.KLinePoint
 	postData.Set(`type`, timeSlot)
 	postData.Set(`contract_type`, contractType)
 	postData.Set(`size`, strconv.FormatInt(size, 10))
-	responseBody := sendSignRequest(`GET`, model.AppConfig.RestUrls[model.OKEX]+"/future_kline.do", &postData)
+	responseBody := sendSignRequest(`GET`, model.AppConfig.RestUrls[model.OKEX]+"/future_kline.do",
+		&postData, 100)
 	dataJson, err := util.NewJSON(responseBody)
 	if err != nil || dataJson == nil {
 		return nil

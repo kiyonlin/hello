@@ -17,6 +17,16 @@ func setContractArbitraging(status bool) {
 }
 
 func recordCarry(carry *model.Carry) {
+	if carry.SideType == model.CarryTypeFuture && carry.DealAskPrice > 0 && carry.DealBidPrice > carry.DealAskPrice {
+		delta := (carry.DealAskPrice - carry.DealBidPrice) / carry.DealAskPrice
+		openSetting := model.GetSetting(carry.BidWeb, carry.BidSymbol)
+		closeSetting := model.GetSetting(carry.AskWeb, carry.AskSymbol)
+		openSetting.OpenShortMargin += delta
+		closeSetting.CloseShortMargin -= delta
+		model.AppDB.Save(openSetting)
+		model.AppDB.Save(closeSetting)
+		model.LoadSettings()
+	}
 	model.CarryChannel <- *carry
 }
 
@@ -47,7 +57,7 @@ func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, face
 		util.Notice(fmt.Sprintf(`[%s]%s price at %f %f ~ %f`,
 			model.CarryTypeArbitraryBuy, futureSymbol, futureBidAsk.Asks[0].Price, transferAble, faceValue))
 		carry := &model.Carry{BidSymbol: futureSymbol, BidWeb: model.OKFUTURE, BidPrice: futureBidAsk.Asks[0].Price,
-			BidTime: int64(futureBidAsk.Ts), SideType: model.CarryTypeArbitraryBuy}
+			BidTime: int64(futureBidAsk.Ts), BidAmount: 1, SideType: model.CarryTypeArbitraryBuy}
 		if liquidShort(carry, faceValue) {
 			recordCarry(carry)
 		}
@@ -83,25 +93,56 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 	}
 }
 
+func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount float64) {
+	if market == model.OKEX {
+		index := strings.Index(symbol, `_`)
+		if index == -1 {
+			return 0
+		}
+		accountUsdt := model.AppAccounts.GetAccount(market, `usdt`)
+		if accountUsdt == nil {
+			util.Info(`account nil`)
+			api.RefreshAccount(market)
+			return 0
+		}
+		if accountUsdt.Free <= model.AppConfig.MinUsdt || accountUsdt.Free <= model.ArbitraryCarryUSDT {
+			//util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
+			return 0
+		}
+		return model.ArbitraryCarryUSDT
+	} else if market == model.OKFUTURE {
+		allHoldings, allHoldingErr := api.GetAllHoldings(symbol)
+		futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(market, symbol)
+		accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, symbol)
+		if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
+			util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
+			return 0
+		}
+		keepShort := math.Round((realProfit + unrealProfit) * bidPrice / faceValue)
+		if allHoldings <= keepShort {
+			//util.Notice(fmt.Sprintf(`allholding <= keep %f %f`, allHoldings, keepShort))
+			return 0
+		}
+		liquidAmount := math.Round(accountRights * bidPrice / faceValue)
+		if realProfit+unrealProfit > 0 {
+			liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * bidPrice / faceValue)
+		}
+		if liquidAmount > futureSymbolHoldings.OpenedShort {
+			liquidAmount = futureSymbolHoldings.OpenedShort
+		}
+		if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
+			liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
+		}
+		return liquidAmount
+	}
+	return 0
+}
+
 func openShort(carry *model.Carry, faceValue float64) {
-	index := strings.Index(carry.BidSymbol, `_`)
-	if index == -1 {
-		return
-	}
-	accountUsdt := model.AppAccounts.GetAccount(carry.BidWeb, `usdt`)
-	if accountUsdt == nil {
-		util.Info(`account nil`)
-		api.RefreshAccount(carry.BidWeb)
-		return
-	}
-	if accountUsdt.Free <= model.AppConfig.MinUsdt || accountUsdt.Free <= model.ArbitraryCarryUSDT {
-		//util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
-		return
-	}
 	util.Notice(`[open short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.DealBidPrice =
 		api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol, ``,
-			carry.BidPrice, model.ArbitraryCarryUSDT)
+			carry.BidPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount in usd %f`, carry.BidWeb, carry.BidSymbol,
 			carry.AskPrice, model.ArbitraryCarryUSDT))
@@ -151,38 +192,13 @@ func buyShort(carry *model.Carry, faceValue float64) bool {
 }
 
 func liquidShort(carry *model.Carry, faceValue float64) bool {
-	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
-	futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(model.OKFUTURE, carry.BidSymbol)
-	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
-	if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
-		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
-		return false
-	}
-	keepShort := math.Round((realProfit + unrealProfit) * carry.BidPrice / faceValue)
-	if allHoldings <= keepShort {
-		//util.Notice(fmt.Sprintf(`allholding <= keep %f %f`, allHoldings, keepShort))
-		return false
-	}
-	liquidAmount := math.Round(accountRights * carry.BidPrice / faceValue)
-	if realProfit+unrealProfit > 0 {
-		liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * carry.BidPrice / faceValue)
-	}
-	if liquidAmount > futureSymbolHoldings.OpenedShort {
-		liquidAmount = futureSymbolHoldings.OpenedShort
-	}
-	if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
-		liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
-	}
-	if liquidAmount <= 0 {
-		return false
-	}
 	util.Notice(`[liquid short]` + carry.ToString())
 	carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.DealBidAmount, carry.DealBidPrice =
 		api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol,
-			model.AmountTypeContractNumber, carry.BidPrice, liquidAmount)
+			model.AmountTypeContractNumber, carry.BidPrice, carry.BidAmount)
 	if carry.DealBidOrderId == `` || carry.DealBidOrderId == `0` {
 		util.Notice(fmt.Sprintf(`[bid fail]%s %s price%f amount in contract number %f`,
-			carry.BidWeb, carry.BidSymbol, carry.BidPrice, liquidAmount))
+			carry.BidWeb, carry.BidSymbol, carry.BidPrice, carry.BidAmount))
 		return false
 	}
 	carry.DealBidAmount, carry.DealBidPrice, carry.DealBidStatus = api.SyncQueryOrderById(carry.BidWeb, carry.BidSymbol,
@@ -254,7 +270,7 @@ func checkPending(symbol string) bool {
 	return false
 }
 
-func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
+func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *model.Carry {
 	index := strings.Index(futureSymbol, `_`)
 	if futureMarket != model.OKFUTURE || index < 0 {
 		return nil
@@ -267,23 +283,23 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 	var bidSetting, askSetting *model.Setting
 	bestSellPrice := 0.0
 	bestBuyPrice := 0.0
+	bidAmount := 0.0
 	for _, value := range settings {
 		if model.AppMarkets.BidAsks[value.Symbol] == nil || model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
 			continue
 		}
-		worth := model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Amount *
-			model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
-		if worth > model.ArbitraryCarryUSDT &&
-			model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price > bestSellPrice {
+		if model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price > bestSellPrice {
 			bestSellPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
 			askSetting = value
 		}
-		worth = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Amount *
-			model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
-		if worth > model.ArbitraryCarryUSDT &&
-			(bestBuyPrice == 0.0 || bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price) {
-			bestBuyPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
-			bidSetting = value
+		if bestBuyPrice == 0.0 || bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price {
+			checkBidAmount := getBidAmount(value.Market, value.Symbol, faceValue,
+				model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price)
+			if checkBidAmount > 0 {
+				bidAmount = checkBidAmount
+				bestBuyPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
+				bidSetting = value
+			}
 		}
 	}
 	if bidSetting == nil || askSetting == nil || (futureSymbol != bidSetting.Symbol && futureSymbol != askSetting.Symbol) {
@@ -294,11 +310,21 @@ func createCarry(symbol, futureSymbol, futureMarket string) *model.Carry {
 		bidSetting.Symbol, askSetting.Symbol, margin, bidSetting.OpenShortMargin, askSetting.CloseShortMargin))
 	if bidSetting.Symbol == askSetting.Symbol || margin < -1*askSetting.CloseShortMargin ||
 		margin < bidSetting.OpenShortMargin || margin < 0.001 {
+		if margin < -1*askSetting.CloseShortMargin && util.GetNow().Unix()-askSetting.UpdatedAt.Unix() > 86400 {
+			askSetting.CloseShortMargin += 0.0009
+			model.AppDB.Save(askSetting)
+			model.LoadSettings()
+		}
+		if margin < bidSetting.OpenShortMargin && util.GetNow().Unix()-askSetting.UpdatedAt.Unix() > 86400 {
+			bidSetting.OpenShortMargin -= 0.0009
+			model.AppDB.Save(bidSetting)
+			model.LoadSettings()
+		}
 		return nil
 	}
 	carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
 		BidWeb: bidSetting.Market, AskPrice: bestSellPrice, BidPrice: bestBuyPrice, SideType: model.CarryTypeFuture,
-		AskTime: int64(model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Ts),
+		BidAmount: bidAmount, AskTime: int64(model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Ts),
 		BidTime: int64(model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Ts)}
 	checkTime, msg := carry.CheckWorthCarryTime()
 	if !checkTime {
@@ -343,7 +369,7 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 		arbitraryFutureMarket(futureSymbol, model.AppMarkets.BidAsks[futureSymbol][model.OKFUTURE], faceValue)
 		arbitraryMarket(model.OKEX, symbol, model.AppMarkets.BidAsks[symbol][model.OKEX])
 	}
-	carry := createCarry(symbol, futureSymbol, futureMarket)
+	carry := createCarry(symbol, futureSymbol, futureMarket, faceValue)
 	if carry == nil || checkPending(futureSymbol) {
 		return
 	}

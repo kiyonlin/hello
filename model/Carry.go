@@ -40,6 +40,9 @@ type Carry struct {
 	SideType  string
 }
 
+func getLastFutureCarry()  {
+
+}
 func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64) {
 	if AppAccounts == nil {
 		return configMargin
