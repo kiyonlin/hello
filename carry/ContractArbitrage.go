@@ -305,16 +305,20 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 		if bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price {
 			margin = (bestSellPrice - bestBuyPrice) / bestSellPrice
 			if margin < -1*askSetting.CloseShortMargin || margin < bidSetting.OpenShortMargin {
-				//util.Notice(fmt.Sprintf(`[no margin]%f %f/%f %s/%s->%s/%s`, margin, bidSetting.OpenShortMargin,
-				//	askSetting.CloseShortMargin, bidSetting.Market, bidSetting.Symbol, askSetting.Market, askSetting.Symbol))
-				if margin < -1*askSetting.CloseShortMargin && util.GetNow().Unix()-askSetting.UpdatedAt.Unix() > 86400 {
+				if util.GetNow().Second() == 0 {
+					util.Info(fmt.Sprintf(`[no margin]%f %f/%f %s/%s->%s/%s`, margin, bidSetting.OpenShortMargin,
+						askSetting.CloseShortMargin, bidSetting.Market, bidSetting.Symbol, askSetting.Market, askSetting.Symbol))
+				}
+				if askSetting.CloseShortMargin < 0 && margin < -1*askSetting.CloseShortMargin &&
+					util.GetNow().Unix()-askSetting.UpdatedAt.Unix() > 86400 {
 					askSetting.CloseShortMargin += 0.0009
 					model.AppDB.Save(askSetting)
 					model.LoadSettings()
 					util.Notice(fmt.Sprintf(`[adjust margin]%s %s close to %f`, askSetting.Market,
 						askSetting.Symbol, askSetting.CloseShortMargin))
 				}
-				if margin < bidSetting.OpenShortMargin && util.GetNow().Unix()-bidSetting.UpdatedAt.Unix() > 86400 {
+				if bidSetting.OpenShortMargin > 0 && margin < bidSetting.OpenShortMargin &&
+					util.GetNow().Unix()-bidSetting.UpdatedAt.Unix() > 86400 {
 					bidSetting.OpenShortMargin -= 0.0009
 					model.AppDB.Save(bidSetting)
 					model.LoadSettings()
