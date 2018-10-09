@@ -104,7 +104,7 @@ func sendSignRequest(method, path string, postData *url.Values, waitMillionSecon
 	current := util.GetNow()
 	if apiLastAccessTime[path] == nil || current.UnixNano()-apiLastAccessTime[path].UnixNano() < waitMillionSeconds*1000000 {
 		time.Sleep(time.Duration(waitMillionSeconds) * time.Millisecond)
-		util.Info(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, waitMillionSeconds, path))
+		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, waitMillionSeconds, path))
 	}
 	apiLastAccessTime[path] = &current
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
