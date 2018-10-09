@@ -334,7 +334,8 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 			}
 		}
 	}
-	if bidSetting == nil || askSetting == nil || (futureSymbol != bidSetting.Symbol && futureSymbol != askSetting.Symbol) {
+	if bidSetting == nil || askSetting == nil || bidAmount == 0 ||
+		(futureSymbol != bidSetting.Symbol && futureSymbol != askSetting.Symbol) {
 		return nil
 	}
 	carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
