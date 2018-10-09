@@ -247,6 +247,7 @@ func Maintain() {
 			carryHandlers[i] = ProcessRefresh
 			go RefreshCarryServe()
 		case `arbitrary`:
+			go MaintainArbitrarySettings()
 			carryHandlers[i] = ProcessContractArbitrage
 		case `rsi`:
 			go ProcessInform()

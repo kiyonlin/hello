@@ -40,6 +40,20 @@ type Carry struct {
 	SideType  string
 }
 
+func LoadLazySettings(bidWeb, sideTye string, createdAt time.Time) (symbolSettings map[string]*Setting) {
+	symbolSettings = GetMarketSettings(bidWeb)
+	rows, err := AppDB.Model(&Carry{}).Select(`bid_symbol`).Where(
+		`bid_web = ? and side_type = ? and created_at > ?`, bidWeb, sideTye, createdAt).Group(`bid_symbol`).Rows()
+	if err == nil {
+		var symbol string
+		for rows.Next() {
+			rows.Scan(&symbol)
+			delete(symbolSettings, symbol)
+		}
+	}
+	return symbolSettings
+}
+
 func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64) {
 	if AppAccounts == nil {
 		return configMargin

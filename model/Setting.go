@@ -35,6 +35,9 @@ func LoadSettings() {
 }
 
 func GetMarketSettings(market string) map[string]*Setting {
+	if marketSymbolSetting == nil {
+		LoadSettings()
+	}
 	return marketSymbolSetting[market]
 }
 
