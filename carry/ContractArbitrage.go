@@ -299,6 +299,9 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 	bidAmount := 0.0
 	margin := 0.0
 	for _, value := range settings {
+		if model.AppMarkets.BidAsks[value.Symbol] == nil || model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
+			continue
+		}
 		if bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price {
 			margin = (bestSellPrice - bestBuyPrice) / bestSellPrice
 			if margin < -1*askSetting.CloseShortMargin || margin < bidSetting.OpenShortMargin {
