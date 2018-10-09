@@ -283,10 +283,8 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 	if symbolSetting != nil {
 		settings = append(settings, symbolSetting)
 	}
-	var bidSetting, askSetting *model.Setting
+	var askSetting *model.Setting
 	bestSellPrice := 0.0
-	bestBuyPrice := 0.0
-	bidAmount := 0.0
 	for _, value := range settings {
 		if model.AppMarkets.BidAsks[value.Symbol] == nil || model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
 			continue
@@ -295,40 +293,45 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 			bestSellPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
 			askSetting = value
 		}
-		if bestBuyPrice == 0.0 || bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price {
-			checkBidAmount := getBidAmount(value.Market, value.Symbol, faceValue,
-				model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price)
-			if checkBidAmount > 0 {
-				bidAmount = checkBidAmount
-				bestBuyPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
-				bidSetting = value
+	}
+	bidSetting := askSetting
+	bestBuyPrice := model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Asks[0].Price
+	bidAmount := 0.0
+	margin := 0.0
+	for _, value := range settings {
+		if bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price {
+			margin = (bestSellPrice - bestBuyPrice) / bestSellPrice
+			if margin < -1*askSetting.CloseShortMargin || margin < bidSetting.OpenShortMargin {
+				util.Notice(fmt.Sprintf(`[no margin]%f %f/%f %s/%s->%s/%s`, margin, bidSetting.OpenShortMargin,
+					askSetting.CloseShortMargin, bidSetting.Market, bidSetting.Symbol, askSetting.Market, askSetting.Symbol))
+				if margin < -1*askSetting.CloseShortMargin && util.GetNow().Unix()-askSetting.UpdatedAt.Unix() > 86400 {
+					askSetting.CloseShortMargin += 0.0009
+					model.AppDB.Save(askSetting)
+					model.LoadSettings()
+					util.Notice(fmt.Sprintf(`[adjust margin]%s %s close to %f`, askSetting.Market,
+						askSetting.Symbol, askSetting.CloseShortMargin))
+				}
+				if margin < bidSetting.OpenShortMargin && util.GetNow().Unix()-bidSetting.UpdatedAt.Unix() > 86400 {
+					bidSetting.OpenShortMargin -= 0.0009
+					model.AppDB.Save(bidSetting)
+					model.LoadSettings()
+					util.Notice(fmt.Sprintf(`[adjust margin]%s %s open to %f`, bidSetting.Market,
+						bidSetting.Symbol, bidSetting.OpenShortMargin))
+				}
 			} else {
-				util.Notice(fmt.Sprintf(`[no amount bid]%s-%s %f`, value.Market, value.Symbol, bidAmount))
+				checkBidAmount := getBidAmount(value.Market, value.Symbol, faceValue,
+					model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price)
+				if checkBidAmount > 0 {
+					bidAmount = checkBidAmount
+					bestBuyPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
+					bidSetting = value
+				} else {
+					util.Notice(fmt.Sprintf(`[no amount bid]%s-%s %f`, value.Market, value.Symbol, bidAmount))
+				}
 			}
 		}
 	}
 	if bidSetting == nil || askSetting == nil || (futureSymbol != bidSetting.Symbol && futureSymbol != askSetting.Symbol) {
-		return nil
-	}
-	margin := (bestSellPrice - bestBuyPrice) / bestSellPrice
-	if bidSetting.Symbol == askSetting.Symbol || margin < -1*askSetting.CloseShortMargin ||
-		margin < bidSetting.OpenShortMargin || margin < 0.001 {
-		if margin < -1*askSetting.CloseShortMargin && util.GetNow().Unix()-askSetting.UpdatedAt.Unix() > 86400 {
-			askSetting.CloseShortMargin += 0.0009
-			model.AppDB.Save(askSetting)
-			model.LoadSettings()
-			util.Notice(fmt.Sprintf(`[adjust margin]%s %s close to %f`, askSetting.Market, askSetting.Symbol,
-				askSetting.CloseShortMargin))
-		}
-		if margin < bidSetting.OpenShortMargin && util.GetNow().Unix()-askSetting.UpdatedAt.Unix() > 86400 {
-			bidSetting.OpenShortMargin -= 0.0009
-			model.AppDB.Save(bidSetting)
-			model.LoadSettings()
-			util.Notice(fmt.Sprintf(`[adjust margin]%s %s open to %f`, bidSetting.Market, bidSetting.Symbol,
-				bidSetting.OpenShortMargin))
-		}
-		util.Info(fmt.Sprintf(`[low margin, no carry][%s->%s][%s->%s]%f[open %f- close %f]`, bidSetting.Market,
-			askSetting.Market, bidSetting.Symbol, askSetting.Symbol, margin, bidSetting.OpenShortMargin, askSetting.CloseShortMargin))
 		return nil
 	}
 	carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
@@ -340,8 +343,6 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 		util.Notice(`[not in time]` + msg.Error())
 		return nil
 	}
-	//util.Info(fmt.Sprintf(`%s [open short %t]%f - %f`, futureSymbol,
-	//	setting.OpenShortMargin < openShortMargin, openShortMargin, setting.OpenShortMargin))
 	return carry
 }
 
