@@ -7,7 +7,6 @@ import (
 	"hello/util"
 	"math"
 	"strings"
-	"time"
 )
 
 var contractArbitraging = false
@@ -396,5 +395,4 @@ var ProcessContractArbitrage = func(futureSymbol, futureMarket string) {
 	} else if carry.AskWeb == model.OKFUTURE && carry.BidWeb == model.OKFUTURE {
 		jumpShort(carry, faceValue)
 	}
-	time.Sleep(time.Second * 3)
 }
