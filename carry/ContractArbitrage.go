@@ -295,7 +295,7 @@ func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
 				continue
 			}
 			askPrice := model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Bids[0].Price
-			margin := askPrice - bidPrice
+			margin := (askPrice - bidPrice) / askPrice
 			if margin > bidSetting.OpenShortMargin && margin > askSetting.CloseShortMargin {
 				carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
 					BidWeb: bidSetting.Market, AskPrice: askPrice, BidPrice: bidPrice, SideType: model.CarryTypeFuture,
@@ -304,6 +304,12 @@ func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
 				checkTime, _ := carry.CheckWorthCarryTime()
 				if checkTime {
 					carries = append(carries, carry)
+				}
+			} else {
+				if util.GetNow().Second() == 0 {
+					util.Info(fmt.Sprintf(`[no margin]%s/%s->%s/%s margin: %f %f-%f`,
+						bidSetting.Market, bidSetting.Symbol, askSetting.Market, askSetting.Symbol,
+						margin, bidSetting.OpenShortMargin, askSetting.CloseShortMargin))
 				}
 			}
 		}
