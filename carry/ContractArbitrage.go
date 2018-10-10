@@ -12,6 +12,8 @@ import (
 
 var contractArbitraging = false
 
+var lastArbitraryTime map[string]int64 // currency - time in million second
+
 func setContractArbitraging(status bool) {
 	contractArbitraging = status
 }
@@ -276,6 +278,56 @@ func checkPending(symbol string) bool {
 	return false
 }
 
+func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
+	carries = make([]*model.Carry, 0)
+	var bidSetting, askSetting *model.Setting
+	for i := 0; i < len(settings); i++ {
+		bidSetting = settings[i]
+		if model.AppMarkets.BidAsks[bidSetting.Symbol] == nil ||
+			model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market] == nil {
+			continue
+		}
+		bidPrice := model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Asks[0].Price
+		for j := 0; j < len(settings); j++ {
+			askSetting = settings[j]
+			if model.AppMarkets.BidAsks[askSetting.Symbol] == nil ||
+				model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market] == nil {
+				continue
+			}
+			askPrice := model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Bids[0].Price
+			margin := askPrice - bidPrice
+			if margin > bidSetting.OpenShortMargin && margin > askSetting.CloseShortMargin {
+				carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
+					BidWeb: bidSetting.Market, AskPrice: askPrice, BidPrice: bidPrice, SideType: model.CarryTypeFuture,
+					AskTime: int64(model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Ts),
+					BidTime: int64(model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Ts)}
+				checkTime, err := carry.CheckWorthCarryTime()
+				if !checkTime {
+					util.Notice(`[not in time]` + err.Error())
+				} else {
+					carries = append(carries, carry)
+				}
+			}
+		}
+	}
+	return carries
+}
+
+func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
+	margin := 0.0
+	var bestCarry *model.Carry
+	for _, carry := range carries {
+		carry.BidAmount = getBidAmount(carry.BidWeb, carry.BidSymbol, faceValue, carry.BidPrice)
+		util.Notice(fmt.Sprintf(`[filter carry]%s-%s have margin %f amount %f`,
+			carry.BidWeb, carry.BidSymbol, (carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
+		if carry.BidAmount > 0 && margin < carry.AskPrice-carry.BidPrice {
+			bestCarry = carry
+			margin = carry.AskPrice - carry.BidPrice
+		}
+	}
+	return bestCarry
+}
+
 func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *model.Carry {
 	index := strings.Index(futureSymbol, `_`)
 	if futureMarket != model.OKFUTURE || index < 0 {
@@ -286,62 +338,10 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 	if symbolSetting != nil {
 		settings = append(settings, symbolSetting)
 	}
-	var askSetting *model.Setting
-	bestSellPrice := 0.0
-	for _, value := range settings {
-		if model.AppMarkets.BidAsks[value.Symbol] == nil || model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
-			continue
-		}
-		if model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price > bestSellPrice {
-			bestSellPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Bids[0].Price
-			askSetting = value
-		}
-	}
-	bidSetting := askSetting
-	bestBuyPrice := model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Asks[0].Price
-	bidAmount := 0.0
-	margin := 0.0
-	for _, value := range settings {
-		if model.AppMarkets.BidAsks[value.Symbol] == nil || model.AppMarkets.BidAsks[value.Symbol][value.Market] == nil {
-			continue
-		}
-		if bestBuyPrice > model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price {
-			margin = (bestSellPrice - bestBuyPrice) / bestSellPrice
-			if margin < askSetting.CloseShortMargin || margin < bidSetting.OpenShortMargin {
-				if util.GetNow().Second() == 0 {
-					util.Info(fmt.Sprintf(`[no margin]%f %f/%f %s/%s->%s/%s`, margin, bidSetting.OpenShortMargin,
-						askSetting.CloseShortMargin, bidSetting.Market, bidSetting.Symbol, askSetting.Market, askSetting.Symbol))
-				}
-			} else {
-				checkBidAmount := getBidAmount(value.Market, value.Symbol, faceValue,
-					model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price)
-				if checkBidAmount > 0 {
-					bidAmount = checkBidAmount
-					bestBuyPrice = model.AppMarkets.BidAsks[value.Symbol][value.Market].Asks[0].Price
-					bidSetting = value
-				} else {
-					util.Notice(fmt.Sprintf(`[no amount bid]%s-%s %f`, value.Market, value.Symbol, bidAmount))
-				}
-			}
-		}
-	}
-	if bidSetting == nil || askSetting == nil || bidAmount == 0 ||
-		(futureSymbol != bidSetting.Symbol && futureSymbol != askSetting.Symbol) {
-		return nil
-	}
-	carry := &model.Carry{AskSymbol: askSetting.Symbol, BidSymbol: bidSetting.Symbol, AskWeb: askSetting.Market,
-		BidWeb: bidSetting.Market, AskPrice: bestSellPrice, BidPrice: bestBuyPrice, SideType: model.CarryTypeFuture,
-		BidAmount: bidAmount, AskTime: int64(model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Ts),
-		BidTime: int64(model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Ts)}
-	checkTime, msg := carry.CheckWorthCarryTime()
-	if !checkTime {
-		util.Notice(`[not in time]` + msg.Error())
-		return nil
-	}
+	carries := createCarryByMargin(settings)
+	carry := filterCarry(carries, faceValue)
 	return carry
 }
-
-var lastArbitraryTime map[string]int64 // currency - time in million second
 
 func needArbitrary(currency string) bool {
 	if lastArbitraryTime == nil {

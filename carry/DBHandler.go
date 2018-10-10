@@ -74,6 +74,13 @@ func AccountHandlerServe() {
 	}
 }
 
+//每个小时查询过去一天内有没有从这种setting里面离开的，
+//       如果有，那么这是一个勤快的setting
+//              如果离开利润低于百分之1.5那么买入利润增加万分之一，
+//              如果进入利润高于千分之1.5，那么进入利润减万分之一
+//       如果没有，那么这是一个懒惰的setting，在懒惰的里面寻找所有持仓量最大的setting
+//              如果进入利润低于百分之1.5，那么进入利润加万分之一
+//              如果离开利润大于万分之5，那么离开利润减万分之一
 func dealDiligentSettings() {
 	createdAt := util.GetNow().Add(time.Duration(-3600) * time.Second)
 	settings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
