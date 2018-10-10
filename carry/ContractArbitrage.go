@@ -30,7 +30,6 @@ func recordCarry(carry *model.Carry) {
 		closeSetting.CloseShortMargin += delta
 		model.AppDB.Save(openSetting)
 		model.AppDB.Save(closeSetting)
-		model.LoadSettings()
 	}
 	model.CarryChannel <- *carry
 }
@@ -321,7 +320,11 @@ func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
 		util.Info(fmt.Sprintf(`[filter carry]%s/%s->%s/%s have margin %f amount %f`,
 			carry.BidWeb, carry.BidSymbol, carry.AskWeb, carry.AskSymbol,
 			(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
-		if carry.BidAmount > 0 && margin < carry.AskPrice-carry.BidPrice {
+		if carry.BidAmount <= 0 {
+			setting := model.GetSetting(carry.AskWeb, carry.AskSymbol)
+			util.Notice(fmt.Sprintf(`[add chance]%s/%s %d++`, carry.AskWeb, carry.AskSymbol, setting.Chance))
+			model.AppDB.Save(setting)
+		} else if margin < carry.AskPrice-carry.BidPrice {
 			bestCarry = carry
 			margin = carry.AskPrice - carry.BidPrice
 		}

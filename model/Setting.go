@@ -9,8 +9,9 @@ type Setting struct {
 	Market            string
 	Symbol            string
 	Margin            float64 // carry use
-	OpenShortMargin   float64 // future use
-	CloseShortMargin  float64 // future use
+	OpenShortMargin   float64 // arbitrary future use
+	CloseShortMargin  float64 // arbitrary future use
+	Chance            int64   // arbitrary future use
 	TurtleBalanceRate float64
 	Valid             bool
 	ID                uint `gorm:"primary_key"`
@@ -28,9 +29,7 @@ func LoadSettings() {
 		if marketSymbolSetting[AppSettings[i].Market] == nil {
 			marketSymbolSetting[AppSettings[i].Market] = make(map[string]*Setting)
 		}
-		if marketSymbolSetting[AppSettings[i].Market][AppSettings[i].Symbol] == nil {
-			marketSymbolSetting[AppSettings[i].Market][AppSettings[i].Symbol] = &AppSettings[i]
-		}
+		marketSymbolSetting[AppSettings[i].Market][AppSettings[i].Symbol] = &AppSettings[i]
 	}
 }
 

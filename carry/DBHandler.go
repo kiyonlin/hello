@@ -95,7 +95,6 @@ func dealDiligentSettings() {
 			setting.CloseShortMargin -= 0.0001
 		}
 		model.AppDB.Save(setting)
-		model.LoadSettings()
 	}
 }
 
@@ -132,7 +131,6 @@ func dealLazySettings() {
 		}
 		if changed {
 			model.AppDB.Save(setting)
-			model.LoadSettings()
 		}
 	}
 }
