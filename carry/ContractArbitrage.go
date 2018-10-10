@@ -304,12 +304,12 @@ func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
 				if checkTime {
 					carries = append(carries, carry)
 				}
-			} else {
-				if util.GetNow().Second() == 0 {
-					util.Info(fmt.Sprintf(`[no margin]%s/%s->%s/%s margin: %f %f-%f`,
-						bidSetting.Market, bidSetting.Symbol, askSetting.Market, askSetting.Symbol,
-						margin, bidSetting.OpenShortMargin, askSetting.CloseShortMargin))
-				}
+			}
+			if util.GetNow().Second() == 0 {
+				util.Info(fmt.Sprintf(`[record margin %v]%s/%s->%s/%s margin: %f %f-%f`,
+					margin > bidSetting.OpenShortMargin && margin > askSetting.CloseShortMargin,
+					bidSetting.Market, bidSetting.Symbol, askSetting.Market, askSetting.Symbol,
+					margin, bidSetting.OpenShortMargin, askSetting.CloseShortMargin))
 			}
 		}
 	}
@@ -321,12 +321,12 @@ func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
 	var bestCarry *model.Carry
 	for _, carry := range carries {
 		carry.BidAmount = getBidAmount(carry.BidWeb, carry.BidSymbol, faceValue, carry.BidPrice)
-		util.Info(fmt.Sprintf(`[filter carry]%s/%s->%s/%s have margin %f amount %f`,
-			carry.BidWeb, carry.BidSymbol, carry.AskWeb, carry.AskSymbol,
-			(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
+		//util.Info(fmt.Sprintf(`[filter carry]%s/%s->%s/%s have margin %f amount %f`,
+		//	carry.BidWeb, carry.BidSymbol, carry.AskWeb, carry.AskSymbol,
+		//	(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
 		if carry.BidAmount <= 0 {
 			setting := model.GetSetting(carry.BidWeb, carry.BidSymbol)
-			util.Info(fmt.Sprintf(`[add chance]%s/%s %d++`, carry.BidWeb, carry.BidSymbol, setting.Chance))
+			//util.Info(fmt.Sprintf(`[add chance]%s/%s %d++`, carry.BidWeb, carry.BidSymbol, setting.Chance))
 			setting.Chance += 1
 			model.AppDB.Save(setting)
 		}
