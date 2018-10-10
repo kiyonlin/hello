@@ -323,6 +323,7 @@ func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
 		if carry.BidAmount <= 0 {
 			setting := model.GetSetting(carry.AskWeb, carry.AskSymbol)
 			util.Notice(fmt.Sprintf(`[add chance]%s/%s %d++`, carry.AskWeb, carry.AskSymbol, setting.Chance))
+			setting.Chance += 1
 			model.AppDB.Save(setting)
 		} else if margin < carry.AskPrice-carry.BidPrice {
 			bestCarry = carry
