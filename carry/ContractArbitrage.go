@@ -318,8 +318,9 @@ func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
 	var bestCarry *model.Carry
 	for _, carry := range carries {
 		carry.BidAmount = getBidAmount(carry.BidWeb, carry.BidSymbol, faceValue, carry.BidPrice)
-		util.Notice(fmt.Sprintf(`[filter carry]%s-%s have margin %f amount %f`,
-			carry.BidWeb, carry.BidSymbol, (carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
+		util.Notice(fmt.Sprintf(`[filter carry]%s/%s->%s/%s have margin %f amount %f`,
+			carry.BidWeb, carry.BidSymbol, carry.AskWeb, carry.AskSymbol,
+			(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
 		if carry.BidAmount > 0 && margin < carry.AskPrice-carry.BidPrice {
 			bestCarry = carry
 			margin = carry.AskPrice - carry.BidPrice
