@@ -8,6 +8,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"sort"
 	"strings"
 	"testing"
@@ -39,6 +40,51 @@ func loadLazySettings() {
 	model.LoadSettings()
 }
 
+func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount float64) {
+	if market == model.OKEX {
+		index := strings.Index(symbol, `_`)
+		if index == -1 {
+			return 0
+		}
+		accountUsdt := model.AppAccounts.GetAccount(market, `usdt`)
+		if accountUsdt == nil {
+			util.Info(`account nil`)
+			api.RefreshAccount(market)
+			return 0
+		}
+		if accountUsdt.Free <= model.AppConfig.MinUsdt || accountUsdt.Free <= model.ArbitraryCarryUSDT {
+			//util.Info(fmt.Sprintf(`账户usdt余额usdt%f不够买%f个%s`, account.Free, carry.Amount+1, symbol))
+			return 0
+		}
+		return model.ArbitraryCarryUSDT
+	} else if market == model.OKFUTURE {
+		allHoldings, allHoldingErr := api.GetAllHoldings(symbol)
+		futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(market, symbol)
+		accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, symbol)
+		if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
+			util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
+			return 0
+		}
+		keepShort := math.Round((realProfit + unrealProfit) * bidPrice / faceValue)
+		if allHoldings <= keepShort {
+			//util.Notice(fmt.Sprintf(`allholding <= keep %f %f`, allHoldings, keepShort))
+			return 0
+		}
+		liquidAmount := math.Round(accountRights * bidPrice / faceValue)
+		if realProfit+unrealProfit > 0 {
+			liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * bidPrice / faceValue)
+		}
+		if liquidAmount > futureSymbolHoldings.OpenedShort {
+			liquidAmount = futureSymbolHoldings.OpenedShort
+		}
+		if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
+			liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
+		}
+		return liquidAmount
+	}
+	return 0
+}
+
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	err := configor.Load(model.AppConfig, "./config.yml")
@@ -46,6 +92,7 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	getBidAmount(model.OKFUTURE, `etc_quarter`, 10, 11)
 	loadLazySettings()
 	for i := 0; i < 50; i++ {
 		api.GetKLineOkexFuture(`btc_this_week`, `1min`, 100)
