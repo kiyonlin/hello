@@ -53,7 +53,7 @@ func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, face
 			transferAble = accountRights - (realProfit + unrealProfit)
 		}
 		if transferAble*futureBidAsk.Bids[0].Price <= model.AppConfig.MinUsdt {
-			util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, futureSymbol, transferAble, model.AppConfig.MinUsdt))
+			util.Info(fmt.Sprintf(`%s transferAble %f <= %f`, futureSymbol, transferAble, model.AppConfig.MinUsdt))
 			return
 		}
 		transfer, errCode := api.MustFundTransferOkex(futureSymbol, transferAble, `3`, `1`)
@@ -303,7 +303,7 @@ func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
 					BidTime: int64(model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Ts)}
 				checkTime, err := carry.CheckWorthCarryTime()
 				if !checkTime {
-					util.Notice(`[not in time]` + err.Error())
+					util.Info(`[not in time]` + err.Error())
 				} else {
 					carries = append(carries, carry)
 				}
@@ -318,7 +318,7 @@ func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
 	var bestCarry *model.Carry
 	for _, carry := range carries {
 		carry.BidAmount = getBidAmount(carry.BidWeb, carry.BidSymbol, faceValue, carry.BidPrice)
-		util.Notice(fmt.Sprintf(`[filter carry]%s/%s->%s/%s have margin %f amount %f`,
+		util.Info(fmt.Sprintf(`[filter carry]%s/%s->%s/%s have margin %f amount %f`,
 			carry.BidWeb, carry.BidSymbol, carry.AskWeb, carry.AskSymbol,
 			(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
 		if carry.BidAmount > 0 && margin < carry.AskPrice-carry.BidPrice {
