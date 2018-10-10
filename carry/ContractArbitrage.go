@@ -25,8 +25,8 @@ func recordCarry(carry *model.Carry) {
 		util.Notice(fmt.Sprintf(`[modify setting]open: %s %s %f+%f close: %s %s %f+%f`,
 			carry.BidWeb, carry.BidSymbol, openSetting.OpenShortMargin, delta,
 			carry.AskWeb, carry.AskSymbol, closeSetting.CloseShortMargin, delta))
-		openSetting.OpenShortMargin += delta
-		closeSetting.CloseShortMargin += delta
+		openSetting.OpenShortMargin = openSetting.OpenShortMargin + math.Abs(delta)
+		closeSetting.CloseShortMargin = openSetting.CloseShortMargin + math.Abs(delta)
 		model.AppDB.Save(openSetting)
 		model.AppDB.Save(closeSetting)
 	}

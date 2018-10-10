@@ -95,6 +95,8 @@ func Test_RefreshAccount(t *testing.T) {
 		return
 	}
 	carry := model.Carry{}
+	carry.BidAmount += -1
+	fmt.Println(carry.BidAmount)
 	carry.BidAmount = getBidAmount(model.OKFUTURE, `etc_quarter`, 10, 11)
 	loadLazySettings()
 	for i := 0; i < 50; i++ {
