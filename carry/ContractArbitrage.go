@@ -132,15 +132,19 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 		//	return 0
 		//}
 		liquidAmount := math.Round(accountRights * bidPrice / faceValue)
+		util.Notice(fmt.Sprintf(`[bid amount1]%s %s %f`, market, symbol, liquidAmount))
 		if realProfit+unrealProfit > 0 {
 			liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * bidPrice / faceValue)
 		}
+		util.Notice(fmt.Sprintf(`[bid amount2]%s %s %f`, market, symbol, liquidAmount))
 		if liquidAmount > futureSymbolHoldings.OpenedShort {
 			liquidAmount = futureSymbolHoldings.OpenedShort
 		}
+		util.Notice(fmt.Sprintf(`[bid amount3]%s %s %f`, market, symbol, liquidAmount))
 		if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
 			liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
 		}
+		util.Notice(fmt.Sprintf(`[bid amount4]%s %s %f`, market, symbol, liquidAmount))
 		return liquidAmount
 	}
 	return 0

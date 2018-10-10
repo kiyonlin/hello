@@ -58,18 +58,19 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 		}
 		return model.ArbitraryCarryUSDT
 	} else if market == model.OKFUTURE {
-		allHoldings, allHoldingErr := api.GetAllHoldings(symbol)
+		//allHoldings, allHoldingErr := api.GetAllHoldings(symbol)
 		futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(market, symbol)
 		accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, symbol)
-		if allHoldingErr != nil || accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil {
+		if accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil || bidPrice == 0 {
 			util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
 			return 0
 		}
-		keepShort := math.Round((realProfit + unrealProfit) * bidPrice / faceValue)
-		if allHoldings <= keepShort {
-			//util.Notice(fmt.Sprintf(`allholding <= keep %f %f`, allHoldings, keepShort))
-			return 0
-		}
+		// 在劇烈震蕩的時候需要關注盈虧的開空
+		//keepShort := math.Round((realProfit + unrealProfit) * bidPrice / faceValue)
+		//if allHoldings <= keepShort {
+		//	//util.Notice(fmt.Sprintf(`allholding <= keep %f %f`, allHoldings, keepShort))
+		//	return 0
+		//}
 		liquidAmount := math.Round(accountRights * bidPrice / faceValue)
 		if realProfit+unrealProfit > 0 {
 			liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * bidPrice / faceValue)
@@ -85,6 +86,7 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 	return 0
 }
 
+
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	err := configor.Load(model.AppConfig, "./config.yml")
@@ -92,7 +94,8 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	getBidAmount(model.OKFUTURE, `etc_quarter`, 10, 11)
+	carry := model.Carry{}
+	carry.BidAmount = getBidAmount(model.OKFUTURE, `etc_quarter`, 10, 11)
 	loadLazySettings()
 	for i := 0; i < 50; i++ {
 		api.GetKLineOkexFuture(`btc_this_week`, `1min`, 100)
