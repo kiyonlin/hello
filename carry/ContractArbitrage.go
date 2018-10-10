@@ -289,7 +289,7 @@ func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
 		bidPrice := model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Asks[0].Price
 		for j := 0; j < len(settings); j++ {
 			askSetting = settings[j]
-			if model.AppMarkets.BidAsks[askSetting.Symbol] == nil ||
+			if i == j || model.AppMarkets.BidAsks[askSetting.Symbol] == nil ||
 				model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market] == nil {
 				continue
 			}
