@@ -21,6 +21,9 @@ func recordCarry(carry *model.Carry) {
 		delta := (carry.DealAskPrice - carry.DealBidPrice) / carry.DealAskPrice
 		openSetting := model.GetSetting(carry.BidWeb, carry.BidSymbol)
 		closeSetting := model.GetSetting(carry.AskWeb, carry.AskSymbol)
+		util.Notice(fmt.Sprintf(`[modify setting]open: %s %s %f+%f close: %s %s %f+%f`,
+			carry.BidWeb, carry.BidSymbol, openSetting.OpenShortMargin, delta,
+			carry.AskWeb, carry.AskSymbol, closeSetting.CloseShortMargin, delta))
 		openSetting.OpenShortMargin += delta
 		closeSetting.CloseShortMargin += delta
 		model.AppDB.Save(openSetting)

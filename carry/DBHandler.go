@@ -78,10 +78,13 @@ func dealDiligentSettings() {
 	createdAt := util.GetNow().Add(time.Duration(-3600) * time.Second)
 	settings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
 	for _, setting := range settings {
+		util.Notice(fmt.Sprintf(`[modify setting]%s %s`, setting.Market, setting.Symbol))
 		if setting.OpenShortMargin < 0.015 {
+			util.Notice(fmt.Sprintf(`open margin %f < 0.015, + 0.0001`, setting.OpenShortMargin))
 			setting.OpenShortMargin += 0.0001
 		}
 		if setting.CloseShortMargin > 0.0015 {
+			util.Notice(fmt.Sprintf(`close margin %f > 0.0015, - 0.0001`, setting.CloseShortMargin))
 			setting.CloseShortMargin -= 0.0001
 		}
 		model.AppDB.Save(setting)
@@ -109,12 +112,15 @@ func dealLazySettings() {
 	}
 	if setting != nil {
 		changed := false
+		util.Notice(fmt.Sprintf(`[modify setting]%s %s`, setting.Market, setting.Symbol))
 		if setting.CloseShortMargin < 0.015 {
 			changed = true
+			util.Notice(fmt.Sprintf(`close margin %f < 0.015, + 0.0001`, setting.CloseShortMargin))
 			setting.CloseShortMargin += 0.0001
 		}
 		if setting.OpenShortMargin > 0.0005 {
 			changed = true
+			util.Notice(fmt.Sprintf(`open margin %f > 0.0005, - 0.0001`, setting.OpenShortMargin))
 			setting.OpenShortMargin -= 0.0001
 		}
 		if changed {
