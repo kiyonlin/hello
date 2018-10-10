@@ -17,6 +17,16 @@ func setContractArbitraging(status bool) {
 }
 
 func recordCarry(carry *model.Carry) {
+	if carry.SideType == model.CarryTypeFuture && carry.DealAskPrice > 0 && carry.DealBidPrice > carry.DealAskPrice {
+		delta := (carry.DealAskPrice - carry.DealBidPrice) / carry.DealAskPrice
+		openSetting := model.GetSetting(carry.BidWeb, carry.BidSymbol)
+		closeSetting := model.GetSetting(carry.AskWeb, carry.AskSymbol)
+		openSetting.OpenShortMargin += delta
+		closeSetting.CloseShortMargin += delta
+		model.AppDB.Save(openSetting)
+		model.AppDB.Save(closeSetting)
+		model.LoadSettings()
+	}
 	model.CarryChannel <- *carry
 }
 

@@ -2,7 +2,6 @@ package carry
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"hello/api"
 	"hello/model"
 	"hello/util"
@@ -75,9 +74,23 @@ func AccountHandlerServe() {
 	}
 }
 
+func dealDiligentSettings() {
+	createdAt := util.GetNow().Add(time.Duration(-3600) * time.Second)
+	settings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
+	for _, setting := range settings {
+		if setting.OpenShortMargin < 0.015 {
+			setting.OpenShortMargin += 0.0001
+		}
+		if setting.CloseShortMargin > 0.0015 {
+			setting.CloseShortMargin -= 0.0001
+		}
+		model.AppDB.Save(setting)
+		model.LoadSettings()
+	}
+}
+
 func dealLazySettings() {
 	createdAt := util.GetNow().Add(time.Duration(-86400) * time.Second)
-	model.AppDB, _ = gorm.Open("postgres", model.AppConfig.DBConnection)
 	settings := model.LoadLazySettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
 	openShort := 0.0
 	var setting *model.Setting
@@ -94,15 +107,27 @@ func dealLazySettings() {
 			}
 		}
 	}
-	setting.CloseShortMargin += 0.009
-	setting.OpenShortMargin -= 0.0001
-	model.AppDB.Save(setting)
-	model.LoadSettings()
+	if setting != nil {
+		changed := false
+		if setting.CloseShortMargin < 0.015 {
+			changed = true
+			setting.CloseShortMargin += 0.0001
+		}
+		if setting.OpenShortMargin > 0.0005 {
+			changed = true
+			setting.OpenShortMargin -= 0.0001
+		}
+		if changed {
+			model.AppDB.Save(setting)
+			model.LoadSettings()
+		}
+	}
 }
 
 func MaintainArbitrarySettings() {
 	for true {
 		dealLazySettings()
+		dealDiligentSettings()
 		time.Sleep(time.Hour)
 	}
 }

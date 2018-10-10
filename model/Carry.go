@@ -40,10 +40,24 @@ type Carry struct {
 	SideType  string
 }
 
-func LoadLazySettings(bidWeb, sideTye string, createdAt time.Time) (symbolSettings map[string]*Setting) {
+func LoadDiligentSettings(bidWeb, sideType string, createdAt time.Time) (settings []*Setting) {
+	settings = make([]*Setting, 0)
+	rows, err := AppDB.Model(&Carry{}).Select(`bid_symbol`).Where(
+		`bid_web = ? and side_type = ? and created_at > ?`, bidWeb, sideType, createdAt).Group(`bid_symbol`).Rows()
+	if err == nil {
+		var symbol string
+		for rows.Next() {
+			rows.Scan(&symbol)
+			settings = append(settings, GetSetting(bidWeb, symbol))
+		}
+	}
+	return settings
+}
+
+func LoadLazySettings(bidWeb, sideType string, createdAt time.Time) (symbolSettings map[string]*Setting) {
 	symbolSettings = GetMarketSettings(bidWeb)
 	rows, err := AppDB.Model(&Carry{}).Select(`bid_symbol`).Where(
-		`bid_web = ? and side_type = ? and created_at > ?`, bidWeb, sideTye, createdAt).Group(`bid_symbol`).Rows()
+		`bid_web = ? and side_type = ? and created_at > ?`, bidWeb, sideType, createdAt).Group(`bid_symbol`).Rows()
 	if err == nil {
 		var symbol string
 		for rows.Next() {
