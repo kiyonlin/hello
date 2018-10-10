@@ -132,19 +132,15 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 		//	return 0
 		//}
 		liquidAmount := math.Round(accountRights * bidPrice / faceValue)
-		util.Info(fmt.Sprintf(`[bid amount1]%s %s %f`, market, symbol, liquidAmount))
 		if realProfit+unrealProfit > 0 {
 			liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * bidPrice / faceValue)
 		}
-		util.Info(fmt.Sprintf(`[bid amount2]%s %s %f`, market, symbol, liquidAmount))
 		if liquidAmount > futureSymbolHoldings.OpenedShort {
 			liquidAmount = futureSymbolHoldings.OpenedShort
 		}
-		util.Info(fmt.Sprintf(`[bid amount3]%s %s %f`, market, symbol, liquidAmount))
 		if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
 			liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
 		}
-		util.Info(fmt.Sprintf(`[bid amount4]%s %s %f`, market, symbol, liquidAmount))
 		return liquidAmount
 	}
 	return 0
@@ -305,10 +301,8 @@ func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
 					BidWeb: bidSetting.Market, AskPrice: askPrice, BidPrice: bidPrice, SideType: model.CarryTypeFuture,
 					AskTime: int64(model.AppMarkets.BidAsks[askSetting.Symbol][askSetting.Market].Ts),
 					BidTime: int64(model.AppMarkets.BidAsks[bidSetting.Symbol][bidSetting.Market].Ts)}
-				checkTime, err := carry.CheckWorthCarryTime()
-				if !checkTime {
-					util.Info(`[not in time]` + err.Error())
-				} else {
+				checkTime, _ := carry.CheckWorthCarryTime()
+				if checkTime {
 					carries = append(carries, carry)
 				}
 			}
@@ -326,7 +320,7 @@ func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
 			carry.BidWeb, carry.BidSymbol, carry.AskWeb, carry.AskSymbol,
 			(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
 		if carry.BidAmount <= 0 {
-			setting := model.GetSetting(carry.AskWeb, carry.AskSymbol)
+			setting := model.GetSetting(carry.BidWeb, carry.BidSymbol)
 			util.Info(fmt.Sprintf(`[add chance]%s/%s %d++`, carry.AskWeb, carry.AskSymbol, setting.Chance))
 			setting.Chance += 1
 			model.AppDB.Save(setting)
