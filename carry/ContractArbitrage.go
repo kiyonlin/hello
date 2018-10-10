@@ -122,7 +122,7 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 		futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(market, symbol)
 		accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, symbol)
 		if accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil || bidPrice == 0 {
-			util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
+			util.Info(fmt.Sprintf(`fail to get allholdings and position and holding`))
 			return 0
 		}
 		// 在劇烈震蕩的時候需要關注盈虧的開空
@@ -132,19 +132,19 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 		//	return 0
 		//}
 		liquidAmount := math.Round(accountRights * bidPrice / faceValue)
-		util.Notice(fmt.Sprintf(`[bid amount1]%s %s %f`, market, symbol, liquidAmount))
+		util.Info(fmt.Sprintf(`[bid amount1]%s %s %f`, market, symbol, liquidAmount))
 		if realProfit+unrealProfit > 0 {
 			liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * bidPrice / faceValue)
 		}
-		util.Notice(fmt.Sprintf(`[bid amount2]%s %s %f`, market, symbol, liquidAmount))
+		util.Info(fmt.Sprintf(`[bid amount2]%s %s %f`, market, symbol, liquidAmount))
 		if liquidAmount > futureSymbolHoldings.OpenedShort {
 			liquidAmount = futureSymbolHoldings.OpenedShort
 		}
-		util.Notice(fmt.Sprintf(`[bid amount3]%s %s %f`, market, symbol, liquidAmount))
+		util.Info(fmt.Sprintf(`[bid amount3]%s %s %f`, market, symbol, liquidAmount))
 		if liquidAmount > model.ArbitraryCarryUSDT/faceValue {
 			liquidAmount = math.Round(model.ArbitraryCarryUSDT / faceValue)
 		}
-		util.Notice(fmt.Sprintf(`[bid amount4]%s %s %f`, market, symbol, liquidAmount))
+		util.Info(fmt.Sprintf(`[bid amount4]%s %s %f`, market, symbol, liquidAmount))
 		return liquidAmount
 	}
 	return 0
