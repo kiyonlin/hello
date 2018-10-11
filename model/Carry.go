@@ -6,7 +6,6 @@ import (
 	"hello/util"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -68,59 +67,6 @@ func LoadLazySettings(bidWeb, sideType string, createdAt time.Time) (symbolSetti
 	return symbolSettings
 }
 
-func getDynamicMargin(carry *Carry, configMargin float64) (dynamicMargin float64) {
-	if AppAccounts == nil {
-		return configMargin
-	}
-	if !strings.Contains(carry.BidSymbol, "_") {
-		util.Info(fmt.Sprintf("invalid carry %s %s %f %d", carry.BidSymbol, carry.BidWeb, carry.Amount, carry.BidTime))
-		return 1
-	}
-	currencies := strings.Split(carry.BidSymbol, "_")
-	leftTotalPercentage := AppAccounts.CurrencyPercentage[currencies[0]]
-	rightTotalPercentage := AppAccounts.CurrencyPercentage[currencies[1]]
-	if leftTotalPercentage == 0 || rightTotalPercentage == 0 {
-		return configMargin
-	}
-	var leftAskPercentage, rightAskPercentage, leftBidPercentage, rightBidPercentage float64
-	leftAskAccount := AppAccounts.GetAccount(carry.AskWeb, currencies[0])
-	rightAskAccount := AppAccounts.GetAccount(carry.AskWeb, currencies[1])
-	leftBidAccount := AppAccounts.GetAccount(carry.BidWeb, currencies[0])
-	rightBidAccount := AppAccounts.GetAccount(carry.BidWeb, currencies[1])
-	if leftAskAccount != nil {
-		// 计算假如本次carry完成后达到的占比
-		leftAskPercentage = (leftAskAccount.Free + leftAskAccount.Frozen - carry.Amount) *
-			leftAskAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.AskWeb]
-	}
-	if rightAskAccount != nil {
-		rightAskPercentage = (rightAskAccount.Free + rightAskAccount.Free + carry.Amount) *
-			rightAskAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.AskWeb]
-	}
-	if leftBidAccount != nil {
-		leftBidPercentage = (leftBidAccount.Free + leftBidAccount.Frozen + carry.Amount) *
-			leftBidAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.BidWeb]
-	}
-	if rightBidAccount != nil {
-		rightBidPercentage = (rightBidAccount.Free + rightBidAccount.Frozen - carry.Amount) *
-			rightBidAccount.PriceInUsdt / AppAccounts.MarketTotal[carry.BidWeb]
-	}
-	if leftAskPercentage >= leftTotalPercentage && rightAskPercentage <= rightTotalPercentage && leftBidPercentage <=
-		leftTotalPercentage && rightBidPercentage >= rightTotalPercentage {
-		discount := (rightTotalPercentage - rightAskPercentage) / rightTotalPercentage
-		if discount < (leftTotalPercentage-leftBidPercentage)/leftTotalPercentage {
-			discount = (leftTotalPercentage - leftBidPercentage) / leftTotalPercentage
-		}
-		askCost, _ := AppConfig.MarketCost[carry.AskWeb]
-		bidCost, _ := AppConfig.MarketCost[carry.BidWeb]
-		baseCost := (askCost + bidCost) / 2
-		dynamicMargin := baseCost + (configMargin-baseCost)*(1-discount)
-		util.SocketInfo(fmt.Sprintf("%s -> %s %s discount:%f实际门槛 %f", carry.AskWeb, carry.BidWeb,
-			carry.BidSymbol, discount, dynamicMargin))
-		return dynamicMargin
-	}
-	return configMargin
-}
-
 func (carry *Carry) CheckWorthSaveMargin() bool {
 	askCost, _ := AppConfig.MarketCost[carry.AskWeb]
 	bidCost, _ := AppConfig.MarketCost[carry.BidWeb]
@@ -131,11 +77,10 @@ func (carry *Carry) CheckWorthSaveMargin() bool {
 }
 
 func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (bool, error) {
-	dynamicMargin := getDynamicMargin(carry, GetMargin(carry.BidSymbol))
-	carry.Margin = dynamicMargin
+	carry.Margin = GetMargin(carry.BidSymbol)
 	margin := carry.AskPrice - carry.BidPrice
-	if margin > carry.AskPrice*dynamicMargin && carry.Amount > 0 {
-		util.Info(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", dynamicMargin, carry.ToString()))
+	if margin > carry.AskPrice*carry.Margin && carry.Amount > 0 {
+		util.Info(fmt.Sprintf("利润门槛:%.4f 值得搬砖%s", carry.Margin, carry.ToString()))
 		return true, nil
 	}
 	return false, errors.New("利润不足")

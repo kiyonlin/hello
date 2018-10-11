@@ -6,32 +6,31 @@ import (
 )
 
 type Accounts struct {
-	Lock               sync.Mutex
-	TotalInUsdt        float64
-	MarketTotal        map[string]float64             // marketName - totalInUsdt
-	CurrencyTotal      map[string]float64             // currency - totalInUsdt
-	CurrencyPercentage map[string]float64             // currency - percentage
-	Data               map[string]map[string]*Account // marketName - currency - Account
+	Lock sync.Mutex
+	//TotalInUsdt float64
+	//MarketTotal        map[string]float64             // marketName - totalInUsdt
+	//CurrencyTotal      map[string]float64             // currency - totalInUsdt
+	//CurrencyPercentage map[string]float64             // currency - percentage
+	Data map[string]map[string]*Account // marketName - currency - Account
 }
 
 type Account struct {
-	Market      string
-	Currency    string
-	Free        float64
-	Frozen      float64
-	PriceInUsdt float64
-	Percentage  float64
-	ID          uint `gorm:"primary_key"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	Market       string
+	Currency     string
+	Free         float64
+	Frozen       float64
+	PriceInUsdt  float64
+	ProfitReal   float64
+	ProfitUnreal float64
+	//Percentage  float64
+	ID        uint `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func NewAccounts() *Accounts {
 	accounts := &Accounts{}
 	accounts.Data = make(map[string]map[string]*Account)
-	accounts.CurrencyPercentage = make(map[string]float64)
-	accounts.MarketTotal = make(map[string]float64)
-	accounts.CurrencyTotal = make(map[string]float64)
 	return accounts
 }
 

@@ -119,11 +119,7 @@ func RefreshAccount(market string) {
 	case model.OKEX:
 		getAccountOkex(model.AppAccounts)
 	case model.OKFUTURE:
-		currencies := model.GetCurrencies(model.OKFUTURE)
-		for currency := range currencies {
-			GetAccountOkfuture(model.AppAccounts, currency)
-			time.Sleep(time.Millisecond * 500)
-		}
+		GetAccountOkfuture(model.AppAccounts)
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
 		if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
@@ -207,33 +203,11 @@ func Maintain(accounts *model.Accounts, marketName string) {
 	if accounts.Data[marketName] == nil {
 		return
 	}
-	accounts.MarketTotal[marketName] = 0
+	//accounts.MarketTotal[marketName] = 0
 	for key, value := range accounts.Data[marketName] {
 		value.PriceInUsdt, _ = GetPrice(key + "_usdt")
 		//util.Info(fmt.Sprintf(`%s price %f`, key, value.PriceInUsdt))
-		accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
-	}
-	if accounts.MarketTotal[marketName] == 0 {
-		util.Notice(marketName + " balance is empty!!!!!!!!!!!")
-		accounts.MarketTotal[marketName] = 1
-	}
-	for _, value := range accounts.Data[marketName] {
-		value.Percentage = value.PriceInUsdt * (value.Free + value.Frozen) / accounts.MarketTotal[marketName]
-	}
-	// calculate currency percentage of all markets
-	accounts.TotalInUsdt = 0
-	for _, value := range accounts.MarketTotal {
-		accounts.TotalInUsdt += value
-	}
-	accounts.CurrencyTotal = make(map[string]float64)
-	for _, currencies := range accounts.Data {
-		for currency, account := range currencies {
-			accounts.CurrencyTotal[currency] += (account.Free + account.Frozen) * account.PriceInUsdt
-		}
-	}
-	accounts.CurrencyPercentage = make(map[string]float64)
-	for currency, value := range accounts.CurrencyTotal {
-		accounts.CurrencyPercentage[currency] = value / accounts.TotalInUsdt
+		//accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
 	}
 	model.AccountChannel <- accounts.Data[marketName]
 }

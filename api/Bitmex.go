@@ -129,7 +129,7 @@ func QueryOrderBitmex(orderId string) (dealAmount, dealPrice float64, status str
 }
 
 func getAccountBitmex(accounts *model.Accounts) {
-	fmt.Println(accounts.TotalInUsdt)
+	fmt.Println(len(accounts.Data))
 }
 
 func placeOrderBitmex(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {

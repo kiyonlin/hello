@@ -34,21 +34,23 @@ func recordCarry(carry *model.Carry) {
 }
 
 func arbitraryFutureMarket(futureSymbol string, futureBidAsk *model.BidAsk, faceValue float64) {
-	if checkPending(futureSymbol) {
+	currency, err := util.GetCurrencyFromSymbol(futureSymbol)
+	if checkPending(futureSymbol) || err != nil {
 		return
 	}
 	util.Info(fmt.Sprintf(`check to arbitrary %s`, futureSymbol))
-	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, futureSymbol)
+	accountErr := api.GetAccountOkfuture(model.AppAccounts)
 	allHoldings, allHoldingsErr := api.GetAllHoldings(futureSymbol)
+	account := model.AppAccounts.GetAccount(model.OKFUTURE, currency)
 	if futureBidAsk == nil || futureBidAsk.Bids == nil || len(futureBidAsk.Bids) < 1 ||
-		accountErr != nil || allHoldingsErr != nil {
+		accountErr != nil || allHoldingsErr != nil || account == nil {
 		util.Notice(fmt.Sprintf(`fail to get allholdings and position and holding`))
 		return
 	}
-	transferAble := accountRights - allHoldings*faceValue/futureBidAsk.Bids[0].Price
+	transferAble := account.Free - allHoldings*faceValue/futureBidAsk.Bids[0].Price
 	if transferAble > 0 {
-		if transferAble > accountRights-(realProfit+unrealProfit) {
-			transferAble = accountRights - (realProfit + unrealProfit)
+		if transferAble > account.Free-(account.ProfitReal+account.ProfitUnreal) {
+			transferAble = account.Free - (account.ProfitReal + account.ProfitUnreal)
 		}
 		if transferAble*futureBidAsk.Bids[0].Price <= model.AppConfig.MinUsdt {
 			util.Info(fmt.Sprintf(`%s transferAble %f <= %f`, futureSymbol, transferAble, model.AppConfig.MinUsdt))
@@ -101,10 +103,6 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 
 func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount float64) {
 	if market == model.OKEX {
-		index := strings.Index(symbol, `_`)
-		if index == -1 {
-			return 0
-		}
 		accountUsdt := model.AppAccounts.GetAccount(market, `usdt`)
 		if accountUsdt == nil {
 			util.Info(`account nil`)
@@ -117,22 +115,20 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 		}
 		return model.ArbitraryCarryUSDT
 	} else if market == model.OKFUTURE {
-		//allHoldings, allHoldingErr := api.GetAllHoldings(symbol)
+		currency, err := util.GetCurrencyFromSymbol(symbol)
 		futureSymbolHoldings, futureSymbolHoldingErr := api.GetPositionOkfuture(market, symbol)
-		accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, symbol)
-		if accountErr != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil || bidPrice == 0 {
+		if err != nil || futureSymbolHoldingErr != nil || futureSymbolHoldings == nil ||
+			bidPrice == 0 {
 			util.Info(fmt.Sprintf(`fail to get allholdings and position and holding`))
 			return 0
 		}
-		// 在劇烈震蕩的時候需要關注盈虧的開空
-		//keepShort := math.Round((realProfit + unrealProfit) * bidPrice / faceValue)
-		//if allHoldings <= keepShort {
-		//	//util.Notice(fmt.Sprintf(`allholding <= keep %f %f`, allHoldings, keepShort))
-		//	return 0
-		//}
-		liquidAmount := math.Round(accountRights * bidPrice / faceValue)
-		if realProfit+unrealProfit > 0 {
-			liquidAmount = math.Round((accountRights - realProfit - unrealProfit) * bidPrice / faceValue)
+		account := model.AppAccounts.GetAccount(market, currency)
+		if account == nil {
+			return 0
+		}
+		liquidAmount := math.Round(account.Free * bidPrice / faceValue)
+		if account.ProfitReal+account.ProfitUnreal > 0 {
+			liquidAmount = math.Round((account.Free - account.ProfitReal - account.ProfitUnreal) * bidPrice / faceValue)
 		}
 		if liquidAmount > futureSymbolHoldings.OpenedShort {
 			liquidAmount = futureSymbolHoldings.OpenedShort
@@ -173,13 +169,21 @@ func openShort(carry *model.Carry, faceValue float64) {
 }
 
 func buyShort(carry *model.Carry, faceValue float64) bool {
-	accountRights, _, _, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.AskSymbol)
+	currency, err := util.GetCurrencyFromSymbol(carry.AskSymbol)
+	if err != nil {
+		return false
+	}
+	accountErr := api.GetAccountOkfuture(model.AppAccounts)
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.AskSymbol)
 	if accountErr != nil || allHoldingErr != nil {
 		util.Notice(fmt.Sprintf(`fail to get allholdings and position`))
 		return false
 	}
-	sellAmount := accountRights - allHoldings*faceValue/carry.AskPrice
+	account := model.AppAccounts.GetAccount(carry.AskWeb, currency)
+	if account == nil {
+		return false
+	}
+	sellAmount := account.Free - allHoldings*faceValue/carry.AskPrice
 	if sellAmount >= 0 {
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.DealAskAmount, carry.DealAskPrice =
 			api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, carry.AskWeb, carry.AskSymbol,
@@ -231,15 +235,23 @@ func closeShort(carry *model.Carry, faceValue float64) {
 		return
 	}
 	defer recordCarry(carry)
+	currency, err := util.GetCurrencyFromSymbol(carry.BidSymbol)
+	if err != nil {
+		return
+	}
 	allHoldings, allHoldingErr := api.GetAllHoldings(carry.BidSymbol)
-	accountRights, realProfit, unrealProfit, accountErr := api.GetAccountOkfuture(model.AppAccounts, carry.BidSymbol)
+	accountErr := api.GetAccountOkfuture(model.AppAccounts)
 	if allHoldingErr != nil || accountErr != nil {
 		util.Notice(fmt.Sprintf(`fail to get allholdings and position`))
 		return
 	}
-	transferAble := accountRights - allHoldings*faceValue/carry.DealBidPrice
-	if transferAble > accountRights-(realProfit+unrealProfit) {
-		transferAble = accountRights - (realProfit + unrealProfit)
+	account := model.AppAccounts.GetAccount(carry.BidWeb, currency)
+	if account == nil {
+		return
+	}
+	transferAble := account.Free - allHoldings*faceValue/carry.DealBidPrice
+	if transferAble > account.Free-(account.ProfitReal+account.ProfitUnreal) {
+		transferAble = account.Free - (account.ProfitReal + account.ProfitUnreal)
 	}
 	if transferAble*carry.DealBidPrice <= model.AppConfig.MinUsdt {
 		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f`, carry.BidWeb, transferAble, model.AppConfig.MinUsdt))
@@ -317,8 +329,15 @@ func createCarryByMargin(settings []*model.Setting) (carries []*model.Carry) {
 }
 
 func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
+	if carries == nil || len(carries) == 0 {
+		return nil
+	}
 	margin := 0.0
 	var bestCarry *model.Carry
+	accountErr := api.GetAccountOkfuture(model.AppAccounts)
+	if accountErr != nil {
+		return nil
+	}
 	for _, carry := range carries {
 		carry.BidAmount = getBidAmount(carry.BidWeb, carry.BidSymbol, faceValue, carry.BidPrice)
 		//util.Info(fmt.Sprintf(`[filter carry]%s/%s->%s/%s have margin %f amount %f`,

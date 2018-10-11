@@ -253,45 +253,34 @@ func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, m
 	return false, ``, err.Error()
 }
 
-//func GetCurrencyOkfuture(currency string) (accountrights, keepdeposit float64) {
-//	postdata := url.values{}
-//	responsebody := sendsignrequest(`post`, model.appconfig.resturls[model.okex]+"/future_userinfo.do", &postdata)
-//	balancejson, err := util.newjson(responsebody)
-//	if err == nil {
-//		accountrights, _ = balancejson.getpath(`info`, currency, `account_rights`).float64()
-//		keepdeposit, _ = balancejson.getpath(`info`, currency, `keep_deposit`).float64()
-//	}
-//	return accountrights, keepdeposit
-//}
-
-func GetAccountOkfuture(accounts *model.Accounts, currency string) (accountRight, profitReal, profitUnreal float64, err error) {
+func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 	postData := url.Values{}
 	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
 		"/future_userinfo.do", &postData, 400)
 	accountJson, err := util.NewJSON(responseBody)
-	if err != nil {
-		return 0, 0, 0, errors.New(`fail to get unreal profit`)
+	if err != nil || accountJson.Get(`info`) == nil {
+		return errors.New(`fail to get unreal profit`)
 	}
-	index := strings.Index(currency, `_`)
-	if index != -1 {
-		currency = currency[0:index]
+	accountMap, err := accountJson.Get(`info`).Map()
+	if err == nil {
+		for currency, value := range accountMap {
+			if value == nil {
+				return errors.New(`no account data for ` + currency)
+			}
+			accountRight, _ := value.(map[string]interface{})[`account_rights`]
+			profitReal, _ := value.(map[string]interface{})[`profit_real`]
+			profitUnreal, _ := value.(map[string]interface{})[`profit_unreal`]
+			account := accounts.GetAccount(model.OKFUTURE, currency)
+			if account == nil {
+				account = &model.Account{Market: model.OKFUTURE, Currency: currency}
+			}
+			account.Free, _ = accountRight.(json.Number).Float64()
+			account.ProfitReal, _ = profitReal.(json.Number).Float64()
+			account.ProfitUnreal, _ = profitUnreal.(json.Number).Float64()
+			accounts.SetAccount(model.OKFUTURE, currency, account)
+		}
 	}
-	accountRightsJson := accountJson.GetPath(`info`, currency, `account_rights`)
-	realProfitJson := accountJson.GetPath(`info`, currency, `profit_real`)
-	unrealProfitJson := accountJson.GetPath(`info`, currency, `profit_unreal`)
-	if accountRightsJson == nil || realProfitJson == nil {
-		return 0, 0, 0, errors.New(`no account data for ` + currency)
-	}
-	accountRight, _ = accountRightsJson.Float64()
-	profitReal, _ = realProfitJson.Float64()
-	profitUnreal, _ = unrealProfitJson.Float64()
-	account := accounts.GetAccount(model.OKFUTURE, currency)
-	if account == nil {
-		account = &model.Account{Market: model.OKFUTURE, Currency: currency}
-	}
-	account.Free = accountRight
-	accounts.SetAccount(model.OKFUTURE, currency, account)
-	return accountRight, profitReal, profitUnreal, nil
+	return nil
 }
 
 func GetAllHoldings(currency string) (allHoldings float64, err error) {

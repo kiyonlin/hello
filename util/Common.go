@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"github.com/bitly/go-simplejson"
-	"io/ioutil"
-	"time"
-	"net/url"
-	"math"
 	"fmt"
+	"github.com/bitly/go-simplejson"
+	"github.com/pkg/errors"
+	"io/ioutil"
+	"math"
+	"net/url"
+	"strings"
+	"time"
 )
 
 func UnGzip(byte []byte) []byte {
@@ -49,6 +51,14 @@ func JsonEncodeMapToByte(stringMap map[string]interface{}) []byte {
 		return nil
 	}
 	return jsonBytes
+}
+
+func GetCurrencyFromSymbol(symbol string) (currency string, err error) {
+	index := strings.Index(symbol, `_`)
+	if index < 0 {
+		return ``, errors.New(`wrong symbol format`)
+	}
+	return symbol[0:index], nil
 }
 
 func GetNow() time.Time {
