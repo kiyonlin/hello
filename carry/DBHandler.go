@@ -103,10 +103,14 @@ func dealDiligentSettings() {
 
 func dealLazySettings() {
 	createdAt := util.GetNow().Add(time.Duration(-86400) * time.Second)
-	settings := model.LoadLazySettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
+	settings := model.GetMarketSettings(model.OKFUTURE)
+	diligentSettings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
 	openShort := 0.0
 	var setting *model.Setting
 	for _, value := range settings {
+		if diligentSettings[value.Symbol] != nil {
+			continue
+		}
 		futureAccount, _ := api.GetPositionOkfuture(value.Market, value.Symbol)
 		if futureAccount != nil {
 			short := futureAccount.OpenedShort
