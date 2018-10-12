@@ -11,7 +11,7 @@ type Setting struct {
 	Margin            float64 // carry use
 	OpenShortMargin   float64 // arbitrary future use
 	CloseShortMargin  float64 // arbitrary future use
-	Chance            int64   // arbitrary future use
+	Chance            float64 // arbitrary future use
 	TurtleBalanceRate float64
 	Valid             bool
 	ID                uint `gorm:"primary_key"`
@@ -48,17 +48,6 @@ func GetMarkets() []string {
 		i++
 	}
 	return markets
-}
-
-func GetCurrencies(market string) map[string]string {
-	currencies := make(map[string]string)
-	for key := range marketSymbolSetting[market] {
-		index := strings.Index(key, `_`)
-		if index > 0 {
-			currencies[key[0:index]] = ``
-		}
-	}
-	return currencies
 }
 
 func GetSettings(market, symbolPrefix string) (settings []*Setting) {
