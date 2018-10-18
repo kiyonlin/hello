@@ -1,12 +1,15 @@
 package api
 
 import (
+	"bytes"
+	"compress/flate"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
+	"io"
 	"net/url"
 	"sort"
 	"strconv"
@@ -94,6 +97,10 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 		if len(event) == 0 {
 			return
 		}
+		var out bytes.Buffer
+		reader := flate.NewReader(bytes.NewReader(event))
+		io.Copy(&out, reader)
+		event = out.Bytes()
 		resultJson, err := util.NewJSON([]byte(event))
 		if err != nil {
 			return

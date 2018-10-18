@@ -3,41 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/jinzhu/configor"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
 	"hello/model"
 	"hello/util"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 )
-
-func loadLazySettings() {
-	createdAt := util.GetNow().Add(time.Duration(-86400) * time.Second)
-	model.AppDB, _ = gorm.Open("postgres", model.AppConfig.DBConnection)
-	settings := model.LoadLazySettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
-	openShort := 0.0
-	var setting *model.Setting
-	for _, value := range settings {
-		futureAccount, _ := api.GetPositionOkfuture(value.Market, value.Symbol)
-		if futureAccount != nil {
-			short := futureAccount.OpenedShort
-			if strings.Contains(futureAccount.Symbol, `btc`) {
-				short = short * 10
-			}
-			if openShort < short {
-				openShort = short
-				setting = value
-			}
-		}
-	}
-	setting.CloseShortMargin += 0.009
-	setting.OpenShortMargin -= 0.0001
-	model.AppDB.Save(setting)
-	model.LoadSettings()
-}
 
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
@@ -47,7 +20,6 @@ func Test_RefreshAccount(t *testing.T) {
 		return
 	}
 	api.GetAccountOkfuture(model.AppAccounts)
-	loadLazySettings()
 	for i := 0; i < 50; i++ {
 		api.GetKLineOkexFuture(`btc_this_week`, `1min`, 100)
 	}

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"compress/flate"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -8,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
+	"io"
 	"math"
 	"net/url"
 	"sort"
@@ -57,6 +60,10 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 			}
 		}
 		messages := make([]OKEXMessage, 1)
+		var out bytes.Buffer
+		reader := flate.NewReader(bytes.NewReader(event))
+		io.Copy(&out, reader)
+		event = out.Bytes()
 		if err := json.Unmarshal(event, &messages); err == nil {
 			for _, message := range messages {
 				symbol := model.GetSymbol(model.OKEX, message.Channel)

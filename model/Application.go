@@ -271,8 +271,8 @@ func NewConfig() {
 	AppConfig.WSUrls = make(map[string]string)
 	//AppConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
 	AppConfig.WSUrls[Huobi] = `wss://api.huobi.br.com/ws`
-	AppConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket"
-	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket`
+	AppConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket?compress=true"
+	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
