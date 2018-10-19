@@ -234,7 +234,7 @@ func Maintain() {
 	go AccountHandlerServe()
 	go controller.ParameterServe()
 	go RefreshAccounts()
-
+	needWS := true
 	carryHandlers := make([]api.CarryHandler, len(model.AppConfig.Functions))
 	for i, value := range model.AppConfig.Functions {
 		switch value {
@@ -250,11 +250,12 @@ func Maintain() {
 			go MaintainArbitrarySettings()
 			carryHandlers[i] = ProcessContractArbitrage
 		case `rsi`:
+			needWS = false
 			go ProcessInform()
 		}
 	}
 	//go MaintainAccountChan()
-	for true {
+	for needWS {
 		go MaintainMarketDepthChan(carryHandlers)
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
 	}
