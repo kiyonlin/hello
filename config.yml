@@ -15,13 +15,13 @@ minusdt: 15
 maxusdt: 1500
 inchina: 0
 deduction: 0.8
-env: simon
-dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=two password=zaq12WSX sslmode=disable
+#env: simon
+#dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=two password=zaq12WSX sslmode=disable
 #dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=jack password=zaq12WSX sslmode=disable
 #env: ace
-#dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
-#env: andrew
-#dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=mydb password=zaq12WSX sslmode=disable
+#dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=haoweizh dbname=ace password=zaq12WSX sslmode=disable
+env: sammi
+dbconnection: host=seol.cybxt2epntdc.ap-northeast-2.rds.amazonaws.com port=5432 user=haoweizh dbname=sammi password=zaq12WSX sslmode=disable
 #dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=bitmex password=zaq12WSX sslmode=disable
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
