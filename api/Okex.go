@@ -317,6 +317,9 @@ func GetKLineOkex(symbol, timeSlot string, size int64) []*model.KLinePoint {
 		&postData, 100)
 	//fmt.Println(string(responseBody))
 	dataJson, _ := util.NewJSON(responseBody)
+	if dataJson == nil {
+		return nil
+	}
 	data, _ := dataJson.Array()
 	priceKLine := make([]*model.KLinePoint, len(data))
 	for key, value := range data {
