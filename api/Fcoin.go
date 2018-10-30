@@ -12,7 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
+
+var fcoinLastApiAccessTime *time.Time
 
 var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) error {
 	var err error = nil
@@ -76,12 +79,20 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 
 func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []byte {
 	uri := model.AppConfig.RestUrls[model.Fcoin] + path
-	time := strconv.FormatInt(util.GetNow().UnixNano(), 10)[0:13]
+	current := util.GetNow()
+	if fcoinLastApiAccessTime == nil {
+		fcoinLastApiAccessTime = &current
+	}
+	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 100000000 {
+		time.Sleep(time.Duration(100) * time.Millisecond)
+		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
+	}
+	currentTime := strconv.FormatInt(current.UnixNano(), 10)[0:13]
 	postData := &url.Values{}
 	for key, value := range postMap {
 		postData.Set(key, value.(string))
 	}
-	toBeBase := method + uri + time
+	toBeBase := method + uri + currentTime
 	if method != `GET` {
 		toBeBase += postData.Encode()
 	}
@@ -90,7 +101,7 @@ func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []b
 	hash.Write([]byte(based))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	headers := map[string]string{`FC-ACCESS-KEY`: model.AppConfig.FcoinKey,
-		`FC-ACCESS-SIGNATURE`: sign, `FC-ACCESS-TIMESTAMP`: time, "Content-Type": "application/json"}
+		`FC-ACCESS-SIGNATURE`: sign, `FC-ACCESS-TIMESTAMP`: currentTime, "Content-Type": "application/json"}
 	var responseBody []byte
 	if postMap == nil {
 		responseBody, _ = util.HttpRequest(method, uri, ``, headers)
@@ -202,8 +213,7 @@ func getAccountFcoin(accounts *model.Accounts) {
 func getBuyPriceFcoin(symbol string) (buy float64, err error) {
 	model.CurrencyPrice[symbol] = 0
 	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody, err := util.HttpRequest(`GET`, model.AppConfig.RestUrls[model.Fcoin]+`/market/ticker/`+requestSymbol,
-		``, nil)
+	responseBody := SignedRequestFcoin(`GET`, `/market/ticker/`+requestSymbol, nil)
 	if err == nil {
 		orderJson, err := util.NewJSON([]byte(responseBody))
 		if err == nil {

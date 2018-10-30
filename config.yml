@@ -2,7 +2,8 @@ functions:
 #- carry
 #- balanceturtle
 #- arbitrary
-- rsi
+# - rsi
+- refresh
 
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
@@ -17,9 +18,9 @@ inchina: 0
 deduction: 0.8
 #env: simon
 #dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=two password=zaq12WSX sslmode=disable
-#dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
-env: ace
-dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
+dbconnection: host=simonisgood.cfxtvaff0nlc.ap-northeast-1.rds.amazonaws.com port=54322 user=crook dbname=one password=zaq12WSX sslmode=disable
+env: dk
+#dbconnection: host=mydb.ckqil47vjyah.ap-northeast-1.rds.amazonaws.com port=5432 user=ace dbname=ace password=zaq12WSX sslmode=disable
 #env: sammi
 #dbconnection: host=seol.cybxt2epntdc.ap-northeast-2.rds.amazonaws.com port=5432 user=haoweizh dbname=sammi password=zaq12WSX sslmode=disable
 #dbconnection: host=mydb.clhbtnpqdvfn.us-east-2.rds.amazonaws.com port=5432 user=crook dbname=bitmex password=zaq12WSX sslmode=disable
@@ -41,8 +42,12 @@ okexsecret: FA268A0824C7988E366435F82EF6BAC6
 binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
 binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
 #ace fcoin
-fcoinkey: 7c26be189ddc4e59aeb6021cfbfc3415
-fcoinsecret: 54342819cbe148859f8d5ebdf384e607
+#fcoinkey: 7c26be189ddc4e59aeb6021cfbfc3415
+#fcoinsecret: 54342819cbe148859f8d5ebdf384e607
+# dk
+fcoinkey: a53b6267bf1b4c0481c80bcf76eb4dee
+fcoinsecret: a6b3ebddb5d94696a2495b1ea8811ce7
+
 #52.192.134.3,13.209.7.121,13.231.235.25,18.191.71.98
 coinbigkey: 1E22104822C70BB607F159BAB6464C8E
 coinbigsecret: 57F20C33AEB2F29171B77239EDBBC102

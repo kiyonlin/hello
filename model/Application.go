@@ -274,7 +274,7 @@ func NewConfig() {
 	AppConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket?compress=true"
 	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
-	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
+	AppConfig.WSUrls[Fcoin] = "wss://api.fcoinjp.com/v2/ws"
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
@@ -283,7 +283,7 @@ func NewConfig() {
 	AppConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
-	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
+	AppConfig.RestUrls[Fcoin] = "https://api.fcoinjp.com/v2"
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
