@@ -64,8 +64,8 @@ func AccountHandlerServe() {
 			current := util.GetNow()
 			//util.Info(fmt.Sprintf(`%s add account %s %f`, value.Market, value.Currency, value.PriceInUsdt))
 			if !cleared {
-				util.Info(`remove accounts ` + value.Market + util.GetNow().Format("2006-01-02"))
-				model.AppDB.Delete(model.Account{}, "market = ? AND date(created_at) = ?",
+				//util.Info(`remove accounts ` + value.Market + util.GetNow().Format("2006-01-02"))
+				model.AppDB.Delete(model.Account{}, "market = ? AND date(created_at) > ?",
 					value.Market, current.Format("2006-01-02"))
 				cleared = true
 			}
