@@ -255,8 +255,10 @@ func Maintain() {
 		}
 	}
 	//go MaintainAccountChan()
-	for needWS {
-		go MaintainMarketDepthChan(carryHandlers)
+	for true {
+		if needWS {
+			go MaintainMarketDepthChan(carryHandlers)
+		}
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
 	}
 }

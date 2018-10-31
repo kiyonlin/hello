@@ -1,9 +1,9 @@
 functions:
 #- carry
 #- balanceturtle
-#- arbitrary
-# - rsi
-- refresh
+- arbitrary
+#- rsi
+#- refresh
 
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb

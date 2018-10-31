@@ -99,7 +99,7 @@ func ProcessInform() {
 		if isSend {
 			sendMail(body)
 		} else {
-			util.SocketInfo(body + ` no need send`)
+			util.Info(body + ` no need send`)
 		}
 		time.Sleep(time.Minute)
 		data = make(map[string]map[string][]*model.KLinePoint)
