@@ -22,6 +22,7 @@ type Account struct {
 	PriceInUsdt  float64
 	ProfitReal   float64
 	ProfitUnreal float64
+	Timestamp    time.Time
 	//Percentage  float64
 	ID        uint `gorm:"primary_key"`
 	CreatedAt time.Time
