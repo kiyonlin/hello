@@ -95,7 +95,7 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 			AskPrice: marketBidAsk.Bids[0].Price, DealAskStatus: status, AskTime: int64(marketBidAsk.Ts),
 			SideType: model.CarryTypeArbitrarySell, DealAskAmount: actualAmount}
 		recordCarry(carry)
-		api.RefreshAccount(market)
+		api.RefreshAccount(market, util.GetNow())
 		util.Notice(fmt.Sprintf(`[!arbitrary!]orderid:%s errCode:%s status:%s dealAmount:%f at price:%f`,
 			orderId, errCode, status, actualAmount, actualPrice))
 	}
@@ -106,7 +106,7 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 		accountUsdt := model.AppAccounts.GetAccount(market, `usdt`)
 		if accountUsdt == nil {
 			util.Info(`account nil`)
-			api.RefreshAccount(market)
+			api.RefreshAccount(market, util.GetNow())
 			return 0
 		}
 		if accountUsdt.Free <= model.AppConfig.MinUsdt || accountUsdt.Free <= model.ArbitraryCarryUSDT {
@@ -153,7 +153,7 @@ func openShort(carry *model.Carry, faceValue float64) {
 	}
 	carry.DealBidAmount, carry.DealBidPrice, carry.DealBidStatus = api.SyncQueryOrderById(carry.BidWeb, carry.BidSymbol,
 		carry.DealBidOrderId)
-	api.RefreshAccount(carry.BidWeb)
+	api.RefreshAccount(carry.BidWeb, util.GetNow())
 	transferAmount := carry.DealBidAmount
 	if transferAmount*carry.DealBidPrice <= model.AppConfig.MinUsdt {
 		util.Notice(fmt.Sprintf(`%s transferAble %f <= %f in usd`, carry.BidSymbol, transferAmount,
@@ -260,7 +260,7 @@ func closeShort(carry *model.Carry, faceValue float64) {
 	transfer, errCode := api.MustFundTransferOkex(carry.AskSymbol, transferAble, `3`, `1`)
 	util.Notice(fmt.Sprintf(`%s transfer %f result %v %s`, carry.AskSymbol, transferAble, transfer, errCode))
 	if transfer {
-		api.RefreshAccount(carry.AskWeb)
+		api.RefreshAccount(carry.AskWeb, util.GetNow())
 		index := strings.Index(carry.AskSymbol, `_`)
 		if index == -1 {
 			return
@@ -276,7 +276,7 @@ func closeShort(carry *model.Carry, faceValue float64) {
 		} else {
 			util.Notice(`[!!Ask Fail]` + carry.DealAskErrCode + carry.DealAskStatus)
 		}
-		api.RefreshAccount(carry.AskWeb)
+		api.RefreshAccount(carry.AskWeb, util.GetNow())
 	}
 }
 

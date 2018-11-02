@@ -155,7 +155,7 @@ func RefreshAccounts() {
 	for true {
 		markets := model.GetMarkets()
 		for _, value := range markets {
-			api.RefreshAccount(value)
+			api.RefreshAccount(value, util.GetNow())
 		}
 		time.Sleep(time.Second * 300)
 	}
