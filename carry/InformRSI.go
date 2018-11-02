@@ -18,6 +18,9 @@ func getData(symbol, timeSlot string) []*model.KLinePoint {
 	}
 	if data[symbol][timeSlot] == nil {
 		priceKLine := api.GetKLineOkex(symbol, timeSlot, 2000)
+		if priceKLine == nil || len(priceKLine) == 0 {
+			return nil
+		}
 		data[symbol][timeSlot] = priceKLine
 
 		diff := make([]float64, len(data[symbol][timeSlot])-1)
@@ -85,6 +88,9 @@ func ProcessInform() {
 		isSend := false
 		for _, symbol := range symbols {
 			klines := getData(symbol, `15min`)
+			if klines == nil || len(klines) == 0 {
+				continue
+			}
 			kline := klines[len(klines)-1]
 			if kline == nil {
 				continue
