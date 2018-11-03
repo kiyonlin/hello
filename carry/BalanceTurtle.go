@@ -29,7 +29,7 @@ var ProcessBalanceTurtle = func(symbol, market string) {
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
 	rightAccount := model.AppAccounts.GetAccount(market, currencies[1])
 	if leftAccount == nil || rightAccount == nil {
-		api.RefreshAccount(market, util.GetNow())
+		api.RefreshAccount(market)
 		return
 	}
 	currentPrice, _ := api.GetPrice(symbol)
@@ -42,7 +42,7 @@ var ProcessBalanceTurtle = func(symbol, market string) {
 		if err != nil || carry == nil {
 			util.Notice(`can not create turtle ` + err.Error())
 			time.Sleep(time.Minute)
-			api.RefreshAccount(market, util.GetNow())
+			api.RefreshAccount(market)
 			return
 		}
 		placeTurtle(market, symbol, carry, leftAccount, rightAccount)
@@ -57,7 +57,7 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 	if carry.AskAmount > leftAccount.Free || carry.BidAmount > rightAccount.Free/carry.BidPrice {
 		util.Notice(fmt.Sprintf(`金额不足coin%f-ask%f money%f-bid%f`, leftAccount.Free, carry.AskAmount,
 			rightAccount.Free, carry.BidAmount))
-		api.RefreshAccount(market, util.GetNow())
+		api.RefreshAccount(market)
 		return
 	}
 	carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
@@ -69,7 +69,7 @@ func placeTurtle(market, symbol string, carry *model.Carry, leftAccount, rightAc
 		carry.DealBidOrderId != `` && carry.DealBidOrderId != `0` {
 		util.Notice(`[set new carry成功]` + carry.ToString())
 	} else {
-		api.RefreshAccount(market, util.GetNow())
+		api.RefreshAccount(market)
 		util.Notice(`[set new carry不平]` + carry.ToString())
 	}
 	model.CarryChannel <- *carry
@@ -86,7 +86,7 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 				util.Notice(`[双边成交]` + carry.ToString())
 				model.CarryChannel <- *carry
 				model.SetBalanceTurtleCarry(market, symbol, nil)
-				api.RefreshAccount(market, util.GetNow())
+				api.RefreshAccount(market)
 			}
 		}
 	} else if marketAskPrice < carry.BidPrice {
@@ -100,7 +100,7 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 			carry.AskSymbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
 		model.SetBalanceTurtleCarry(market, symbol, nil)
 		model.SetBalanceTurtlePrice(market, symbol, carry.BidPrice)
-		api.RefreshAccount(market, util.GetNow())
+		api.RefreshAccount(market)
 	} else if marketBidPrice > carry.AskPrice {
 		api.CancelOrder(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
 		carry.DealBidAmount, _, _ = api.QueryOrderById(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
@@ -112,6 +112,6 @@ func handleTurtle(market, symbol string, carry *model.Carry) {
 			carry.BidSymbol, carry.BidPrice, carry.AskPrice, marketBidPrice, marketAskPrice))
 		model.SetBalanceTurtleCarry(market, symbol, nil)
 		model.SetBalanceTurtlePrice(market, symbol, carry.AskPrice)
-		api.RefreshAccount(market, util.GetNow())
+		api.RefreshAccount(market)
 	}
 }

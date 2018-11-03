@@ -154,8 +154,19 @@ func MaintainArbitrarySettings() {
 func RefreshAccounts() {
 	for true {
 		markets := model.GetMarkets()
+		timestamp := util.GetNow()
 		for _, value := range markets {
-			api.RefreshAccount(value, util.GetNow())
+			api.RefreshAccount(value)
+			if model.AppAccounts.Data[value] == nil {
+				continue
+			}
+			//accounts.MarketTotal[marketName] = 0
+			for key, value := range model.AppAccounts.Data[value] {
+				value.PriceInUsdt, _ = api.GetPrice(key + "_usdt")
+				value.Timestamp = timestamp
+				//util.Info(fmt.Sprintf(`%s price %f`, key, value.PriceInUsdt))
+			}
+			model.AccountChannel <- model.AppAccounts.Data[value]
 		}
 		time.Sleep(time.Second * 300)
 	}

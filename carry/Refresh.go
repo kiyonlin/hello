@@ -66,7 +66,7 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, a
 			orderSide, orderType, carry.AskSymbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
 	}
 	if carry.DealAskErrCode == `2027` || carry.DealBidErrCode == `2027` {
-		go api.RefreshAccount(model.GetMarkets()[0], util.GetNow())
+		go api.RefreshAccount(model.GetMarkets()[0])
 	}
 	model.RefreshCarryChannel <- *carry
 	model.CarryChannel <- *carry
@@ -161,7 +161,7 @@ var ProcessRefresh = func(symbol, market string) {
 	model.AppMarkets.BidAsks[carry.BidSymbol][carry.BidWeb] = nil
 	bidAskTimes++
 	if bidAskTimes%30 == 0 {
-		api.RefreshAccount(model.GetMarkets()[0], util.GetNow())
+		api.RefreshAccount(model.GetMarkets()[0])
 		//rebalance(leftAccount, rightAccount, carry)
 		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {

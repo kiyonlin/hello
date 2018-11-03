@@ -111,7 +111,7 @@ func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice f
 	return dealAmount, dealPrice, status
 }
 
-func RefreshAccount(market string, timestamp time.Time) {
+func RefreshAccount(market string) {
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
@@ -139,7 +139,6 @@ func RefreshAccount(market string, timestamp time.Time) {
 	case model.Bitmex:
 		getAccountBitmex(model.AppAccounts)
 	}
-	Maintain(model.AppAccounts, market, timestamp)
 }
 
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
@@ -195,22 +194,6 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, 
 	//util.Notice(fmt.Sprintf(`[%s-%s] %s %s price: %f amount %f [orderId: %s] errCode %s`, orderSide, orderType,
 	//	market, symbol, price, amount, orderId, errCode))
 	return orderId, errCode, status, actualAmount, actualPrice
-}
-
-func Maintain(accounts *model.Accounts, marketName string, timestamp time.Time) {
-	accounts.Lock.Lock()
-	defer accounts.Lock.Unlock()
-	if accounts.Data[marketName] == nil {
-		return
-	}
-	//accounts.MarketTotal[marketName] = 0
-	for key, value := range accounts.Data[marketName] {
-		value.PriceInUsdt, _ = GetPrice(key + "_usdt")
-		value.Timestamp = timestamp
-		//util.Info(fmt.Sprintf(`%s price %f`, key, value.PriceInUsdt))
-		//accounts.MarketTotal[marketName] += value.PriceInUsdt * (value.Free + value.Frozen)
-	}
-	model.AccountChannel <- accounts.Data[marketName]
 }
 
 func GetPrice(symbol string) (buy float64, err error) {
