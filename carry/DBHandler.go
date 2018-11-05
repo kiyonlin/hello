@@ -168,7 +168,7 @@ func RefreshAccounts() {
 			}
 			model.AccountChannel <- model.AppAccounts.Data[value]
 		}
-		time.Sleep(time.Minute * 30)
+		time.Sleep(time.Hour * 1)
 	}
 }
 
