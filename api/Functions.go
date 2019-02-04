@@ -43,6 +43,13 @@ func GetAmountDecimal(market, symbol string) int {
 		case `eos_usdt`, `btc_usdt`:
 			return 4
 		}
+	case model.Fcoin:
+		switch symbol {
+		case `btc_usdt`:
+			return 4
+		case `eos_usdt`:
+			return 4
+		}
 	}
 	return 4
 }
@@ -69,46 +76,59 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 	return false, `market-not-supported`, `market not supported ` + market
 }
 
-func QueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float64, status string) {
-	util.Notice(fmt.Sprintf(`query order %s %s %s`, market, symbol, orderId))
+func QueryOrders(market, symbol, states string) (orders map[string]*model.Order) {
 	switch market {
-	case model.Huobi:
-		dealAmount, dealPrice, status = QueryOrderHuobi(orderId)
-	case model.OKEX:
-		dealAmount, dealPrice, status = QueryOrderOkex(symbol, orderId)
-	case model.OKFUTURE:
-		dealAmount, dealPrice, status = QueryOrderOkfuture(symbol, orderId)
-	case model.Binance:
-		dealAmount, dealPrice, status = QueryOrderBinance(symbol, orderId)
 	case model.Fcoin:
-		dealAmount, dealPrice, status = QueryOrderFcoin(symbol, orderId)
-	case model.Coinpark:
-		dealAmount, dealPrice, status = QueryOrderCoinpark(orderId)
-	case model.Coinbig:
-		dealAmount, status = QueryOrderCoinbig(orderId)
-	case model.Bitmex:
-		dealAmount, dealPrice, status = QueryOrderBitmex(orderId)
+		return queryOrdersFcoin(symbol, states)
+	default:
+		util.Notice(market + ` not supported`)
 	}
-	return dealAmount, dealPrice, status
+	return nil
 }
 
-func SyncQueryOrderById(market, symbol, orderId string) (dealAmount, dealPrice float64, status string) {
+func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
+	var dealAmount, dealPrice float64
+	var status string
+	switch market {
+	case model.Huobi:
+		dealAmount, dealPrice, status = queryOrderHuobi(orderId)
+	case model.OKEX:
+		dealAmount, dealPrice, status = queryOrderOkex(symbol, orderId)
+	case model.OKFUTURE:
+		dealAmount, dealPrice, status = queryOrderOkfuture(symbol, orderId)
+	case model.Binance:
+		dealAmount, dealPrice, status = queryOrderBinance(symbol, orderId)
+	case model.Fcoin:
+		return queryOrderFcoin(symbol, orderId)
+	case model.Coinpark:
+		dealAmount, dealPrice, status = queryOrderCoinpark(orderId)
+	case model.Coinbig:
+		dealAmount, status = queryOrderCoinbig(orderId)
+	case model.Bitmex:
+		dealAmount, dealPrice, status = queryOrderBitmex(orderId)
+	}
+	return &model.Order{OrderId: orderId, Symbol: symbol, Market: market, DealAmount: dealAmount, DealPrice: dealPrice,
+		Status: status}
+}
+
+func SyncQueryOrderById(market, symbol, orderId string) (order *model.Order) {
 	if orderId == `0` || orderId == `` {
-		return 0, 0, `fail`
+		return nil
 	}
 	for i := 0; i < 100; i++ {
-		dealAmount, dealPrice, status = QueryOrderById(market, symbol, orderId)
-		if status == model.CarryStatusSuccess || status == model.CarryStatusFail {
-			return dealAmount, dealPrice, status
+		order = QueryOrderById(market, symbol, orderId)
+		if order.Status == model.CarryStatusSuccess || order.Status == model.CarryStatusFail {
+			return order
 		}
 		if i > 10 {
 			cancelResult, cancelErrCode, cancelMsg := CancelOrder(market, symbol, orderId)
 			util.Notice(fmt.Sprintf(`[cancel order] %v %s %s`, cancelResult, cancelErrCode, cancelMsg))
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 3)
 	}
-	util.Notice(fmt.Sprintf(`can not query %s %s %s, return %s`, market, symbol, orderId, status))
-	return dealAmount, dealPrice, status
+	util.Notice(fmt.Sprintf(`can not query %s %s %s, return %s`, market, symbol, orderId, order.Status))
+	return order
+	//return order.DealAmount, order.DealPrice, order.Status
 }
 
 func RefreshAccount(market string) {
@@ -119,7 +139,10 @@ func RefreshAccount(market string) {
 	case model.OKEX:
 		getAccountOkex(model.AppAccounts)
 	case model.OKFUTURE:
-		GetAccountOkfuture(model.AppAccounts)
+		err := GetAccountOkfuture(model.AppAccounts)
+		if err != nil {
+			util.Notice(err.Error())
+		}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
 		if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
@@ -144,14 +167,15 @@ func RefreshAccount(market string) {
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, amount float64) (orderId, errCode,
-	status string, actualAmount, actualPrice float64) {
+func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price,
+	amount float64) (order *model.Order) {
 	precision := GetPriceDecimal(market, symbol)
 	strPrice := strconv.FormatFloat(price, 'f', precision, 64)
 	strAmount := strconv.FormatFloat(amount, 'f', precision, 64)
 	if amountType == model.AmountTypeContractNumber {
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}
+	var orderId, errCode, status string
 	switch market {
 	case model.Huobi:
 		orderId, errCode = placeOrderHuobi(orderSide, orderType, symbol, strPrice, strAmount)
@@ -164,7 +188,8 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, 
 				contractAmount = math.Floor(amount * price / model.OKEXBTCContractFaceValue)
 			}
 			if contractAmount < 1 {
-				return ``, `amount not enough`, model.CarryStatusFail, 0, 0
+				return &model.Order{ErrCode: `amount not enough`, Status: model.CarryStatusFail,
+					DealAmount: 0, DealPrice: 0}
 			}
 			strAmount = strconv.FormatFloat(contractAmount, 'f', 0, 64)
 		}
@@ -176,7 +201,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, 
 	case model.Coinpark:
 		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, strPrice, strAmount)
 		if errCode == `4003` {
-			util.Notice(`【發現4003錯誤】sleep 3 minutes`)
+			util.Notice(`【发现4003错误】sleep 3 minutes`)
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Coinbig:
@@ -189,11 +214,11 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price, 
 	} else {
 		status = model.CarryStatusWorking
 	}
-	actualAmount, _ = strconv.ParseFloat(strAmount, 64)
-	actualPrice, _ = strconv.ParseFloat(strPrice, 64)
-	//util.Notice(fmt.Sprintf(`[%s-%s] %s %s price: %f amount %f [orderId: %s] errCode %s`, orderSide, orderType,
-	//	market, symbol, price, amount, orderId, errCode))
-	return orderId, errCode, status, actualAmount, actualPrice
+	actualAmount, _ := strconv.ParseFloat(strAmount, 64)
+	actualPrice, _ := strconv.ParseFloat(strPrice, 64)
+	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+		AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
+		Status: status, DealAmount: actualAmount, DealPrice: actualPrice}
 }
 
 func GetPrice(symbol string) (buy float64, err error) {

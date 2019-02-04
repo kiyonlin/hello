@@ -73,7 +73,7 @@ func WsDepthServeCoinpark(markets *model.Markets, carryHandlers []CarryHandler, 
 				sort.Sort(sort.Reverse(bidAsk.Bids))
 				if markets.SetBidAsk(symbol, model.Coinpark, &bidAsk) {
 					for _, handler := range carryHandlers {
-						handler(symbol, model.Coinpark)
+						handler(model.Coinpark, symbol)
 					}
 				}
 			}
@@ -197,7 +197,7 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 }
 
 //dealPrice 返回委托价格，市价单是0
-func QueryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status string) {
+func queryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status string) {
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/order","body":{"id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	orderJson, err := util.NewJSON([]byte(responseBody))

@@ -4,11 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -32,15 +32,15 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 
 func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
-		json, err := util.NewJSON(event)
+		responseJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
 			return
 		}
-		if json == nil {
+		if responseJson == nil {
 			return
 		}
-		symbol := model.GetSymbol(model.Fcoin, json.Get("type").MustString())
+		symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
 		symbolSettings := model.GetMarketSettings(model.Fcoin)
 		if symbolSettings == nil || symbolSettings[symbol] == nil {
 			util.Notice(symbol + ` not supported`)
@@ -48,26 +48,26 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 		}
 		if symbol != "" && symbol != "_" {
 			bidAsk := model.BidAsk{}
-			bidsLen := len(json.Get("bids").MustArray()) / 2
+			bidsLen := len(responseJson.Get("bids").MustArray()) / 2
 			bidAsk.Bids = make([]model.Tick, bidsLen)
 			for i := 0; i < bidsLen; i++ {
-				price, _ := json.Get("bids").GetIndex(i * 2).Float64()
-				amount, _ := json.Get("bids").GetIndex(i*2 + 1).Float64()
+				price, _ := responseJson.Get("bids").GetIndex(i * 2).Float64()
+				amount, _ := responseJson.Get("bids").GetIndex(i*2 + 1).Float64()
 				bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 			}
-			asksLen := len(json.Get("asks").MustArray()) / 2
+			asksLen := len(responseJson.Get("asks").MustArray()) / 2
 			bidAsk.Asks = make([]model.Tick, asksLen)
 			for i := 0; i < asksLen; i++ {
-				price, _ := json.Get("asks").GetIndex(i * 2).Float64()
-				amount, _ := json.Get("asks").GetIndex(i*2 + 1).Float64()
+				price, _ := responseJson.Get("asks").GetIndex(i * 2).Float64()
+				amount, _ := responseJson.Get("asks").GetIndex(i*2 + 1).Float64()
 				bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 			}
 			sort.Sort(bidAsk.Asks)
 			sort.Sort(sort.Reverse(bidAsk.Bids))
-			bidAsk.Ts = json.Get("ts").MustInt()
+			bidAsk.Ts = responseJson.Get("ts").MustInt()
 			if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
 				for _, handler := range carryHandlers {
-					handler(symbol, model.Fcoin)
+					handler(model.Fcoin, symbol)
 				}
 			}
 		}
@@ -77,7 +77,7 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 		wsHandler, errHandler)
 }
 
-func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []byte {
+func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte {
 	uri := model.AppConfig.RestUrls[model.Fcoin] + path
 	current := util.GetNow()
 	if fcoinLastApiAccessTime == nil {
@@ -88,13 +88,12 @@ func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []b
 		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
 	}
 	currentTime := strconv.FormatInt(current.UnixNano(), 10)[0:13]
-	postData := &url.Values{}
-	for key, value := range postMap {
-		postData.Set(key, value.(string))
+	if method == `GET` && len(body) > 0 {
+		uri += `?` + util.ComposeParams(body)
 	}
 	toBeBase := method + uri + currentTime
-	if method != `GET` {
-		toBeBase += postData.Encode()
+	if method == `POST` {
+		toBeBase += util.ComposeParams(body)
 	}
 	based := base64.StdEncoding.EncodeToString([]byte(toBeBase))
 	hash := hmac.New(sha1.New, []byte(model.AppConfig.FcoinSecret))
@@ -103,10 +102,10 @@ func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []b
 	headers := map[string]string{`FC-ACCESS-KEY`: model.AppConfig.FcoinKey,
 		`FC-ACCESS-SIGNATURE`: sign, `FC-ACCESS-TIMESTAMP`: currentTime, "Content-Type": "application/json"}
 	var responseBody []byte
-	if postMap == nil {
+	if body == nil {
 		responseBody, _ = util.HttpRequest(method, uri, ``, headers)
 	} else {
-		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(postMap)), headers)
+		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers)
 	}
 	return responseBody
 }
@@ -115,30 +114,24 @@ func SignedRequestFcoin(method, path string, postMap map[string]interface{}) []b
 // type: limit market
 // fcoin中amount在市价买单中指的是右侧的钱
 func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
-	if orderSide == model.OrderSideBuy {
-		orderSide = `buy`
-	} else if orderSide == model.OrderSideSell {
-		orderSide = `sell`
-	} else {
+	postData := make(map[string]interface{})
+	if orderType == model.OrderTypeLimit {
+		postData["price"] = price
+	}
+	orderSide = model.GetDictMap(model.Fcoin, orderSide)
+	if orderSide == `` {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
 		return ``, ``
 	}
-	if orderType == model.OrderTypeLimit {
-		orderType = `limit`
-	} else if orderType == model.OrderTypeMarket {
-		orderType = `market`
-	} else {
+	orderType = model.GetDictMap(model.Fcoin, orderType)
+	if orderType == `` {
 		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
 		return ``, ``
 	}
-	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	postData["type"] = orderType
 	postData["side"] = orderSide
 	postData["amount"] = amount
-	if orderType == `limit` {
-		postData["price"] = price
-	}
 	responseBody := SignedRequestFcoin("POST", "/orders", postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
@@ -153,11 +146,11 @@ func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderI
 
 func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 	responseBody := SignedRequestFcoin(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
-	json, err := util.NewJSON([]byte(responseBody))
+	responseJson, err := util.NewJSON([]byte(responseBody))
 	status := -1
 	if err == nil {
-		status, _ = json.Get(`status`).Int()
-		msg, _ = json.Get(`msg`).String()
+		status, _ = responseJson.Get(`status`).Int()
+		msg, _ = responseJson.Get(`msg`).String()
 	}
 	util.Notice(orderId + "fcoin cancel order" + string(responseBody))
 	if status == 0 {
@@ -166,26 +159,62 @@ func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 	return false, strconv.FormatInt(int64(status), 10), msg
 }
 
-func QueryOrderFcoin(symbol, orderId string) (dealAmount, dealPrice float64, status string) {
+func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Order) {
+	createTime, _ := orderMap[`created_at`].(json.Number).Int64()
+	amount, _ := strconv.ParseFloat(orderMap[`amount`].(string), 64)
+	price, _ := strconv.ParseFloat(orderMap[`price`].(string), 64)
+	filledAmount, _ := strconv.ParseFloat(orderMap[`filled_amount`].(string), 64)
+	fee, _ := strconv.ParseFloat(orderMap[`fill_fees`].(string), 64)
+	feeIncome, _ := strconv.ParseFloat(orderMap[`fees_income`].(string), 64)
+	return &model.Order{OrderId: orderMap[`id`].(string),
+		Symbol:     symbol,
+		Market:     model.Fcoin,
+		Amount:     amount,
+		DealAmount: filledAmount,
+		OrderTime:  time.Unix(0, createTime*1000000),
+		OrderType:  model.GetDictMapRevert(model.Fcoin, orderMap[`type`].(string)),
+		OrderSide:  model.GetDictMapRevert(model.Fcoin, orderMap[`side`].(string)),
+		DealPrice:  price,
+		Fee:        fee,
+		FeeIncome:  feeIncome,
+		Status:     model.GetOrderStatus(model.Fcoin, orderMap[`state`].(string)),
+	}
+}
+
+func queryOrdersFcoin(symbol, states string) (orders map[string]*model.Order) {
+	states, _ = model.GetOrderStatusRevert(model.Fcoin, states)
+	body := make(map[string]interface{})
+	body[`symbol`] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	body[`states`] = states
+	body[`limit`] = `100`
+	//body[`before`] = `2019-01-01 00:00:00`
+	//body[`after`] = `2018-01-01 00:00:00`
+	responseBody := SignedRequestFcoin(`GET`, `/orders`, body)
+	//fmt.Println(string(responseBody))
+	orderJson, err := util.NewJSON([]byte(responseBody))
+	if err == nil {
+		jsonOrders, _ := orderJson.Get(`data`).Array()
+		orders := make(map[string]*model.Order)
+		for _, order := range jsonOrders {
+			orderMap := order.(map[string]interface{})
+			orders[orderMap[`id`].(string)] = parseOrder(symbol, orderMap)
+
+		}
+		return orders
+	}
+	return nil
+}
+
+func queryOrderFcoin(symbol, orderId string) (order *model.Order) {
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	responseBody := SignedRequestFcoin(`GET`, `/orders/`+orderId, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
-		orderJson = orderJson.Get(`data`)
-		str, _ := orderJson.Get("filled_amount").String()
-		if str != "" {
-			dealAmount, _ = strconv.ParseFloat(str, 64)
-		}
-		strPrice, _ := orderJson.Get(`price`).String()
-		if strPrice != `` {
-			dealPrice, _ = strconv.ParseFloat(strPrice, 64)
-		}
-		status, _ = orderJson.Get("state").String()
-		status = model.GetOrderStatus(model.Fcoin, status)
+		orderMap, _ := orderJson.Get(`data`).Map()
+		return parseOrder(symbol, orderMap)
 	}
-	util.Notice(fmt.Sprintf("%s %s fcoin query order %f %s", symbol, status, dealAmount, responseBody))
-	return dealAmount, dealPrice, status
+	return nil
 }
 
 func getAccountFcoin(accounts *model.Accounts) {

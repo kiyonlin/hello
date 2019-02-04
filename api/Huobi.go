@@ -63,7 +63,7 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 		res := util.UnGzip(event)
 		resMap := util.JsonDecodeByte(res)
 		message := &HuobiMessage{}
-		json.Unmarshal(res, message)
+		_ = json.Unmarshal(res, message)
 		if v, ok := resMap["ping"]; ok {
 			pingMap := make(map[string]interface{})
 			pingMap["pong"] = v
@@ -88,7 +88,7 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 				bidAsk.Ts = message.Ts
 				if markets.SetBidAsk(symbol, model.Huobi, &bidAsk) {
 					for _, handler := range carryHandlers {
-						handler(symbol, model.Huobi)
+						handler(model.Huobi, symbol)
 					}
 				}
 			}
@@ -225,7 +225,7 @@ func CancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 	return false, err.Error(), err.Error()
 }
 
-func QueryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status string) {
+func queryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status string) {
 	path := fmt.Sprintf("/v1/order/orders/%s", orderId)
 	responseBody := SignedRequestHuobi(`GET`, path, nil)
 	orderJson, err := util.NewJSON([]byte(responseBody))

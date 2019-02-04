@@ -14,7 +14,11 @@ const logRoot = "./log/"
 
 func initLog(path string) (*log.Logger, *os.File, error) {
 	//removeOldFiles()
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
+	_, err := os.Stat(logRoot)
+	if err != nil && os.IsNotExist(err) {
+		_ = os.Mkdir(logRoot, os.ModePerm)
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -55,7 +59,7 @@ func getPath(name string) string {
 func SocketInfo(message string) {
 	if socketCount%10000 == 0 {
 		if socketInfoFile != nil {
-			socketInfoFile.Close()
+			_ = socketInfoFile.Close()
 		}
 		socket, socketInfoFile, _ = initLog(getPath("socketInfo"))
 	}
@@ -66,7 +70,7 @@ func SocketInfo(message string) {
 func Info(message string) {
 	if infoCount%10000 == 0 {
 		if infoFile != nil {
-			infoFile.Close()
+			_ = infoFile.Close()
 		}
 		info, infoFile, _ = initLog(getPath("info"))
 	}
@@ -77,7 +81,7 @@ func Info(message string) {
 func Notice(message string) {
 	if noticeCount%10000 == 0 {
 		if noticeFile != nil {
-			noticeFile.Close()
+			_ = noticeFile.Close()
 		}
 		notice, noticeFile, _ = initLog(getPath("notice"))
 	}

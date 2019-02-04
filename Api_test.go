@@ -19,7 +19,7 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.GetAccountOkfuture(model.AppAccounts)
+	_ = api.GetAccountOkfuture(model.AppAccounts)
 	for i := 0; i < 50; i++ {
 		api.GetKLineOkexFuture(`btc_this_week`, `1min`, 100)
 	}
@@ -49,5 +49,23 @@ func Test_RefreshAccount(t *testing.T) {
 	sort.Sort(sortedKLine)
 	for _, value := range sortedKLine {
 		fmt.Println(fmt.Sprintf(`%s %f`, value.Id, value.Price))
+	}
+}
+
+func Test_Api(t *testing.T) {
+	model.NewConfig()
+	err := configor.Load(model.AppConfig, "./config.yml")
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+	//api.RefreshAccount(model.Fcoin)
+	//orderId, errMsg, status, amount, price := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, model.Fcoin,
+	//	`eos_usdt`, model.AmountTypeCoinNumber, 2.263, 1)
+	//fmt.Sprintf(`%s %s %s %f %f`, orderId, errMsg, status, amount, price)
+	orders := api.QueryOrders(model.Fcoin, `eos_usdt`, model.CarryStatusSuccess)
+	for key, value := range orders {
+		order := api.QueryOrderById(model.Fcoin, value.Symbol, key)
+		fmt.Println(order.OrderTime.String())
 	}
 }

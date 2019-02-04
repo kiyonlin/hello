@@ -9,7 +9,7 @@ import (
 type MsgHandler func(message []byte, conn *websocket.Conn)
 type SubscribeHandler func(subscribes []string, conn *websocket.Conn) error
 type ErrHandler func(err error)
-type CarryHandler func(symbol, market string)
+type CarryHandler func(market, symbol string)
 
 func newConnection(url string) (*websocket.Conn, error) {
 	var connErr error
@@ -25,7 +25,7 @@ func newConnection(url string) (*websocket.Conn, error) {
 	} else {
 		util.SocketInfo(`can not create new connection ` + connErr.Error())
 		if c != nil {
-			c.Close()
+			_ = c.Close()
 		}
 	}
 	//	time.Sleep(1000)
@@ -68,7 +68,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 		errHandler(err)
 		return nil, err
 	}
-	subHandler(subscribes, c)
+	_ = subHandler(subscribes, c)
 	stopC := make(chan struct{}, 10)
 	go chanHandler(c, stopC, errHandler, msgHandler)
 	return stopC, err

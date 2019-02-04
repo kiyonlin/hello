@@ -99,7 +99,7 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 		}
 		var out bytes.Buffer
 		reader := flate.NewReader(bytes.NewReader(event))
-		io.Copy(&out, reader)
+		_, _ = io.Copy(&out, reader)
 		event = out.Bytes()
 		resultJson, err := util.NewJSON([]byte(event))
 		if err != nil {
@@ -122,7 +122,7 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 		sort.Sort(sort.Reverse(bidAsks.Bids))
 		if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
 			for _, handler := range carryHandlers {
-				handler(symbol, model.OKFUTURE)
+				handler(model.OKFUTURE, symbol)
 			}
 		}
 	}
@@ -215,7 +215,7 @@ func QueryPendingOrderAmount(symbol string) (orderAmount int, err error) {
 }
 
 //status: 订单状态(0等待成交 1部分成交 2全部成交 -1撤单 4撤单处理中 5撤单中)
-func QueryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
+func queryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
 	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))
 	postData.Set(`contract_type`, getContractType(symbol))

@@ -90,7 +90,7 @@ func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rig
 		AskTime: now}, nil
 }
 
-//func (markets *Markets) NewTurtleCarry(symbol, market string) (*Carry, error) {
+//func (markets *Markets) NewTurtleCarry(market, symbol string) (*Carry, error) {
 //	if markets.BidAsks[symbol] == nil {
 //		return nil, errors.New("no market data " + symbol)
 //	}

@@ -46,7 +46,7 @@ func LoadDiligentSettings(bidWeb, sideType string, createdAt time.Time) (setting
 	if err == nil {
 		var symbol string
 		for rows.Next() {
-			rows.Scan(&symbol)
+			_ = rows.Scan(&symbol)
 			settings[symbol] = GetSetting(bidWeb, symbol)
 		}
 	}
@@ -62,7 +62,7 @@ func (carry *Carry) CheckWorthSaveMargin() bool {
 	return false
 }
 
-func (carry *Carry) CheckWorthCarryMargin(markets *Markets, config *Config) (bool, error) {
+func (carry *Carry) CheckWorthCarryMargin(markets *Markets) (bool, error) {
 	carry.Margin = GetMargin(carry.BidSymbol)
 	margin := carry.AskPrice - carry.BidPrice
 	if margin > carry.AskPrice*carry.Margin && carry.Amount > 0 {

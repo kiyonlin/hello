@@ -21,15 +21,17 @@ func MaintainOrders() {
 				if carry.SideType != `turtle` {
 					api.CancelOrder(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
 				}
-				carry.DealBidAmount, _, carry.DealBidStatus = api.QueryOrderById(carry.BidWeb, carry.BidSymbol,
-					carry.DealBidOrderId)
+				order := api.QueryOrderById(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
+				carry.DealBidAmount = order.DealAmount
+				carry.DealBidStatus = order.Status
 			}
 			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
 				if carry.SideType != `turtle` {
 					api.CancelOrder(carry.AskWeb, carry.AskSymbol, carry.DealAskOrderId)
 				}
-				carry.DealAskAmount, _, carry.DealAskStatus = api.QueryOrderById(carry.AskWeb, carry.AskSymbol,
-					carry.DealAskOrderId)
+				order := api.QueryOrderById(carry.AskWeb, carry.AskSymbol, carry.DealAskOrderId)
+				carry.DealAskAmount = order.DealAmount
+				carry.DealAskStatus = order.Status
 			}
 			model.CarryChannel <- carry
 			time.Sleep(time.Second * 1)
@@ -200,5 +202,12 @@ func OuterCarryServe() {
 			}
 			model.AppDB.Save(&carryInDb)
 		}
+	}
+}
+
+func OrderSaveServe() {
+	for true {
+		order := <-model.OrderChannel
+		model.AppDB.Save(&order)
 	}
 }

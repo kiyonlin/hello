@@ -35,7 +35,7 @@ func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, e
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		var out bytes.Buffer
 		r, _ := zlib.NewReader(bytes.NewReader(event))
-		io.Copy(&out, r)
+		_, _ = io.Copy(&out, r)
 		dataJson, err := util.NewJSON(out.Bytes())
 		if err == nil {
 			subscribe, _ := dataJson.GetPath(`data`, `tradeMappingId`).String()
@@ -49,12 +49,12 @@ func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, e
 				for key, value := range bids {
 					price, _ := strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
 					amount, _ := strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
-					bidAsk.Bids[key] = model.Tick{Price:price, Amount:amount}
+					bidAsk.Bids[key] = model.Tick{Price: price, Amount: amount}
 				}
 				for key, value := range asks {
 					price, _ := strconv.ParseFloat(value.(map[string]interface{})[`price`].(string), 64)
 					amount, _ := strconv.ParseFloat(value.(map[string]interface{})[`quantity`].(string), 64)
-					bidAsk.Asks[key] = model.Tick{Price:price, Amount:amount}
+					bidAsk.Asks[key] = model.Tick{Price: price, Amount: amount}
 				}
 				sort.Sort(bidAsk.Asks)
 				sort.Sort(sort.Reverse(bidAsk.Bids))
@@ -63,7 +63,7 @@ func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, e
 				bidAsk.Ts = int(ts)
 				if markets.SetBidAsk(symbol, model.Coinbig, &bidAsk) {
 					for _, handler := range carryHandlers {
-						handler(symbol, model.Coinbig)
+						handler(model.Coinbig, symbol)
 					}
 				}
 			}
@@ -178,7 +178,7 @@ func placeOrderCoinbig(orderSide, orderType, symbol, price, amount string) (orde
 //}
 
 //状态:1未成交,2部分成交,3完全成交,4用户撤销,5部分撤回,6成交失败
-func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
+func queryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 	postData.Set(`orderId`, orderId)
@@ -193,7 +193,7 @@ func QueryOrderCoinbig(orderId string) (dealAmount float64, status string) {
 	return dealAmount, status
 }
 
-func CancelOrderCoinbig(orderId string)  (result bool, errCode, msg string){
+func CancelOrderCoinbig(orderId string) (result bool, errCode, msg string) {
 	postData := &url.Values{}
 	postData.Set(`apikey`, model.AppConfig.CoinbigKey)
 	postData.Set(`order_id`, orderId)

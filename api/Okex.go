@@ -62,7 +62,7 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 		messages := make([]OKEXMessage, 1)
 		var out bytes.Buffer
 		reader := flate.NewReader(bytes.NewReader(event))
-		io.Copy(&out, reader)
+		_, _ = io.Copy(&out, reader)
 		event = out.Bytes()
 		if err := json.Unmarshal(event, &messages); err == nil {
 			for _, message := range messages {
@@ -86,7 +86,7 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 					bidAsk.Ts = message.Data.Timestamp
 					if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
 						for _, handler := range carryHandlers {
-							handler(symbol, model.OKEX)
+							handler(model.OKEX, symbol)
 						}
 					}
 				}
@@ -192,7 +192,7 @@ func CancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg s
 	return false, err.Error(), err.Error()
 }
 
-func QueryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
+func queryOrderOkex(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)

@@ -16,6 +16,7 @@ var lastOrderTime int64
 var bidAskTimes int64
 var processing = false
 var handling = false
+var RefreshCarryChannel = make(chan model.Carry, 50)
 
 func calcPrice(bidPrice, askPrice float64, precision int) (num float64, err error) {
 	str := strconv.FormatFloat(bidPrice+(askPrice-bidPrice)*1/2, 'f', precision, 64)
@@ -45,8 +46,9 @@ func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) 
 
 func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, amount float64) {
 	if orderSide == `buy` {
-		carry.DealBidOrderId, carry.DealBidErrCode, _, carry.BidAmount, carry.BidPrice =
-			api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.BidSymbol, ``, price, amount)
+		order := api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.BidSymbol, ``, price, amount)
+		carry.DealBidOrderId, carry.DealBidErrCode, carry.BidAmount, carry.BidPrice =
+			order.OrderId, order.ErrCode, order.DealAmount, order.DealPrice
 		if carry.DealBidOrderId != `` && carry.DealBidOrderId != "0" {
 			carry.DealBidStatus = model.CarryStatusWorking
 		} else {
@@ -55,8 +57,9 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, a
 		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
 			orderSide, orderType, carry.BidSymbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
 	} else if orderSide == `sell` {
-		carry.DealAskOrderId, carry.DealAskErrCode, _, carry.AskAmount, carry.AskPrice =
-			api.PlaceOrder(orderSide, orderType, carry.AskSymbol, orderType, ``, price, amount)
+		order := api.PlaceOrder(orderSide, orderType, carry.AskSymbol, orderType, ``, price, amount)
+		carry.DealAskOrderId, carry.DealAskErrCode, carry.AskAmount, carry.AskPrice =
+			order.OrderId, order.ErrCode, order.DealAmount, order.DealPrice
 		if carry.DealAskOrderId != `` && carry.DealAskOrderId != "0" {
 			carry.DealAskStatus = model.CarryStatusWorking
 		} else {
@@ -68,7 +71,7 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, a
 	if carry.DealAskErrCode == `2027` || carry.DealBidErrCode == `2027` {
 		go api.RefreshAccount(model.GetMarkets()[0])
 	}
-	model.RefreshCarryChannel <- *carry
+	RefreshCarryChannel <- *carry
 	model.CarryChannel <- *carry
 }
 
@@ -90,14 +93,15 @@ func placeExtraSell(carry *model.Carry) {
 		}
 		price := carry.BidPrice * 0.999
 		amount := carry.Amount * model.AppConfig.SellRate
-		orderId, errCode, msg, _, _ := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
+		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
 			model.GetMarkets()[0], carry.AskSymbol, ``, price, amount)
+		//orderId, errCode, msg, _, _ := orde
 		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %f 数量: %f 返回 %s %s %s`,
-			carry.AskSymbol, price, amount, orderId, errCode, msg))
+			carry.AskSymbol, price, amount, order.OrderId, order.ErrCode, order.Status))
 	}
 }
 
-var ProcessRefresh = func(symbol, market string) {
+var ProcessRefresh = func(market, symbol string) {
 	carry, err := model.AppMarkets.NewCarry(symbol)
 	if err != nil {
 		util.Notice(`can not create carry for ` + symbol)
@@ -201,7 +205,7 @@ func cancelRefreshOrder(orderId string, mustCancel bool) {
 
 func RefreshCarryServe() {
 	for true {
-		orderCarry := <-model.RefreshCarryChannel
+		orderCarry := <-RefreshCarryChannel
 		util.Notice(fmt.Sprintf(`||||||[bid-ask] [%s %s] [%s %s]`, orderCarry.DealBidOrderId,
 			orderCarry.DealAskOrderId, orderCarry.DealBidStatus, orderCarry.DealAskStatus))
 		if orderCarry.DealBidStatus == `` || orderCarry.DealAskStatus == `` {

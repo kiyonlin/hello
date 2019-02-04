@@ -108,7 +108,7 @@ func WsDepthServeBitmex(markets *model.Markets, carryHandlers []CarryHandler, er
 		//		sort.Reverse(bidAsk.Bids)
 		//		if markets.SetBidAsk(symbol, model.Coinpark, &bidAsk) {
 		//			for _, handler := range carryHandlers {
-		//				handler(symbol, model.Coinpark)
+		//				handler(model.Coinpark, symbol)
 		//			}
 		//		}
 		//	}
@@ -123,7 +123,7 @@ func CancelOrderBitmex(orderId string) (result bool, errCode, msg string) {
 	return true, ``, ``
 }
 
-func QueryOrderBitmex(orderId string) (dealAmount, dealPrice float64, status string) {
+func queryOrderBitmex(orderId string) (dealAmount, dealPrice float64, status string) {
 	fmt.Println(orderId)
 	return 0, 0, ``
 }

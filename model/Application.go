@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"strings"
 	"sync"
 )
@@ -44,12 +45,21 @@ var AppAccounts = NewAccounts()
 
 var HuobiAccountId = ""
 var CarryChannel = make(chan Carry, 50)
+var OrderChannel = make(chan Order, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var InnerCarryChannel = make(chan Carry, 50)
-var RefreshCarryChannel = make(chan Carry, 50)
 var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
 var BalanceTurtleCarries = make(map[string]map[string]*Carry) // market - symbol - *carry
+
+var dictMap = map[string]map[string]string{ // market - union name - market name
+	Fcoin: {
+		OrderTypeLimit:  `limit`,
+		OrderTypeMarket: `market`,
+		OrderSideBuy:    `buy`,
+		OrderSideSell:   `sell`,
+	},
+}
 
 var orderStatusMap = map[string]map[string]string{ // market - market status - united status
 	Binance: {
@@ -88,7 +98,7 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`partial_canceled`: CarryStatusSuccess, //部分成交已撤销
 		`filled`:           CarryStatusSuccess, //完全成交
 		`canceled`:         CarryStatusFail,    //已撤销
-		`pending_cancel`:   CarryStatusWorking, //撤销已提交
+		`pending_cancel`:   CarryStatusFail,    //撤销已提交
 	},
 	Coinpark: {
 		`1`: CarryStatusWorking, //待成交
@@ -106,6 +116,41 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`5`: CarryStatusSuccess, //部分撤回,
 		`6`: CarryStatusFail,    //成交失败
 	},
+}
+
+func GetOrderStatusRevert(market, status string) (combinedStatus string, err error) {
+	combinedStatus = ``
+	if orderStatusMap[market] == nil {
+		return ``, errors.New(`no market ` + market)
+	}
+	for key, value := range orderStatusMap[market] {
+		if value == status {
+			if combinedStatus != `` {
+				combinedStatus += `,`
+			}
+			combinedStatus += key
+		}
+	}
+	return combinedStatus, nil
+}
+
+func GetDictMapRevert(market, marketWord string) (uninoWord string) {
+	if dictMap[market] == nil {
+		return ``
+	}
+	for key, value := range dictMap[market] {
+		if value == marketWord {
+			return key
+		}
+	}
+	return ``
+}
+
+func GetDictMap(market, unionWord string) (marketWord string) {
+	if dictMap[market] == nil {
+		return ``
+	}
+	return dictMap[market][unionWord]
 }
 
 func GetOrderStatus(market, marketStatus string) (status string) {
@@ -235,6 +280,7 @@ type Config struct {
 	Channels       int
 	ChannelSlot    float64
 	Functions      []string
+	MakerRate      float64
 	Delay          float64
 	Deduction      float64
 	MinUsdt        float64            // 折合usdt最小下单金额
@@ -264,6 +310,7 @@ type Config struct {
 	SellRate       float64 // fcoin dk 额外卖单下单比例
 	FtMax          float64 // fcoin dk ft上限
 	InChina        int     // 1 in china, otherwise outter china
+	Mail           string
 }
 
 func NewConfig() {
@@ -274,7 +321,7 @@ func NewConfig() {
 	AppConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket?compress=true"
 	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
-	AppConfig.WSUrls[Fcoin] = "wss://api.fcoinjp.com/v2/ws"
+	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
@@ -283,8 +330,8 @@ func NewConfig() {
 	AppConfig.RestUrls = make(map[string]string)
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
-	AppConfig.RestUrls[Fcoin] = "https://api.fcoinjp.com/v2"
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
+	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
@@ -293,7 +340,7 @@ func NewConfig() {
 	AppConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 	AppConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
 	//AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
-	AppConfig.RestUrls[Bitmex] = ` https://testnet.bitmex.com/api/v1`
+	AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
 	AppConfig.MarketCost = make(map[string]float64)
 	AppConfig.MarketCost[Fcoin] = 0
 	AppConfig.MarketCost[Huobi] = 0.0005
@@ -337,7 +384,8 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
 	str += "env: " + config.Env + "\n"
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
-	str += fmt.Sprintf(`handle: %d orderwait: %d amountrate: %f sellrate %f ftmax %f`,
+	str += fmt.Sprintf("handle: %d orderwait: %d amountrate: %f sellrate %f ftmax %f\n",
 		config.Handle, config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
+	str += fmt.Sprintf("maker rate: %f\n", config.MakerRate)
 	return str
 }

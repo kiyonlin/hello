@@ -65,7 +65,7 @@ func WsDepthServeBinance(markets *model.Markets, carryHandlers []CarryHandler, e
 			sort.Sort(sort.Reverse(bidAsk.Bids))
 			if markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
 				for _, handler := range carryHandlers {
-					handler(symbol, model.Binance)
+					handler(model.Binance, symbol)
 				}
 			}
 		}
@@ -153,7 +153,7 @@ func CancelOrderBinance(symbol string, orderId string) (result bool, errCode, ms
 	return true, ``, ``
 }
 
-func QueryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
+func queryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("orderId", orderId)

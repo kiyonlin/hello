@@ -26,7 +26,8 @@ haoweizh@qq.com zaq1@WSX google: JBNLHUVVYXUYTLRH
 yjsx_@163.com zaq1@WSX google: ZNKWP7ARX5A2SWWA
 
 # fcoin
-ws820714@163.com V7MQIQ5U6H6VTOTV3R3BCFEIWZIMCSB4
+test:
+b4f28ad197c64cdbb072328b37c654bd 588dd6887ac14629bd6e7653d7952938
 
 # idea 帐号 haoweizh 密码 Sammi850810
 

@@ -254,14 +254,14 @@ package carry
 //	}
 //}
 //
-//var ProcessTurtle = func(symbol, market string) {
+//var ProcessTurtle = func(market, symbol string) {
 //	if turtleCarrying {
 //		return
 //	}
 //	setTurtleCarrying(true)
 //	defer setTurtleCarrying(false)
 //	if model.GetTurtleCarry(market, symbol) == nil {
-//		carry, err := model.AppMarkets.NewTurtleCarry(symbol, market)
+//		carry, err := model.AppMarkets.NewTurtleCarry(market, symbol)
 //		if err != nil {
 //			util.Notice(`can not create turtle ` + err.Error())
 //			return

@@ -35,7 +35,7 @@ func calcAmount(originalAmount float64) (num float64, err error) {
 	return strconv.ParseFloat(string(bytes), 64)
 }
 
-var ProcessCarry = func(symbol, market string) {
+var ProcessCarry = func(market, symbol string) {
 	carry, err := model.AppMarkets.NewCarry(symbol)
 	if err != nil {
 		util.Notice(`can not create carry ` + err.Error())
@@ -79,7 +79,7 @@ var ProcessCarry = func(symbol, market string) {
 	carry.Amount = planAmount
 	leftBalance, _ = calcAmount(leftBalance)
 	timeOk, _ := carry.CheckWorthCarryTime()
-	marginOk, _ := carry.CheckWorthCarryMargin(model.AppMarkets, model.AppConfig)
+	marginOk, _ := carry.CheckWorthCarryMargin(model.AppMarkets)
 	if !carry.CheckWorthSaveMargin() {
 		// no need to save carry with margin < base cost
 		return
@@ -123,11 +123,13 @@ var ProcessCarry = func(symbol, market string) {
 
 func order(carry *model.Carry, orderSide, orderType, market, symbol string, price, amount float64) {
 	if orderSide == model.OrderSideSell {
+		order := api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
-			api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
+			order.OrderId, order.ErrCode, order.Status, order.DealPrice, order.DealPrice
 	} else if orderSide == model.OrderSideBuy {
+		order := api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
 		carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
-			api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
+			order.OrderId, order.ErrCode, order.Status, order.DealAmount, order.DealPrice
 	}
 	model.InnerCarryChannel <- *carry
 }
@@ -228,7 +230,9 @@ func Maintain() {
 	model.AppDB.AutoMigrate(&model.Carry{})
 	model.AppDB.AutoMigrate(&model.Account{})
 	model.AppDB.AutoMigrate(&model.Setting{})
+	model.AppDB.AutoMigrate(&model.Order{})
 	model.LoadSettings()
+	go OrderSaveServe()
 	go OuterCarryServe()
 	go InnerCarryServe()
 	go AccountHandlerServe()
@@ -252,6 +256,9 @@ func Maintain() {
 		case `rsi`:
 			needWS = false
 			go ProcessInform()
+		case `maker`:
+			carryHandlers[i] = ProcessMake
+			go MarketMakeServe()
 		}
 	}
 	//go MaintainAccountChan()
