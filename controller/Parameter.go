@@ -21,7 +21,7 @@ func ParameterServe() {
 	router.GET("/get", GetParameters)
 	router.GET("/set", SetParameters)
 	router.GET(`/refresh`, RefreshParameters)
-	router.GET(`/pw`, GetCode)
+	router.GET(`/getpw`, GetCode)
 	_ = router.Run(":80")
 }
 
