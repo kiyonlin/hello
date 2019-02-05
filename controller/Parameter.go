@@ -21,12 +21,14 @@ func ParameterServe() {
 	router.GET("/get", GetParameters)
 	router.GET("/set", SetParameters)
 	router.GET(`/refresh`, RefreshParameters)
-	router.GET(`/getpw`, GetCode)
+	router.GET(`/pw`, GetCode)
 	_ = router.Run(":80")
 }
 
 func GetCode(c *gin.Context) {
+	fmt.Println(`go into context pw`)
 	ip := c.Request.RemoteAddr
+	fmt.Println(`get ip ` + ip)
 	ipTime := accessTime[ip]
 	waitTime := (util.GetNowUnixMillion() - ipTime) / 1000
 	if waitTime < 30 {
