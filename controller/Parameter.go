@@ -7,7 +7,6 @@ import (
 	"hello/util"
 	"math/rand"
 	"net/http"
-	"net/smtp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,9 +25,7 @@ func ParameterServe() {
 }
 
 func GetCode(c *gin.Context) {
-	fmt.Println(`go into context pw`)
 	ip := c.Request.RemoteAddr
-	fmt.Println(`get ip ` + ip)
 	ipTime := accessTime[ip]
 	waitTime := (util.GetNowUnixMillion() - ipTime) / 1000
 	if waitTime < 30 {
@@ -39,18 +36,18 @@ func GetCode(c *gin.Context) {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 		rnd = rand.New(rand.NewSource(rnd.Int63()))
 		code = fmt.Sprintf("%06v", rnd.Int31n(1000000))
-		auth := smtp.PlainAuth("", "94764906@qq.com", "urszfnsnanxebjga",
-			"smtp.qq.com")
-		to := []string{model.AppConfig.Mail}
-		user := "94764906@qq.com"
-		msg := []byte("To: " + strings.Join(to, ",") + "\r\nFrom: 刷单系统<" + user +
-			">\r\nSubject: 验证码\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n刷单验证码是" + code)
-		err := smtp.SendMail("smtp.qq.com:25", auth, user, to, msg)
-		if err != nil {
-			fmt.Printf("send mail error: %v", err)
+		err := util.SendMail(model.AppConfig.Mail, `启动验证码`, `验证码是`+code)
+		//auth := smtp.PlainAuth("", "94764906@qq.com", "urszfnsnanxebjga",
+		//	"smtp.qq.com")
+		//msg := []byte("To: " + strings.Join(to, ",") + "\r\nFrom: 刷单系统<" + user +
+		//	">\r\nSubject: 验证码\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n刷单验证码是" + code)
+		//err := smtp.SendMail("smtp.qq.com:465", auth, user, to, msg)
+		if err == nil {
+			c.String(http.StatusOK, `发送成功，请查收邮箱`)
+		} else {
+			c.String(http.StatusOK, `邮件发送失败`+err.Error())
 		}
-		c.String(http.StatusOK, `发送成功，请查收邮箱`)
-		//urszfnsnanxebjga
+		// iamp pjmyzgvrlifpcbci
 	}
 }
 

@@ -1,9 +1,13 @@
 package util
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/mail"
+	"net/smtp"
 	"sort"
 	"strings"
 )
@@ -52,4 +56,60 @@ func HttpRequest(method string, reqUrl string, body string, requestHeaders map[s
 		SocketInfo(fmt.Sprintf("%sHttpStatusCode:%d ,Desc:%s", reqUrl, resp.StatusCode, string(bodyData)))
 	}
 	return bodyData, nil
+}
+
+func SendMail(toAddress, subject, body string) (err error) {
+	fromMail := "94764906@qq.com"
+	from := mail.Address{Address: fromMail}
+	to := mail.Address{Address: toAddress}
+	headers := make(map[string]string)
+	headers["From"] = from.String()
+	headers["To"] = to.String()
+	headers["Subject"] = subject
+	message := ""
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + body
+	servername := "smtp.qq.com:465"
+	host, _, _ := net.SplitHostPort(servername)
+	auth := smtp.PlainAuth("", fromMail, "urszfnsnanxebjga", host)
+	tlsconfig := &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         host,
+	}
+	conn, err := tls.Dial("tcp", servername, tlsconfig)
+	if err != nil {
+		return err
+	}
+	c, err := smtp.NewClient(conn, host)
+	if err != nil {
+		return err
+	}
+	// Auth
+	if err = c.Auth(auth); err != nil {
+		return err
+	}
+	// To && From
+	if err = c.Mail(from.Address); err != nil {
+		return err
+	}
+	if err = c.Rcpt(to.Address); err != nil {
+		return err
+	}
+	// Data
+	w, err := c.Data()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write([]byte(message))
+	if err != nil {
+		return err
+	}
+	err = w.Close()
+	if err != nil {
+		return err
+	}
+	c.Quit()
+	return err
 }
