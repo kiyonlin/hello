@@ -36,7 +36,7 @@ func placeMarketMaker(market, symbol string, bidAsk *model.BidAsk) {
 	}
 	leftAmount := model.AppAccounts.Data[market][coins[0]].Free * model.AppConfig.MakerRate
 	rightAmount := model.AppAccounts.Data[market][coins[1]].Free / bidPrice * model.AppConfig.MakerRate
-	formatStr := `%.` + strconv.Itoa(api.GetAmountDecimal(model.Fcoin, `btc_usdt`)) + `f`
+	formatStr := `%.` + strconv.Itoa(api.GetAmountDecimal(model.Fcoin, symbol)) + `f`
 	leftAmount, _ = strconv.ParseFloat(fmt.Sprintf(formatStr, leftAmount), 64)
 	rightAmount, _ = strconv.ParseFloat(fmt.Sprintf(formatStr, rightAmount), 64)
 	marketMakeOrders = make([]*model.Order, 0)

@@ -40,14 +40,12 @@ func GetAmountDecimal(market, symbol string) int {
 	switch market {
 	case model.OKEX:
 		switch symbol {
-		case `eos_usdt`, `btc_usdt`, `eth_btc`:
+		case `eos_usdt`, `btc_usdt`:
 			return 4
 		}
 	case model.Fcoin:
 		switch symbol {
-		case `btc_usdt`:
-			return 4
-		case `eos_usdt`:
+		case `btc_usdt`, `eos_usdt`, `eth_btc`:
 			return 4
 		}
 	}
