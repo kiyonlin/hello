@@ -204,10 +204,3 @@ func OuterCarryServe() {
 		}
 	}
 }
-
-func OrderSaveServe() {
-	for true {
-		order := <-model.OrderChannel
-		model.AppDB.Save(&order)
-	}
-}

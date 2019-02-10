@@ -45,7 +45,6 @@ var AppAccounts = NewAccounts()
 
 var HuobiAccountId = ""
 var CarryChannel = make(chan Carry, 50)
-var OrderChannel = make(chan Order, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
 var InnerCarryChannel = make(chan Carry, 50)
 var CurrencyPrice = make(map[string]float64)

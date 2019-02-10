@@ -8,71 +8,60 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var marketMaking = false
-var marketMakeOrders []*model.Order
-var marketMakeChannel = make(chan model.Order, 50)
+var marketOrderSell, marketOrderBuy *model.Order
 
 func setMarketMaking(making bool) {
 	marketMaking = making
 }
 
-func placeMarketMaker(market, symbol string, bidAsk *model.BidAsk) {
+//1. 买卖单同时下单，下单数量分别为帐户可买总量和可卖总量的1/7（可调参数），
+// if 买单数量>卖单数量，卖单价格为卖1价格，买单价格=卖1价格-0.01；else 买单价格=买1价格，卖单价格=买一价格+0.01
+//2. 当买一价或卖一价位上没有自己的委托单时（已成交或者价格变动造成），撤掉所有不在买一和卖一价位上的委托单，重新下单
+func placeMarketMaker(market, symbol, orderSide string, bidAsk *model.BidAsk) (order *model.Order) {
 	coins := strings.Split(symbol, `_`)
 	if len(coins) != 2 {
 		util.Notice(`symbol format not supported ` + symbol)
 		return
 	}
+	var price, amount float64
 	api.RefreshAccount(market)
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	bidPrice := bidAsk.Bids[0].Price
-	askPrice := bidAsk.Asks[0].Price
-	if bidAsk.Bids[0].Amount > bidAsk.Asks[0].Amount {
-		bidPrice = askPrice - priceDistance
-	} else {
-		askPrice = bidPrice + priceDistance
-	}
-	leftAmount := model.AppAccounts.Data[market][coins[0]].Free * model.AppConfig.MakerRate
-	rightAmount := model.AppAccounts.Data[market][coins[1]].Free / bidPrice * model.AppConfig.MakerRate
 	formatStr := `%.` + strconv.Itoa(api.GetAmountDecimal(model.Fcoin, symbol)) + `f`
-	leftAmount, _ = strconv.ParseFloat(fmt.Sprintf(formatStr, leftAmount), 64)
-	rightAmount, _ = strconv.ParseFloat(fmt.Sprintf(formatStr, rightAmount), 64)
-	marketMakeOrders = make([]*model.Order, 0)
-	go placeOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, bidPrice, rightAmount)
-	go placeOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, askPrice, leftAmount)
-}
-
-func placeOrder(orderSide, orderType, market, symbol string, price, amount float64) {
-	order := api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
-	marketMakeChannel <- *order
-}
-
-func cancelMarketMaker(market, symbol string, orders map[string]*model.Order) {
-	for _, value := range orders {
-		if value.OrderId == `` {
-			continue
+	if orderSide == model.OrderSideSell {
+		price = bidAsk.Asks[0].Price
+		if bidAsk.Bids[0].Amount < bidAsk.Asks[0].Amount {
+			price = bidAsk.Bids[0].Price + priceDistance
 		}
-		api.CancelOrder(market, symbol, value.OrderId)
-		//util.Notice(fmt.Sprintf(`%v to cancel order %s, %s %s`, result, value.OrderId, errCode, errMsg))
+		amount = model.AppAccounts.Data[market][coins[0]].Free * model.AppConfig.MakerRate
+	} else if orderSide == model.OrderSideBuy {
+		price = bidAsk.Bids[0].Price
+		if bidAsk.Bids[0].Amount > bidAsk.Asks[0].Amount {
+			price = bidAsk.Asks[0].Price - priceDistance
+		}
+		amount = model.AppAccounts.Data[market][coins[1]].Free / price * model.AppConfig.MakerRate
 	}
+	amount, _ = strconv.ParseFloat(fmt.Sprintf(formatStr, amount), 64)
+	return api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 }
 
-func updateMarketMaker(market, symbol string, orders []*model.Order) {
-	for _, value := range orders {
-		order := api.SyncQueryOrderById(market, symbol, value.OrderId)
-		if order == nil {
-			continue
-		}
-		util.Notice(fmt.Sprintf(`order %s status:%s with fee: %f, fee income: %f`,
-			order.OrderId, order.Status, order.Fee, order.FeeIncome))
-		model.OrderChannel <- *order
+func updateMarketMaker(order *model.Order) (done bool) {
+	if order == nil || order.OrderId == `` {
+		return false
 	}
+	if order.Status == model.CarryStatusWorking {
+		return false
+	}
+	util.Notice(fmt.Sprintf(`market order result: %s status:%s with fee: %f, fee income: %f`,
+		order.OrderId, order.Status, order.Fee, order.FeeIncome))
+	model.AppDB.Save(&order)
+	return true
 }
 
 var ProcessMake = func(market, symbol string) {
-	if marketMaking == true || model.AppConfig.Handle == 0 {
+	if marketMaking == true {
 		return
 	}
 	setMarketMaking(true)
@@ -81,35 +70,45 @@ var ProcessMake = func(market, symbol string) {
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
 		return
 	}
-	if marketMakeOrders == nil {
-		placeMarketMaker(market, symbol, bidAsk)
-	} else if len(marketMakeOrders) < 2 {
-		util.Info(fmt.Sprintf(`[sync waiting] pending for another order, now %d`,
-			len(marketMakeOrders)))
-		time.Sleep(time.Second * 3)
-	} else {
+	if marketOrderSell == nil && marketOrderBuy == nil {
 		workingOrders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
-		makerTaken := false
-		for _, value := range marketMakeOrders {
-			if value.OrderId == `` || workingOrders[value.OrderId] == nil {
-				makerTaken = true
-				util.Notice(fmt.Sprintf(`can not find %s from working orders, things changed`,
-					value.OrderId))
-				break
-			}
-		}
-		if makerTaken {
-			cancelMarketMaker(market, symbol, workingOrders)
-			updateMarketMaker(market, symbol, marketMakeOrders)
-			marketMakeOrders = nil
+		for _, value := range workingOrders {
+			api.CancelOrder(market, symbol, value.OrderId)
 		}
 	}
-}
-
-func MarketMakeServe() {
-	for true {
-		order := <-marketMakeChannel
-		//util.Notice(fmt.Sprintf(`make market %s %s %s`, order.OrderSide, order.OrderId, order.Status))
-		marketMakeOrders = append(marketMakeOrders, &order)
+	if marketOrderBuy == nil && model.AppConfig.Handle > 0 {
+		marketOrderBuy = placeMarketMaker(market, symbol, model.OrderSideBuy, bidAsk)
+	} else if marketOrderSell == nil && model.AppConfig.Handle > 0 {
+		marketOrderSell = placeMarketMaker(market, symbol, model.OrderSideSell, bidAsk)
+	} else if bidAsk.Asks[0].Price < marketOrderSell.Price {
+		api.CancelOrder(market, symbol, marketOrderSell.OrderId)
+		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderSell.OrderId)) {
+			marketOrderSell = nil
+		}
+		util.Notice(fmt.Sprintf(`卖单价格%f>市场最低卖价%f，取消卖单, 买%v-卖%v`, marketOrderSell.Price,
+			bidAsk.Asks[0].Price, marketOrderBuy != nil, marketOrderSell != nil))
+	} else if bidAsk.Bids[0].Price > marketOrderBuy.Price {
+		api.CancelOrder(market, symbol, marketOrderBuy.OrderId)
+		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
+			marketOrderBuy = nil
+		}
+		util.Notice(fmt.Sprintf(`买单价格%f<市场最高买价%f，取消买单, 买%v-卖%v`, marketOrderBuy.Price,
+			bidAsk.Bids[0].Price, marketOrderBuy != nil, marketOrderSell != nil))
+	} else if bidAsk.Bids[0].Price > marketOrderSell.Price {
+		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderSell.OrderId)) {
+			marketOrderSell = nil
+		}
+	} else if bidAsk.Asks[0].Price < marketOrderBuy.Price {
+		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
+			marketOrderBuy = nil
+		}
+	} else if bidAsk.Asks[0].Price == marketOrderSell.Price {
+		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderSell.OrderId)) {
+			marketOrderSell = nil
+		}
+	} else if bidAsk.Bids[0].Price == marketOrderBuy.Price {
+		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
+			marketOrderBuy = nil
+		}
 	}
 }

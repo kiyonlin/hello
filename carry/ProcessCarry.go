@@ -232,7 +232,6 @@ func Maintain() {
 	model.AppDB.AutoMigrate(&model.Setting{})
 	model.AppDB.AutoMigrate(&model.Order{})
 	model.LoadSettings()
-	go OrderSaveServe()
 	go OuterCarryServe()
 	go InnerCarryServe()
 	go AccountHandlerServe()
@@ -258,7 +257,6 @@ func Maintain() {
 			go ProcessInform()
 		case `maker`:
 			carryHandlers[i] = ProcessMake
-			go MarketMakeServe()
 		}
 	}
 	//go MaintainAccountChan()
