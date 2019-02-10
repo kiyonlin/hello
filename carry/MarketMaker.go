@@ -98,25 +98,25 @@ var ProcessMake = func(market, symbol string) {
 	} else if bidAsk.Bids[0].Price-marketOrderSell.Price > priceHalfDistance {
 		util.Notice(fmt.Sprintf(`[update sell]市场买单价格%f>卖单价格%f`, bidAsk.Bids[0].Price,
 			marketOrderSell.Price))
-		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderSell.OrderId)) {
+		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderSell.OrderId)) {
 			marketOrderSell = nil
 		}
 	} else if marketOrderBuy.Price-bidAsk.Asks[0].Price > priceHalfDistance {
 		util.Notice(fmt.Sprintf(`[update buy]市场卖单价格%f<买单价格%f`, bidAsk.Asks[0].Price,
 			marketOrderBuy.Price))
-		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
+		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
 			marketOrderBuy = nil
 		}
 	} else if math.Abs(bidAsk.Asks[0].Price-marketOrderSell.Price) < priceHalfDistance {
-		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderSell.OrderId)) {
+		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderSell.OrderId)) {
 			util.Notice(fmt.Sprintf(`[check==]市场卖单价格%f=卖单价格%f`,
 				bidAsk.Asks[0].Price, marketOrderSell.Price))
 			marketOrderSell = nil
 		}
 	} else if math.Abs(bidAsk.Bids[0].Price-marketOrderBuy.Price) < priceHalfDistance {
-		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
+		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
 			util.Notice(fmt.Sprintf(`[check==]市场买单价格%f=买单价格%f`,
-				bidAsk.Bids[0], marketOrderBuy.Price))
+				bidAsk.Bids[0].Price, marketOrderBuy.Price))
 			marketOrderBuy = nil
 		}
 	}
