@@ -82,18 +82,18 @@ var ProcessMake = func(market, symbol string) {
 		marketOrderSell = placeMarketMaker(market, symbol, model.OrderSideSell, bidAsk)
 	} else if bidAsk.Asks[0].Price < marketOrderSell.Price {
 		api.CancelOrder(market, symbol, marketOrderSell.OrderId)
+		util.Notice(fmt.Sprintf(`卖单价格%f>市场最低卖价%f，取消卖单, 买%v-卖%v`, marketOrderSell.Price,
+			bidAsk.Asks[0].Price, marketOrderBuy != nil, marketOrderSell != nil))
 		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderSell.OrderId)) {
 			marketOrderSell = nil
 		}
-		util.Notice(fmt.Sprintf(`卖单价格%f>市场最低卖价%f，取消卖单, 买%v-卖%v`, marketOrderSell.Price,
-			bidAsk.Asks[0].Price, marketOrderBuy != nil, marketOrderSell != nil))
 	} else if bidAsk.Bids[0].Price > marketOrderBuy.Price {
 		api.CancelOrder(market, symbol, marketOrderBuy.OrderId)
+		util.Notice(fmt.Sprintf(`买单价格%f<市场最高买价%f，取消买单, 买%v-卖%v`, marketOrderBuy.Price,
+			bidAsk.Bids[0].Price, marketOrderBuy != nil, marketOrderSell != nil))
 		if updateMarketMaker(api.SyncQueryOrderById(market, symbol, marketOrderBuy.OrderId)) {
 			marketOrderBuy = nil
 		}
-		util.Notice(fmt.Sprintf(`买单价格%f<市场最高买价%f，取消买单, 买%v-卖%v`, marketOrderBuy.Price,
-			bidAsk.Bids[0].Price, marketOrderBuy != nil, marketOrderSell != nil))
 	} else if bidAsk.Bids[0].Price > marketOrderSell.Price {
 		if updateMarketMaker(api.QueryOrderById(market, symbol, marketOrderSell.OrderId)) {
 			marketOrderSell = nil
