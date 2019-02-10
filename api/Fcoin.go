@@ -160,6 +160,13 @@ func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 }
 
 func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Order) {
+	if orderMap == nil || orderMap[`created_at`] == nil || orderMap[`amount`] == nil ||
+		orderMap[`price`] == nil || orderMap[`filled_amount`] == nil ||
+		orderMap[`fill_fees`] == nil || orderMap[`fees_income`] == nil ||
+		orderMap[`id`] == nil || orderMap[`type`] == nil || orderMap[`side`] == nil ||
+		orderMap[`state`] == nil {
+		return nil
+	}
 	createTime, _ := orderMap[`created_at`].(json.Number).Int64()
 	amount, _ := strconv.ParseFloat(orderMap[`amount`].(string), 64)
 	price, _ := strconv.ParseFloat(orderMap[`price`].(string), 64)
