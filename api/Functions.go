@@ -167,10 +167,12 @@ func RefreshAccount(market string) {
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price,
 	amount float64) (order *model.Order) {
-	priceDecimal := GetPriceDecimal(market, symbol)
-	strPrice := strconv.FormatFloat(price, 'f', priceDecimal, 64)
-	amountDecimal := GetAmountDecimal(market, symbol)
-	strAmount := strconv.FormatFloat(amount, 'f', amountDecimal, 64)
+	priceFormat := `%.` + strconv.Itoa(GetPriceDecimal(model.Fcoin, symbol)) + `f`
+	amountFormat := `%.` + strconv.Itoa(GetAmountDecimal(model.Fcoin, symbol)) + `f`
+	strPrice := fmt.Sprintf(priceFormat, price)
+	strAmount := fmt.Sprintf(amountFormat, amount)
+	price, _ = strconv.ParseFloat(strPrice, 64)
+	amount, _ = strconv.ParseFloat(strAmount, 64)
 	if amountType == model.AmountTypeContractNumber {
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}
