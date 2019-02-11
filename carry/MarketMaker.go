@@ -62,7 +62,9 @@ func needPlaceOrders() (need bool) {
 			buyExist = true
 		}
 	}
-	return !sellExist && !buyExist
+	need = !sellExist && !buyExist
+	util.Info(fmt.Sprintf(`check need market %d %v sell %v buy %v`, len(marketOrders), need, sellExist, buyExist))
+	return need
 }
 
 var ProcessMake = func(market, symbol string) {
@@ -94,7 +96,7 @@ var ProcessMake = func(market, symbol string) {
 			if order != nil && (order.Status == model.CarryStatusFail || order.Status == model.CarryStatusSuccess) {
 				util.Notice(fmt.Sprintf(`[update %s %s] price: %f %f - %f fee: %f, fee income: %f`, key,
 					order.Status, order.Price, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, order.Fee, order.FeeIncome))
-				model.AppDB.Save(&order)
+				go model.AppDB.Save(&order)
 				delete(marketOrders, key)
 				return
 			}
