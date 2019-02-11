@@ -62,9 +62,7 @@ func needPlaceOrders() (need bool) {
 			buyExist = true
 		}
 	}
-	need = !sellExist && !buyExist
-	util.Info(fmt.Sprintf(`check need market %d %v sell %v buy %v`, len(marketOrders), need, sellExist, buyExist))
-	return need
+	return !sellExist || !buyExist
 }
 
 var ProcessMake = func(market, symbol string) {
