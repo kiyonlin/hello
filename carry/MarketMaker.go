@@ -75,7 +75,6 @@ var ProcessMake = func(market, symbol string) {
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
 		return
 	}
-	util.Notice(fmt.Sprintf(`----------- %f - %f`, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price))
 	if marketOrders == nil {
 		workingOrders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
 		for _, value := range workingOrders {
