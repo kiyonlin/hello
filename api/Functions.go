@@ -115,6 +115,9 @@ func SyncQueryOrderById(market, symbol, orderId string) (order *model.Order) {
 	}
 	for i := 0; i < 100; i++ {
 		order = QueryOrderById(market, symbol, orderId)
+		if order == nil {
+			continue
+		}
 		if order.Status == model.CarryStatusSuccess || order.Status == model.CarryStatusFail {
 			return order
 		}

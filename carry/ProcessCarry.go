@@ -257,6 +257,7 @@ func Maintain() {
 			go ProcessInform()
 		case `maker`:
 			carryHandlers[i] = ProcessMake
+			go MarketMakeServe()
 		}
 	}
 	//go MaintainAccountChan()

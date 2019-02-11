@@ -69,3 +69,14 @@ func Test_Api(t *testing.T) {
 		fmt.Println(order.OrderTime.String())
 	}
 }
+
+func Test_array(t *testing.T) {
+	testMap := make(map[string]string)
+	testMap[`1`] = `one`
+	testMap[`2`] = `two`
+	delete(testMap, `1`)
+	fmt.Println(len(testMap))
+	for key, value := range testMap {
+		fmt.Println(key + `-` + value)
+	}
+}
