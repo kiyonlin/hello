@@ -75,7 +75,7 @@ var ProcessMake = func(market, symbol string) {
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
 		return
 	}
-	if marketOrders == nil {
+	if len(marketOrders) == 0 {
 		workingOrders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
 		for _, value := range workingOrders {
 			api.CancelOrder(market, symbol, value.OrderId)
@@ -104,7 +104,9 @@ var ProcessMake = func(market, symbol string) {
 func MarketMakeServe() {
 	for true {
 		order := <-marketMakeChannel
-		marketOrders[order.OrderId] = &order
+		if order.OrderId != `` {
+			marketOrders[order.OrderId] = &order
+		}
 		if order.OrderSide == model.OrderSideBuy {
 			marketBuying = false
 		}
