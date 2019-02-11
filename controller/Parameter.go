@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"math/rand"
@@ -21,6 +22,7 @@ func ParameterServe() {
 	router.GET("/set", SetParameters)
 	router.GET(`/refresh`, RefreshParameters)
 	router.GET(`/pw`, GetCode)
+	router.GET(`/mm`, carry.GetMarketMaking)
 	_ = router.Run(":80")
 }
 

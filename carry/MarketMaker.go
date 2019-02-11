@@ -2,10 +2,12 @@ package carry
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"hello/api"
 	"hello/model"
 	"hello/util"
 	"math"
+	"net/http"
 	"strings"
 )
 
@@ -100,6 +102,16 @@ var ProcessMake = func(market, symbol string) {
 			}
 		}
 	}
+}
+
+func GetMarketMaking(c *gin.Context) {
+	status := fmt.Sprintf("making %v buying %v selling %v \r\n", marketMaking, marketBuying, marketSelling)
+	status += fmt.Sprintf("market orders %d need %v \r\n", len(marketOrders), needPlaceOrders())
+	for key, value := range marketOrders {
+		status += fmt.Sprintf("order id: %s price: %f side: %s status: %s %s \r\n",
+			key, value.Price, value.OrderSide, value.Status, value.CreatedAt.String())
+	}
+	c.String(http.StatusOK, status)
 }
 
 func MarketMakeServe() {
