@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	carry.Maintain()
 	go controller.ParameterServe()
+	carry.Maintain()
 	select {}
 }
