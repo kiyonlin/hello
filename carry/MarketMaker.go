@@ -96,6 +96,7 @@ var ProcessMake = func(market, symbol string) {
 					order.Status, order.Price, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, order.Fee, order.FeeIncome))
 				model.AppDB.Save(&order)
 				delete(marketOrders, key)
+				return
 			}
 		}
 	}
