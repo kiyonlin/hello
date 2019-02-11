@@ -6,7 +6,6 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
-	"hello/controller"
 	"hello/model"
 	"hello/util"
 	"strconv"
@@ -235,7 +234,6 @@ func Maintain() {
 	go OuterCarryServe()
 	go InnerCarryServe()
 	go AccountHandlerServe()
-	go controller.ParameterServe()
 	go RefreshAccounts()
 	needWS := true
 	carryHandlers := make([]api.CarryHandler, len(model.AppConfig.Functions))
