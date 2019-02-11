@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var marketMaking = false
+var marketMaking, marketSelling, marketBuying bool
 var marketOrders = make(map[string]*model.Order)
 var marketMakeChannel = make(chan model.Order, 50)
 
@@ -37,6 +37,8 @@ func placeMarketMakers(market, symbol string, bidAsk *model.BidAsk) {
 	}
 	amountSell := model.AppAccounts.Data[market][coins[0]].Free * model.AppConfig.MakerRate
 	amountBuy := model.AppAccounts.Data[market][coins[1]].Free / priceSell * model.AppConfig.MakerRate
+	marketSelling = true
+	marketBuying = true
 	go placeMarketMaker(model.OrderSideSell, market, symbol, priceSell, amountSell)
 	go placeMarketMaker(model.OrderSideBuy, market, symbol, priceBuy, amountBuy)
 }
@@ -44,16 +46,6 @@ func placeMarketMakers(market, symbol string, bidAsk *model.BidAsk) {
 func placeMarketMaker(orderSide, market, symbol string, price, amount float64) {
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	marketMakeChannel <- *order
-}
-
-func updateMarketMaker(order *model.Order) (done bool) {
-	if order.Status == model.CarryStatusWorking {
-		return false
-	}
-	util.Notice(fmt.Sprintf(`market order result: %s status:%s with fee: %f, fee income: %f`,
-		order.OrderId, order.Status, order.Fee, order.FeeIncome))
-	model.AppDB.Save(&order)
-	return true
 }
 
 func needPlaceOrders() (need bool) {
@@ -70,11 +62,11 @@ func needPlaceOrders() (need bool) {
 			buyExist = true
 		}
 	}
-	return sellExist && buyExist
+	return !sellExist && !buyExist
 }
 
 var ProcessMake = func(market, symbol string) {
-	if marketMaking == true {
+	if marketMaking || marketSelling || marketBuying {
 		return
 	}
 	setMarketMaking(true)
@@ -99,7 +91,11 @@ var ProcessMake = func(market, symbol string) {
 				(value.OrderSide == model.OrderSideBuy && bidAsk.Bids[0].Price-value.Price > priceHalfDistance) {
 				api.CancelOrder(market, symbol, key)
 			}
-			if updateMarketMaker(api.QueryOrderById(market, symbol, key)) {
+			order := api.QueryOrderById(market, symbol, key)
+			if order != nil && (order.Status == model.CarryStatusFail || order.Status == model.CarryStatusSuccess) {
+				util.Notice(fmt.Sprintf(`[update %s %s] price: %f %f - %f fee: %f, fee income: %f`, key,
+					order.Status, order.Price, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, order.Fee, order.FeeIncome))
+				model.AppDB.Save(&order)
 				delete(marketOrders, key)
 			}
 		}
@@ -110,6 +106,12 @@ func MarketMakeServe() {
 	for true {
 		order := <-marketMakeChannel
 		marketOrders[order.OrderId] = &order
+		if order.OrderSide == model.OrderSideBuy {
+			marketBuying = false
+		}
+		if order.OrderSide == model.OrderSideSell {
+			marketSelling = false
+		}
 		//util.Notice(fmt.Sprintf(`make market %s %s %s`, order.OrderSide, order.OrderId, order.Status))
 	}
 }

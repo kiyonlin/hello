@@ -53,25 +53,28 @@ func GetAmountDecimal(market, symbol string) int {
 }
 
 func CancelOrder(market string, symbol string, orderId string) (result bool, errCode, msg string) {
+	errCode = `market-not-supported ` + market
+	msg = `market not supported ` + market
 	switch market {
 	case model.Huobi:
-		return CancelOrderHuobi(orderId)
+		result, errCode, msg = CancelOrderHuobi(orderId)
 	case model.OKEX:
-		return CancelOrderOkex(symbol, orderId)
+		result, errCode, msg = CancelOrderOkex(symbol, orderId)
 	case model.OKFUTURE:
-		return CancelOrderOkfuture(symbol, orderId)
+		result, errCode, msg = CancelOrderOkfuture(symbol, orderId)
 	case model.Binance:
-		return CancelOrderBinance(symbol, orderId)
+		result, errCode, msg = CancelOrderBinance(symbol, orderId)
 	case model.Fcoin:
-		return CancelOrderFcoin(orderId)
+		result, errCode, msg = CancelOrderFcoin(orderId)
 	case model.Coinpark:
-		return CancelOrderCoinpark(orderId)
+		result, errCode, msg = CancelOrderCoinpark(orderId)
 	case model.Coinbig:
-		return CancelOrderCoinbig(orderId)
+		result, errCode, msg = CancelOrderCoinbig(orderId)
 	case model.Bitmex:
-		return CancelOrderBitmex(orderId)
+		result, errCode, msg = CancelOrderBitmex(orderId)
 	}
-	return false, `market-not-supported`, `market not supported ` + market
+	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
+	return result, errCode, msg
 }
 
 func QueryOrders(market, symbol, states string) (orders map[string]*model.Order) {
