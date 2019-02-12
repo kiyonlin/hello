@@ -97,7 +97,7 @@ var ProcessGrid = func(market, symbol string) {
 		}
 		if grid.sellOrder.Status == model.CarryStatusWorking {
 			if grid.buyOrder.Status != model.CarryStatusWorking {
-				go model.AppDB.Save(&grid.buyOrder)
+				go model.AppDB.Save(grid.buyOrder)
 				grid.buyOrder = nil
 				cancelResult, _, _ := api.CancelOrder(market, symbol, grid.sellOrder.OrderId)
 				if cancelResult {
@@ -105,7 +105,7 @@ var ProcessGrid = func(market, symbol string) {
 				}
 			}
 		} else {
-			go model.AppDB.Save(&grid.sellOrder)
+			go model.AppDB.Save(grid.sellOrder)
 			grid.sellOrder = nil
 			if grid.buyOrder.Status == model.CarryStatusWorking {
 				cancelResult, _, _ := api.CancelOrder(market, symbol, grid.buyOrder.OrderId)
@@ -113,7 +113,7 @@ var ProcessGrid = func(market, symbol string) {
 					grid.buyOrder = nil
 				}
 			} else {
-				go model.AppDB.Save(&grid.buyOrder)
+				go model.AppDB.Save(grid.buyOrder)
 				grid.buyOrder = nil
 			}
 		}
@@ -122,7 +122,7 @@ var ProcessGrid = func(market, symbol string) {
 		if grid.sellOrder != nil {
 			order := api.QueryOrderById(market, symbol, grid.sellOrder.OrderId)
 			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-				go model.AppDB.Save(&order)
+				go model.AppDB.Save(order)
 				grid.sellOrder = nil
 				grid.edging = false
 			}
@@ -130,7 +130,7 @@ var ProcessGrid = func(market, symbol string) {
 		if grid.buyOrder != nil {
 			order := api.QueryOrderById(market, symbol, grid.buyOrder.OrderId)
 			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-				go model.AppDB.Save(&order)
+				go model.AppDB.Save(order)
 				grid.buyOrder = nil
 				grid.edging = false
 			}
@@ -138,14 +138,14 @@ var ProcessGrid = func(market, symbol string) {
 	} else if grid.buyOrder != nil {
 		cancelResult, _, _ := api.CancelOrder(market, symbol, grid.buyOrder.OrderId)
 		if cancelResult {
-			go model.AppDB.Save(&grid.buyOrder)
+			go model.AppDB.Save(grid.buyOrder)
 			grid.buyOrder = nil
 		}
 		api.RefreshAccount(market)
 	} else if grid.sellOrder != nil {
 		cancelResult, _, _ := api.CancelOrder(market, symbol, grid.sellOrder.OrderId)
 		if cancelResult {
-			go model.AppDB.Save(&grid.sellOrder)
+			go model.AppDB.Save(grid.sellOrder)
 			grid.sellOrder = nil
 		}
 		api.RefreshAccount(market)
