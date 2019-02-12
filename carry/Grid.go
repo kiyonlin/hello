@@ -137,23 +137,17 @@ var ProcessGrid = func(market, symbol string) {
 			}
 		}
 	} else if grid.edging {
+		order := grid.buyOrder
 		if grid.sellOrder != nil {
-			order := api.QueryOrderById(market, symbol, grid.sellOrder.OrderId)
-			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-				grid.lastPrice = order.DealPrice
-				go model.AppDB.Save(order)
-				grid.sellOrder = nil
-				grid.edging = false
-			}
+			order = grid.sellOrder
 		}
-		if grid.buyOrder != nil {
-			order := api.QueryOrderById(market, symbol, grid.buyOrder.OrderId)
-			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-				grid.lastPrice = order.DealPrice
-				go model.AppDB.Save(order)
-				grid.buyOrder = nil
-				grid.edging = false
-			}
+		order = api.QueryOrderById(market, symbol, order.OrderId)
+		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
+			grid.lastPrice = order.DealPrice
+			go model.AppDB.Save(order)
+			grid.sellOrder = nil
+			grid.buyOrder = nil
+			grid.edging = false
 		}
 	} else if grid.buyOrder != nil {
 		cancelGridOrder(grid, model.OrderSideBuy)
