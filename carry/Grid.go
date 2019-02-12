@@ -25,6 +25,9 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 	priceMiddle := (bidAsk.Bids[0].Price + bidAsk.Asks[0].Price) / 2
 	priceSell := (1 + setting.GridPriceDistance) * priceMiddle
 	priceBuy := (1 - setting.GridPriceDistance) * priceMiddle
+	if model.AppAccounts.Data[market][coins[0]] == nil || model.AppAccounts.Data[market][coins[1]] == nil {
+		api.RefreshAccount(market)
+	}
 	if model.AppAccounts.Data[market][coins[0]].Free < setting.GridAmount {
 		gridBuying = true
 		gridEdging = true
