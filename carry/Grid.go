@@ -136,9 +136,11 @@ func GridServe() {
 			continue
 		}
 		if order.OrderSide == model.OrderSideBuy {
+			gridSellOrder = &order
 			gridBuying = false
 		}
 		if order.OrderSide == model.OrderSideSell {
+			gridBuyOrder = &order
 			gridSelling = false
 		}
 	}
