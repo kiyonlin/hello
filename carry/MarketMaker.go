@@ -28,7 +28,6 @@ func placeMarketMakers(market, symbol string, bidAsk *model.BidAsk) {
 		util.Notice(`symbol format not supported ` + symbol)
 		return
 	}
-	api.RefreshAccount(market)
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	priceSell := bidAsk.Asks[0].Price
 	priceBuy := bidAsk.Bids[0].Price
@@ -101,6 +100,7 @@ var ProcessMake = func(market, symbol string) {
 				return
 			}
 		}
+		api.RefreshAccount(market)
 	}
 }
 

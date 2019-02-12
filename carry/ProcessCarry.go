@@ -256,6 +256,9 @@ func Maintain() {
 		case `maker`:
 			carryHandlers[i] = ProcessMake
 			go MarketMakeServe()
+		case `grid`:
+			carryHandlers[i] = ProcessGrid
+			go GridServe()
 		}
 	}
 	//go MaintainAccountChan()

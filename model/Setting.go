@@ -12,6 +12,9 @@ type Setting struct {
 	OpenShortMargin   float64 // arbitrary future use
 	CloseShortMargin  float64 // arbitrary future use
 	Chance            float64 // arbitrary future use
+	GridAmount        float64
+	GridEdgeRate      float64
+	GridPriceDistance float64
 	TurtleBalanceRate float64
 	Valid             bool
 	ID                uint `gorm:"primary_key"`

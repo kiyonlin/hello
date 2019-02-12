@@ -1,5 +1,6 @@
 functions:
-  - maker
+  - grid
+#  - maker
 #- carry
 #- balanceturtle
 #- arbitrary
@@ -8,7 +9,7 @@ functions:
 
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
-makerrate: 0.15
+makerrate: 0.1
 orderwait: 10000
 delay: 10000 #按照毫秒计算时间差
 channelslot: 60000 #按照毫秒计算的检查时间间隔
