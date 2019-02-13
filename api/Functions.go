@@ -45,7 +45,7 @@ func GetAmountDecimal(market, symbol string) int {
 		}
 	case model.Fcoin:
 		switch symbol {
-		case `btc_usdt`, `eos_usdt`, `eth_btc`:
+		case `btc_usdt`, `eos_usdt`, `eth_btc`, `eth_usdt`:
 			return 4
 		case `eos_btc`, `xrp_usdt`:
 			return 2
