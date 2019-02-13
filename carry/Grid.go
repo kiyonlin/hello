@@ -53,6 +53,8 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 	priceBuy := (1 - setting.GridPriceDistance) * grid.lastPrice
 	if model.AppAccounts.Data[market][coins[0]] == nil || model.AppAccounts.Data[market][coins[1]] == nil {
 		api.RefreshAccount(market)
+		util.Notice(fmt.Sprintf(`nil account data for %s`, symbol))
+		return
 	}
 	if model.AppAccounts.Data[market][coins[0]].Free < setting.GridAmount {
 		util.Notice(fmt.Sprintf(`[币光 %s %s]%f`, market, symbol, model.AppAccounts.Data[market][coins[0]].Free))
