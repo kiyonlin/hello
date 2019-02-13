@@ -83,7 +83,7 @@ func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte
 	if fcoinLastApiAccessTime == nil {
 		fcoinLastApiAccessTime = &current
 	}
-	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 100000000 {
+	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 150000000 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
 	}
@@ -153,7 +153,7 @@ func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 		msg, _ = responseJson.Get(`msg`).String()
 	}
 	util.Notice(orderId + "fcoin cancel order" + string(responseBody))
-	if status == 0 {
+	if status == 0 || status == 3008 { // 3008代表订单状态已经处于完成
 		return true, ``, msg
 	}
 	return false, strconv.FormatInt(int64(status), 10), msg
