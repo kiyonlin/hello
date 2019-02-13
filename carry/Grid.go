@@ -162,16 +162,17 @@ var ProcessGrid = func(market, symbol string) {
 func GridServe() {
 	for true {
 		order := <-gridChannel
-		if order.OrderId == `` {
-			continue
-		}
 		grid := getGrid(order.Market, order.Symbol)
 		if order.OrderSide == model.OrderSideBuy {
-			grid.buyOrder = &order
+			if order.OrderId != `` {
+				grid.buyOrder = &order
+			}
 			grid.buying = false
 		}
 		if order.OrderSide == model.OrderSideSell {
-			grid.sellOrder = &order
+			if order.OrderId != `` {
+				grid.sellOrder = &order
+			}
 			grid.selling = false
 		}
 	}
