@@ -47,6 +47,8 @@ func GetAmountDecimal(market, symbol string) int {
 		switch symbol {
 		case `btc_usdt`, `eos_usdt`, `eth_btc`:
 			return 4
+		case `eos_btc`:
+			return 2
 		}
 	}
 	return 4
