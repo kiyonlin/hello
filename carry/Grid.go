@@ -120,13 +120,13 @@ var ProcessGrid = func(market, symbol string) {
 		}
 		if grid.sellOrder.Status == model.CarryStatusWorking {
 			if grid.buyOrder.Status != model.CarryStatusWorking {
-				grid.lastPrice = grid.buyOrder.DealPrice
+				grid.lastPrice = bidAsk.Bids[0].Price
 				go model.AppDB.Save(grid.buyOrder)
 				grid.buyOrder = nil
 				cancelGridOrder(grid, model.OrderSideSell)
 			}
 		} else {
-			grid.lastPrice = grid.sellOrder.DealPrice
+			grid.lastPrice = bidAsk.Asks[0].Price
 			go model.AppDB.Save(grid.sellOrder)
 			grid.sellOrder = nil
 			if grid.buyOrder.Status == model.CarryStatusWorking {
@@ -138,12 +138,13 @@ var ProcessGrid = func(market, symbol string) {
 		}
 	} else if grid.edging {
 		order := grid.buyOrder
+		grid.lastPrice = bidAsk.Bids[0].Price
 		if grid.sellOrder != nil {
 			order = grid.sellOrder
+			grid.lastPrice = bidAsk.Asks[0].Price
 		}
 		order = api.QueryOrderById(market, symbol, order.OrderId)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-			grid.lastPrice = order.DealPrice
 			go model.AppDB.Save(order)
 			grid.sellOrder = nil
 			grid.buyOrder = nil
@@ -154,9 +155,7 @@ var ProcessGrid = func(market, symbol string) {
 	} else if grid.sellOrder != nil {
 		cancelGridOrder(grid, model.OrderSideSell)
 	}
-	if grid.buyOrder == nil || grid.sellOrder == nil {
-		api.RefreshAccount(market)
-	}
+	api.RefreshAccount(market)
 }
 
 func GridServe() {
