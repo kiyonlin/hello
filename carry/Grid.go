@@ -139,17 +139,17 @@ var ProcessGrid = func(market, symbol string) {
 	if grid.sellOrder == nil && grid.buyOrder == nil {
 		placeGridOrders(market, symbol, bidAsk)
 	} else if grid.buyOrder != nil && grid.sellOrder != nil {
-		if grid.sellOrder.Price < bidAsk.Bids[0].Price {
+		if grid.sellOrder.Price < bidAsk.Asks[0].Price {
 			handleSellDeal(grid, bidAsk, market, symbol)
 		}
-		if grid.buyOrder.Price > bidAsk.Asks[0].Price {
+		if grid.buyOrder.Price > bidAsk.Bids[0].Price {
 			handleBuyDeal(grid, bidAsk, market, symbol)
 		}
 	} else if grid.edging {
-		if grid.sellOrder != nil && grid.sellOrder.Price < bidAsk.Bids[0].Price {
+		if grid.sellOrder != nil && grid.sellOrder.Price < bidAsk.Asks[0].Price {
 			handleSellDeal(grid, bidAsk, market, symbol)
 		}
-		if grid.buyOrder != nil && grid.buyOrder.Price > bidAsk.Asks[0].Price {
+		if grid.buyOrder != nil && grid.buyOrder.Price > bidAsk.Bids[0].Price {
 			handleBuyDeal(grid, bidAsk, market, symbol)
 		}
 	} else if grid.buyOrder != nil {
