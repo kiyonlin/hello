@@ -5,6 +5,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"strings"
 	"time"
 )
@@ -52,6 +53,13 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 	}
 	priceSell := (1 + setting.GridPriceDistance) * grid.lastPrice
 	priceBuy := (1 - setting.GridPriceDistance) * grid.lastPrice
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	if priceSell <= bidAsk.Bids[0].Price {
+		priceSell = bidAsk.Bids[0].Price + priceDistance
+	}
+	if priceBuy >= bidAsk.Asks[0].Price {
+		priceBuy = bidAsk.Asks[0].Price - priceDistance
+	}
 	if model.AppAccounts.Data[market][coins[0]] == nil || model.AppAccounts.Data[market][coins[1]] == nil {
 		api.RefreshAccount(market)
 		util.Notice(fmt.Sprintf(`nil account data for %s`, symbol))
