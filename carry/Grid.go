@@ -178,8 +178,8 @@ var ProcessGrid = func(market, symbol string) {
 	} else if grid.sellOrder != nil {
 		cancelGridOrder(grid, model.OrderSideSell)
 	}
-	time.Sleep(time.Second * 3)
 	api.RefreshAccount(market)
+	time.Sleep(time.Second * 1)
 }
 
 func GridServe() {
