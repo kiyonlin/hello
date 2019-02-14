@@ -13,7 +13,7 @@ makerrate: 0.1
 orderwait: 3000
 delay: 10000 #按照毫秒计算时间差
 channelslot: 60000 #按照毫秒计算的检查时间间隔
-channels: 3
+channels: 1
 minusdt: 15
 maxusdt: 1500
 inchina: 0
