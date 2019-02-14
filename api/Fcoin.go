@@ -84,7 +84,7 @@ func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte
 		fcoinLastApiAccessTime = &current
 	}
 	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 150000000 {
-		time.Sleep(time.Duration(200) * time.Millisecond)
+		time.Sleep(time.Duration(100) * time.Millisecond)
 		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
 	}
 	currentTime := strconv.FormatInt(current.UnixNano(), 10)[0:13]

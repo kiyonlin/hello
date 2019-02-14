@@ -6,7 +6,6 @@ import (
 	"hello/model"
 	"hello/util"
 	"strings"
-	"time"
 )
 
 var marketSymbolGrid = make(map[string]map[string]*grid)
@@ -18,21 +17,6 @@ type grid struct {
 }
 
 var gridChannel = make(chan model.Order, 50)
-
-func setLastPrice(g *grid, orderSide string, marketPrice, dealPrice float64) {
-	if orderSide == model.OrderSideBuy {
-		g.lastPrice = dealPrice * 0.999
-		if marketPrice > g.lastPrice {
-			g.lastPrice = marketPrice
-		}
-	}
-	if orderSide == model.OrderSideSell {
-		g.lastPrice = dealPrice * 1.001
-		if marketPrice < g.lastPrice {
-			g.lastPrice = marketPrice
-		}
-	}
-}
 
 func setGriding(market, symbol string, ing bool) {
 	if marketSymbolGrid[market] == nil {
@@ -114,6 +98,32 @@ func cancelGridOrder(grid *grid, orderSide string) {
 	}
 }
 
+func handleSellDeal(grid *grid, bidAsk *model.BidAsk, market, symbol string) {
+	order := api.QueryOrderById(market, symbol, grid.sellOrder.OrderId)
+	if order != nil && order.OrderId != `` {
+		grid.lastPrice = order.DealPrice * 1.001
+		if bidAsk.Asks[0].Price < grid.lastPrice {
+			grid.lastPrice = bidAsk.Asks[0].Price
+		}
+		go model.AppDB.Save(order)
+		grid.sellOrder = nil
+	}
+	api.RefreshAccount(market)
+}
+
+func handleBuyDeal(grid *grid, bidAsk *model.BidAsk, market, symbol string) {
+	order := api.QueryOrderById(market, symbol, grid.buyOrder.OrderId)
+	if order != nil && order.OrderId != `` {
+		grid.lastPrice = order.DealPrice * 0.999
+		if bidAsk.Bids[0].Price > grid.lastPrice {
+			grid.lastPrice = bidAsk.Bids[0].Price
+		}
+		go model.AppDB.Save(order)
+		grid.buyOrder = nil
+	}
+	api.RefreshAccount(market)
+}
+
 var ProcessGrid = func(market, symbol string) {
 	grid := getGrid(market, symbol)
 	if grid.griding || grid.selling || grid.buying || model.AppConfig.Handle == 0 {
@@ -128,58 +138,24 @@ var ProcessGrid = func(market, symbol string) {
 	if grid.sellOrder == nil && grid.buyOrder == nil {
 		placeGridOrders(market, symbol, bidAsk)
 	} else if grid.buyOrder != nil && grid.sellOrder != nil {
-		order := api.QueryOrderById(market, symbol, grid.sellOrder.OrderId)
-		if order != nil && order.OrderId != `` {
-			grid.sellOrder = order
+		if grid.sellOrder.Price < bidAsk.Bids[0].Price {
+			handleSellDeal(grid, bidAsk, market, symbol)
 		}
-		order = api.QueryOrderById(market, symbol, grid.buyOrder.OrderId)
-		if order != nil && order.OrderId != `` {
-			grid.buyOrder = order
-		}
-		if grid.sellOrder.Status == model.CarryStatusWorking {
-			if grid.buyOrder.Status != model.CarryStatusWorking {
-				setLastPrice(grid, model.OrderSideBuy, bidAsk.Bids[0].Price, grid.buyOrder.DealPrice)
-				go model.AppDB.Save(grid.buyOrder)
-				grid.buyOrder = nil
-				cancelGridOrder(grid, model.OrderSideSell)
-			}
-		} else {
-			setLastPrice(grid, model.OrderSideSell, bidAsk.Asks[0].Price, grid.sellOrder.DealPrice)
-			go model.AppDB.Save(grid.sellOrder)
-			grid.sellOrder = nil
-			if grid.buyOrder.Status == model.CarryStatusWorking {
-				cancelGridOrder(grid, model.OrderSideBuy)
-			} else {
-				go model.AppDB.Save(grid.buyOrder)
-				grid.buyOrder = nil
-			}
+		if grid.buyOrder.Price > bidAsk.Asks[0].Price {
+			handleBuyDeal(grid, bidAsk, market, symbol)
 		}
 	} else if grid.edging {
-		if grid.sellOrder != nil {
-			order := api.QueryOrderById(market, symbol, grid.sellOrder.OrderId)
-			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-				go model.AppDB.Save(order)
-				setLastPrice(grid, model.OrderSideSell, bidAsk.Asks[0].Price, order.DealPrice)
-				grid.sellOrder = nil
-				grid.edging = false
-			}
+		if grid.sellOrder != nil && grid.sellOrder.Price < bidAsk.Bids[0].Price {
+			handleSellDeal(grid, bidAsk, market, symbol)
 		}
-		if grid.buyOrder != nil {
-			order := api.QueryOrderById(market, symbol, grid.buyOrder.OrderId)
-			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-				go model.AppDB.Save(order)
-				setLastPrice(grid, model.OrderSideBuy, bidAsk.Bids[0].Price, order.DealPrice)
-				grid.buyOrder = nil
-				grid.edging = false
-			}
+		if grid.buyOrder != nil && grid.buyOrder.Price > bidAsk.Asks[0].Price {
+			handleBuyDeal(grid, bidAsk, market, symbol)
 		}
 	} else if grid.buyOrder != nil {
 		cancelGridOrder(grid, model.OrderSideBuy)
 	} else if grid.sellOrder != nil {
 		cancelGridOrder(grid, model.OrderSideSell)
 	}
-	api.RefreshAccount(market)
-	time.Sleep(time.Second * 1)
 }
 
 func GridServe() {
