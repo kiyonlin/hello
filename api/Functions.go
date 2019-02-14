@@ -20,9 +20,9 @@ func GetPriceDecimal(market, symbol string) int {
 			return 6
 		case `ft_eth`, `ft_btc`, `eos_btc`, `xrp_btc`, `xrp_eth`:
 			return 8
-		case `eth_usdt`, `btc_usdt`, `ltc_usdt`:
+		case `eth_usdt`, `btc_usdt`, `ltc_usdt`, `bch_usdt`:
 			return 2
-		case `eos_usdt`, `xrp_usdt`, `etc_usdt`, `bch_usdt`:
+		case `eos_usdt`, `xrp_usdt`, `etc_usdt`:
 			return 4
 		}
 	case model.Coinpark:
