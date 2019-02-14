@@ -6,6 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"strings"
+	"time"
 )
 
 var marketSymbolGrid = make(map[string]map[string]*grid)
@@ -156,6 +157,7 @@ var ProcessGrid = func(market, symbol string) {
 	} else if grid.sellOrder != nil {
 		cancelGridOrder(grid, model.OrderSideSell)
 	}
+	time.Sleep(time.Microsecond * 100)
 }
 
 func GridServe() {
