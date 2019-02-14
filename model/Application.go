@@ -154,10 +154,10 @@ func GetDictMap(market, unionWord string) (marketWord string) {
 
 func GetOrderStatus(market, marketStatus string) (status string) {
 	if orderStatusMap[market] == nil {
-		return CarryStatusFail
+		return CarryStatusWorking
 	}
 	if orderStatusMap[market][marketStatus] == `` {
-		return CarryStatusFail
+		return CarryStatusWorking
 	}
 	return orderStatusMap[market][marketStatus]
 }

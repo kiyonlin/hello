@@ -18,6 +18,21 @@ type grid struct {
 
 var gridChannel = make(chan model.Order, 50)
 
+func setLastPrice(g *grid, orderSide string, marketPrice, dealPrice float64) {
+	if orderSide == model.OrderSideBuy {
+		g.lastPrice = dealPrice * 0.999
+		if marketPrice > g.lastPrice {
+			g.lastPrice = marketPrice
+		}
+	}
+	if orderSide == model.OrderSideSell {
+		g.lastPrice = dealPrice * 1.001
+		if marketPrice < g.lastPrice {
+			g.lastPrice = marketPrice
+		}
+	}
+}
+
 func setGriding(market, symbol string, ing bool) {
 	if marketSymbolGrid[market] == nil {
 		marketSymbolGrid[market] = make(map[string]*grid)
@@ -122,13 +137,13 @@ var ProcessGrid = func(market, symbol string) {
 		}
 		if grid.sellOrder.Status == model.CarryStatusWorking {
 			if grid.buyOrder.Status != model.CarryStatusWorking {
-				grid.lastPrice = bidAsk.Bids[0].Price
+				setLastPrice(grid, model.OrderSideBuy, bidAsk.Bids[0].Price, grid.buyOrder.DealPrice)
 				go model.AppDB.Save(grid.buyOrder)
 				grid.buyOrder = nil
 				cancelGridOrder(grid, model.OrderSideSell)
 			}
 		} else {
-			grid.lastPrice = bidAsk.Asks[0].Price
+			setLastPrice(grid, model.OrderSideSell, bidAsk.Asks[0].Price, grid.sellOrder.DealPrice)
 			go model.AppDB.Save(grid.sellOrder)
 			grid.sellOrder = nil
 			if grid.buyOrder.Status == model.CarryStatusWorking {
@@ -139,18 +154,23 @@ var ProcessGrid = func(market, symbol string) {
 			}
 		}
 	} else if grid.edging {
-		order := grid.buyOrder
-		grid.lastPrice = bidAsk.Bids[0].Price
 		if grid.sellOrder != nil {
-			order = grid.sellOrder
-			grid.lastPrice = bidAsk.Asks[0].Price
+			order := api.QueryOrderById(market, symbol, grid.sellOrder.OrderId)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
+				go model.AppDB.Save(order)
+				setLastPrice(grid, model.OrderSideSell, bidAsk.Asks[0].Price, order.DealPrice)
+				grid.sellOrder = nil
+				grid.edging = false
+			}
 		}
-		order = api.QueryOrderById(market, symbol, order.OrderId)
-		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
-			go model.AppDB.Save(order)
-			grid.sellOrder = nil
-			grid.buyOrder = nil
-			grid.edging = false
+		if grid.buyOrder != nil {
+			order := api.QueryOrderById(market, symbol, grid.buyOrder.OrderId)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusWorking {
+				go model.AppDB.Save(order)
+				setLastPrice(grid, model.OrderSideBuy, bidAsk.Bids[0].Price, order.DealPrice)
+				grid.buyOrder = nil
+				grid.edging = false
+			}
 		}
 	} else if grid.buyOrder != nil {
 		cancelGridOrder(grid, model.OrderSideBuy)
