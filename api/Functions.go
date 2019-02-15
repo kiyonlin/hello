@@ -228,9 +228,16 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price,
 	}
 	actualAmount, _ := strconv.ParseFloat(strAmount, 64)
 	actualPrice, _ := strconv.ParseFloat(strPrice, 64)
+	moneySide := 0
+	if orderSide == model.OrderSideSell {
+		moneySide = 1
+	}
+	if orderSide == model.OrderSideBuy {
+		moneySide = -1
+	}
 	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
 		AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
-		Status: status, DealAmount: actualAmount, DealPrice: actualPrice}
+		Status: status, DealAmount: actualAmount, DealPrice: actualPrice, MoneySide: moneySide}
 }
 
 func GetPrice(symbol string) (buy float64, err error) {

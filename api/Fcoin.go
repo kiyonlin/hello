@@ -173,6 +173,14 @@ func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Or
 	filledAmount, _ := strconv.ParseFloat(orderMap[`filled_amount`].(string), 64)
 	fee, _ := strconv.ParseFloat(orderMap[`fill_fees`].(string), 64)
 	feeIncome, _ := strconv.ParseFloat(orderMap[`fees_income`].(string), 64)
+	orderSide := model.GetDictMapRevert(model.Fcoin, orderMap[`side`].(string))
+	moneySide := 0
+	if orderSide == model.OrderSideSell {
+		moneySide = 1
+	}
+	if orderSide == model.OrderSideBuy {
+		moneySide = -1
+	}
 	return &model.Order{OrderId: orderMap[`id`].(string),
 		Symbol:     symbol,
 		Market:     model.Fcoin,
@@ -180,7 +188,8 @@ func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Or
 		DealAmount: filledAmount,
 		OrderTime:  time.Unix(0, createTime*1000000),
 		OrderType:  model.GetDictMapRevert(model.Fcoin, orderMap[`type`].(string)),
-		OrderSide:  model.GetDictMapRevert(model.Fcoin, orderMap[`side`].(string)),
+		OrderSide:  orderSide,
+		MoneySide:  moneySide,
 		DealPrice:  price,
 		Fee:        fee,
 		FeeIncome:  feeIncome,
