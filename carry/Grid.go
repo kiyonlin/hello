@@ -110,7 +110,7 @@ func cancelGridOrder(grid *grid, orderSide string) {
 func handleSellDeal(grid *grid, bidAsk *model.BidAsk, market, symbol string) {
 	order := api.QueryOrderById(market, symbol, grid.sellOrder.OrderId)
 	if order != nil && order.OrderId != `` {
-		grid.lastPrice = order.DealPrice * 1.001
+		grid.lastPrice = order.DealPrice * 1.0008
 		if bidAsk.Asks[0].Price < grid.lastPrice {
 			grid.lastPrice = bidAsk.Asks[0].Price
 		}
@@ -123,7 +123,7 @@ func handleSellDeal(grid *grid, bidAsk *model.BidAsk, market, symbol string) {
 func handleBuyDeal(grid *grid, bidAsk *model.BidAsk, market, symbol string) {
 	order := api.QueryOrderById(market, symbol, grid.buyOrder.OrderId)
 	if order != nil && order.OrderId != `` {
-		grid.lastPrice = order.DealPrice * 0.999
+		grid.lastPrice = order.DealPrice * 0.9992
 		if bidAsk.Bids[0].Price > grid.lastPrice {
 			grid.lastPrice = bidAsk.Bids[0].Price
 		}
