@@ -65,7 +65,7 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	priceSell := math.Max(math.Min(bidAsk.Asks[0].Price*(1+setting.GridPriceDistance),
 		grid.lastPrice*(1+setting.GridPriceDistance)), bidAsk.Bids[0].Price+priceDistance)
-	priceBuy := priceSell * (1 + 2*setting.GridPriceDistance)
+	priceBuy := priceSell * (1 - 2*setting.GridPriceDistance)
 	if grid.lastSide == model.OrderSideBuy {
 		priceBuy = math.Min(math.Max(bidAsk.Bids[0].Price*(1-setting.GridPriceDistance),
 			grid.lastPrice*(1-setting.GridPriceDistance-0.0005)), bidAsk.Asks[0].Price-priceDistance)
