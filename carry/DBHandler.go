@@ -153,6 +153,27 @@ func MaintainArbitrarySettings() {
 	}
 }
 
+func CancelOldWorkingOrders() {
+	d, _ := time.ParseDuration("-23h")
+	for true {
+		timeLine := util.GetNow().Add(d)
+		markets := model.GetMarkets()
+		for _, market := range markets {
+			settings := model.GetMarketSettings(market)
+			for symbol := range settings {
+				orders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
+				for orderId, order := range orders {
+					if orderId != `` && order.OrderTime.Before(timeLine) {
+						result, errCode, msg := api.CancelOrder(market, symbol, orderId)
+						util.Notice(fmt.Sprintf(`[cancel old]%v %s %s %s`, result, errCode, msg))
+					}
+				}
+			}
+		}
+		time.Sleep(time.Hour)
+	}
+}
+
 func RefreshAccounts() {
 	for true {
 		markets := model.GetMarkets()

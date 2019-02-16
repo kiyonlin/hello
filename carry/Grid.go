@@ -167,8 +167,7 @@ var ProcessGrid = func(market, symbol string) {
 	} else if grid.buyOrder != nil && grid.sellOrder != nil {
 		if grid.sellOrder.Price < bidAsk.Asks[0].Price {
 			handleSellDeal(grid, market, symbol)
-		}
-		if grid.buyOrder.Price > bidAsk.Bids[0].Price {
+		} else if grid.buyOrder.Price > bidAsk.Bids[0].Price {
 			handleBuyDeal(grid, market, symbol)
 		}
 	} else if grid.edging {

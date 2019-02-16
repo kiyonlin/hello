@@ -235,6 +235,7 @@ func Maintain() {
 	go InnerCarryServe()
 	go AccountHandlerServe()
 	go RefreshAccounts()
+	go CancelOldWorkingOrders()
 	needWS := true
 	carryHandlers := make([]api.CarryHandler, len(model.AppConfig.Functions))
 	for i, value := range model.AppConfig.Functions {
