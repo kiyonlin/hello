@@ -165,7 +165,7 @@ func CancelOldWorkingOrders() {
 				for orderId, order := range orders {
 					if orderId != `` && order.OrderTime.Before(timeLine) {
 						result, errCode, msg := api.CancelOrder(market, symbol, orderId)
-						util.Notice(fmt.Sprintf(`[cancel old]%v %s %s %s`, result, errCode, msg))
+						util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
 					}
 				}
 			}

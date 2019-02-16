@@ -12,10 +12,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
-var fcoinLastApiAccessTime *time.Time
+var fcoinLastApiAccessTime = util.GetNow()
+var fcoinLock sync.Mutex
 
 var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) error {
 	var err error = nil
@@ -78,12 +80,11 @@ func WsDepthServeFcoin(markets *model.Markets, carryHandlers []CarryHandler, err
 }
 
 func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte {
+	fcoinLock.Lock()
+	defer fcoinLock.Unlock()
 	uri := model.AppConfig.RestUrls[model.Fcoin] + path
 	current := util.GetNow()
-	if fcoinLastApiAccessTime == nil {
-		fcoinLastApiAccessTime = &current
-	}
-	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 150000000 {
+	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 100000000 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
 	}
