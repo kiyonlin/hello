@@ -106,14 +106,20 @@ func cancelGridOrder(grid *grid, orderSide string) {
 	if orderSide == model.OrderSideSell {
 		result, _, _ := api.CancelOrder(grid.sellOrder.Market, grid.sellOrder.Symbol, grid.sellOrder.OrderId)
 		if result {
-			go model.AppDB.Save(grid.sellOrder)
+			order := api.QueryOrderById(grid.sellOrder.Market, grid.sellOrder.Symbol, grid.sellOrder.OrderId)
+			if order != nil && order.OrderId != `` {
+				go model.AppDB.Save(order)
+			}
 			grid.sellOrder = nil
 		}
 	}
 	if orderSide == model.OrderSideBuy {
 		result, _, _ := api.CancelOrder(grid.buyOrder.Market, grid.buyOrder.Symbol, grid.buyOrder.OrderId)
 		if result {
-			go model.AppDB.Save(grid.buyOrder)
+			order := api.QueryOrderById(grid.buyOrder.Market, grid.buyOrder.Symbol, grid.buyOrder.OrderId)
+			if order != nil && order.OrderId != `` {
+				go model.AppDB.Save(order)
+			}
 			grid.buyOrder = nil
 		}
 	}
