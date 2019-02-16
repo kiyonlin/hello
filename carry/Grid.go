@@ -132,6 +132,8 @@ func handleSellDeal(grid *grid, market, symbol string) {
 		grid.lastPrice = order.DealPrice
 		go model.AppDB.Save(order)
 		grid.sellOrder = nil
+		// 不在处理对边挂单
+		grid.buyOrder = nil
 	}
 	api.RefreshAccount(market)
 }
@@ -143,6 +145,8 @@ func handleBuyDeal(grid *grid, market, symbol string) {
 		grid.lastPrice = order.DealPrice
 		go model.AppDB.Save(order)
 		grid.buyOrder = nil
+		// 不在处理对边挂单
+		grid.sellOrder = nil
 	}
 	api.RefreshAccount(market)
 }
