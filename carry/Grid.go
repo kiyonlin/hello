@@ -71,15 +71,19 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 			grid.lastPrice*(1-setting.GridPriceDistance-0.0005)), bidAsk.Asks[0].Price-priceDistance)
 		priceSell = priceBuy * (1 + 2*setting.GridPriceDistance)
 	}
-	buyAmount := setting.GridAmount / model.AppMarkets.BidAsks[usdtSymbol][market].Bids[0].Price
-	sellAmount := setting.GridAmount / model.AppMarkets.BidAsks[usdtSymbol][market].Asks[0].Price
-	if model.AppAccounts.Data[market][coins[0]].Free < sellAmount {
+	amountBuy := setting.GridAmount / model.AppMarkets.BidAsks[usdtSymbol][market].Bids[0].Price
+	amountSell := setting.GridAmount / model.AppMarkets.BidAsks[usdtSymbol][market].Asks[0].Price
+	if usdtSymbol == symbol {
+		amountBuy = setting.GridAmount / priceBuy
+		amountSell = setting.GridAmount / priceSell
+	}
+	if model.AppAccounts.Data[market][coins[0]].Free < amountSell {
 		util.Notice(fmt.Sprintf(`[币光 %s %s]%f`, market, symbol, model.AppAccounts.Data[market][coins[0]].Free))
 		grid.buying = true
 		grid.edging = true
 		go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy,
 			setting.GridEdgeRate*model.AppAccounts.Data[market][coins[1]].Free/grid.lastPrice)
-	} else if model.AppAccounts.Data[market][coins[1]].Free/grid.lastPrice < buyAmount {
+	} else if model.AppAccounts.Data[market][coins[1]].Free/grid.lastPrice < amountBuy {
 		util.Notice(fmt.Sprintf(`[钱光 %s %s]%f`, market, symbol, model.AppAccounts.Data[market][coins[1]].Free))
 		grid.selling = true
 		grid.edging = true
@@ -88,8 +92,8 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 	} else {
 		grid.selling = true
 		grid.buying = true
-		go placeGridOrder(model.OrderSideSell, market, symbol, priceSell, sellAmount)
-		go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy, buyAmount)
+		go placeGridOrder(model.OrderSideSell, market, symbol, priceSell, amountSell)
+		go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy, amountBuy)
 	}
 }
 
