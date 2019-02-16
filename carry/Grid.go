@@ -70,6 +70,7 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 	usdtSymbol := coins[0] + `_usdt`
 	if model.AppMarkets.BidAsks[usdtSymbol] == nil || model.AppMarkets.BidAsks[usdtSymbol][market] == nil {
 		util.Notice(fmt.Sprintf(`%s 没有usdt价格 %s`, symbol, usdtSymbol))
+		return
 	}
 	amount := setting.GridAmount / model.AppMarkets.BidAsks[usdtSymbol][market].Bids[0].Price
 	if model.AppAccounts.Data[market][coins[0]].Free < amount {
