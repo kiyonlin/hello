@@ -2,7 +2,6 @@ package carry
 
 import (
 	"fmt"
-	"github.com/jinzhu/configor"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
