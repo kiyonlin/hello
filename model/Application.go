@@ -310,6 +310,7 @@ type Config struct {
 	FtMax          float64 // fcoin dk ft上限
 	InChina        int     // 1 in china, otherwise outter china
 	Mail           string
+	Port           string
 }
 
 func NewConfig() {

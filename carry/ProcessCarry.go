@@ -214,12 +214,7 @@ func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
 
 func Maintain() {
 	util.Notice("start carrying")
-	model.NewConfig()
-	err := configor.Load(model.AppConfig, "./config.yml")
-	if err != nil {
-		util.Notice(err.Error())
-		return
-	}
+	var err error
 	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	if err != nil {
 		util.Notice(err.Error())

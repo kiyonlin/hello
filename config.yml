@@ -7,6 +7,7 @@ functions:
 #- rsi
 #- refresh
 
+port: 80
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
 makerrate: 0.1

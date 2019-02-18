@@ -23,7 +23,7 @@ func ParameterServe() {
 	router.GET(`/refresh`, RefreshParameters)
 	router.GET(`/pw`, GetCode)
 	router.GET(`/mm`, carry.GetMarketMaking)
-	_ = router.Run(":80")
+	_ = router.Run(":" + model.AppConfig.Port)
 }
 
 func GetCode(c *gin.Context) {

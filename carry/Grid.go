@@ -13,10 +13,10 @@ import (
 var marketSymbolGrid = make(map[string]map[string]*grid)
 
 type grid struct {
-	griding, selling, buying, edging bool
-	sellOrder, buyOrder              *model.Order
-	lastPrice                        float64
-	lastSide                         string
+	griding, selling, buying bool
+	sellOrder, buyOrder      *model.Order
+	lastPrice                float64
+	lastSide                 string
 }
 
 var gridChannel = make(chan model.Order, 50)
@@ -64,11 +64,11 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 	}
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	priceSell := math.Max(math.Min(bidAsk.Asks[0].Price*(1+setting.GridPriceDistance),
-		grid.lastPrice*(1+setting.GridPriceDistance+0.0005)), bidAsk.Bids[0].Price+priceDistance)
+		grid.lastPrice*(1+setting.GridPriceDistance+0.0007)), bidAsk.Bids[0].Price+priceDistance)
 	priceBuy := priceSell * (1 - 2*setting.GridPriceDistance)
 	if grid.lastSide == model.OrderSideBuy {
 		priceBuy = math.Min(math.Max(bidAsk.Bids[0].Price*(1-setting.GridPriceDistance),
-			grid.lastPrice*(1-setting.GridPriceDistance-0.0005)), bidAsk.Asks[0].Price-priceDistance)
+			grid.lastPrice*(1-setting.GridPriceDistance-0.0007)), bidAsk.Asks[0].Price-priceDistance)
 		priceSell = priceBuy * (1 + 2*setting.GridPriceDistance)
 	}
 	amountBuy := setting.GridAmount / model.AppMarkets.BidAsks[usdtSymbol][market].Bids[0].Price
@@ -77,24 +77,10 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 		amountBuy = setting.GridAmount / priceBuy
 		amountSell = setting.GridAmount / priceSell
 	}
-	if model.AppAccounts.Data[market][coins[0]].Free < amountSell {
-		util.Notice(fmt.Sprintf(`[币光 %s %s]%f`, market, symbol, model.AppAccounts.Data[market][coins[0]].Free))
-		grid.buying = true
-		grid.edging = true
-		go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy,
-			setting.GridEdgeRate*model.AppAccounts.Data[market][coins[1]].Free/grid.lastPrice)
-	} else if model.AppAccounts.Data[market][coins[1]].Free/grid.lastPrice < amountBuy {
-		util.Notice(fmt.Sprintf(`[钱光 %s %s]%f`, market, symbol, model.AppAccounts.Data[market][coins[1]].Free))
-		grid.selling = true
-		grid.edging = true
-		go placeGridOrder(model.OrderSideSell, market, symbol, priceSell,
-			setting.GridEdgeRate*model.AppAccounts.Data[market][coins[0]].Free)
-	} else {
-		grid.selling = true
-		grid.buying = true
-		go placeGridOrder(model.OrderSideSell, market, symbol, priceSell, amountSell)
-		go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy, amountBuy)
-	}
+	grid.selling = true
+	grid.buying = true
+	go placeGridOrder(model.OrderSideSell, market, symbol, priceSell, amountSell)
+	go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy, amountBuy)
 }
 
 func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
@@ -124,27 +110,13 @@ var ProcessGrid = func(market, symbol string) {
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
 		return
 	}
-	if grid.sellOrder == nil && grid.buyOrder == nil {
+	if grid.sellOrder == nil || grid.buyOrder == nil {
 		placeGridOrders(market, symbol, bidAsk)
-	} else if grid.buyOrder != nil && grid.sellOrder != nil {
-		if grid.sellOrder.Price < bidAsk.Asks[0].Price {
-			handleOrderDeal(grid, grid.sellOrder, market, model.OrderSideSell)
-		} else if grid.buyOrder.Price > bidAsk.Bids[0].Price {
-			handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
-		}
-	} else if grid.edging {
-		if grid.sellOrder != nil && grid.sellOrder.Price < bidAsk.Asks[0].Price {
-			handleOrderDeal(grid, grid.sellOrder, market, model.OrderSideSell)
-		}
-		if grid.buyOrder != nil && grid.buyOrder.Price > bidAsk.Bids[0].Price {
-			handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
-		}
+	} else if grid.sellOrder != nil && grid.sellOrder.Price < bidAsk.Asks[0].Price {
+		handleOrderDeal(grid, grid.sellOrder, market, model.OrderSideSell)
+	} else if grid.buyOrder != nil && grid.buyOrder.Price > bidAsk.Bids[0].Price {
+		handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
 	}
-	//else if grid.buyOrder != nil {
-	//	cancelGridOrder(grid, model.OrderSideBuy)
-	//} else if grid.sellOrder != nil {
-	//	cancelGridOrder(grid, model.OrderSideSell)
-	//}
 	time.Sleep(time.Microsecond * 100)
 }
 
@@ -162,26 +134,3 @@ func GridServe() {
 		}
 	}
 }
-
-//func cancelGridOrder(grid *grid, orderSide string) {
-//	if orderSide == model.OrderSideSell {
-//		result, _, _ := api.CancelOrder(grid.sellOrder.Market, grid.sellOrder.Symbol, grid.sellOrder.OrderId)
-//		if result {
-//			order := api.QueryOrderById(grid.sellOrder.Market, grid.sellOrder.Symbol, grid.sellOrder.OrderId)
-//			if order != nil && order.OrderId != `` {
-//				go model.AppDB.Save(order)
-//			}
-//			grid.sellOrder = nil
-//		}
-//	}
-//	if orderSide == model.OrderSideBuy {
-//		result, _, _ := api.CancelOrder(grid.buyOrder.Market, grid.buyOrder.Symbol, grid.buyOrder.OrderId)
-//		if result {
-//			order := api.QueryOrderById(grid.buyOrder.Market, grid.buyOrder.Symbol, grid.buyOrder.OrderId)
-//			if order != nil && order.OrderId != `` {
-//				go model.AppDB.Save(order)
-//			}
-//			grid.buyOrder = nil
-//		}
-//	}
-//}
