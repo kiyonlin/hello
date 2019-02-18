@@ -59,6 +59,8 @@ func Test_Api(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, model.Fcoin, `btc_usdt`, ``, 3666, 0.003)
+	fmt.Println(order.OrderId + order.Status)
 	testOrder := api.QueryOrderById(model.Fcoin, `eos_btc`, `X0-GKSE7iZkHEYoBfo7UmFEjhP8CfJsP8TiPPFymtWg9IKL4rIyhnz5KVvxWpNqQ`)
 	fmt.Println(testOrder.Status)
 	//api.RefreshAccount(model.Fcoin)

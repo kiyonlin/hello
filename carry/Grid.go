@@ -84,6 +84,9 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 }
 
 func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
+	if price <= 0 {
+		return
+	}
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	gridChannel <- *order
 }
