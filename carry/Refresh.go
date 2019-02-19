@@ -107,7 +107,7 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Notice(`can not create carry for ` + symbol)
 		return
 	}
-	if model.AppConfig.Handle == 0 || processing || handling {
+	if model.AppConfig.Handle == `0` || processing || handling {
 		return
 	}
 	setProcessing(true)
@@ -197,7 +197,7 @@ func cancelRefreshOrder(orderId string, mustCancel bool) {
 			break
 		}
 		if i == 99 {
-			model.AppConfig.Handle = 0
+			model.AppConfig.Handle = `0`
 		}
 		time.Sleep(time.Second * 1)
 	}

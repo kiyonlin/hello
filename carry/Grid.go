@@ -93,7 +93,7 @@ func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
 	order := &model.Order{OrderSide: orderSide, OrderType: model.OrderTypeLimit, Market: market, Symbol: symbol,
 		AmountType: ``, Price: price, Amount: amount, OrderId: ``, ErrCode: ``,
 		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price}
-	if model.AppConfig.Handle > 0 {
+	if model.AppConfig.Handle == `1` {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	}
 	gridChannel <- *order

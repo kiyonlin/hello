@@ -53,7 +53,7 @@ func placeMarketMaker(orderSide, market, symbol string, price, amount float64) {
 }
 
 func needPlaceOrders() (need bool) {
-	if model.AppConfig.Handle == 0 || len(marketOrders) >= 3 {
+	if model.AppConfig.Handle == `0` || len(marketOrders) >= 3 {
 		return false
 	}
 	sellExist := false

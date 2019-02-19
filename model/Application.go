@@ -305,7 +305,7 @@ type Config struct {
 	BnbBuy         float64
 	OrderWait      int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate     float64 // 刷单填写数量比率
-	Handle         int64   // 0 不执行处理程序，1执行处理程序
+	Handle         string  // 0 不执行处理程序，1执行处理程序
 	SellRate       float64 // fcoin dk 额外卖单下单比例
 	FtMax          float64 // fcoin dk ft上限
 	InChina        int     // 1 in china, otherwise outter china

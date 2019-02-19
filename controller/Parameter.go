@@ -82,10 +82,10 @@ func SetParameters(c *gin.Context) {
 			return
 		}
 		code = ``
-		model.AppConfig.Handle = 1
+		model.AppConfig.Handle = `1`
 	}
 	if handle == `0` {
-		model.AppConfig.Handle = 0
+		model.AppConfig.Handle = `0`
 	}
 	orderWait := c.Query("orderwait")
 	if orderWait != `` {
