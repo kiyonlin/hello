@@ -90,7 +90,12 @@ func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
 	if price <= 0 {
 		return
 	}
-	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	order := &model.Order{OrderSide: orderSide, OrderType: model.OrderTypeLimit, Market: market, Symbol: symbol,
+		AmountType: ``, Price: price, Amount: amount, OrderId: ``, ErrCode: ``,
+		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price}
+	if model.AppConfig.Handle > 0 {
+		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	}
 	gridChannel <- *order
 }
 
@@ -107,7 +112,7 @@ func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
 
 var ProcessGrid = func(market, symbol string) {
 	grid := getGrid(market, symbol)
-	if grid.griding || grid.selling || grid.buying || model.AppConfig.Handle == 0 {
+	if grid.griding || grid.selling || grid.buying {
 		return
 	}
 	setGriding(market, symbol, true)

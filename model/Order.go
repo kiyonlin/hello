@@ -8,7 +8,6 @@ type Order struct {
 	Market     string
 	OrderType  string
 	OrderSide  string
-	MoneySide  int //仅用于统计，OrderSide=sell时MoneySide=1；OrderSide=buy时MoneySide=-1
 	ErrCode    string
 	Status     string
 	AmountType string
