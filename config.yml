@@ -42,11 +42,11 @@ binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
 #fcoinkey: 0b477c509c2c4406873d342a229b8344
 #fcoinsecret: 292e809a842349e19a379351464874b6
 # simon fcoin
-#fcoinkey: b4f28ad197c64cdbb072328b37c654bd
-#fcoinsecret: 588dd6887ac14629bd6e7653d7952938
+fcoinkey: b4f28ad197c64cdbb072328b37c654bd
+fcoinsecret: 588dd6887ac14629bd6e7653d7952938
 #bp fcoin
-fcoinkey: 8591deef96d14b079ea582f47bc7ed4a
-fcoinsecret: 1ccd9a3fe67344f0aab6c463a93385dd
+#fcoinkey: 8591deef96d14b079ea582f47bc7ed4a
+#fcoinsecret: 1ccd9a3fe67344f0aab6c463a93385dd
 #bitmex test
 #bitmexkey: pS4bU4i2fUlEpdZjGzcjP83h
 #bitmexsecret: yLl0t87-dSbwu_R4mLLIVkNRlI3d7Kr2a9ZgtRDUjbm07GQm

@@ -77,9 +77,6 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 		amountBuy = setting.GridAmount / priceBuy
 		amountSell = setting.GridAmount / priceSell
 	}
-	if amountSell < priceDistance && amountBuy < priceDistance {
-		return
-	}
 	grid.selling = true
 	grid.buying = true
 	go placeGridOrder(model.OrderSideSell, market, symbol, priceSell, amountSell)
