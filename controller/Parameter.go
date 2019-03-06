@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"hello/carry"
@@ -15,6 +16,8 @@ import (
 
 var accessTime = make(map[string]int64)
 var code = ``
+var data = make(map[string]interface{})
+var timeLayout = `2014-09-12T11:45:26`
 
 func ParameterServe() {
 	router := gin.Default()
@@ -23,6 +26,7 @@ func ParameterServe() {
 	router.GET(`/refresh`, RefreshParameters)
 	router.GET(`/pw`, GetCode)
 	router.GET(`/mm`, carry.GetMarketMaking)
+	router.GET("/balance", GetBalance)
 	_ = router.Run(":" + model.AppConfig.Port)
 }
 
@@ -51,6 +55,50 @@ func GetCode(c *gin.Context) {
 		}
 		// iamp pjmyzgvrlifpcbci
 	}
+}
+
+func GetBalance(c *gin.Context) {
+	d, _ := time.ParseDuration("-720h")
+	timeLine := util.GetNow().Add(d)
+	fmt.Println(timeLine)
+	rows, _ := model.AppDB.Table("accounts").Select(`timestamp, market, currency, free*price_in_usdt,
+		frozen*price_in_usdt`).Order(`timestamp`).Rows()
+	defer rows.Close()
+	hours := make([]string, 0)
+	balances := make(map[string][]float64)
+	for rows.Next() {
+		var date time.Time
+		var market, currency string
+		var free, froze float64
+		rows.Scan(&date, &market, &currency, &free, &froze)
+		if free < 5 && froze < 5 {
+			continue
+		}
+		dateStr := date.Format(timeLayout)
+		if len(hours) == 0 || hours[len(hours)-1] != dateStr {
+			hours = append(hours, dateStr)
+		}
+		keyFree := market + `|` + currency + `|free`
+		keyFroze := market + `|` + currency + `|froze`
+		if balances[keyFree] == nil {
+			balances[keyFree] = make([]float64, 0)
+		}
+		if balances[keyFroze] == nil {
+			balances[keyFroze] = make([]float64, 0)
+		}
+		balances[keyFree] = append(balances[keyFree], free)
+		balances[keyFroze] = append(balances[keyFroze], froze)
+	}
+	data[`hours`] = hours
+	data[`balances`] = balances
+	currencies := make([]string, 0)
+	for key := range balances {
+		currencies = append(currencies, key)
+
+	}
+	data[`currencies`] = currencies
+	balanceData, _ := json.Marshal(data)
+	c.String(http.StatusOK, string(balanceData))
 }
 
 func GetParameters(c *gin.Context) {

@@ -20,7 +20,7 @@ maxusdt: 1500
 inchina: 0
 deduction: 0.8
 mail: haoweizh@qq.com #41685600@qq.com
-handle: 1
+handle: 0
 
 dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=mydb password=dbuser sslmode=disable
 env: dk
