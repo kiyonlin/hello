@@ -17,6 +17,7 @@ type grid struct {
 	sellOrder, buyOrder      *model.Order
 	lastPrice                float64
 	lastSide                 string
+	sameSide                 int64
 }
 
 var gridChannel = make(chan model.Order, 50)
@@ -97,6 +98,18 @@ func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
 }
 
 func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
+	if grid.lastSide == orderSide {
+		grid.sameSide++
+		if grid.sameSide > 15 {
+			setting := model.GetSetting(market, order.Symbol)
+			setting.GridPriceDistance = setting.GridPriceDistance * 2
+			model.AppDB.Save(setting)
+			model.LoadSettings()
+			grid.sameSide = 0
+		}
+	} else {
+		grid.sameSide = 0
+	}
 	grid.lastSide = orderSide
 	grid.lastPrice = order.Price
 	order.DealPrice = order.Price
