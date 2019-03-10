@@ -17,7 +17,7 @@ import (
 var accessTime = make(map[string]int64)
 var code = ``
 var data = make(map[string]interface{})
-var dataUpdateTime = util.GetNow()
+var dataUpdateTime *time.Time
 var balances = make(map[string]map[string]map[string][]float64) // time - market - currency - value
 
 func ParameterServe() {
@@ -106,7 +106,9 @@ func renderBalance() {
 		var market, currency string
 		var price, free, froze float64
 		_ = rows.Scan(&date, &market, &currency, &price, &free, &froze)
-		dataUpdateTime = date
+		if dataUpdateTime == nil || dataUpdateTime.Before(date) {
+			dataUpdateTime = &date
+		}
 		if free < 5 && froze < 5 {
 			continue
 		}
@@ -140,7 +142,7 @@ func renderBalance() {
 func GetBalance(c *gin.Context) {
 	d, _ := time.ParseDuration("-1h")
 	timeLine := util.GetNow().Add(d)
-	if timeLine.After(dataUpdateTime) {
+	if dataUpdateTime != nil && timeLine.After(*dataUpdateTime) {
 		c.HTML(http.StatusOK, "balance.html", data)
 		return
 	}
