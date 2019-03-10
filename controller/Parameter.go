@@ -140,9 +140,9 @@ func renderBalance() {
 }
 
 func GetBalance(c *gin.Context) {
-	d, _ := time.ParseDuration("-1h")
+	d, _ := time.ParseDuration("1h")
 	timeLine := util.GetNow().Add(d)
-	if dataUpdateTime != nil && timeLine.After(*dataUpdateTime) {
+	if dataUpdateTime != nil && timeLine.Before(*dataUpdateTime) {
 		c.HTML(http.StatusOK, "balance.html", data)
 		return
 	}
