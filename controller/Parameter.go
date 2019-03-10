@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"hello/carry"
 	"hello/model"
 	"hello/util"
+	"math"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -17,10 +17,12 @@ import (
 var accessTime = make(map[string]int64)
 var code = ``
 var data = make(map[string]interface{})
-var timeLayout = `2014-09-12T11:45:26`
+var dataUpdateTime = util.GetNow()
+var balances = make(map[string]map[string]map[string][]float64) // time - market - currency - value
 
 func ParameterServe() {
 	router := gin.Default()
+	router.LoadHTMLGlob("templates/*")
 	router.GET("/get", GetParameters)
 	router.GET("/set", SetParameters)
 	router.GET(`/refresh`, RefreshParameters)
@@ -58,47 +60,55 @@ func GetCode(c *gin.Context) {
 }
 
 func GetBalance(c *gin.Context) {
-	d, _ := time.ParseDuration("-720h")
+	d, _ := time.ParseDuration("-1h")
 	timeLine := util.GetNow().Add(d)
-	fmt.Println(timeLine)
-	rows, _ := model.AppDB.Table("accounts").Select(`timestamp, market, currency, free*price_in_usdt,
-		frozen*price_in_usdt`).Order(`timestamp`).Rows()
+	if timeLine.After(dataUpdateTime) {
+		c.HTML(http.StatusOK, "balance.html", data)
+		return
+	}
+	d, _ = time.ParseDuration("-720h")
+	timeLine = util.GetNow().Add(d)
+	rows, _ := model.AppDB.Table("accounts").Select(`timestamp, market, currency, round(price_in_usdt,2),
+		round(free*price_in_usdt, 0),round(frozen*price_in_usdt,0)`).Where(`timestamp > ?`, timeLine).
+		Order(`timestamp desc`).Rows()
 	defer rows.Close()
-	hours := make([]string, 0)
-	balances := make(map[string][]float64)
+	times := make([]string, 0)
+	inAlls := make(map[string]float64)
 	for rows.Next() {
 		var date time.Time
 		var market, currency string
-		var free, froze float64
-		rows.Scan(&date, &market, &currency, &free, &froze)
+		var price, free, froze float64
+		_ = rows.Scan(&date, &market, &currency, &price, &free, &froze)
+		dataUpdateTime = date
 		if free < 5 && froze < 5 {
 			continue
 		}
-		dateStr := date.Format(timeLayout)
-		if len(hours) == 0 || hours[len(hours)-1] != dateStr {
-			hours = append(hours, dateStr)
+		dateStr := date.Format("01-02 15:04")
+		if len(times) == 0 || times[len(times)-1] != dateStr {
+			times = append(times, dateStr)
 		}
-		keyFree := market + `|` + currency + `|free`
-		keyFroze := market + `|` + currency + `|froze`
-		if balances[keyFree] == nil {
-			balances[keyFree] = make([]float64, 0)
+		if balances[dateStr] == nil {
+			balances[dateStr] = make(map[string]map[string][]float64)
 		}
-		if balances[keyFroze] == nil {
-			balances[keyFroze] = make([]float64, 0)
+		if balances[dateStr][market] == nil {
+			balances[dateStr][market] = make(map[string][]float64)
 		}
-		balances[keyFree] = append(balances[keyFree], free)
-		balances[keyFroze] = append(balances[keyFroze], froze)
+		if balances[dateStr][market][currency] == nil {
+			balances[dateStr][market][currency] = make([]float64, 4)
+		}
+		balances[dateStr][market][currency][0] = free
+		balances[dateStr][market][currency][1] = froze
+		balances[dateStr][market][currency][2] = price
+		inAlls[dateStr] += free + froze
+		for key := range balances[dateStr][market] {
+			balances[dateStr][market][key][3] = math.Round(
+				(balances[dateStr][market][key][0] + balances[dateStr][market][key][1]) / inAlls[dateStr] * 100)
+		}
 	}
-	data[`hours`] = hours
+	data[`times`] = times
 	data[`balances`] = balances
-	currencies := make([]string, 0)
-	for key := range balances {
-		currencies = append(currencies, key)
-
-	}
-	data[`currencies`] = currencies
-	balanceData, _ := json.Marshal(data)
-	c.String(http.StatusOK, string(balanceData))
+	data[`inAlls`] = inAlls
+	c.HTML(http.StatusOK, "balance.html", data)
 }
 
 func GetParameters(c *gin.Context) {
