@@ -59,15 +59,42 @@ func GetCode(c *gin.Context) {
 	}
 }
 
-func GetBalance(c *gin.Context) {
-	d, _ := time.ParseDuration("-1h")
-	timeLine := util.GetNow().Add(d)
-	if timeLine.After(dataUpdateTime) {
-		c.HTML(http.StatusOK, "balance.html", data)
-		return
+func renderOrder() {
+	rows, _ := model.AppDB.Table("orders").Select(`symbol, date(created_at), count(id), order_side, 
+		round(sum(deal_amount*deal_price),0), round(avg(deal_price),4)`).
+		Group(`symbol, date(created_at), order_side`).Order(`date(created_at) desc`).Limit(42).Rows()
+	defer rows.Close()
+	orderTimes := make([]string, 0)
+	orders := make(map[string]map[string]map[string][]float64) // date - symbol - orderSide - [count, amount, price]
+	for rows.Next() {
+		var symbol, orderSide string
+		var count, amount, price float64
+		var date time.Time
+		_ = rows.Scan(&symbol, &date, &count, &orderSide, &amount, &price)
+		dateStr := date.Format("01-02")
+		if len(orderTimes) == 0 || orderTimes[len(orderTimes)-1] != dateStr {
+			orderTimes = append(orderTimes, dateStr)
+		}
+		if orders[dateStr] == nil {
+			orders[dateStr] = make(map[string]map[string][]float64)
+		}
+		if orders[dateStr][symbol] == nil {
+			orders[dateStr][symbol] = make(map[string][]float64)
+		}
+		if orders[dateStr][symbol][orderSide] == nil {
+			orders[dateStr][symbol][orderSide] = make([]float64, 3)
+		}
+		orders[dateStr][symbol][orderSide][0] = count
+		orders[dateStr][symbol][orderSide][1] = amount
+		orders[dateStr][symbol][orderSide][2] = price
 	}
-	d, _ = time.ParseDuration("-720h")
-	timeLine = util.GetNow().Add(d)
+	data[`orders`] = orders
+	data[`orderTimes`] = orderTimes
+}
+
+func renderBalance() {
+	d, _ := time.ParseDuration("-720h")
+	timeLine := util.GetNow().Add(d)
 	rows, _ := model.AppDB.Table("accounts").Select(`timestamp, market, currency, round(price_in_usdt,2),
 		round(free*price_in_usdt, 0),round(frozen*price_in_usdt,0)`).Where(`timestamp > ?`, timeLine).
 		Order(`timestamp desc`).Rows()
@@ -108,6 +135,17 @@ func GetBalance(c *gin.Context) {
 	data[`times`] = times
 	data[`balances`] = balances
 	data[`inAlls`] = inAlls
+}
+
+func GetBalance(c *gin.Context) {
+	d, _ := time.ParseDuration("-1h")
+	timeLine := util.GetNow().Add(d)
+	if timeLine.After(dataUpdateTime) {
+		c.HTML(http.StatusOK, "balance.html", data)
+		return
+	}
+	renderBalance()
+	renderOrder()
 	c.HTML(http.StatusOK, "balance.html", data)
 }
 

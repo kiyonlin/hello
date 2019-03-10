@@ -5,6 +5,29 @@
     <title>{{$.today}}</title>
 </head>
 <body>
+<h4>交易频次</h4>
+<table border="1">
+    <tr>
+        <th>symbol</th>
+        <th>方向</th>
+        <th>次数</th>
+        <th>金额</th>
+        <th>价格</th>
+    </tr>
+    {{range $time := $.orderTimes}}
+        <td>{{$time}}</td>
+        {{$day := index $.orders $time}}
+        {{range $symbol, $symbolData := $day}}
+            {{range $side, $sideData := $symbolData}}
+                <tr>
+                    <td>{{$symbol}}</td>
+                    <td>{{$side}}</td>
+                    <td>{{index $sideData 0}}</td>
+                    <td>{{index $sideData 1}}</td>
+                    <td>{{index $sideData 2}}</td>
+                </tr>
+            {{end}}{{end}}{{end}}
+</table>
 <h4>{{.today}}账户持有(折合USDT)</h4>
 <table border=1>
     <tr>
