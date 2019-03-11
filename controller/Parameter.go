@@ -61,7 +61,7 @@ func GetCode(c *gin.Context) {
 
 func renderOrder() {
 	rows, _ := model.AppDB.Table("orders").Select(`symbol, date(created_at), count(id), order_side, 
-		round(sum(deal_amount*deal_price),0), round(avg(deal_price),4)`).
+		round(sum(deal_amount*deal_price),0), round(sum(deal_amount*deal_price)/sum(deal_amount),4)`).
 		Group(`symbol, date(created_at), order_side`).Order(`date(created_at) desc`).Limit(42).Rows()
 	defer rows.Close()
 	orderTimes := make([]string, 0)
