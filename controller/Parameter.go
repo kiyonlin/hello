@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"hello/api"
 	"hello/carry"
 	"hello/model"
 	"hello/util"
@@ -61,7 +62,7 @@ func GetCode(c *gin.Context) {
 
 func renderOrder() {
 	rows, _ := model.AppDB.Table("orders").Select(`symbol, date(created_at), count(id), order_side, 
-		round(sum(deal_amount*deal_price),0), round(sum(deal_amount*deal_price)/sum(deal_amount),4)`).
+		round(sum(deal_amount*deal_price),4), round(sum(deal_amount*deal_price)/sum(deal_amount),4)`).
 		Group(`symbol, date(created_at), order_side`).Order(`date(created_at) desc`).Limit(42).Rows()
 	defer rows.Close()
 	orderTimes := make([]string, 0)
@@ -85,6 +86,11 @@ func renderOrder() {
 			orders[dateStr][symbol][orderSide] = make([]float64, 3)
 		}
 		orders[dateStr][symbol][orderSide][0] = count
+		currencies := strings.Split(symbol, `_`)
+		if len(currencies) > 0 {
+			priceUsdt, _ := api.GetPrice(currencies[0] + `_usdt`)
+			amount = math.Round(priceUsdt * amount)
+		}
 		orders[dateStr][symbol][orderSide][1] = amount
 		orders[dateStr][symbol][orderSide][2] = price
 	}
