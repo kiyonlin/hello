@@ -61,9 +61,12 @@ func GetCode(c *gin.Context) {
 }
 
 func renderOrder() {
+	d, _ := time.ParseDuration("-240h")
+	timeLine := util.GetNow().Add(d)
 	rows, _ := model.AppDB.Table("orders").Select(`symbol, date(created_at), count(id), order_side, 
 		round(sum(deal_amount*deal_price),4), round(sum(deal_amount*deal_price)/sum(deal_amount),8)`).
-		Group(`symbol, date(created_at), order_side`).Order(`date(created_at) desc`).Limit(42).Rows()
+		Where(`date(created_at) > ?`, timeLine).Group(`symbol, date(created_at), order_side`).
+		Order(`date(created_at) desc`).Rows()
 	defer rows.Close()
 	orderTimes := make([]string, 0)
 	orders := make(map[string]map[string]map[string][]float64) // date - symbol - orderSide - [count, amount, price]
@@ -100,7 +103,7 @@ func renderOrder() {
 }
 
 func renderBalance() {
-	d, _ := time.ParseDuration("-720h")
+	d, _ := time.ParseDuration("-240h")
 	timeLine := util.GetNow().Add(d)
 	rows, _ := model.AppDB.Table("accounts").Select(`timestamp, market, currency, round(price_in_usdt,2),
 		round(free*price_in_usdt, 0),round(frozen*price_in_usdt,0)`).Where(`timestamp > ?`, timeLine).
