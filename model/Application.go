@@ -384,7 +384,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
 	str += "env: " + config.Env + "\n"
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
-	str += fmt.Sprintf("handle: %d orderwait: %d amountrate: %f sellrate %f ftmax %f\n",
+	str += fmt.Sprintf("handle: %s orderwait: %d amountrate: %f sellrate %f ftmax %f\n",
 		config.Handle, config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
 	str += fmt.Sprintf("maker rate: %f\n", config.MakerRate)
 	return str
