@@ -154,7 +154,7 @@ func MaintainArbitrarySettings() {
 }
 
 func CancelOldWorkingOrders() {
-	d, _ := time.ParseDuration("-23h")
+	d, _ := time.ParseDuration("-1h")
 	for true {
 		timeLine := util.GetNow().Add(d)
 		markets := model.GetMarkets()
