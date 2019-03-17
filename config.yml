@@ -21,9 +21,9 @@ maxusdt: 1500
 inchina: 0
 deduction: 0.8
 mail: haoweizh@qq.com #41685600@qq.com
-handle: 1
+handle: 0
 
-dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
+dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=mydb password=dbuser sslmode=disable
 env: dk
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
@@ -40,11 +40,11 @@ okexsecret: FA268A0824C7988E366435F82EF6BAC6
 binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
 binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
 #dk fcoin
-fcoinkey: 1101ff04791e44ff88a4d77e74270443
-fcoinsecret: 0cea49360e6f45a8978a9c62578f9c6b
+#fcoinkey: 1101ff04791e44ff88a4d77e74270443
+#fcoinsecret: 0cea49360e6f45a8978a9c62578f9c6b
 # simon fcoin
-#fcoinkey: b4f28ad197c64cdbb072328b37c654bd
-#fcoinsecret: 588dd6887ac14629bd6e7653d7952938
+fcoinkey: b4f28ad197c64cdbb072328b37c654bd
+fcoinsecret: 588dd6887ac14629bd6e7653d7952938
 #bp fcoin
 #fcoinkey: 8591deef96d14b079ea582f47bc7ed4a
 #fcoinsecret: 1ccd9a3fe67344f0aab6c463a93385dd

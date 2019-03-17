@@ -6,6 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -172,7 +173,7 @@ var ProcessRefresh = func(market, symbol string) {
 	} else {
 		go placeRefreshOrder(carry, `buy`, `limit`, price, amount)
 		go placeRefreshOrder(carry, `sell`, `limit`, price, amount)
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 1)
 	}
 }
 
@@ -200,7 +201,8 @@ func cancelRefreshOrder(orderId string, mustCancel bool) {
 		if i == 99 {
 			model.AppConfig.Handle = `0`
 		}
-		time.Sleep(time.Second * 1)
+		random := rand.Intn(4000)
+		time.Sleep(time.Millisecond * time.Duration(random+4000))
 	}
 }
 
