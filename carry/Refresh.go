@@ -7,7 +7,6 @@ import (
 	"hello/util"
 	"math"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -19,32 +18,6 @@ var bidAskTimes int64
 var processing = false
 var handling = false
 var RefreshCarryChannel = make(chan model.Carry, 50)
-
-func calcPrice(bidPrice, askPrice float64, precision int) (num float64, err error) {
-	str := strconv.FormatFloat(bidPrice+(askPrice-bidPrice)*1/2, 'f', precision, 64)
-	return strconv.ParseFloat(str, 64)
-}
-
-//func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) (askAmount, bidAmount float64) {
-//	amountPrecision := util.GetPrecision(carry.BidAmount)
-//	if model.AppConfig.Env == `dk` {
-//		if leftBalance*model.AppConfig.AmountRate > rightBalance/carry.BidPrice {
-//			carry.Amount = rightBalance / carry.BidPrice
-//		} else {
-//			carry.Amount = leftBalance * model.AppConfig.AmountRate
-//		}
-//		askAmount = carry.Amount
-//		bidAmount = carry.Amount
-//	} else {
-//		askAmount = leftBalance * model.AppConfig.AmountRate
-//		bidAmount = rightBalance * model.AppConfig.AmountRate / carry.BidPrice
-//	}
-//	strAskAmount := strconv.FormatFloat(askAmount, 'f', amountPrecision, 64)
-//	strBidAmount := strconv.FormatFloat(bidAmount, 'f', amountPrecision, 64)
-//	askAmount, _ = strconv.ParseFloat(strAskAmount, 64)
-//	bidAmount, _ = strconv.ParseFloat(strBidAmount, 64)
-//	return askAmount, bidAmount
-//}
 
 func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, amount float64) {
 	if orderSide == `buy` {
@@ -148,7 +121,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if pricePrecision > api.GetPriceDecimal(carry.BidWeb, carry.BidSymbol) {
 		pricePrecision = api.GetPriceDecimal(carry.BidWeb, carry.BidSymbol)
 	}
-	price, _ := calcPrice(carry.BidPrice, carry.AskPrice, pricePrecision)
+	price := carry.BidPrice + (carry.AskPrice-carry.BidPrice)*rand.Float64()
 	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.BidSymbol, leftBalance, rightBalance))
 	amount := math.Min(leftBalance, rightBalance/carry.BidPrice) * model.AppConfig.AmountRate
 	if price == carry.AskPrice || price == carry.BidPrice {
