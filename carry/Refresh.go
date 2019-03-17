@@ -5,6 +5,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -23,31 +24,31 @@ func calcPrice(bidPrice, askPrice float64, precision int) (num float64, err erro
 	return strconv.ParseFloat(str, 64)
 }
 
-func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) (askAmount, bidAmount float64) {
-	amountPrecision := util.GetPrecision(carry.BidAmount)
-	if model.AppConfig.Env == `dk` {
-		if leftBalance*model.AppConfig.AmountRate > rightBalance/carry.BidPrice {
-			carry.Amount = rightBalance / carry.BidPrice
-		} else {
-			carry.Amount = leftBalance * model.AppConfig.AmountRate
-		}
-		askAmount = carry.Amount
-		bidAmount = carry.Amount
-	} else {
-		askAmount = leftBalance * model.AppConfig.AmountRate
-		bidAmount = rightBalance * model.AppConfig.AmountRate / carry.BidPrice
-	}
-	strAskAmount := strconv.FormatFloat(askAmount, 'f', amountPrecision, 64)
-	strBidAmount := strconv.FormatFloat(bidAmount, 'f', amountPrecision, 64)
-	askAmount, _ = strconv.ParseFloat(strAskAmount, 64)
-	bidAmount, _ = strconv.ParseFloat(strBidAmount, 64)
-	return askAmount, bidAmount
-}
+//func getLeftRightAmounts(leftBalance, rightBalance float64, carry *model.Carry) (askAmount, bidAmount float64) {
+//	amountPrecision := util.GetPrecision(carry.BidAmount)
+//	if model.AppConfig.Env == `dk` {
+//		if leftBalance*model.AppConfig.AmountRate > rightBalance/carry.BidPrice {
+//			carry.Amount = rightBalance / carry.BidPrice
+//		} else {
+//			carry.Amount = leftBalance * model.AppConfig.AmountRate
+//		}
+//		askAmount = carry.Amount
+//		bidAmount = carry.Amount
+//	} else {
+//		askAmount = leftBalance * model.AppConfig.AmountRate
+//		bidAmount = rightBalance * model.AppConfig.AmountRate / carry.BidPrice
+//	}
+//	strAskAmount := strconv.FormatFloat(askAmount, 'f', amountPrecision, 64)
+//	strBidAmount := strconv.FormatFloat(bidAmount, 'f', amountPrecision, 64)
+//	askAmount, _ = strconv.ParseFloat(strAskAmount, 64)
+//	bidAmount, _ = strconv.ParseFloat(strBidAmount, 64)
+//	return askAmount, bidAmount
+//}
 
 func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, amount float64) {
 	if orderSide == `buy` {
 		order := api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.BidSymbol, ``, price, amount)
-		carry.DealBidOrderId, carry.DealBidErrCode, carry.BidAmount, carry.BidPrice =
+		carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidAmount, carry.BidPrice =
 			order.OrderId, order.ErrCode, order.DealAmount, order.DealPrice
 		if carry.DealBidOrderId != `` && carry.DealBidOrderId != "0" {
 			carry.DealBidStatus = model.CarryStatusWorking
@@ -57,8 +58,8 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, a
 		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
 			orderSide, orderType, carry.BidSymbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
 	} else if orderSide == `sell` {
-		order := api.PlaceOrder(orderSide, orderType, carry.AskSymbol, orderType, ``, price, amount)
-		carry.DealAskOrderId, carry.DealAskErrCode, carry.AskAmount, carry.AskPrice =
+		order := api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.AskSymbol, ``, price, amount)
+		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskAmount, carry.AskPrice =
 			order.OrderId, order.ErrCode, order.DealAmount, order.DealPrice
 		if carry.DealAskOrderId != `` && carry.DealAskOrderId != "0" {
 			carry.DealAskStatus = model.CarryStatusWorking
@@ -79,27 +80,27 @@ func setProcessing(value bool) {
 	processing = value
 }
 
-func placeExtraSell(carry *model.Carry) {
-	account := model.AppAccounts.GetAccount(model.Fcoin, `ft`)
-	if account == nil {
-		util.Notice(`[额外卖单-nil account]`)
-	} else {
-		util.Notice(fmt.Sprintf(`[额外卖单]%f - %f`, account.Free, model.AppConfig.FtMax))
-	}
-	if account != nil && account.Free > model.AppConfig.FtMax {
-		pricePrecision := util.GetPrecision(carry.BidPrice)
-		if pricePrecision > api.GetPriceDecimal(model.Fcoin, carry.AskSymbol) {
-			pricePrecision = api.GetPriceDecimal(model.Fcoin, carry.AskSymbol)
-		}
-		price := carry.BidPrice * 0.999
-		amount := carry.Amount * model.AppConfig.SellRate
-		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
-			model.GetMarkets()[0], carry.AskSymbol, ``, price, amount)
-		//orderId, errCode, msg, _, _ := orde
-		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %f 数量: %f 返回 %s %s %s`,
-			carry.AskSymbol, price, amount, order.OrderId, order.ErrCode, order.Status))
-	}
-}
+//func placeExtraSell(carry *model.Carry) {
+//	account := model.AppAccounts.GetAccount(model.Fcoin, `ft`)
+//	if account == nil {
+//		util.Notice(`[额外卖单-nil account]`)
+//	} else {
+//		util.Notice(fmt.Sprintf(`[额外卖单]%f - %f`, account.Free, model.AppConfig.FtMax))
+//	}
+//	if account != nil && account.Free > model.AppConfig.FtMax {
+//		pricePrecision := util.GetPrecision(carry.BidPrice)
+//		if pricePrecision > api.GetPriceDecimal(model.Fcoin, carry.AskSymbol) {
+//			pricePrecision = api.GetPriceDecimal(model.Fcoin, carry.AskSymbol)
+//		}
+//		price := carry.BidPrice * 0.999
+//		amount := carry.Amount * model.AppConfig.SellRate
+//		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
+//			model.GetMarkets()[0], carry.AskSymbol, ``, price, amount)
+//		//orderId, errCode, msg, _, _ := orde
+//		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %f 数量: %f 返回 %s %s %s`,
+//			carry.AskSymbol, price, amount, order.OrderId, order.ErrCode, order.Status))
+//	}
+//}
 
 var ProcessRefresh = func(market, symbol string) {
 	carry, err := model.AppMarkets.NewCarry(symbol)
@@ -148,11 +149,11 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	price, _ := calcPrice(carry.BidPrice, carry.AskPrice, pricePrecision)
 	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.BidSymbol, leftBalance, rightBalance))
-	askAmount, bidAmount := getLeftRightAmounts(leftBalance, rightBalance, carry)
+	amount := math.Min(leftBalance, rightBalance/carry.BidPrice) * model.AppConfig.AmountRate
 	if price == carry.AskPrice || price == carry.BidPrice {
-		if carry.AskAmount*100 > askAmount && carry.BidAmount*100 > bidAmount {
-			util.Info(fmt.Sprintf(`[carry数量]ask:%f - %f %f bid:%f - %f %f`, askAmount,
-				carry.AskAmount, carry.AskAmount/askAmount, bidAmount, carry.BidAmount, carry.BidAmount/bidAmount))
+		if carry.AskAmount*100 > amount && carry.BidAmount*100 > amount {
+			util.Info(fmt.Sprintf(`[carry数量]ask:%f - %f %f bid:%f - %f %f`, amount,
+				carry.AskAmount, carry.AskAmount/amount, amount, carry.BidAmount, carry.BidAmount/amount))
 			return
 		}
 		if carry.AskAmount > carry.BidAmount {
@@ -169,8 +170,8 @@ var ProcessRefresh = func(market, symbol string) {
 		//rebalance(leftAccount, rightAccount, carry)
 		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {
-		go placeRefreshOrder(carry, `buy`, `limit`, price, bidAmount)
-		go placeRefreshOrder(carry, `sell`, `limit`, price, askAmount)
+		go placeRefreshOrder(carry, `buy`, `limit`, price, amount)
+		go placeRefreshOrder(carry, `sell`, `limit`, price, amount)
 		time.Sleep(time.Second * 5)
 	}
 }
@@ -216,18 +217,14 @@ func RefreshCarryServe() {
 			lastOrderTime = util.GetNowUnixMillion()
 			go cancelRefreshOrder(orderCarry.DealAskOrderId, false)
 			go cancelRefreshOrder(orderCarry.DealBidOrderId, false)
-			if model.AppConfig.Env == `dk` {
-				go placeExtraSell(&orderCarry)
-			}
+			//if model.AppConfig.Env == `dk` {
+			//	go placeExtraSell(&orderCarry)
+			//}
 		} else if orderCarry.DealAskStatus == model.CarryStatusWorking && orderCarry.DealBidStatus == model.CarryStatusFail {
 			cancelRefreshOrder(orderCarry.DealAskOrderId, true)
 		} else if orderCarry.DealAskStatus == model.CarryStatusFail && orderCarry.DealBidStatus == model.CarryStatusWorking {
 			cancelRefreshOrder(orderCarry.DealBidOrderId, true)
 		}
-		//if orderCarry.DealBidErrCode == `1002` || orderCarry.DealAskErrCode == `1002` {
-		//	util.Notice(`1002系统繁忙不算时间`)
-		//} else {
-		//}
 		handling = false
 	}
 }
