@@ -99,9 +99,6 @@ var ProcessRefresh = func(market, symbol string) {
 		util.SocketInfo(`get carry not on time` + carry.ToString())
 		return
 	}
-	//if model.AppConfig.Env != `dk` {
-	//	go getAccount()
-	//}
 	currencies := strings.Split(carry.AskSymbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(carry.AskWeb, currencies[0])
 	if leftAccount == nil {
@@ -124,7 +121,8 @@ var ProcessRefresh = func(market, symbol string) {
 	price := carry.BidPrice + (carry.AskPrice-carry.BidPrice)*rand.Float64()
 	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.BidSymbol, leftBalance, rightBalance))
 	amount := math.Min(leftBalance, rightBalance/carry.BidPrice) * model.AppConfig.AmountRate
-	if price == carry.AskPrice || price == carry.BidPrice {
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	if (carry.AskPrice-price) < priceDistance || (price-carry.BidPrice) > priceDistance {
 		if carry.AskAmount*100 > amount && carry.BidAmount*100 > amount {
 			util.Info(fmt.Sprintf(`[carry数量]ask:%f - %f %f bid:%f - %f %f`, amount,
 				carry.AskAmount, carry.AskAmount/amount, amount, carry.BidAmount, carry.BidAmount/amount))
