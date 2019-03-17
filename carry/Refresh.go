@@ -145,7 +145,7 @@ var ProcessRefresh = func(market, symbol string) {
 		go placeRefreshOrder(carry, `buy`, `limit`, price, amount)
 		go placeRefreshOrder(carry, `sell`, `limit`, price, amount)
 		random := rand.Int63n(6000)
-		time.Sleep(time.Millisecond * time.Duration(random+model.AppConfig.OrderWait*1000))
+		time.Sleep(time.Millisecond * time.Duration(random+model.AppConfig.OrderWait))
 	}
 }
 
@@ -173,8 +173,7 @@ func cancelRefreshOrder(orderId string, mustCancel bool) {
 		if i == 99 {
 			model.AppConfig.Handle = `0`
 		}
-		random := rand.Intn(4000)
-		time.Sleep(time.Millisecond * time.Duration(random+4000))
+		time.Sleep(time.Second * 1)
 	}
 }
 
