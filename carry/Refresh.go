@@ -91,9 +91,9 @@ var ProcessRefresh = func(market, symbol string) {
 	if lastOrderTime == 0 {
 		lastOrderTime = now
 	}
-	if now-lastOrderTime < model.AppConfig.OrderWait {
-		return
-	}
+	//if now-lastOrderTime < model.AppConfig.OrderWait {
+	//	return
+	//}
 	timeOk, _ := carry.CheckWorthCarryTime()
 	if !timeOk {
 		util.SocketInfo(`get carry not on time` + carry.ToString())
@@ -144,8 +144,8 @@ var ProcessRefresh = func(market, symbol string) {
 	} else {
 		go placeRefreshOrder(carry, `buy`, `limit`, price, amount)
 		go placeRefreshOrder(carry, `sell`, `limit`, price, amount)
-		random := rand.Intn(4000)
-		time.Sleep(time.Millisecond * time.Duration(random+4000))
+		random := rand.Int63n(6000)
+		time.Sleep(time.Millisecond * time.Duration(random+model.AppConfig.OrderWait*1000))
 	}
 }
 
