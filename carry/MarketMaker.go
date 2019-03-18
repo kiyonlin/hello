@@ -35,6 +35,7 @@ var ProcessMake = func(market, symbol string) {
 	}
 	if model.AppAccounts.Data[market][coins[0]] == nil || model.AppAccounts.Data[market][coins[1]] == nil {
 		api.RefreshAccount(market)
+		return
 	}
 	leftAccount := model.AppAccounts.GetAccount(market, coins[0])
 	if leftAccount == nil {
@@ -71,7 +72,7 @@ var ProcessMake = func(market, symbol string) {
 		lastMaker = api.QueryOrderById(market, symbol, lastMaker.OrderId)
 		if lastMaker != nil {
 			if lastMaker.Status == model.CarryStatusWorking {
-				api.MustCancel(market, symbol, lastMaker.OrderId, true)
+				api.CancelOrder(market, symbol, lastMaker.OrderId)
 			}
 			lastMaker.Function = model.FunctionMaker
 			model.AppDB.Save(lastMaker)
