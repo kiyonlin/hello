@@ -118,7 +118,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if pricePrecision > api.GetPriceDecimal(carry.BidWeb, carry.BidSymbol) {
 		pricePrecision = api.GetPriceDecimal(carry.BidWeb, carry.BidSymbol)
 	}
-	price := carry.AskPrice + math.Abs(carry.AskPrice-carry.BidPrice)/2
+	price := (carry.AskPrice + carry.BidPrice) / 2
 	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.BidSymbol, leftBalance, rightBalance))
 	amount := math.Min(leftBalance, rightBalance/carry.BidPrice) * model.AppConfig.AmountRate
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
@@ -142,16 +142,9 @@ var ProcessRefresh = func(market, symbol string) {
 		//rebalance(leftAccount, rightAccount, carry)
 		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {
-		if rand.Float64() > 0.5 {
-			placeRefreshOrder(carry, `buy`, `limit`, price, amount)
-			time.Sleep(time.Millisecond * 500)
-			placeRefreshOrder(carry, `sell`, `limit`, price, amount)
-		} else {
-			placeRefreshOrder(carry, `sell`, `limit`, price, amount)
-			time.Sleep(time.Millisecond * 500)
-			placeRefreshOrder(carry, `buy`, `limit`, price, amount)
-		}
-		random := rand.Int63n(6000)
+		go placeRefreshOrder(carry, `buy`, `limit`, price, amount)
+		go placeRefreshOrder(carry, `sell`, `limit`, price, amount)
+		random := rand.Int63n(10000)
 		time.Sleep(time.Millisecond * time.Duration(random+model.AppConfig.OrderWait))
 	}
 }
