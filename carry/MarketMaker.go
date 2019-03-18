@@ -72,6 +72,7 @@ var ProcessMake = func(market, symbol string) {
 		if lastMaker.Status == model.CarryStatusWorking {
 			api.MustCancel(market, symbol, lastMaker.OrderId, true)
 		}
+		lastMaker.Function = model.FunctionMaker
 		model.AppDB.Save(lastMaker)
 		lastMaker = order
 	}
