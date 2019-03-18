@@ -26,7 +26,7 @@ handlemaker: 1
 handlerefresh: 1
 handlegrid: 1
 waitrefreshrandom: 4000
-
+r
 dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
 env: dk
 #sammi huobi

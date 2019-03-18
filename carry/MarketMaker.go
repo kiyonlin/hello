@@ -69,6 +69,7 @@ var ProcessMake = func(market, symbol string) {
 		api.MustCancel(market, symbol, lastMaker.OrderId, true)
 		lastMaker = order
 	}
+	model.AppDB.Save(order)
 	time.Sleep(time.Second * 2)
 	api.RefreshAccount(market)
 }
