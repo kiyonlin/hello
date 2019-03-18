@@ -195,6 +195,7 @@ func RefreshCarryServe() {
 		handling = true
 		if orderCarry.DealAskStatus == model.CarryStatusWorking && orderCarry.DealBidStatus == model.CarryStatusWorking {
 			lastOrderTime = util.GetNowUnixMillion()
+			time.Sleep(time.Second * 3)
 			go cancelRefreshOrder(orderCarry.DealAskOrderId, false)
 			go cancelRefreshOrder(orderCarry.DealBidOrderId, false)
 			//if model.AppConfig.Env == `dk` {
