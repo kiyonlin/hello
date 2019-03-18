@@ -114,6 +114,7 @@ func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
 	grid.lastPrice = order.Price
 	order.DealPrice = order.Price
 	order.DealAmount = order.Amount
+	util.Notice(fmt.Sprintf(`set buyId %s sellId %s to nil `, grid.buyOrder.OrderId, grid.sellOrder.OrderId))
 	grid.sellOrder = nil
 	grid.buyOrder = nil
 	go model.AppDB.Save(order)
@@ -134,8 +135,10 @@ var ProcessGrid = func(market, symbol string) {
 	if grid.sellOrder == nil || grid.buyOrder == nil {
 		placeGridOrders(market, symbol, bidAsk)
 	} else if grid.sellOrder != nil && grid.sellOrder.Price < bidAsk.Asks[0].Price {
+		util.Notice(fmt.Sprintf(` sell id %s at price %f < %f`, grid.sellOrder.OrderId, grid.sellOrder.Price, bidAsk.Asks[0].Price))
 		handleOrderDeal(grid, grid.sellOrder, market, model.OrderSideSell)
 	} else if grid.buyOrder != nil && grid.buyOrder.Price > bidAsk.Bids[0].Price {
+		util.Notice(fmt.Sprintf(`buy id %s at price %f < %f`, grid.buyOrder.OrderId, grid.buyOrder.Price, bidAsk.Bids[0].Price))
 		handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
 	}
 	time.Sleep(time.Microsecond * 100)
