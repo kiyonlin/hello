@@ -266,7 +266,7 @@ func GetPrice(symbol string) (buy float64, err error) {
 	}
 	symbol = strings.TrimSpace(strings.ToLower(symbol))
 	for _, bidAsks := range model.AppMarkets.BidAsks[symbol] {
-		if bidAsks.Bids != nil {
+		if bidAsks != nil && bidAsks.Bids != nil {
 			return bidAsks.Bids[0].Price, nil
 		}
 	}
