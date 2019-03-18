@@ -281,47 +281,48 @@ func GetSymbol(market, subscribe string) (symbol string) {
 }
 
 type Config struct {
-	lock            sync.Mutex
-	Env             string
-	DBConnection    string
-	Channels        int
-	ChannelSlot     float64
-	Functions       []string
-	Delay           float64
-	Deduction       float64
-	MinUsdt         float64            // 折合usdt最小下单金额
-	MaxUsdt         float64            // 折合usdt最大下单金额
-	WSUrls          map[string]string  // marketName - ws url
-	RestUrls        map[string]string  // marketName - rest url
-	MarketCost      map[string]float64 // marketName - order cost
-	HuobiKey        string
-	HuobiSecret     string
-	OkexKey         string
-	OkexSecret      string
-	BinanceKey      string
-	BinanceSecret   string
-	CoinbigKey      string
-	CoinbigSecret   string
-	CoinparkKey     string
-	CoinparkSecret  string
-	BitmexKey       string
-	BitmexSecret    string
-	FcoinKey        string
-	FcoinSecret     string
-	BnbMin          float64
-	BnbBuy          float64
-	OrderWait       int64   // fcoin/coinpark 刷单平均等待时间
-	AmountRate      float64 // 刷单填写数量比率
-	MakerAmountRate float64
-	Handle          string // 0 不执行处理程序，1执行处理程序
-	HandleMaker     string
-	HandleRefresh   string
-	HandleGrid      string
-	SellRate        float64 // fcoin dk 额外卖单下单比例
-	FtMax           float64 // fcoin dk ft上限
-	InChina         int     // 1 in china, otherwise outter china
-	Mail            string
-	Port            string
+	lock              sync.Mutex
+	Env               string
+	DBConnection      string
+	Channels          int
+	ChannelSlot       float64
+	Functions         []string
+	Delay             float64
+	Deduction         float64
+	MinUsdt           float64            // 折合usdt最小下单金额
+	MaxUsdt           float64            // 折合usdt最大下单金额
+	WSUrls            map[string]string  // marketName - ws url
+	RestUrls          map[string]string  // marketName - rest url
+	MarketCost        map[string]float64 // marketName - order cost
+	HuobiKey          string
+	HuobiSecret       string
+	OkexKey           string
+	OkexSecret        string
+	BinanceKey        string
+	BinanceSecret     string
+	CoinbigKey        string
+	CoinbigSecret     string
+	CoinparkKey       string
+	CoinparkSecret    string
+	BitmexKey         string
+	BitmexSecret      string
+	FcoinKey          string
+	FcoinSecret       string
+	BnbMin            float64
+	BnbBuy            float64
+	OrderWait         int64 // fcoin/coinpark 刷单平均等待时间
+	WaitRefreshRandom int64
+	AmountRate        float64 // 刷单填写数量比率
+	MakerAmountRate   float64
+	Handle            string // 0 不执行处理程序，1执行处理程序
+	HandleMaker       string
+	HandleRefresh     string
+	HandleGrid        string
+	SellRate          float64 // fcoin dk 额外卖单下单比例
+	FtMax             float64 // fcoin dk ft上限
+	InChina           int     // 1 in china, otherwise outter china
+	Mail              string
+	Port              string
 }
 
 func NewConfig() {
@@ -399,6 +400,6 @@ func (config *Config) ToString() string {
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
 	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f\n",
 		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
-	str += fmt.Sprintf("maker rate: %f\n", config.MakerAmountRate)
+	str += fmt.Sprintf("maker rate: %f waitrefreshrandom: %d\n", config.MakerAmountRate, config.WaitRefreshRandom)
 	return str
 }

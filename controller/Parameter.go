@@ -204,6 +204,10 @@ func SetParameters(c *gin.Context) {
 	if handleGrid != `` {
 		model.AppConfig.HandleGrid = handleGrid
 	}
+	waitRefreshRandom := c.Query(`waitrefreshrandom`)
+	if len(waitRefreshRandom) > 0 {
+		model.AppConfig.WaitRefreshRandom, _ = strconv.ParseInt(waitRefreshRandom, 10, 64)
+	}
 	orderWait := c.Query("orderwait")
 	if orderWait != `` {
 		model.AppConfig.OrderWait, _ = strconv.ParseInt(orderWait, 10, 64)
