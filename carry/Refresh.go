@@ -125,16 +125,19 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	carry.BidPrice = model.AppMarkets.BidAsks[symbol][market].Bids[0].Price
 	carry.AskPrice = model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
+	carry.BidAmount = model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount
+	carry.AskAmount = model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount
 	price := (carry.BidPrice + carry.AskPrice) / 2
 	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.BidSymbol, leftBalance, rightBalance))
 	amount := math.Min(leftBalance, rightBalance/carry.BidPrice) * model.AppConfig.AmountRate
 	priceDistance := 0.5 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	if (carry.AskAmount*100 > amount && (carry.AskPrice-price) < priceDistance) ||
+		(carry.BidAmount*100 > amount && (price-carry.BidPrice) < priceDistance) {
+		util.Info(fmt.Sprintf(`[carry数量]ask:%f - %f %f bid:%f - %f %f`, amount,
+			carry.AskAmount, carry.AskAmount/amount, amount, carry.BidAmount, carry.BidAmount/amount))
+		return
+	}
 	if (price-carry.BidPrice) < priceDistance || (carry.AskPrice-price) < priceDistance {
-		if carry.AskAmount*100 > amount && carry.BidAmount*100 > amount {
-			util.Info(fmt.Sprintf(`[carry数量]ask:%f - %f %f bid:%f - %f %f`, amount,
-				carry.AskAmount, carry.AskAmount/amount, amount, carry.BidAmount, carry.BidAmount/amount))
-			return
-		}
 		if carry.AskAmount > carry.BidAmount {
 			price = carry.BidPrice
 		} else {
