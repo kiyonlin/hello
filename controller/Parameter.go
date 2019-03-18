@@ -170,7 +170,10 @@ func RefreshParameters(c *gin.Context) {
 
 func SetParameters(c *gin.Context) {
 	handle := c.Query("handle")
-	if handle == `1` {
+	handleMaker := c.Query(`handlemaker`)
+	handleRefresh := c.Query(`handlerefresh`)
+	handleGrid := c.Query(`handlegrid`)
+	if handle == `1` || handleMaker == `1` || handleRefresh == `1` || handleGrid == `1` {
 		pw := c.Query(`pw`)
 		if code == `` {
 			c.String(http.StatusOK, `请先获取验证码`)
@@ -188,10 +191,18 @@ func SetParameters(c *gin.Context) {
 			return
 		}
 		code = ``
-		model.AppConfig.Handle = `1`
 	}
-	if handle == `0` {
-		model.AppConfig.Handle = `0`
+	if handle != `` {
+		model.AppConfig.Handle = handle
+	}
+	if handleMaker != `` {
+		model.AppConfig.HandleMaker = handleMaker
+	}
+	if handleRefresh != `` {
+		model.AppConfig.HandleRefresh = handleRefresh
+	}
+	if handleGrid != `` {
+		model.AppConfig.HandleGrid = handleGrid
 	}
 	orderWait := c.Query("orderwait")
 	if orderWait != `` {

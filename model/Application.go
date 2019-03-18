@@ -313,7 +313,10 @@ type Config struct {
 	OrderWait       int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate      float64 // 刷单填写数量比率
 	MakerAmountRate float64
-	Handle          string  // 0 不执行处理程序，1执行处理程序
+	Handle          string // 0 不执行处理程序，1执行处理程序
+	HandleMaker     string
+	HandleRefresh   string
+	HandleGrid      string
 	SellRate        float64 // fcoin dk 额外卖单下单比例
 	FtMax           float64 // fcoin dk ft上限
 	InChina         int     // 1 in china, otherwise outter china
@@ -392,8 +395,10 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
 	str += "env: " + config.Env + "\n"
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
-	str += fmt.Sprintf("handle: %s orderwait: %d amountrate: %f sellrate %f ftmax %f\n",
-		config.Handle, config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
+	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
+		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
+	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f\n",
+		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
 	str += fmt.Sprintf("maker rate: %f\n", config.MakerAmountRate)
 	return str
 }

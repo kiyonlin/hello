@@ -81,7 +81,7 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Notice(`can not create carry for ` + symbol)
 		return
 	}
-	if model.AppConfig.Handle == `0` || processing || handling {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || handling {
 		return
 	}
 	setProcessing(true)

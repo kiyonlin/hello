@@ -18,7 +18,7 @@ func setMarketMaking(making bool) {
 }
 
 var ProcessMake = func(market, symbol string) {
-	if model.AppConfig.Handle == `0` || marketMaking {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleMaker != `1` || marketMaking {
 		return
 	}
 	setMarketMaking(true)
