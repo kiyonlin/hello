@@ -221,6 +221,12 @@ func OuterCarryServe() {
 			if carry.DealBidOrderId != `` {
 				carryInDb.DealBidOrderId = carry.DealBidOrderId
 			}
+			if carryInDb.DealAskPrice == 0 {
+				carryInDb.DealAskPrice = carry.DealAskPrice
+			}
+			if carryInDb.DealBidPrice == 0 {
+				carryInDb.DealBidPrice = carry.DealBidPrice
+			}
 			model.AppDB.Save(&carryInDb)
 		}
 	}
