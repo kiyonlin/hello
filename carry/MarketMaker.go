@@ -69,11 +69,13 @@ var ProcessMake = func(market, symbol string) {
 		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 		time.Sleep(time.Millisecond * 500)
 		lastMaker = api.QueryOrderById(market, symbol, lastMaker.OrderId)
-		if lastMaker.Status == model.CarryStatusWorking {
-			api.MustCancel(market, symbol, lastMaker.OrderId, true)
+		if lastMaker != nil {
+			if lastMaker.Status == model.CarryStatusWorking {
+				api.MustCancel(market, symbol, lastMaker.OrderId, true)
+			}
+			lastMaker.Function = model.FunctionMaker
+			model.AppDB.Save(lastMaker)
 		}
-		lastMaker.Function = model.FunctionMaker
-		model.AppDB.Save(lastMaker)
 		lastMaker = order
 	}
 	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.WaitMaker))
