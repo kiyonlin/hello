@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"hello/api"
-	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"math"
@@ -28,7 +27,6 @@ func ParameterServe() {
 	router.GET("/set", SetParameters)
 	router.GET(`/refresh`, RefreshParameters)
 	router.GET(`/pw`, GetCode)
-	router.GET(`/mm`, carry.GetMarketMaking)
 	router.GET("/balance", GetBalance)
 	_ = router.Run(":" + model.AppConfig.Port)
 }

@@ -13,7 +13,6 @@ import (
 
 // fcoin:// 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
-var lastOrderTime int64
 var bidAskTimes int64
 var processing = false
 var handling = false
@@ -29,7 +28,7 @@ func placeRefreshOrder(carry *model.Carry, market, orderSide, orderType string, 
 		} else {
 			carry.DealBidStatus = model.CarryStatusFail
 		}
-		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
+		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %f 数量: %f 返回 %s %s`,
 			orderSide, orderType, carry.BidSymbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
 	} else if orderSide == `sell` {
 		order := api.PlaceOrder(orderSide, orderType, market, carry.AskSymbol, ``, price, amount)
@@ -40,7 +39,7 @@ func placeRefreshOrder(carry *model.Carry, market, orderSide, orderType string, 
 		} else {
 			carry.DealAskStatus = model.CarryStatusFail
 		}
-		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
+		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %f 数量: %f 返回 %s %s`,
 			orderSide, orderType, carry.AskSymbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
 	}
 	if carry.DealAskErrCode == `2027` || carry.DealBidErrCode == `2027` {
@@ -87,13 +86,6 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	setProcessing(true)
 	defer setProcessing(false)
-	now := util.GetNowUnixMillion()
-	if lastOrderTime == 0 {
-		lastOrderTime = now
-	}
-	//if now-lastOrderTime < model.AppConfig.OrderWait {
-	//	return
-	//}
 	timeOk, _ := carry.CheckWorthCarryTime()
 	if !timeOk {
 		util.SocketInfo(`get carry not on time` + carry.ToString())
@@ -152,39 +144,11 @@ var ProcessRefresh = func(market, symbol string) {
 	if bidAskTimes%7 == 0 {
 		api.RefreshAccount(market)
 		//rebalance(leftAccount, rightAccount, carry)
-		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {
 		go placeRefreshOrder(carry, market, `buy`, `limit`, price, amount)
 		go placeRefreshOrder(carry, market, `sell`, `limit`, price, amount)
 		random := rand.Int63n(10000)
 		time.Sleep(time.Millisecond * time.Duration(random+model.AppConfig.OrderWait))
-	}
-}
-
-func cancelRefreshOrder(market, orderId string, mustCancel bool) {
-	if !mustCancel {
-		time.Sleep(time.Second * 5)
-	}
-	for i := 0; i < 100; i++ {
-		settings := model.GetFunctionMarketSettings(model.FunctionRefresh, market)
-		var symbol string
-		for key := range settings {
-			symbol = key
-			break
-		}
-		result, errCode, _ := api.CancelOrder(market, symbol, orderId)
-		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
-		if result || !mustCancel {
-			break
-		} else if errCode == `429` || errCode == `4003` {
-			util.Notice(`調用次數繁忙`)
-		} else if i >= 3 {
-			break
-		}
-		if i == 99 {
-			model.AppConfig.Handle = `0`
-		}
-		time.Sleep(time.Second * 1)
 	}
 }
 
@@ -198,17 +162,16 @@ func RefreshCarryServe() {
 		}
 		handling = true
 		if orderCarry.DealAskStatus == model.CarryStatusWorking && orderCarry.DealBidStatus == model.CarryStatusWorking {
-			lastOrderTime = util.GetNowUnixMillion()
 			time.Sleep(time.Second * 3)
-			go cancelRefreshOrder(orderCarry.AskWeb, orderCarry.DealAskOrderId, false)
-			go cancelRefreshOrder(orderCarry.BidWeb, orderCarry.DealBidOrderId, false)
+			go api.MustCancel(orderCarry.AskWeb, orderCarry.AskSymbol, orderCarry.DealAskOrderId, false)
+			go api.MustCancel(orderCarry.BidWeb, orderCarry.BidSymbol, orderCarry.DealBidOrderId, false)
 			//if model.AppConfig.Env == `dk` {
 			//	go placeExtraSell(&orderCarry)
 			//}
 		} else if orderCarry.DealAskStatus == model.CarryStatusWorking && orderCarry.DealBidStatus == model.CarryStatusFail {
-			cancelRefreshOrder(orderCarry.AskWeb, orderCarry.DealAskOrderId, true)
+			api.MustCancel(orderCarry.AskWeb, orderCarry.AskSymbol, orderCarry.DealAskOrderId, true)
 		} else if orderCarry.DealAskStatus == model.CarryStatusFail && orderCarry.DealBidStatus == model.CarryStatusWorking {
-			cancelRefreshOrder(orderCarry.BidWeb, orderCarry.DealBidOrderId, true)
+			api.MustCancel(orderCarry.BidWeb, orderCarry.BidSymbol, orderCarry.DealBidOrderId, true)
 		}
 		handling = false
 	}

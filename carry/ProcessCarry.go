@@ -244,7 +244,6 @@ func Maintain() {
 			go ProcessInform()
 		case model.FunctionMaker:
 			carryHandlers[i] = ProcessMake
-			go MarketMakeServe()
 		case model.FunctionGrid:
 			carryHandlers[i] = ProcessGrid
 			go GridServe()

@@ -57,6 +57,24 @@ func GetAmountDecimal(market, symbol string) int {
 	return 4
 }
 
+func MustCancel(market, symbol, orderId string, mustCancel bool) {
+	for i := 0; i < 100; i++ {
+		result, errCode, _ := CancelOrder(market, symbol, orderId)
+		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
+		if result || !mustCancel {
+			break
+		} else if errCode == `429` || errCode == `4003` {
+			util.Notice(`調用次數繁忙`)
+		} else if i >= 3 {
+			break
+		}
+		if i == 99 {
+			model.AppConfig.Handle = `0`
+		}
+		time.Sleep(time.Second * 1)
+	}
+}
+
 func CancelOrder(market string, symbol string, orderId string) (result bool, errCode, msg string) {
 	errCode = `market-not-supported ` + market
 	msg = `market not supported ` + market
