@@ -131,17 +131,19 @@ var ProcessRefresh = func(market, symbol string) {
 	util.Notice(fmt.Sprintf(`[%s] %f - %f`, carry.BidSymbol, leftBalance, rightBalance))
 	amount := math.Min(leftBalance, rightBalance/carry.BidPrice) * model.AppConfig.AmountRate
 	priceDistance := 0.5 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	if (carry.AskAmount*100 > amount && (carry.AskPrice-price) < priceDistance) ||
-		(carry.BidAmount*100 > amount && (price-carry.BidPrice) < priceDistance) {
-		util.Info(fmt.Sprintf(`[carry数量]ask:%f - %f %f bid:%f - %f %f`, amount,
-			carry.AskAmount, carry.AskAmount/amount, amount, carry.BidAmount, carry.BidAmount/amount))
-		return
-	}
 	if (price-carry.BidPrice) < priceDistance || (carry.AskPrice-price) < priceDistance {
 		if carry.AskAmount > carry.BidAmount {
 			price = carry.BidPrice
+			if carry.BidAmount*100 > amount {
+				util.Notice(fmt.Sprintf(`[refresh crash]bid:%f - %f`, carry.BidAmount, amount))
+				return
+			}
 		} else {
 			price = carry.AskPrice
+			if carry.AskAmount*100 > amount {
+				util.Notice(fmt.Sprintf(`[refresh crash]ask:%f - %f`, carry.AskAmount, amount))
+				return
+			}
 		}
 	}
 	model.AppMarkets.BidAsks[carry.AskSymbol][carry.AskWeb] = nil
