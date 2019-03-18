@@ -12,6 +12,7 @@ import (
 
 var marketMaking bool
 var lastMaker *model.Order
+var orderCount int64
 
 func setMarketMaking(making bool) {
 	marketMaking = making
@@ -58,18 +59,25 @@ var ProcessMake = func(market, symbol string) {
 	}
 	if lastMaker == nil {
 		lastMaker = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, price, amount)
-	} else if lastMaker.OrderSide == model.OrderSideSell {
-		order := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	} else {
+		orderSide := ``
+		if lastMaker.OrderSide == model.OrderSideSell {
+			orderSide = model.OrderSideBuy
+		} else if lastMaker.OrderSide == model.OrderSideBuy {
+			orderSide = model.OrderSideSell
+		}
+		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 		time.Sleep(time.Millisecond * 500)
-		api.MustCancel(market, symbol, lastMaker.OrderId, true)
-		lastMaker = order
-	} else if lastMaker.OrderSide == model.OrderSideBuy {
-		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, price, amount)
-		time.Sleep(time.Millisecond * 500)
-		api.MustCancel(market, symbol, lastMaker.OrderId, true)
+		lastMaker = api.QueryOrderById(market, symbol, lastMaker.OrderId)
+		if lastMaker.Status == model.CarryStatusWorking {
+			api.MustCancel(market, symbol, lastMaker.OrderId, true)
+		}
+		model.AppDB.Save(lastMaker)
 		lastMaker = order
 	}
-	model.AppDB.Save(order)
 	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.WaitMaker))
-	api.RefreshAccount(market)
+	orderCount++
+	if orderCount%30 == 0 {
+		api.RefreshAccount(market)
+	}
 }
