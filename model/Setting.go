@@ -6,6 +6,7 @@ import (
 )
 
 type Setting struct {
+	Function          string
 	Market            string
 	Symbol            string
 	Margin            float64 // carry use
@@ -21,43 +22,81 @@ type Setting struct {
 	UpdatedAt         time.Time
 }
 
-var marketSymbolSetting map[string]map[string]*Setting // marketName - symbol - setting
+var marketSymbolSetting map[string]map[string]map[string]*Setting // function - marketName - symbol - setting
 
 func LoadSettings() {
 	AppSettings = []Setting{}
 	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
-	marketSymbolSetting = make(map[string]map[string]*Setting)
+	marketSymbolSetting = make(map[string]map[string]map[string]*Setting)
 	for i := range AppSettings {
-		if marketSymbolSetting[AppSettings[i].Market] == nil {
-			marketSymbolSetting[AppSettings[i].Market] = make(map[string]*Setting)
+		if marketSymbolSetting[AppSettings[i].Function] == nil {
+			marketSymbolSetting[AppSettings[i].Function] = make(map[string]map[string]*Setting)
 		}
-		marketSymbolSetting[AppSettings[i].Market][AppSettings[i].Symbol] = &AppSettings[i]
+		if marketSymbolSetting[AppSettings[i].Function][AppSettings[i].Market] == nil {
+			marketSymbolSetting[AppSettings[i].Function][AppSettings[i].Market] = make(map[string]*Setting)
+		}
+		marketSymbolSetting[AppSettings[i].Function][AppSettings[i].Market][AppSettings[i].Symbol] = &AppSettings[i]
 	}
 }
 
-func GetMarketSettings(market string) map[string]*Setting {
+func GetFunctionMarketSettings(function, market string) map[string]*Setting {
 	if marketSymbolSetting == nil {
 		LoadSettings()
 	}
-	return marketSymbolSetting[market]
+	if marketSymbolSetting[function] == nil {
+		return nil
+	}
+	return marketSymbolSetting[function][market]
+}
+
+func GetMarketSettings(market string) map[string]*Setting {
+	if AppSettings == nil {
+		LoadSettings()
+	}
+	settings := make(map[string]*Setting)
+	for _, value := range AppSettings {
+		if value.Market == market {
+			settings[value.Symbol] = &value
+		}
+	}
+	return settings
 }
 
 func GetMarkets() []string {
-	markets := make([]string, len(marketSymbolSetting))
+	if AppSettings == nil {
+		LoadSettings()
+	}
+	marketMap := make(map[string]bool)
+	for _, value := range AppSettings {
+		marketMap[value.Market] = true
+	}
+	markets := make([]string, len(marketMap))
 	i := 0
-	for key := range marketSymbolSetting {
+	for key := range marketMap {
+		markets[i] = key
+	}
+	return markets
+}
+
+func GetFunctionMarkets(function string) []string {
+	if marketSymbolSetting[function] == nil {
+		return nil
+	}
+	markets := make([]string, len(marketSymbolSetting[function]))
+	i := 0
+	for key := range marketSymbolSetting[function] {
 		markets[i] = key
 		i++
 	}
 	return markets
 }
 
-func GetSettings(market, symbolPrefix string) (settings []*Setting) {
-	if marketSymbolSetting[market] == nil {
+func GetSettings(function, market, symbolPrefix string) (settings []*Setting) {
+	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
 		return nil
 	}
 	settings = make([]*Setting, 0)
-	for _, value := range marketSymbolSetting[market] {
+	for _, value := range marketSymbolSetting[function][market] {
 		if strings.Index(value.Symbol, symbolPrefix) == 0 {
 			settings = append(settings, value)
 		}
@@ -65,11 +104,11 @@ func GetSettings(market, symbolPrefix string) (settings []*Setting) {
 	return settings
 }
 
-func GetSetting(market, symbol string) *Setting {
-	if marketSymbolSetting[market] == nil {
+func GetSetting(function, market, symbol string) *Setting {
+	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
 		return nil
 	}
-	return marketSymbolSetting[market][symbol]
+	return marketSymbolSetting[function][market][symbol]
 }
 
 func GetMargin(symbol string) float64 {

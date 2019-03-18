@@ -19,9 +19,9 @@ var processing = false
 var handling = false
 var RefreshCarryChannel = make(chan model.Carry, 50)
 
-func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, amount float64) {
+func placeRefreshOrder(carry *model.Carry, market, orderSide, orderType string, price, amount float64) {
 	if orderSide == `buy` {
-		order := api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.BidSymbol, ``, price, amount)
+		order := api.PlaceOrder(orderSide, orderType, market, carry.BidSymbol, ``, price, amount)
 		carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidAmount, carry.DealBidPrice =
 			order.OrderId, order.ErrCode, order.DealAmount, order.DealPrice
 		if carry.DealBidOrderId != `` && carry.DealBidOrderId != "0" {
@@ -32,7 +32,7 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, a
 		util.Notice(fmt.Sprintf(`====%s==== %s %s 价格: %s 数量: %s 返回 %s %s`,
 			orderSide, orderType, carry.BidSymbol, price, amount, carry.DealBidOrderId, carry.DealBidErrCode))
 	} else if orderSide == `sell` {
-		order := api.PlaceOrder(orderSide, orderType, model.GetMarkets()[0], carry.AskSymbol, ``, price, amount)
+		order := api.PlaceOrder(orderSide, orderType, market, carry.AskSymbol, ``, price, amount)
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskAmount, carry.DealAskPrice =
 			order.OrderId, order.ErrCode, order.DealAmount, order.DealPrice
 		if carry.DealAskOrderId != `` && carry.DealAskOrderId != "0" {
@@ -44,7 +44,7 @@ func placeRefreshOrder(carry *model.Carry, orderSide, orderType string, price, a
 			orderSide, orderType, carry.AskSymbol, price, amount, carry.DealAskOrderId, carry.DealAskErrCode))
 	}
 	if carry.DealAskErrCode == `2027` || carry.DealBidErrCode == `2027` {
-		go api.RefreshAccount(model.GetMarkets()[0])
+		go api.RefreshAccount(market)
 	}
 	RefreshCarryChannel <- *carry
 	model.CarryChannel <- *carry
@@ -147,25 +147,24 @@ var ProcessRefresh = func(market, symbol string) {
 	model.AppMarkets.BidAsks[carry.AskSymbol][carry.AskWeb] = nil
 	model.AppMarkets.BidAsks[carry.BidSymbol][carry.BidWeb] = nil
 	bidAskTimes++
-	if bidAskTimes%30 == 0 {
-		api.RefreshAccount(model.GetMarkets()[0])
+	if bidAskTimes%7 == 0 {
+		api.RefreshAccount(market)
 		//rebalance(leftAccount, rightAccount, carry)
 		lastOrderTime = util.GetNowUnixMillion() - 5000
 	} else {
-		go placeRefreshOrder(carry, `buy`, `limit`, price, amount)
-		go placeRefreshOrder(carry, `sell`, `limit`, price, amount)
+		go placeRefreshOrder(carry, market, `buy`, `limit`, price, amount)
+		go placeRefreshOrder(carry, market, `sell`, `limit`, price, amount)
 		random := rand.Int63n(10000)
 		time.Sleep(time.Millisecond * time.Duration(random+model.AppConfig.OrderWait))
 	}
 }
 
-func cancelRefreshOrder(orderId string, mustCancel bool) {
+func cancelRefreshOrder(market, orderId string, mustCancel bool) {
 	if !mustCancel {
 		time.Sleep(time.Second * 5)
 	}
 	for i := 0; i < 100; i++ {
-		market := model.GetMarkets()[0]
-		settings := model.GetMarketSettings(market)
+		settings := model.GetFunctionMarketSettings(model.FunctionRefresh, market)
 		var symbol string
 		for key := range settings {
 			symbol = key
@@ -199,15 +198,15 @@ func RefreshCarryServe() {
 		if orderCarry.DealAskStatus == model.CarryStatusWorking && orderCarry.DealBidStatus == model.CarryStatusWorking {
 			lastOrderTime = util.GetNowUnixMillion()
 			time.Sleep(time.Second * 3)
-			go cancelRefreshOrder(orderCarry.DealAskOrderId, false)
-			go cancelRefreshOrder(orderCarry.DealBidOrderId, false)
+			go cancelRefreshOrder(orderCarry.AskWeb, orderCarry.DealAskOrderId, false)
+			go cancelRefreshOrder(orderCarry.BidWeb, orderCarry.DealBidOrderId, false)
 			//if model.AppConfig.Env == `dk` {
 			//	go placeExtraSell(&orderCarry)
 			//}
 		} else if orderCarry.DealAskStatus == model.CarryStatusWorking && orderCarry.DealBidStatus == model.CarryStatusFail {
-			cancelRefreshOrder(orderCarry.DealAskOrderId, true)
+			cancelRefreshOrder(orderCarry.AskWeb, orderCarry.DealAskOrderId, true)
 		} else if orderCarry.DealAskStatus == model.CarryStatusFail && orderCarry.DealBidStatus == model.CarryStatusWorking {
-			cancelRefreshOrder(orderCarry.DealBidOrderId, true)
+			cancelRefreshOrder(orderCarry.BidWeb, orderCarry.DealBidOrderId, true)
 		}
 		handling = false
 	}

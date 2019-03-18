@@ -157,7 +157,7 @@ func CancelOldWorkingOrders() {
 	d, _ := time.ParseDuration("-1h")
 	for true {
 		timeLine := util.GetNow().Add(d)
-		markets := model.GetMarkets()
+		markets := model.GetFunctionMarkets(model.FunctionGrid)
 		for _, market := range markets {
 			settings := model.GetMarketSettings(market)
 			for symbol := range settings {

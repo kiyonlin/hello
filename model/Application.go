@@ -37,6 +37,14 @@ const CarryTypeArbitraryBuy = `arbitrarybuy`
 const AmountTypeContractNumber = `contractnumber`
 const AmountTypeCoinNumber = `coinnumber`
 
+const FunctionGrid = `grid`
+const FunctionMaker = `maker`
+const FunctionCarry = `carry`
+const FunctionBalanceTurtle = `balanceturtle`
+const FunctionArbitrary = `arbitrary`
+const FunctionRsi = `rsi`
+const FunctionRefresh = `refresh`
+
 var AppDB *gorm.DB
 var AppSettings []Setting
 var AppConfig *Config

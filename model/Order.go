@@ -6,6 +6,7 @@ type Order struct {
 	OrderId    string
 	Symbol     string
 	Market     string
+	Function   string
 	OrderType  string
 	OrderSide  string
 	ErrCode    string

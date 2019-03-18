@@ -49,7 +49,7 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 		return
 	}
 	grid := getGrid(market, symbol)
-	setting := model.GetSetting(market, symbol)
+	setting := model.GetSetting(model.FunctionGrid, market, symbol)
 	if grid.lastPrice == 0 {
 		grid.lastPrice = (bidAsk.Bids[0].Price + bidAsk.Asks[0].Price) / 2
 	}
@@ -94,6 +94,7 @@ func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
 	if model.AppConfig.Handle == `1` {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	}
+	order.Function = model.FunctionGrid
 	gridChannel <- *order
 }
 
@@ -101,7 +102,7 @@ func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
 	if grid.lastSide == orderSide {
 		grid.sameSide++
 		if grid.sameSide > 15 {
-			setting := model.GetSetting(market, order.Symbol)
+			setting := model.GetSetting(model.FunctionGrid, market, order.Symbol)
 			setting.GridPriceDistance = setting.GridPriceDistance * 2
 			model.AppDB.Save(setting)
 			model.LoadSettings()

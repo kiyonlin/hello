@@ -20,8 +20,8 @@ func setContractArbitraging(status bool) {
 func recordCarry(carry *model.Carry) {
 	if carry.SideType == model.CarryTypeFuture && carry.DealAskPrice > 0 && carry.DealBidPrice > carry.DealAskPrice {
 		delta := (carry.DealAskPrice - carry.DealBidPrice) / carry.DealAskPrice
-		openSetting := model.GetSetting(carry.BidWeb, carry.BidSymbol)
-		closeSetting := model.GetSetting(carry.AskWeb, carry.AskSymbol)
+		openSetting := model.GetSetting(model.FunctionArbitrary, carry.BidWeb, carry.BidSymbol)
+		closeSetting := model.GetSetting(model.FunctionArbitrary, carry.AskWeb, carry.AskSymbol)
 		util.Notice(fmt.Sprintf(`[modify setting]open: %s %s %f+%f close: %s %s %f+%f`,
 			carry.BidWeb, carry.BidSymbol, openSetting.OpenShortMargin, delta,
 			carry.AskWeb, carry.AskSymbol, closeSetting.CloseShortMargin, delta))
@@ -368,7 +368,7 @@ func filterCarry(carries []*model.Carry, faceValue float64) *model.Carry {
 		//	carry.BidWeb, carry.BidSymbol, carry.AskWeb, carry.AskSymbol,
 		//	(carry.AskPrice-carry.BidPrice)/carry.AskPrice, carry.BidAmount))
 		if carry.BidAmount <= 0 {
-			setting := model.GetSetting(carry.BidWeb, carry.BidSymbol)
+			setting := model.GetSetting(model.FunctionArbitrary, carry.BidWeb, carry.BidSymbol)
 			//util.Info(fmt.Sprintf(`[add chance]%s/%s %d++`, carry.BidWeb, carry.BidSymbol, setting.Chance))
 			setting.Chance += (carry.AskPrice - carry.BidPrice) / carry.AskPrice
 			model.AppDB.Save(setting)
@@ -386,8 +386,8 @@ func createCarry(symbol, futureSymbol, futureMarket string, faceValue float64) *
 	if futureMarket != model.OKFUTURE || index < 0 {
 		return nil
 	}
-	settings := model.GetSettings(futureMarket, futureSymbol[0:index+1])
-	symbolSetting := model.GetSetting(model.OKEX, symbol)
+	settings := model.GetSettings(model.FunctionArbitrary, futureMarket, futureSymbol[0:index+1])
+	symbolSetting := model.GetSetting(model.FunctionArbitrary, model.OKEX, symbol)
 	if symbolSetting != nil {
 		settings = append(settings, symbolSetting)
 	}

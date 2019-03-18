@@ -13,7 +13,7 @@ bnbbuy: 20 #价值20usd的bnb
 amountrate: 0.01
 makerrate: 0.1
 orderwait: 3000
-delay: 10000 #按照毫秒计算时间差
+delay: 1000 #按照毫秒计算时间差
 channelslot: 60000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15
@@ -21,7 +21,7 @@ maxusdt: 1500
 inchina: 0
 deduction: 0.8
 mail: haoweizh@qq.com #41685600@qq.com
-handle: 1
+handle: 0
 
 dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
 env: dk

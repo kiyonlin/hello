@@ -62,7 +62,7 @@ func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidA
 
 func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rightAccount *Account,
 	currentPrice, lastPrice float64) (*Carry, error) {
-	setting := GetSetting(market, symbol)
+	setting := GetSetting(FunctionBalanceTurtle, market, symbol)
 	if setting == nil {
 		return nil, errors.New(fmt.Sprintf(market + ` has no setting for ` + symbol))
 	}

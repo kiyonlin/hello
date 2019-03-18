@@ -132,19 +132,19 @@ func order(carry *model.Carry, orderSide, orderType, market, symbol string, pric
 	model.InnerCarryChannel <- *carry
 }
 
-func createAccountInfoServer(marketName string) chan struct{} {
-	util.SocketInfo(` create account info chan for ` + marketName)
-	var channel chan struct{}
-	var err error
-	switch marketName {
-	case model.OKFUTURE:
-		channel, err = api.WsAccountServeOKFuture(WSErrHandler)
-	}
-	if err != nil {
-		util.SocketInfo(marketName + ` can not create server ` + err.Error())
-	}
-	return channel
-}
+//func createAccountInfoServer(marketName string) chan struct{} {
+//	util.SocketInfo(` create account info chan for ` + marketName)
+//	var channel chan struct{}
+//	var err error
+//	switch marketName {
+//	case model.OKFUTURE:
+//		channel, err = api.WsAccountServeOKFuture(WSErrHandler)
+//	}
+//	if err != nil {
+//		util.SocketInfo(marketName + ` can not create server ` + err.Error())
+//	}
+//	return channel
+//}
 
 func createMarketDepthServer(markets *model.Markets, carryHandlers []api.CarryHandler, marketName string) chan struct{} {
 	util.SocketInfo(" create depth chan for " + marketName)
@@ -175,12 +175,6 @@ func createMarketDepthServer(markets *model.Markets, carryHandlers []api.CarryHa
 }
 
 var socketMaintaining = false
-
-func _() {
-	for _, marketName := range model.GetMarkets() {
-		createAccountInfoServer(marketName)
-	}
-}
 
 func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
 	if socketMaintaining {
@@ -234,24 +228,24 @@ func Maintain() {
 	carryHandlers := make([]api.CarryHandler, len(model.AppConfig.Functions))
 	for i, value := range model.AppConfig.Functions {
 		switch value {
-		case `carry`:
+		case model.FunctionCarry:
 			go MaintainOrders()
 			carryHandlers[i] = ProcessCarry
-		case `balanceturtle`:
+		case model.FunctionBalanceTurtle:
 			carryHandlers[i] = ProcessBalanceTurtle
-		case `refresh`:
+		case model.FunctionRefresh:
 			carryHandlers[i] = ProcessRefresh
 			go RefreshCarryServe()
-		case `arbitrary`:
+		case model.FunctionArbitrary:
 			go MaintainArbitrarySettings()
 			carryHandlers[i] = ProcessContractArbitrage
-		case `rsi`:
+		case model.FunctionRsi:
 			needWS = false
 			go ProcessInform()
-		case `maker`:
+		case model.FunctionMaker:
 			carryHandlers[i] = ProcessMake
 			go MarketMakeServe()
-		case `grid`:
+		case model.FunctionGrid:
 			carryHandlers[i] = ProcessGrid
 			go GridServe()
 		}

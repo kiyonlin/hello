@@ -47,7 +47,7 @@ func LoadDiligentSettings(bidWeb, sideType string, createdAt time.Time) (setting
 		var symbol string
 		for rows.Next() {
 			_ = rows.Scan(&symbol)
-			settings[symbol] = GetSetting(bidWeb, symbol)
+			settings[symbol] = GetSetting(FunctionArbitrary, bidWeb, symbol)
 		}
 	}
 	return settings
