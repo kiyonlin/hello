@@ -118,7 +118,7 @@ func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
 	util.Notice(fmt.Sprintf(`set buyId %s sellId %s to nil `, grid.buyOrder.OrderId, grid.sellOrder.OrderId))
 	grid.sellOrder = nil
 	grid.buyOrder = nil
-	go model.AppDB.Save(order)
+	model.AppDB.Save(order)
 	api.RefreshAccount(market)
 }
 

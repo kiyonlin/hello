@@ -1,5 +1,5 @@
 functions:
-#  - grid
+  - grid
   - maker
 #- carry
 #- balanceturtle
@@ -11,7 +11,7 @@ port: 80
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
 amountrate: 0.01
-makeramountrate: 0.1
+makeramountrate: 0.05
 orderwait: 1000
 delay: 1000 #按照毫秒计算时间差
 channelslot: 60000 #按照毫秒计算的检查时间间隔
@@ -26,7 +26,7 @@ handlemaker: 1
 handlerefresh: 1
 handlegrid: 1
 waitrefreshrandom: 4000
-r
+waitmaker: 1000
 dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
 env: dk
 #sammi huobi

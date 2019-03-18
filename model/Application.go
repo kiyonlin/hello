@@ -312,6 +312,7 @@ type Config struct {
 	BnbBuy            float64
 	OrderWait         int64 // fcoin/coinpark 刷单平均等待时间
 	WaitRefreshRandom int64
+	WaitMaker         int64
 	AmountRate        float64 // 刷单填写数量比率
 	MakerAmountRate   float64
 	Handle            string // 0 不执行处理程序，1执行处理程序
@@ -398,8 +399,8 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
-	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f\n",
-		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax)
+	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f waitMaker: %d\n",
+		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.WaitMaker)
 	str += fmt.Sprintf("maker rate: %f waitrefreshrandom: %d\n", config.MakerAmountRate, config.WaitRefreshRandom)
 	return str
 }

@@ -61,7 +61,7 @@ func MustCancel(market, symbol, orderId string, mustCancel bool) {
 	for i := 0; i < 100; i++ {
 		result, errCode, _ := CancelOrder(market, symbol, orderId)
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
-		if result || !mustCancel {
+		if result || !mustCancel || errCode == `3008` { //3008:"submit cancel invalid order state
 			break
 		} else if errCode == `429` || errCode == `4003` {
 			util.Notice(`調用次數繁忙`)
