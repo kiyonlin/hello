@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type CarryHandler func(market, symbol string)
+
 type Setting struct {
 	Function          string
 	Market            string
@@ -23,60 +25,7 @@ type Setting struct {
 }
 
 var marketSymbolSetting map[string]map[string]map[string]*Setting // function - marketName - symbol - setting
-
-func LoadSettings() {
-	AppSettings = []Setting{}
-	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
-	marketSymbolSetting = make(map[string]map[string]map[string]*Setting)
-	for i := range AppSettings {
-		if marketSymbolSetting[AppSettings[i].Function] == nil {
-			marketSymbolSetting[AppSettings[i].Function] = make(map[string]map[string]*Setting)
-		}
-		if marketSymbolSetting[AppSettings[i].Function][AppSettings[i].Market] == nil {
-			marketSymbolSetting[AppSettings[i].Function][AppSettings[i].Market] = make(map[string]*Setting)
-		}
-		marketSymbolSetting[AppSettings[i].Function][AppSettings[i].Market][AppSettings[i].Symbol] = &AppSettings[i]
-	}
-}
-
-func GetFunctionMarketSettings(function, market string) map[string]*Setting {
-	if marketSymbolSetting == nil {
-		LoadSettings()
-	}
-	if marketSymbolSetting[function] == nil {
-		return nil
-	}
-	return marketSymbolSetting[function][market]
-}
-
-func GetMarketSettings(market string) map[string]*Setting {
-	if AppSettings == nil {
-		LoadSettings()
-	}
-	settings := make(map[string]*Setting)
-	for _, value := range AppSettings {
-		if value.Market == market {
-			settings[value.Symbol] = &value
-		}
-	}
-	return settings
-}
-
-func GetMarkets() []string {
-	if AppSettings == nil {
-		LoadSettings()
-	}
-	marketMap := make(map[string]bool)
-	for _, value := range AppSettings {
-		marketMap[value.Market] = true
-	}
-	markets := make([]string, len(marketMap))
-	i := 0
-	for key := range marketMap {
-		markets[i] = key
-	}
-	return markets
-}
+var handlers map[string]map[string][]CarryHandler                 // market - symbol - carryHandler
 
 func GetFunctionMarkets(function string) []string {
 	if marketSymbolSetting[function] == nil {
@@ -122,4 +71,83 @@ func GetMargin(symbol string) float64 {
 		margins[symbol] = 1
 	}
 	return margins[symbol]
+}
+
+func LoadDiligentSettings(bidWeb, sideType string, createdAt time.Time) (settings map[string]*Setting) {
+	settings = make(map[string]*Setting)
+	rows, err := AppDB.Model(&Carry{}).Select(`bid_symbol`).Where(
+		`bid_web = ? and side_type = ? and created_at > ?`, bidWeb, sideType, createdAt).Group(`bid_symbol`).Rows()
+	if err == nil {
+		var symbol string
+		for rows.Next() {
+			_ = rows.Scan(&symbol)
+			settings[symbol] = GetSetting(FunctionArbitrary, bidWeb, symbol)
+		}
+	}
+	return settings
+}
+
+func GetFunctions(market, symbol string) []CarryHandler {
+	if handlers == nil {
+		LoadSettings()
+	}
+	if handlers[market] == nil {
+		return nil
+	}
+	return handlers[market][symbol]
+}
+
+func LoadSettings() {
+	AppSettings = []Setting{}
+	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
+	marketSymbolSetting = make(map[string]map[string]map[string]*Setting)
+	handlers = make(map[string]map[string][]CarryHandler)
+	for i := range AppSettings {
+		market := AppSettings[i].Market
+		function := AppSettings[i].Function
+		symbol := AppSettings[i].Symbol
+		if marketSymbolSetting[function] == nil {
+			marketSymbolSetting[function] = make(map[string]map[string]*Setting)
+		}
+		if marketSymbolSetting[function][market] == nil {
+			marketSymbolSetting[function][market] = make(map[string]*Setting)
+		}
+		marketSymbolSetting[function][market][symbol] = &AppSettings[i]
+		if handlers[market] == nil {
+			handlers[market] = make(map[string][]CarryHandler)
+		}
+		if handlers[market][symbol] == nil {
+			handlers[market][symbol] = make([]CarryHandler, 0)
+		}
+		handlers[market][symbol] = append(handlers[market][symbol], HandlerMap[function])
+	}
+}
+
+func GetMarketSettings(market string) map[string]*Setting {
+	if AppSettings == nil {
+		LoadSettings()
+	}
+	settings := make(map[string]*Setting)
+	for _, value := range AppSettings {
+		if value.Market == market {
+			settings[value.Symbol] = &value
+		}
+	}
+	return settings
+}
+
+func GetMarkets() []string {
+	if AppSettings == nil {
+		LoadSettings()
+	}
+	marketMap := make(map[string]bool)
+	for _, value := range AppSettings {
+		marketMap[value.Market] = true
+	}
+	markets := make([]string, len(marketMap))
+	i := 0
+	for key := range marketMap {
+		markets[i] = key
+	}
+	return markets
 }

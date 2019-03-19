@@ -1,8 +1,8 @@
 package model
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"hello/util"
 	"math"
 	"strconv"
@@ -37,20 +37,6 @@ type Carry struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	SideType  string
-}
-
-func LoadDiligentSettings(bidWeb, sideType string, createdAt time.Time) (settings map[string]*Setting) {
-	settings = make(map[string]*Setting)
-	rows, err := AppDB.Model(&Carry{}).Select(`bid_symbol`).Where(
-		`bid_web = ? and side_type = ? and created_at > ?`, bidWeb, sideType, createdAt).Group(`bid_symbol`).Rows()
-	if err == nil {
-		var symbol string
-		for rows.Next() {
-			_ = rows.Scan(&symbol)
-			settings[symbol] = GetSetting(FunctionArbitrary, bidWeb, symbol)
-		}
-	}
-	return settings
 }
 
 func (carry *Carry) CheckWorthSaveMargin() bool {

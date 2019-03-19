@@ -28,8 +28,7 @@ var subscribeHandlerBitmex = func(subscribes []string, conn *websocket.Conn) err
 	return err
 }
 
-func WsDepthServeBitmex(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
-	fmt.Println(fmt.Sprintf(`bitmex depth serve for %v %v `, markets, carryHandlers))
+func WsDepthServeBitmex(errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		if util.GetNow().Unix()-lastPingTime > 5 { // ping bitmex server every 5 seconds

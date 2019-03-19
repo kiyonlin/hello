@@ -47,7 +47,7 @@ var subscribeHandlerOkex = func(subscribes []string, conn *websocket.Conn) error
 	return err
 }
 
-func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeOkex(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		if util.GetNow().Unix()-lastPingTime > 20 { // ping okex server every 30 seconds
@@ -85,7 +85,7 @@ func WsDepthServeOkex(markets *model.Markets, carryHandlers []CarryHandler, errH
 					sort.Sort(sort.Reverse(bidAsk.Bids))
 					bidAsk.Ts = message.Data.Timestamp
 					if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
-						for _, handler := range carryHandlers {
+						for _, handler := range model.GetFunctions(model.OKEX, symbol) {
 							handler(model.OKEX, symbol)
 						}
 					}

@@ -39,7 +39,8 @@ var subscribeHandlerOKFuture = func(subscribes []string, conn *websocket.Conn) e
 	return err
 }
 
-func WsAccountServeOKFuture(errHandler ErrHandler) (chan struct{}, error) {
+//WsAccountServeOKFuture
+func _(errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping okfuture server every 30 seconds
@@ -85,7 +86,7 @@ func parseByDepth(bidAsks *model.BidAsk, data interface{}) {
 	}
 }
 
-func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		if util.GetNow().Unix()-lastPingTime > 20 { // ping okfuture server every 30 seconds
@@ -121,7 +122,7 @@ func WsDepthServeOKFuture(markets *model.Markets, carryHandlers []CarryHandler, 
 		sort.Sort(bidAsks.Asks)
 		sort.Sort(sort.Reverse(bidAsks.Bids))
 		if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
-			for _, handler := range carryHandlers {
+			for _, handler := range model.GetFunctions(model.OKFUTURE, symbol) {
 				handler(model.OKFUTURE, symbol)
 			}
 		}

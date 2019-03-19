@@ -30,7 +30,7 @@ var subscribeHandlerCoinbig = func(subscribes []string, conn *websocket.Conn) er
 	return err
 }
 
-func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeCoinbig(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	//lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		var out bytes.Buffer
@@ -62,7 +62,7 @@ func WsDepthServeCoinbig(markets *model.Markets, carryHandlers []CarryHandler, e
 				ts, _ := realTimeQueue[0].(map[string]interface{})[`createTime`].(json.Number).Int64()
 				bidAsk.Ts = int(ts)
 				if markets.SetBidAsk(symbol, model.Coinbig, &bidAsk) {
-					for _, handler := range carryHandlers {
+					for _, handler := range model.GetFunctions(model.Coinbig, symbol) {
 						handler(model.Coinbig, symbol)
 					}
 				}

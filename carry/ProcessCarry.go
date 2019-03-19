@@ -146,27 +146,27 @@ func order(carry *model.Carry, orderSide, orderType, market, symbol string, pric
 //	return channel
 //}
 
-func createMarketDepthServer(markets *model.Markets, carryHandlers []api.CarryHandler, marketName string) chan struct{} {
+func createMarketDepthServer(markets *model.Markets, marketName string) chan struct{} {
 	util.SocketInfo(" create depth chan for " + marketName)
 	var channel chan struct{}
 	var err error
 	switch marketName {
 	case model.Huobi:
-		channel, err = api.WsDepthServeHuobi(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeHuobi(markets, WSErrHandler)
 	case model.OKEX:
-		channel, err = api.WsDepthServeOkex(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeOkex(markets, WSErrHandler)
 	case model.OKFUTURE:
-		channel, err = api.WsDepthServeOKFuture(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeOKFuture(markets, WSErrHandler)
 	case model.Binance:
-		channel, err = api.WsDepthServeBinance(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeBinance(markets, WSErrHandler)
 	case model.Fcoin:
-		channel, err = api.WsDepthServeFcoin(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeFcoin(markets, WSErrHandler)
 	case model.Coinpark:
-		channel, err = api.WsDepthServeCoinpark(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeCoinpark(markets, WSErrHandler)
 	case model.Coinbig:
-		channel, err = api.WsDepthServeCoinbig(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeCoinbig(markets, WSErrHandler)
 	case model.Bitmex:
-		channel, err = api.WsDepthServeBitmex(markets, carryHandlers, WSErrHandler)
+		channel, err = api.WsDepthServeBitmex(WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(marketName + ` can not create server ` + err.Error())
@@ -176,7 +176,7 @@ func createMarketDepthServer(markets *model.Markets, carryHandlers []api.CarryHa
 
 var socketMaintaining = false
 
-func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
+func MaintainMarketDepthChan() {
 	if socketMaintaining {
 		return
 	}
@@ -187,15 +187,13 @@ func MaintainMarketDepthChan(carryHandlers []api.CarryHandler) {
 			for index := 0; index < model.AppConfig.Channels; index++ {
 				channel := model.AppMarkets.GetChan(marketName, index)
 				if channel == nil {
-					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets,
-						carryHandlers, marketName))
+					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets, marketName))
 					util.SocketInfo(marketName + " create new channel " + subscribe)
 				} else if model.AppMarkets.RequireChanReset(marketName, subscribe) {
 					model.AppMarkets.PutChan(marketName, index, nil)
 					channel <- struct{}{}
 					close(channel)
-					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets,
-						carryHandlers, marketName))
+					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets, marketName))
 					util.SocketInfo(marketName + " reset channel " + subscribe)
 				}
 			}
@@ -213,6 +211,13 @@ func Maintain() {
 		util.Notice(err.Error())
 		return
 	}
+	model.HandlerMap[model.FunctionMaker] = ProcessMake
+	model.HandlerMap[model.FunctionGrid] = ProcessGrid
+	model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
+	model.HandlerMap[model.FunctionBalanceTurtle] = ProcessBalanceTurtle
+	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
+	model.HandlerMap[model.FunctionCarry] = ProcessCarry
+
 	defer model.AppDB.Close()
 	model.AppDB.AutoMigrate(&model.Carry{})
 	model.AppDB.AutoMigrate(&model.Account{})
@@ -224,36 +229,14 @@ func Maintain() {
 	go AccountHandlerServe()
 	go RefreshAccounts()
 	go CancelOldWorkingOrders()
-	needWS := true
-	carryHandlers := make([]api.CarryHandler, len(model.AppConfig.Functions))
-	for i, value := range model.AppConfig.Functions {
-		switch value {
-		case model.FunctionCarry:
-			go MaintainOrders()
-			carryHandlers[i] = ProcessCarry
-		case model.FunctionBalanceTurtle:
-			carryHandlers[i] = ProcessBalanceTurtle
-		case model.FunctionRefresh:
-			carryHandlers[i] = ProcessRefresh
-			go RefreshCarryServe()
-		case model.FunctionArbitrary:
-			go MaintainArbitrarySettings()
-			carryHandlers[i] = ProcessContractArbitrage
-		case model.FunctionRsi:
-			needWS = false
-			go ProcessInform()
-		case model.FunctionMaker:
-			carryHandlers[i] = ProcessMake
-		case model.FunctionGrid:
-			carryHandlers[i] = ProcessGrid
-			go GridServe()
-		}
-	}
+	go MaintainOrders()
+	go RefreshCarryServe()
+	go MaintainArbitrarySettings()
+	go ProcessInform()
+	go GridServe()
 	//go MaintainAccountChan()
 	for true {
-		if needWS {
-			go MaintainMarketDepthChan(carryHandlers)
-		}
+		go MaintainMarketDepthChan()
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
 	}
 }

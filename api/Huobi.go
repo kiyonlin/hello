@@ -58,7 +58,7 @@ var subscribeHandlerHuobi = func(subscribes []string, conn *websocket.Conn) erro
 	return err
 }
 
-func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, errHandler ErrHandler) (chan struct{}, error) {
+func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		res := util.UnGzip(event)
 		resMap := util.JsonDecodeByte(res)
@@ -87,7 +87,7 @@ func WsDepthServeHuobi(markets *model.Markets, carryHandlers []CarryHandler, err
 				sort.Sort(sort.Reverse(bidAsk.Bids))
 				bidAsk.Ts = message.Ts
 				if markets.SetBidAsk(symbol, model.Huobi, &bidAsk) {
-					for _, handler := range carryHandlers {
+					for _, handler := range model.GetFunctions(model.Huobi, symbol) {
 						handler(model.Huobi, symbol)
 					}
 				}

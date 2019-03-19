@@ -8,6 +8,8 @@ import (
 	"sync"
 )
 
+var HandlerMap = make(map[string]CarryHandler)
+
 const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
 const OKEXOtherContractFaceValue = 10.0
@@ -42,7 +44,6 @@ const FunctionMaker = `maker`
 const FunctionCarry = `carry`
 const FunctionBalanceTurtle = `balanceturtle`
 const FunctionArbitrary = `arbitrary`
-const FunctionRsi = `rsi`
 const FunctionRefresh = `refresh`
 
 var AppDB *gorm.DB
@@ -286,7 +287,6 @@ type Config struct {
 	DBConnection      string
 	Channels          int
 	ChannelSlot       float64
-	Functions         []string
 	Delay             float64
 	Deduction         float64
 	MinUsdt           float64            // 折合usdt最小下单金额
@@ -374,17 +374,6 @@ func GetAccountInfoSubscribe(marketName string) []string {
 	return nil
 }
 
-func GetDepthSubscribes(marketName string) []string {
-	settings := GetMarketSettings(marketName)
-	subscribes := make([]string, len(settings))
-	i := 0
-	for symbol := range settings {
-		subscribes[i] = GetWSDepthSubscribe(marketName, symbol)
-		i++
-	}
-	return subscribes
-}
-
 func (config *Config) ToString() string {
 	str := "markets-carry cost:\n"
 	for key, value := range config.MarketCost {
@@ -403,4 +392,15 @@ func (config *Config) ToString() string {
 		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.WaitMaker)
 	str += fmt.Sprintf("maker rate: %f waitrefreshrandom: %d\n", config.MakerAmountRate, config.WaitRefreshRandom)
 	return str
+}
+
+func GetDepthSubscribes(marketName string) []string {
+	settings := GetMarketSettings(marketName)
+	subscribes := make([]string, len(settings))
+	i := 0
+	for symbol := range settings {
+		subscribes[i] = GetWSDepthSubscribe(marketName, symbol)
+		i++
+	}
+	return subscribes
 }

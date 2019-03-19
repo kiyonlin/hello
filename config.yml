@@ -1,12 +1,3 @@
-functions:
-  - grid
-  - maker
-#- carry
-#- balanceturtle
-#- arbitrary
-#- rsi
-#- refresh
-
 port: 80
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
@@ -27,7 +18,7 @@ handlerefresh: 1
 handlegrid: 1
 waitrefreshrandom: 4000
 waitmaker: 1000
-dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
+dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=mydb password=dbuser sslmode=disable
 env: dk
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
