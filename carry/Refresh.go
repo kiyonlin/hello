@@ -139,7 +139,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	for _, value := range refreshOrders.askOrders[market][symbol] {
 		if value.Price > askPrice {
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
-		} else if value.Price >= askPrice {
+		} else if value.Price <= askPrice {
 			askOrders = append(askOrders, value)
 		}
 	}
@@ -218,7 +218,6 @@ var ProcessRefresh = func(market, symbol string) {
 				api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
 			} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
 				api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
-			} else if refreshLastAsk.Status == model.CarryStatusFail && refreshLastBid.Status == model.CarryStatusFail {
 			}
 			break
 		}
