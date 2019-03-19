@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-func MaintainOrders() {
+//MaintainOrders
+func _() {
 	for true {
 		var carries []model.Carry
 		model.AppDB.Where(
@@ -40,7 +41,8 @@ func MaintainOrders() {
 	}
 }
 
-func InnerCarryServe() {
+//InnerCarryServe
+func _() {
 	for true {
 		orderCarry := <-model.InnerCarryChannel
 		util.Notice(fmt.Sprintf(`||||||[bid-ask] [%s %s] [%s %s]`, orderCarry.DealBidOrderId,
@@ -195,7 +197,8 @@ func RefreshAccounts() {
 	}
 }
 
-func OuterCarryServe() {
+//OuterCarryServe
+func _() {
 	for true {
 		var carryInDb model.Carry
 		carry := <-model.CarryChannel

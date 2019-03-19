@@ -78,7 +78,8 @@ func sendMail(body string) {
 	}
 }
 
-func ProcessInform() {
+//ProcessInform
+func _() {
 	symbols := []string{`btc_usdt`, `eth_usdt`, `eos_usdt`}
 	for true {
 		if util.GetNow().Minute()%15 != 2 {

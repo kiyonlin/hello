@@ -7,22 +7,25 @@ import (
 	"hello/util"
 	"math"
 	"strings"
+	"sync"
 	"time"
 )
 
 var marketSymbolGrid = make(map[string]map[string]*grid)
+var snycGrid = make(chan interface{}, 10)
+var gridLock sync.Mutex
 
 type grid struct {
-	griding, selling, buying bool
-	sellOrder, buyOrder      *model.Order
-	lastPrice                float64
-	lastSide                 string
-	sameSide                 int64
+	griding             bool
+	sellOrder, buyOrder *model.Order
+	lastPrice           float64
+	lastSide            string
+	sameSide            int64
 }
 
-var gridChannel = make(chan model.Order, 50)
-
 func setGriding(market, symbol string, ing bool) {
+	gridLock.Lock()
+	defer gridLock.Unlock()
 	if marketSymbolGrid[market] == nil {
 		marketSymbolGrid[market] = make(map[string]*grid)
 	}
@@ -33,6 +36,8 @@ func setGriding(market, symbol string, ing bool) {
 }
 
 func getGrid(market, symbol string) (gridType *grid) {
+	gridLock.Lock()
+	defer gridLock.Unlock()
 	if marketSymbolGrid[market] == nil {
 		marketSymbolGrid[market] = make(map[string]*grid)
 	}
@@ -78,8 +83,8 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) {
 		amountBuy = setting.GridAmount / priceBuy
 		amountSell = setting.GridAmount / priceSell
 	}
-	grid.selling = true
-	grid.buying = true
+	grid.buyOrder = nil
+	grid.sellOrder = nil
 	go placeGridOrder(model.OrderSideSell, market, symbol, priceSell, amountSell)
 	go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy, amountBuy)
 }
@@ -91,11 +96,16 @@ func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
 	order := &model.Order{OrderSide: orderSide, OrderType: model.OrderTypeLimit, Market: market, Symbol: symbol,
 		AmountType: ``, Price: price, Amount: amount, OrderId: ``, ErrCode: ``,
 		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price}
-	if model.AppConfig.Handle == `1` && model.AppConfig.HandleGrid == `1` {
-		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
-	}
+	order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	order.Function = model.FunctionGrid
-	gridChannel <- *order
+	grid := getGrid(order.Market, order.Symbol)
+	if order.OrderSide == model.OrderSideBuy {
+		grid.buyOrder = order
+	}
+	if order.OrderSide == model.OrderSideSell {
+		grid.sellOrder = order
+	}
+	snycGrid <- struct{}{}
 }
 
 func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
@@ -124,7 +134,7 @@ func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
 
 var ProcessGrid = func(market, symbol string) {
 	grid := getGrid(market, symbol)
-	if grid.griding || grid.selling || grid.buying {
+	if grid.griding || model.AppConfig.Handle != `1` || model.AppConfig.HandleGrid != `1` {
 		return
 	}
 	setGriding(market, symbol, true)
@@ -135,6 +145,13 @@ var ProcessGrid = func(market, symbol string) {
 	}
 	if grid.sellOrder == nil || grid.buyOrder == nil {
 		placeGridOrders(market, symbol, bidAsk)
+		for true {
+			<-snycGrid
+			if grid.sellOrder != nil && grid.buyOrder != nil {
+				break
+			}
+		}
+
 	} else if grid.sellOrder != nil && grid.sellOrder.Price < bidAsk.Asks[0].Price {
 		util.Notice(fmt.Sprintf(` sell id %s at price %f < %f`, grid.sellOrder.OrderId, grid.sellOrder.Price, bidAsk.Asks[0].Price))
 		handleOrderDeal(grid, grid.sellOrder, market, model.OrderSideSell)
@@ -143,19 +160,4 @@ var ProcessGrid = func(market, symbol string) {
 		handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
 	}
 	time.Sleep(time.Microsecond * 100)
-}
-
-func GridServe() {
-	for true {
-		order := <-gridChannel
-		grid := getGrid(order.Market, order.Symbol)
-		if order.OrderSide == model.OrderSideBuy {
-			grid.buyOrder = &order
-			grid.buying = false
-		}
-		if order.OrderSide == model.OrderSideSell {
-			grid.sellOrder = &order
-			grid.selling = false
-		}
-	}
 }

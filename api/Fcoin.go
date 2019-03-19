@@ -45,7 +45,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 		symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
 		symbolSettings := model.GetMarketSettings(model.Fcoin)
 		if symbolSettings == nil || symbolSettings[symbol] == nil {
-			util.Notice(symbol + ` not supported`)
+			//util.Notice(symbol + ` not supported`)
 			return
 		}
 		if symbol != "" && symbol != "_" {
