@@ -28,18 +28,56 @@ type RefreshOrders struct {
 	lastAsk   map[string]map[string]*model.Order   // market - symbol - order
 }
 
-func initRefreshOrders(refreshOrders *RefreshOrders, market, symbol, orderSide string) {
+func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
 	if orderSide == model.OrderSideSell {
-		if refreshOrders.askOrders == nil {
-			refreshOrders.askOrders = make(map[string]map[string][]*model.Order)
+		if refreshOrders.lastAsk == nil {
+			refreshOrders.lastAsk = make(map[string]map[string]*model.Order)
+			if refreshOrders.lastAsk[market] == nil {
+				refreshOrders.lastAsk[market] = make(map[string]*model.Order)
+			}
 		}
-		if refreshOrders.askOrders[market] == nil {
-			refreshOrders.askOrders[market] = make(map[string][]*model.Order)
-		}
-		if refreshOrders.askOrders[market][symbol] == nil {
-			refreshOrders.askOrders[market][symbol] = make([]*model.Order, 0)
-		}
+		refreshOrders.lastAsk[market][symbol] = order
 	}
+	if orderSide == model.OrderSideBuy {
+		if refreshOrders.lastBid == nil {
+			refreshOrders.lastBid = make(map[string]map[string]*model.Order)
+			if refreshOrders.lastBid[market] == nil {
+				refreshOrders.lastBid[market] = make(map[string]*model.Order)
+			}
+		}
+		refreshOrders.lastBid[market][symbol] = order
+	}
+}
+
+func (refreshOrders *RefreshOrders) GetLastOrder(market, symbol, orderSide string) (lastOrder *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if orderSide == model.OrderSideSell {
+		if refreshOrders.lastAsk == nil {
+			refreshOrders.lastAsk = make(map[string]map[string]*model.Order)
+			if refreshOrders.lastAsk[market] == nil {
+				refreshOrders.lastAsk[market] = make(map[string]*model.Order)
+			}
+		}
+		return refreshOrders.lastAsk[market][symbol]
+	}
+	if orderSide == model.OrderSideBuy {
+		if refreshOrders.lastBid == nil {
+			refreshOrders.lastBid = make(map[string]map[string]*model.Order)
+			if refreshOrders.lastBid[market] == nil {
+				refreshOrders.lastBid[market] = make(map[string]*model.Order)
+			}
+		}
+		return refreshOrders.lastBid[market][symbol]
+	}
+	return nil
+}
+
+func (refreshOrders *RefreshOrders) Add(market, symbol, orderSide string, order *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
 	if orderSide == model.OrderSideBuy {
 		if refreshOrders.bidOrders == nil {
 			refreshOrders.bidOrders = make(map[string]map[string][]*model.Order)
@@ -50,61 +88,45 @@ func initRefreshOrders(refreshOrders *RefreshOrders, market, symbol, orderSide s
 		if refreshOrders.bidOrders[market][symbol] == nil {
 			refreshOrders.bidOrders[market][symbol] = make([]*model.Order, 0)
 		}
+		refreshOrders.bidOrders[order.Market][order.Symbol] =
+			append(refreshOrders.bidOrders[order.Market][order.Symbol], order)
 	}
-	if refreshOrders.lastAsk == nil {
-		refreshOrders.lastAsk = make(map[string]map[string]*model.Order)
-		if refreshOrders.lastAsk[market] == nil {
-			refreshOrders.lastAsk[market] = make(map[string]*model.Order)
-		}
-	}
-	if refreshOrders.lastBid == nil {
-		refreshOrders.lastBid = make(map[string]map[string]*model.Order)
-		if refreshOrders.lastBid[market] == nil {
-			refreshOrders.lastBid[market] = make(map[string]*model.Order)
-		}
-	}
-}
-
-func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
-	initRefreshOrders(refreshOrders, order.Market, order.Symbol, order.OrderSide)
 	if orderSide == model.OrderSideSell {
-		refreshOrders.lastAsk[market][symbol] = order
+		if refreshOrders.askOrders == nil {
+			refreshOrders.askOrders = make(map[string]map[string][]*model.Order)
+		}
+		if refreshOrders.askOrders[market] == nil {
+			refreshOrders.askOrders[market] = make(map[string][]*model.Order)
+		}
+		if refreshOrders.askOrders[market][symbol] == nil {
+			refreshOrders.askOrders[market][symbol] = make([]*model.Order, 0)
+		}
+		refreshOrders.askOrders[order.Market][order.Symbol] =
+			append(refreshOrders.askOrders[order.Market][order.Symbol], order)
 	}
-	if orderSide == model.OrderSideBuy {
-		refreshOrders.lastBid[market][symbol] = order
-	}
-}
-
-func (refreshOrders *RefreshOrders) GetLastOrder(market, symbol, orderSide string) (lastOrder *model.Order) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
-	initRefreshOrders(refreshOrders, market, symbol, orderSide)
-	if orderSide == model.OrderSideSell {
-		return refreshOrders.lastAsk[market][symbol]
-	}
-	if orderSide == model.OrderSideBuy {
-		return refreshOrders.lastBid[market][symbol]
-	}
-	return nil
-}
-
-func (refreshOrders *RefreshOrders) Add(order *model.Order) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
-	initRefreshOrders(refreshOrders, order.Market, order.Symbol, order.OrderSide)
-	refreshOrders.askOrders[order.Market][order.Symbol] =
-		append(refreshOrders.askOrders[order.Market][order.Symbol], order)
-	refreshOrders.bidOrders[order.Market][order.Symbol] =
-		append(refreshOrders.bidOrders[order.Market][order.Symbol], order)
 }
 
 func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, bidPrice, askPrice float64) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
-	initRefreshOrders(refreshOrders, market, symbol, model.OrderSideBuy)
-	initRefreshOrders(refreshOrders, market, symbol, model.OrderSideSell)
+	if refreshOrders.askOrders == nil {
+		refreshOrders.askOrders = make(map[string]map[string][]*model.Order)
+	}
+	if refreshOrders.askOrders[market] == nil {
+		refreshOrders.askOrders[market] = make(map[string][]*model.Order)
+	}
+	if refreshOrders.askOrders[market][symbol] == nil {
+		refreshOrders.askOrders[market][symbol] = make([]*model.Order, 0)
+	}
+	if refreshOrders.bidOrders == nil {
+		refreshOrders.bidOrders = make(map[string]map[string][]*model.Order)
+	}
+	if refreshOrders.bidOrders[market] == nil {
+		refreshOrders.bidOrders[market] = make(map[string][]*model.Order)
+	}
+	if refreshOrders.bidOrders[market][symbol] == nil {
+		refreshOrders.bidOrders[market][symbol] = make([]*model.Order, 0)
+	}
 	bidOrders := make([]*model.Order, 0)
 	askOrders := make([]*model.Order, 0)
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
@@ -139,14 +161,14 @@ var ProcessRefresh = func(market, symbol string) {
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
 	if leftAccount == nil {
 		util.Notice(`nil account ` + market + currencies[0])
-		//go getAccount()
+		api.RefreshAccount(market)
 		return
 	}
 	leftBalance := leftAccount.Free
 	rightAccount := model.AppAccounts.GetAccount(market, currencies[1])
 	if rightAccount == nil {
 		util.Notice(`nil account ` + market + currencies[1])
-		//go getAccount()
+		api.RefreshAccount(market)
 		return
 	}
 	rightBalance := rightAccount.Free
@@ -209,7 +231,7 @@ var ProcessRefresh = func(market, symbol string) {
 func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) {
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	order.Function = model.FunctionRefresh
-	refreshOrders.Add(order)
+	refreshOrders.Add(market, symbol, orderSide, order)
 	refreshOrders.SetLastOrder(market, symbol, orderSide, order)
 	model.AppDB.Save(order)
 	syncRefresh <- struct{}{}
