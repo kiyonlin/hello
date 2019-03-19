@@ -63,8 +63,8 @@ func renderOrder() {
 	timeLine := util.GetNow().Add(d)
 	rows, _ := model.AppDB.Table("orders").Select(`symbol, date(created_at), count(id), order_side, 
 		round(sum(deal_amount*deal_price),4), round(sum(deal_amount*deal_price)/sum(deal_amount),8)`).
-		Where(`date(created_at) > ?`, timeLine).Group(`symbol, date(created_at), order_side, function`).
-		Order(`date(created_at) desc`).Rows()
+		Where(`date(created_at) > ? and function = ?`, timeLine, `grid`).
+		Group(`symbol, date(created_at), order_side`).Order(`date(created_at) desc`).Rows()
 	defer rows.Close()
 	orderTimes := make([]string, 0)
 	orders := make(map[string]map[string]map[string][]float64) // date - symbol - orderSide - [count, amount, price]
