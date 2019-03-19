@@ -6,7 +6,10 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"math/rand"
 	"strings"
+	"sync"
+	"time"
 )
 
 // fcoin:// 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
@@ -14,36 +17,119 @@ import (
 var bidAskTimes int64
 var processing = false
 var refreshing = false
-var snycRefresh = make(chan interface{}, 10)
-var refreshLastBid, refreshLastAsk *model.Order
+var syncRefresh = make(chan interface{}, 10)
+var refreshOrders = &RefreshOrders{}
+
+type RefreshOrders struct {
+	lock      sync.Mutex
+	bidOrders map[string]map[string][]*model.Order // market - symbol - orders
+	askOrders map[string]map[string][]*model.Order // market - symbol - orders
+	lastBid   map[string]map[string]*model.Order   // market - symbol - order
+	lastAsk   map[string]map[string]*model.Order   // market - symbol - order
+}
+
+func initRefreshOrders(refreshOrders *RefreshOrders, market, symbol, orderSide string) {
+	if orderSide == model.OrderSideSell {
+		if refreshOrders.askOrders == nil {
+			refreshOrders.askOrders = make(map[string]map[string][]*model.Order)
+		}
+		if refreshOrders.askOrders[market] == nil {
+			refreshOrders.askOrders[market] = make(map[string][]*model.Order)
+		}
+		if refreshOrders.askOrders[market][symbol] == nil {
+			refreshOrders.askOrders[market][symbol] = make([]*model.Order, 0)
+		}
+	}
+	if orderSide == model.OrderSideBuy {
+		if refreshOrders.bidOrders == nil {
+			refreshOrders.bidOrders = make(map[string]map[string][]*model.Order)
+		}
+		if refreshOrders.bidOrders[market] == nil {
+			refreshOrders.bidOrders[market] = make(map[string][]*model.Order)
+		}
+		if refreshOrders.bidOrders[market][symbol] == nil {
+			refreshOrders.bidOrders[market][symbol] = make([]*model.Order, 0)
+		}
+	}
+	if refreshOrders.lastAsk == nil {
+		refreshOrders.lastAsk = make(map[string]map[string]*model.Order)
+		if refreshOrders.lastAsk[market] == nil {
+			refreshOrders.lastAsk[market] = make(map[string]*model.Order)
+		}
+	}
+	if refreshOrders.lastBid == nil {
+		refreshOrders.lastBid = make(map[string]map[string]*model.Order)
+		if refreshOrders.lastBid[market] == nil {
+			refreshOrders.lastBid[market] = make(map[string]*model.Order)
+		}
+	}
+}
+
+func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	initRefreshOrders(refreshOrders, order.Market, order.Symbol, order.OrderSide)
+	if orderSide == model.OrderSideSell {
+		refreshOrders.lastAsk[market][symbol] = order
+	}
+	if orderSide == model.OrderSideBuy {
+		refreshOrders.lastBid[market][symbol] = order
+	}
+}
+
+func (refreshOrders *RefreshOrders) GetLastOrder(market, symbol, orderSide string) (lastOrder *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	initRefreshOrders(refreshOrders, market, symbol, orderSide)
+	if orderSide == model.OrderSideSell {
+		return refreshOrders.lastAsk[market][symbol]
+	}
+	if orderSide == model.OrderSideBuy {
+		return refreshOrders.lastBid[market][symbol]
+	}
+	return nil
+}
+
+func (refreshOrders *RefreshOrders) Add(order *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	initRefreshOrders(refreshOrders, order.Market, order.Symbol, order.OrderSide)
+	refreshOrders.askOrders[order.Market][order.Symbol] =
+		append(refreshOrders.askOrders[order.Market][order.Symbol], order)
+	refreshOrders.bidOrders[order.Market][order.Symbol] =
+		append(refreshOrders.bidOrders[order.Market][order.Symbol], order)
+}
+
+func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, bidPrice, askPrice float64) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	initRefreshOrders(refreshOrders, market, symbol, model.OrderSideBuy)
+	initRefreshOrders(refreshOrders, market, symbol, model.OrderSideSell)
+	bidOrders := make([]*model.Order, 0)
+	askOrders := make([]*model.Order, 0)
+	for _, value := range refreshOrders.bidOrders[market][symbol] {
+		if value.Price < bidPrice {
+			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+		} else if value.Price == bidPrice {
+			bidOrders = append(bidOrders, value)
+		}
+	}
+	for _, value := range refreshOrders.askOrders[market][symbol] {
+		if value.Price > askPrice {
+			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+		} else if value.Price == askPrice {
+			askOrders = append(askOrders, value)
+		}
+	}
+	refreshOrders.bidOrders[market][symbol] = bidOrders
+	refreshOrders.askOrders[market][symbol] = askOrders
+}
 
 func setRefreshing(value bool) {
 	refreshing = value
 }
 
-//func placeExtraSell(carry *model.Carry) {
-//	account := model.AppAccounts.GetAccount(model.Fcoin, `ft`)
-//	if account == nil {
-//		util.Notice(`[额外卖单-nil account]`)
-//	} else {
-//		util.Notice(fmt.Sprintf(`[额外卖单]%f - %f`, account.Free, model.AppConfig.FtMax))
-//	}
-//	if account != nil && account.Free > model.AppConfig.FtMax {
-//		pricePrecision := util.GetPrecision(carry.BidPrice)
-//		if pricePrecision > api.GetPriceDecimal(model.Fcoin, carry.AskSymbol) {
-//			pricePrecision = api.GetPriceDecimal(model.Fcoin, carry.AskSymbol)
-//		}
-//		price := carry.BidPrice * 0.999
-//		amount := carry.Amount * model.AppConfig.SellRate
-//		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit,
-//			model.GetMarkets()[0], carry.AskSymbol, ``, price, amount)
-//		//orderId, errCode, msg, _, _ := orde
-//		util.Notice(fmt.Sprintf(`[额外卖单]%s 价格: %f 数量: %f 返回 %s %s %s`,
-//			carry.AskSymbol, price, amount, order.OrderId, order.ErrCode, order.Status))
-//	}
-//}
-
-var ProcessRefresh func(market string, symbol string) = func(market, symbol string) {
+var ProcessRefresh = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing {
 		return
 	}
@@ -97,51 +183,34 @@ var ProcessRefresh func(market string, symbol string) = func(market, symbol stri
 		api.RefreshAccount(market)
 		//rebalance(leftAccount, rightAccount, carry)
 	}
-	if refreshLastBid == nil || refreshLastAsk == nil ||
-		bidPrice < refreshLastBid.Price || askPrice > refreshLastAsk.Price {
-		refreshLastBid = nil
-		refreshLastAsk = nil
-		go placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
-		go placeRefreshOrder(model.OrderSideBuy, market, symbol, price, amount)
-		for true {
-			<-snycRefresh
-			if refreshLastBid != nil && refreshLastAsk != nil {
-				if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
-					api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
-					refreshLastBid = nil
-					refreshLastAsk = nil
-				}
-				if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
-					api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
-					refreshLastBid = nil
-					refreshLastAsk = nil
-				}
-				if refreshLastAsk.Status == model.CarryStatusFail && refreshLastBid.Status == model.CarryStatusFail {
-					refreshLastBid = nil
-					refreshLastAsk = nil
-				}
-				break
+	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
+	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
+	go placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
+	go placeRefreshOrder(model.OrderSideBuy, market, symbol, price, amount)
+	for true {
+		<-syncRefresh
+		refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
+		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
+		if refreshLastBid != nil && refreshLastAsk != nil {
+			if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
+				api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
+			} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
+				api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
+			} else if refreshLastAsk.Status == model.CarryStatusFail && refreshLastBid.Status == model.CarryStatusFail {
 			}
-		}
-	} else {
-		if bidPrice > refreshLastBid.Price || askPrice < refreshLastAsk.Price {
-			api.CancelOrder(market, symbol, refreshLastAsk.OrderId)
-			api.CancelOrder(market, symbol, refreshLastBid.OrderId)
-			refreshLastBid = nil
-			refreshLastAsk = nil
+			break
 		}
 	}
+	time.Sleep(time.Millisecond *
+		time.Duration(rand.Int63n(model.AppConfig.WaitRefreshRandom)+model.AppConfig.OrderWait))
+	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
 }
 
 func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) {
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	order.Function = model.FunctionRefresh
-	if orderSide == model.OrderSideBuy {
-		refreshLastBid = order
-	}
-	if orderSide == model.OrderSideSell {
-		refreshLastAsk = order
-	}
+	refreshOrders.Add(order)
+	refreshOrders.SetLastOrder(market, symbol, orderSide, order)
 	model.AppDB.Save(order)
-	snycRefresh <- struct{}{}
+	syncRefresh <- struct{}{}
 }
