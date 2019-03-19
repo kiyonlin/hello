@@ -58,27 +58,25 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[maker price crash]%f - %f`, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price))
 		return
 	}
-	if lastMaker == nil {
-		lastMaker = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, price, amount)
-	} else {
-		orderSide := ``
-		if lastMaker.OrderSide == model.OrderSideSell {
-			orderSide = model.OrderSideBuy
-		} else if lastMaker.OrderSide == model.OrderSideBuy {
-			orderSide = model.OrderSideSell
-		}
-		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
-		time.Sleep(time.Millisecond * 500)
-		lastMaker = api.QueryOrderById(market, symbol, lastMaker.OrderId)
-		if lastMaker != nil {
-			if lastMaker.Status == model.CarryStatusWorking {
-				api.CancelOrder(market, symbol, lastMaker.OrderId)
-			}
-			lastMaker.Function = model.FunctionMaker
-			model.AppDB.Save(lastMaker)
-		}
-		lastMaker = order
+	orderSide := model.OrderSideBuy
+	if lastMaker != nil && lastMaker.OrderSide == model.OrderSideBuy {
+		orderSide = model.OrderSideSell
 	}
+	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	if order == nil {
+		return
+	}
+	time.Sleep(time.Millisecond * 500)
+	tempOrder := api.QueryOrderById(market, symbol, lastMaker.OrderId)
+	if tempOrder != nil {
+		order = tempOrder
+	}
+	if order.Status == model.CarryStatusWorking {
+		api.CancelOrder(market, symbol, lastMaker.OrderId)
+	}
+	order.Function = model.FunctionMaker
+	lastMaker = order
+	model.AppDB.Save(lastMaker)
 	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.WaitMaker))
 	orderCount++
 	if orderCount%30 == 0 {
