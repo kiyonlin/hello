@@ -132,14 +132,14 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
 		if value.Price < bidPrice {
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
-		} else if value.Price == bidPrice {
+		} else if value.Price >= bidPrice {
 			bidOrders = append(bidOrders, value)
 		}
 	}
 	for _, value := range refreshOrders.askOrders[market][symbol] {
 		if value.Price > askPrice {
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
-		} else if value.Price == askPrice {
+		} else if value.Price >= askPrice {
 			askOrders = append(askOrders, value)
 		}
 	}
@@ -182,7 +182,6 @@ var ProcessRefresh = func(market, symbol string) {
 	bidAmount := model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount
 	askAmount := model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount
 	price := (bidPrice + askPrice) / 2
-	util.Notice(fmt.Sprintf(`[%s] %f - %f`, symbol, leftBalance, rightBalance))
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.5 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	if (price-bidPrice) < priceDistance || (askPrice-price) < priceDistance {
@@ -200,11 +199,7 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 	}
-	bidAskTimes++
-	if bidAskTimes%7 == 0 {
-		api.RefreshAccount(market)
-		//rebalance(leftAccount, rightAccount, carry)
-	}
+	util.Notice(fmt.Sprintf(`[%s] %f - %f`, symbol, leftBalance, rightBalance))
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 	go placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
@@ -226,6 +221,11 @@ var ProcessRefresh = func(market, symbol string) {
 	time.Sleep(time.Millisecond *
 		time.Duration(rand.Int63n(model.AppConfig.WaitRefreshRandom)+model.AppConfig.OrderWait))
 	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
+	bidAskTimes++
+	if bidAskTimes%7 == 0 {
+		api.RefreshAccount(market)
+		//rebalance(leftAccount, rightAccount, carry)
+	}
 }
 
 func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) {
