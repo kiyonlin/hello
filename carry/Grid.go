@@ -143,6 +143,11 @@ var ProcessGrid = func(market, symbol string) {
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
 		return
 	}
+	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	if delay > 50 {
+		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
+		return
+	}
 	if grid.sellOrder == nil || grid.buyOrder == nil {
 		placeGridOrders(market, symbol, bidAsk)
 		for true {

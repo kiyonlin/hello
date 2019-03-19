@@ -58,6 +58,11 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[maker price crash]%f - %f`, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price))
 		return
 	}
+	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	if delay > 50 {
+		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
+		return
+	}
 	orderSide := model.OrderSideBuy
 	if lastMaker != nil && lastMaker.OrderSide == model.OrderSideBuy {
 		orderSide = model.OrderSideSell

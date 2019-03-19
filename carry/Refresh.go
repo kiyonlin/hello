@@ -199,9 +199,14 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 	}
-	util.Notice(fmt.Sprintf(`[%s] %f - %f`, symbol, leftBalance, rightBalance))
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
+	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	if delay > 50 {
+		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
+		return
+	}
+	util.Notice(fmt.Sprintf(`[%s] %f - %f delay %d`, symbol, leftBalance, rightBalance, delay))
 	go placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
 	go placeRefreshOrder(model.OrderSideBuy, market, symbol, price, amount)
 	for true {
