@@ -185,15 +185,17 @@ var ProcessRefresh = func(market, symbol string) {
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.5 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	if (price-bidPrice) < priceDistance || (askPrice-price) < priceDistance {
+		util.Notice(fmt.Sprintf(`[price distance] price:[%f > %f > %f] amount:[%f - %f - %f]`,
+			askPrice, price, bidPrice, askAmount, amount, bidAmount))
 		if askAmount > bidAmount {
 			price = bidPrice
-			if bidAmount*10 > amount {
+			if bidAmount*20 > amount {
 				util.Notice(fmt.Sprintf(`[refresh crash]bid:%f - %f`, bidAmount, amount))
 				return
 			}
 		} else {
 			price = askPrice
-			if askAmount*10 > amount {
+			if askAmount*20 > amount {
 				util.Notice(fmt.Sprintf(`[refresh crash]ask:%f - %f`, askAmount, amount))
 				return
 			}
@@ -203,7 +205,7 @@ var ProcessRefresh = func(market, symbol string) {
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	if delay > 50 {
-		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
+		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
 	util.Notice(fmt.Sprintf(`[%s] %f - %f delay %d`, symbol, leftBalance, rightBalance, delay))
