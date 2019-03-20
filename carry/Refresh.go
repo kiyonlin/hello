@@ -184,6 +184,7 @@ var ProcessRefresh = func(market, symbol string) {
 	price := (bidPrice + askPrice) / 2
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
 		if askAmount > bidAmount {
 			price = bidPrice
@@ -198,6 +199,8 @@ var ProcessRefresh = func(market, symbol string) {
 				return
 			}
 		}
+	} else if setting.FunctionParameter == model.FunRefreshSide {
+		return
 	}
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)

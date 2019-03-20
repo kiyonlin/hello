@@ -11,6 +11,7 @@ type Setting struct {
 	Function          string
 	Market            string
 	Symbol            string
+	FunctionParameter string
 	Margin            float64 // carry use
 	OpenShortMargin   float64 // arbitrary future use
 	CloseShortMargin  float64 // arbitrary future use
