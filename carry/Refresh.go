@@ -184,7 +184,7 @@ var ProcessRefresh = func(market, symbol string) {
 	price := (bidPrice + askPrice) / 2
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.5 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	if (price-bidPrice) < priceDistance || (askPrice-price) < priceDistance {
+	if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
 		util.Notice(fmt.Sprintf(`[price distance] price:[%f > %f > %f] amount:[%f - %f - %f]`,
 			askPrice, price, bidPrice, askAmount, amount, bidAmount))
 		if askAmount > bidAmount {
