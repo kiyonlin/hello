@@ -46,7 +46,7 @@ const FunctionBalanceTurtle = `balanceturtle`
 const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`
 
-//const FunRefreshMiddle = `refresh_parameter_middle`
+const FunRefreshMiddle = `refresh_parameter_middle`
 const FunRefreshSide = `refresh_parameter_side`
 
 var AppDB *gorm.DB

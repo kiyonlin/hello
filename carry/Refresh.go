@@ -151,6 +151,36 @@ func setRefreshing(value bool) {
 	refreshing = value
 }
 
+func getSidePrice(market, symbol string, amount, priceDistance float64) (price float64) {
+	totalAmount := 0.0
+	ticks := model.AppMarkets.BidAsks[symbol][market].Bids
+	side := model.OrderSideBuy
+	if model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount > model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount {
+		ticks = model.AppMarkets.BidAsks[symbol][market].Asks
+		side = model.OrderSideSell
+	}
+	for _, tick := range ticks {
+		totalAmount += tick.Amount
+		if totalAmount > amount*0.01 {
+			if totalAmount < amount*0.03 {
+				price = tick.Price
+			} else {
+				if side == model.OrderSideSell {
+					price = tick.Price - priceDistance
+				} else if side == model.OrderSideBuy {
+					price = tick.Price + priceDistance
+				}
+			}
+			break
+		}
+	}
+	if side == model.OrderSideBuy {
+		return math.Max(price, ticks[0].Price*0.9998)
+	} else {
+		return math.Min(price, ticks[0].Price*1.0002)
+	}
+}
+
 var ProcessRefresh = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing {
 		return
@@ -186,18 +216,22 @@ var ProcessRefresh = func(market, symbol string) {
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
-		if askAmount > bidAmount {
-			price = bidPrice
-			if bidAmount*20 > amount {
-				util.Notice(fmt.Sprintf(`[refresh crash]bid:%f - %f`, bidAmount, amount))
-				return
+		if setting.FunctionParameter == model.FunRefreshMiddle {
+			if askAmount > bidAmount {
+				price = bidPrice
+				if bidAmount*20 > amount {
+					util.Notice(fmt.Sprintf(`[refresh crash]bid:%f - %f`, bidAmount, amount))
+					return
+				}
+			} else {
+				price = askPrice
+				if askAmount*20 > amount {
+					util.Notice(fmt.Sprintf(`[refresh crash]ask:%f - %f`, askAmount, amount))
+					return
+				}
 			}
-		} else {
-			price = askPrice
-			if askAmount*20 > amount {
-				util.Notice(fmt.Sprintf(`[refresh crash]ask:%f - %f`, askAmount, amount))
-				return
-			}
+		} else if setting.FunctionParameter == model.FunRefreshSide {
+			price = getSidePrice(market, symbol, amount, priceDistance)
 		}
 	} else if setting.FunctionParameter == model.FunRefreshSide {
 		return
