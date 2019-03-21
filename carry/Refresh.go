@@ -162,7 +162,7 @@ func getSidePrice(market, symbol string, amount, priceDistance float64) (price f
 	for _, tick := range ticks {
 		totalAmount += tick.Amount
 		if totalAmount > amount*0.001 {
-			if totalAmount < amount*0.03 {
+			if totalAmount < amount*0.02 {
 				price = tick.Price
 			} else {
 				if side == model.OrderSideSell {
@@ -231,8 +231,8 @@ var ProcessRefresh = func(market, symbol string) {
 				}
 			}
 		} else if setting.FunctionParameter == model.FunRefreshSide {
-			amount003 := amount * 0.03
-			if (amount003 > bidAmount && amount003 > askAmount) || (amount003 < askAmount && amount003 < bidAmount) {
+			amount002 := amount * 0.02
+			if (amount002 > bidAmount && amount002 > askAmount) || (amount002 < askAmount && amount002 < bidAmount) {
 				return
 			}
 			price = getSidePrice(market, symbol, amount, priceDistance)
