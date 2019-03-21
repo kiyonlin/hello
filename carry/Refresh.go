@@ -161,7 +161,7 @@ func getSidePrice(market, symbol string, amount, priceDistance float64) (price f
 	}
 	for _, tick := range ticks {
 		totalAmount += tick.Amount
-		if totalAmount > amount*0.005 {
+		if totalAmount > amount*0.001 {
 			if totalAmount < amount*0.03 {
 				price = tick.Price
 			} else {
