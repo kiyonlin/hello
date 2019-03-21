@@ -1,7 +1,7 @@
 port: 80
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
-amountrate: 0.2
+amountrate: 0.05
 makeramountrate: 0.05
 orderwait: 1000
 delay: 10000 #按照毫秒计算时间差
@@ -18,7 +18,7 @@ handlerefresh: 1
 handlegrid: 1
 waitrefreshrandom: 4000
 waitmaker: 1000
-dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=mydb password=dbuser sslmode=disable
+dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
 env: dk
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
@@ -35,11 +35,11 @@ okexsecret: FA268A0824C7988E366435F82EF6BAC6
 binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
 binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
 #dk fcoin
-#fcoinkey: 1101ff04791e44ff88a4d77e74270443
-#fcoinsecret: 0cea49360e6f45a8978a9c62578f9c6b
+fcoinkey: 1101ff04791e44ff88a4d77e74270443
+fcoinsecret: 0cea49360e6f45a8978a9c62578f9c6b
 #dk2 fcoin
-fcoinkey: faf6298d2772400eb3dc814329981313
-fcoinsecret: a426fa5eb5764838bd86897abdc5a212
+#fcoinkey: faf6298d2772400eb3dc814329981313
+#fcoinsecret: a426fa5eb5764838bd86897abdc5a212
 # simon fcoin
 #fcoinkey: b4f28ad197c64cdbb072328b37c654bd
 #fcoinsecret: 588dd6887ac14629bd6e7653d7952938

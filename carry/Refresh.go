@@ -231,6 +231,10 @@ var ProcessRefresh = func(market, symbol string) {
 				}
 			}
 		} else if setting.FunctionParameter == model.FunRefreshSide {
+			amount003 := amount * 0.03
+			if (amount003 > bidAmount && amount003 > askAmount) || (amount003 < askAmount && amount003 < bidAmount) {
+				return
+			}
 			price = getSidePrice(market, symbol, amount, priceDistance)
 		}
 	} else if setting.FunctionParameter == model.FunRefreshSide {
