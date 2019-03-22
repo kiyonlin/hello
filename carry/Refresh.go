@@ -19,6 +19,7 @@ var processing = false
 var refreshing = false
 var syncRefresh = make(chan interface{}, 10)
 var refreshOrders = &RefreshOrders{}
+var lastCancelTime = util.GetNowUnixMillion()
 
 type RefreshOrders struct {
 	lock      sync.Mutex
@@ -131,6 +132,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	askOrders := make([]*model.Order, 0)
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
 		if value.Price < bidPrice {
+			util.Info(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 		} else if value.Price >= bidPrice {
 			bidOrders = append(bidOrders, value)
@@ -138,6 +140,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	}
 	for _, value := range refreshOrders.askOrders[market][symbol] {
 		if value.Price > askPrice {
+			util.Info(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 		} else if value.Price <= askPrice {
 			askOrders = append(askOrders, value)
@@ -264,9 +267,12 @@ var ProcessRefresh = func(market, symbol string) {
 			break
 		}
 	}
+	if util.GetNowUnixMillion()-lastCancelTime > 7000 {
+		go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
+		lastCancelTime = util.GetNowUnixMillion()
+	}
 	time.Sleep(time.Millisecond *
 		time.Duration(rand.Int63n(model.AppConfig.WaitRefreshRandom)+model.AppConfig.OrderWait))
-	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
 	bidAskTimes++
 	if bidAskTimes%7 == 0 {
 		api.RefreshAccount(market)

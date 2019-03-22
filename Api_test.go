@@ -7,7 +7,6 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"math/rand"
 	"sort"
 	"testing"
 	"time"
@@ -77,9 +76,7 @@ func Test_Api(t *testing.T) {
 
 func Test_array(t *testing.T) {
 
-	random := rand.Int63n(6000)
-	fmt.Println(random)
-	time.Sleep(time.Millisecond * time.Duration(random+model.AppConfig.OrderWait))
+	fmt.Println(util.GetNowUnixMillion())
 
 	testMap := make(map[string]string)
 	testMap[`1`] = `one`
