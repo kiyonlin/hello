@@ -33,6 +33,22 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 	return err
 }
 
+func WsDealServeFcoin(errHandler ErrHandler) (chan struct{}, error) {
+	wsHandler := func(event []byte, conn *websocket.Conn) {
+		responseJson, err := util.NewJSON(event)
+		if err != nil {
+			errHandler(err)
+			return
+		}
+		if responseJson == nil {
+			return
+		}
+
+	}
+	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE],
+		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
+}
+
 func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		responseJson, err := util.NewJSON(event)

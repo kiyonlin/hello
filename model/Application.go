@@ -407,3 +407,7 @@ func GetDepthSubscribes(marketName string) []string {
 	}
 	return subscribes
 }
+
+func GetDealInfoSubscribes(market string) {
+
+}
