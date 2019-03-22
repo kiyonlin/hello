@@ -18,6 +18,7 @@ import (
 
 var fcoinLastApiAccessTime = util.GetNow()
 var fcoinLock sync.Mutex
+var lastPingFcoin = util.GetNowUnixMillion()
 
 var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) error {
 	var err error = nil
@@ -41,6 +42,12 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 		}
 		if responseJson == nil {
 			return
+		}
+		if util.GetNowUnixMillion()-lastPingFcoin > 30000 {
+			pingMsg := []byte(fmt.Sprintf(`{"cmd":"ping","args":[%d],"id":"id"}`, util.GetNowUnixMillion()))
+			if err := conn.WriteMessage(websocket.TextMessage, pingMsg); err != nil {
+				util.SocketInfo("fcoin server ping client error " + err.Error())
+			}
 		}
 		symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
 		symbolSettings := model.GetMarketSettings(model.Fcoin)
