@@ -19,6 +19,14 @@ type KLinePoint struct {
 	RSIExpectSell float64
 }
 
+type Deal struct {
+	Ts     int
+	Amount float64
+	Id     string
+	Side   string
+	Price  float64
+}
+
 type BidAsk struct {
 	Ts   int
 	Bids Ticks
@@ -31,13 +39,16 @@ type Rule struct {
 }
 
 type Markets struct {
-	lock     sync.Mutex
-	BidAsks  map[string]map[string]*BidAsk // symbol - market - bidAsk
-	marketWS map[string][]chan struct{}    // marketName - channel
+	lock    sync.Mutex
+	BidAsks map[string]map[string]*BidAsk // symbol - market - bidAsk
+	Deals   map[string]map[string][]Deal  // symbol - market - []Deal
+	wsDepth map[string][]chan struct{}    // market - []depth channel
+	wsDeal  map[string]chan struct{}      // market - deal channel
 }
 
 func NewMarkets() *Markets {
-	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), marketWS: make(map[string][]chan struct{})}
+	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{}),
+		wsDeal: make(map[string]chan struct{})}
 }
 
 func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidAsk) bool {
@@ -90,40 +101,6 @@ func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rig
 		AskTime: now}, nil
 }
 
-//func (markets *Markets) NewTurtleCarry(market, symbol string) (*Carry, error) {
-//	if markets.BidAsks[symbol] == nil {
-//		return nil, errors.New("no market data " + symbol)
-//	}
-//	setting := GetSetting(market, symbol)
-//	if setting == nil {
-//		return nil, errors.New(fmt.Sprintf(`no setting`))
-//	}
-//	bidAsks := markets.BidAsks[symbol][market]
-//	var bidPrice, askPrice, bidAmount, askAmount float64
-//	turtleStatus := GetTurtleStatus(market, symbol)
-//	if turtleStatus != nil && turtleStatus.LastDealPrice != 0{
-//		util.Notice(fmt.Sprintf(`get status when creating turtle extra bid %f - extra ask %f price %f`,
-//			turtleStatus.ExtraBid, turtleStatus.ExtraAsk, turtleStatus.LastDealPrice))
-//		bidPrice = turtleStatus.LastDealPrice - setting.TurtlePriceWidth
-//		askPrice = turtleStatus.LastDealPrice + setting.TurtlePriceWidth
-//		bidAmount = setting.TurtleLeftAmount - turtleStatus.ExtraBid
-//		askAmount = setting.TurtleLeftAmount - turtleStatus.ExtraAsk
-//	} else {
-//		bidPrice = bidAsks.Asks[0].Price - setting.TurtlePriceWidth
-//		askPrice = bidAsks.Asks[0].Price + setting.TurtlePriceWidth
-//		bidAmount = setting.TurtleLeftAmount
-//		askAmount = setting.TurtleLeftAmount
-//	}
-//	strBidAmount := strconv.FormatFloat(bidAmount, 'f', 2, 64)
-//	strAskAmount := strconv.FormatFloat(askAmount, 'f', 2, 64)
-//	bidAmount, _ = strconv.ParseFloat(strBidAmount, 64)
-//	askAmount, _ = strconv.ParseFloat(strAskAmount, 64)
-//	carry := Carry{AskWeb: market, BidWeb: market, Symbol: symbol, BidAmount: bidAmount, AskAmount: askAmount,
-//		Amount: setting.TurtleLeftAmount, BidPrice: bidPrice, AskPrice: askPrice, DealBidStatus: CarryStatusWorking,
-//		DealAskStatus: CarryStatusWorking, BidTime: int64(bidAsks.Ts), AskTime: int64(bidAsks.Ts), SideType: CarryTypeTurtle}
-//	return &carry, nil
-//}
-
 func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	if markets.BidAsks[symbol] == nil {
 		return nil, errors.New("no market data " + symbol)
@@ -164,28 +141,37 @@ func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	return &carry, nil
 }
 
-func (markets *Markets) GetChan(marketName string, index int) chan struct{} {
+func (markets *Markets) GetDepthChan(marketName string, index int) chan struct{} {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	if markets.marketWS[marketName] == nil {
-		markets.marketWS[marketName] = make([]chan struct{}, AppConfig.Channels)
+	if markets.wsDepth[marketName] == nil {
+		markets.wsDepth[marketName] = make([]chan struct{}, AppConfig.Channels)
 	}
-	return markets.marketWS[marketName][index]
+	return markets.wsDepth[marketName][index]
 }
 
-func (markets *Markets) PutChan(marketName string, index int, channel chan struct{}) {
+func (markets *Markets) GetDealChan(market string) chan struct{} {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	//if channel != nil {
-	//	util.SocketInfo(" set channel for " + marketName)
-	//}
-	if markets.marketWS[marketName] == nil {
-		markets.marketWS[marketName] = make([]chan struct{}, AppConfig.Channels)
-	}
-	markets.marketWS[marketName][index] = channel
+	return markets.wsDeal[market]
 }
 
-func (markets *Markets) RequireChanReset(marketName string, subscribe string) bool {
+func (markets *Markets) PutDealChan(market string, channel chan struct{}) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	markets.wsDeal[market] = channel
+}
+
+func (markets *Markets) PutDepthChan(marketName string, index int, channel chan struct{}) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.wsDepth[marketName] == nil {
+		markets.wsDepth[marketName] = make([]chan struct{}, AppConfig.Channels)
+	}
+	markets.wsDepth[marketName][index] = channel
+}
+
+func (markets *Markets) RequireDepthChanReset(marketName string, subscribe string) bool {
 	//util.SocketInfo(marketName + ` start to check require chan reset or not`)
 	symbol := GetSymbol(marketName, subscribe)
 	bidAsks := markets.BidAsks[symbol]
@@ -193,6 +179,20 @@ func (markets *Markets) RequireChanReset(marketName string, subscribe string) bo
 		bidAsk := bidAsks[marketName]
 		if bidAsk != nil {
 			if math.Abs(float64(util.GetNowUnixMillion()-int64(bidAsk.Ts))) < AppConfig.Delay {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (markets *Markets) RequireDealChanReset(market string, subscribe string) bool {
+	symbol := GetSymbol(market, subscribe)
+	deals := markets.Deals[symbol]
+	if deals != nil {
+		deal := deals[market]
+		if deal != nil && len(deal) > 0 {
+			if float64(util.GetNowUnixMillion()-int64(deal[0].Ts)) < AppConfig.Delay {
 				return false
 			}
 		}

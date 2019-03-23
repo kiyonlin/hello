@@ -114,7 +114,7 @@ func WsDepthServeBitmex(errHandler ErrHandler) (chan struct{}, error) {
 		//}
 	}
 	return WebSocketServe(model.AppConfig.WSUrls[model.Bitmex],
-		model.GetDepthSubscribes(model.Bitmex), subscribeHandlerBitmex, wsHandler, errHandler)
+		model.GetWSSubscribes(model.Bitmex, model.SubscribeDepth), subscribeHandlerBitmex, wsHandler, errHandler)
 }
 
 func CancelOrderBitmex(orderId string) (result bool, errCode, msg string) {

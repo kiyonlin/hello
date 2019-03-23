@@ -146,11 +146,25 @@ func order(carry *model.Carry, orderSide, orderType, market, symbol string, pric
 //	return channel
 //}
 
-func createMarketDepthServer(markets *model.Markets, marketName string) chan struct{} {
-	util.SocketInfo(" create depth chan for " + marketName)
+func createMarketDealServer(markets *model.Markets, market string) chan struct{} {
+	util.SocketInfo(" create deal chan for " + market)
 	var channel chan struct{}
 	var err error
-	switch marketName {
+	switch market {
+	case model.Fcoin:
+		channel, err = api.WsDealServeFcoin(markets, WSErrHandler)
+	}
+	if err != nil {
+		util.SocketInfo(market + ` can not create deal server ` + err.Error())
+	}
+	return channel
+}
+
+func createMarketDepthServer(markets *model.Markets, market string) chan struct{} {
+	util.SocketInfo(" create depth chan for " + market)
+	var channel chan struct{}
+	var err error
+	switch market {
 	case model.Huobi:
 		channel, err = api.WsDepthServeHuobi(markets, WSErrHandler)
 	case model.OKEX:
@@ -169,33 +183,44 @@ func createMarketDepthServer(markets *model.Markets, marketName string) chan str
 		channel, err = api.WsDepthServeBitmex(WSErrHandler)
 	}
 	if err != nil {
-		util.SocketInfo(marketName + ` can not create server ` + err.Error())
+		util.SocketInfo(market + ` can not create depth server ` + err.Error())
 	}
 	return channel
 }
 
 var socketMaintaining = false
 
-func MaintainMarketDepthChan() {
+func MaintainMarketChan() {
 	if socketMaintaining {
 		return
 	}
 	socketMaintaining = true
-	for _, marketName := range model.GetMarkets() {
-		subscribes := model.GetDepthSubscribes(marketName)
+	for _, market := range model.GetMarkets() {
+		subscribes := model.GetWSSubscribes(market, model.SubscribeDepth)
 		for _, subscribe := range subscribes {
 			for index := 0; index < model.AppConfig.Channels; index++ {
-				channel := model.AppMarkets.GetChan(marketName, index)
+				channel := model.AppMarkets.GetDepthChan(market, index)
 				if channel == nil {
-					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets, marketName))
-					util.SocketInfo(marketName + " create new channel " + subscribe)
-				} else if model.AppMarkets.RequireChanReset(marketName, subscribe) {
-					model.AppMarkets.PutChan(marketName, index, nil)
+					model.AppMarkets.PutDepthChan(market, index, createMarketDepthServer(model.AppMarkets, market))
+					util.SocketInfo(market + " create new depth channel " + subscribe)
+				} else if model.AppMarkets.RequireDepthChanReset(market, subscribe) {
+					model.AppMarkets.PutDepthChan(market, index, nil)
 					channel <- struct{}{}
 					close(channel)
-					model.AppMarkets.PutChan(marketName, index, createMarketDepthServer(model.AppMarkets, marketName))
-					util.SocketInfo(marketName + " reset channel " + subscribe)
+					model.AppMarkets.PutDepthChan(market, index, createMarketDepthServer(model.AppMarkets, market))
+					util.SocketInfo(market + " reset depth channel " + subscribe)
 				}
+			}
+			channel := model.AppMarkets.GetDealChan(market)
+			if channel == nil {
+				model.AppMarkets.PutDealChan(market, createMarketDealServer(model.AppMarkets, market))
+				util.SocketInfo(market + " create new deal channel " + subscribe)
+			} else if model.AppMarkets.RequireDealChanReset(market, subscribe) {
+				model.AppMarkets.PutDealChan(market, nil)
+				channel <- struct{}{}
+				close(channel)
+				model.AppMarkets.PutDealChan(market, createMarketDealServer(model.AppMarkets, market))
+				util.SocketInfo(market + " reset deal channel " + subscribe)
 			}
 			break
 		}
@@ -234,7 +259,7 @@ func Maintain() {
 	//go ProcessInform()
 	//go MaintainAccountChan()
 	for true {
-		go MaintainMarketDepthChan()
+		go MaintainMarketChan()
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
 	}
 }

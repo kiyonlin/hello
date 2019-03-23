@@ -14,7 +14,8 @@ import (
 	"time"
 )
 
-var accessTime = make(map[string]int64)
+//var accessTime = make(map[string]int64)
+var codeGenTime int64
 var code = ``
 var data = make(map[string]interface{})
 var dataUpdateTime *time.Time
@@ -32,14 +33,12 @@ func ParameterServe() {
 }
 
 func GetCode(c *gin.Context) {
-	ip := c.Request.RemoteAddr
-	ipTime := accessTime[ip]
-	waitTime := (util.GetNowUnixMillion() - ipTime) / 1000
+	waitTime := (util.GetNowUnixMillion() - codeGenTime) / 1000
 	if waitTime < 30 {
 		waitTime = 30 - waitTime
-		c.String(http.StatusOK, fmt.Sprintf(`ip %s 还要等待 %d 秒才能再次发送`, ip, waitTime))
+		c.String(http.StatusOK, fmt.Sprintf(`还要等待 %d 秒才能再次发送`, waitTime))
 	} else {
-		accessTime[ip] = util.GetNowUnixMillion()
+		codeGenTime = util.GetNowUnixMillion()
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 		rnd = rand.New(rand.NewSource(rnd.Int63()))
 		code = fmt.Sprintf("%06v", rnd.Int31n(1000000))
@@ -183,11 +182,10 @@ func SetParameters(c *gin.Context) {
 			c.String(http.StatusOK, `验证码错误`)
 			return
 		}
-		ip := c.Request.RemoteAddr
-		ipTime := accessTime[ip]
-		waitTime := (util.GetNowUnixMillion() - ipTime) / 1000
+		waitTime := (util.GetNowUnixMillion() - codeGenTime) / 1000
 		if waitTime > 300 {
-			c.String(http.StatusOK, `验证码有效时间300秒，已超`)
+			c.String(http.StatusOK, fmt.Sprintf(`验证码有效时间300秒，已超%d - %d > 300000`,
+				util.GetNowUnixMillion(), codeGenTime))
 			return
 		}
 		code = ``

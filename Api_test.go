@@ -75,7 +75,6 @@ func Test_Api(t *testing.T) {
 }
 
 func Test_array(t *testing.T) {
-
 	pingMsg := fmt.Sprintf(`{"cmd":"ping","args":[%d],"id":"id"}`, util.GetNowUnixMillion())
 	fmt.Println(pingMsg)
 	testMap := make(map[string]string)

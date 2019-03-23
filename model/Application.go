@@ -23,6 +23,8 @@ const Coinpark = "coinpark"
 const Btcdo = `btcdo`
 const Bitmex = `bitmex`
 
+const SubscribeDepth = `SubscribeDepth`
+const SubscribeDeal = `subscribeDeal`
 const CarryStatusSuccess = "success"
 const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
@@ -188,8 +190,7 @@ func SetBalanceTurtleCarry(market, symbol string, turtleCarry *Carry) {
 	BalanceTurtleCarries[market][symbol] = turtleCarry
 }
 
-// TODO filter out unsupported symbol for each market
-func GetWSDepthSubscribe(market, symbol string) (subscribe string) {
+func getWSSubscribes(market, symbol, subType string) (subscribe string) {
 	switch market {
 	case Huobi: // xrp_btc: market.xrpbtc.depth.step0
 		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
@@ -208,8 +209,14 @@ func GetWSDepthSubscribe(market, symbol string) (subscribe string) {
 		return
 	case Binance: // xrp_btc: xrpbtc@depth5
 		return strings.ToLower(strings.Replace(symbol, "_", "", 1)) + `@depth5`
-	case Fcoin: // btc_usdt: depth.L20.btcusdt
-		return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	case Fcoin:
+		if subType == SubscribeDeal {
+			// btc_usdt: trade.btcusdt
+			return `trade.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+		} else {
+			// btc_usdt: depth.L20.btcusdt
+			return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+		}
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
 		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
 		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
@@ -397,17 +404,13 @@ func (config *Config) ToString() string {
 	return str
 }
 
-func GetDepthSubscribes(marketName string) []string {
-	settings := GetMarketSettings(marketName)
+func GetWSSubscribes(market, subType string) []string {
+	settings := GetMarketSettings(market)
 	subscribes := make([]string, len(settings))
 	i := 0
 	for symbol := range settings {
-		subscribes[i] = GetWSDepthSubscribe(marketName, symbol)
+		subscribes[i] = getWSSubscribes(market, symbol, subType)
 		i++
 	}
 	return subscribes
-}
-
-func GetDealInfoSubscribes(market string) {
-
 }

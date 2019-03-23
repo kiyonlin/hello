@@ -94,7 +94,7 @@ func WsDepthServeOkex(markets *model.Markets, errHandler ErrHandler) (chan struc
 		}
 	}
 	return WebSocketServe(model.AppConfig.WSUrls[model.OKEX],
-		model.GetDepthSubscribes(model.OKEX), subscribeHandlerOkex, wsHandler, errHandler)
+		model.GetWSSubscribes(model.OKEX, model.SubscribeDepth), subscribeHandlerOkex, wsHandler, errHandler)
 }
 
 func getSign(postData *url.Values) string {

@@ -72,11 +72,11 @@ func WsDepthServeBinance(markets *model.Markets, errHandler ErrHandler) (chan st
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Binance]
 
-	for _, subscribe := range model.GetDepthSubscribes(model.Binance) {
+	for _, subscribe := range model.GetWSSubscribes(model.Binance, model.SubscribeDepth) {
 		requestUrl += subscribe + "/"
 	}
-	return WebSocketServe(requestUrl, model.GetDepthSubscribes(model.Binance), subscribeHandlerBinance,
-		wsHandler, errHandler)
+	return WebSocketServe(requestUrl, model.GetWSSubscribes(model.Binance, model.SubscribeDepth),
+		subscribeHandlerBinance, wsHandler, errHandler)
 }
 func signBinance(postData *url.Values, secretKey string) {
 	postData.Set("recvWindow", "6000000")

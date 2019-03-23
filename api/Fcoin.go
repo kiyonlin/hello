@@ -23,7 +23,11 @@ var lastPingFcoin = util.GetNowUnixMillion()
 var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) error {
 	var err error = nil
 	subscribeMap := make(map[string]interface{})
-	subscribeMap[`cmd`] = `sub`
+	if strings.Index(subscribes[0], `depth`) == 0 {
+		subscribeMap[`cmd`] = `sub`
+	} else if strings.Index(subscribes[0], `trade`) == 0 {
+		subscribeMap[`cmd`] = `req`
+	}
 	subscribeMap[`args`] = subscribes
 	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
 	if err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
@@ -33,8 +37,12 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 	return err
 }
 
-func WsDealServeFcoin(errHandler ErrHandler) (chan struct{}, error) {
+func WsDealServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
+	recordIndex := 0
 	wsHandler := func(event []byte, conn *websocket.Conn) {
+		if recordIndex%100 == 0 {
+			util.Info(string(event))
+		}
 		responseJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -45,8 +53,9 @@ func WsDealServeFcoin(errHandler ErrHandler) (chan struct{}, error) {
 		}
 
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE],
-		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
+	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
+	return WebSocketServe(requestUrl, model.GetWSSubscribes(model.Fcoin, model.SubscribeDeal), subscribeHandlerFcoin,
+		wsHandler, errHandler)
 }
 
 func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
@@ -98,7 +107,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 		}
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
-	return WebSocketServe(requestUrl, model.GetDepthSubscribes(model.Fcoin), subscribeHandlerFcoin,
+	return WebSocketServe(requestUrl, model.GetWSSubscribes(model.Fcoin, model.SubscribeDepth), subscribeHandlerFcoin,
 		wsHandler, errHandler)
 }
 

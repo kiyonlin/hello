@@ -128,7 +128,7 @@ func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan s
 		}
 	}
 	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE],
-		model.GetDepthSubscribes(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
+		model.GetWSSubscribes(model.OKFUTURE, model.SubscribeDepth), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
 func getSymbol(contractSymbol string) (symbol string) {

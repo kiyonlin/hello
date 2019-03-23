@@ -70,7 +70,7 @@ func WsDepthServeCoinbig(markets *model.Markets, errHandler ErrHandler) (chan st
 		}
 	}
 	return WebSocketServe(model.AppConfig.WSUrls[model.Coinbig],
-		model.GetDepthSubscribes(model.Coinbig), subscribeHandlerCoinbig, wsHandler, errHandler)
+		model.GetWSSubscribes(model.Coinbig, model.SubscribeDepth), subscribeHandlerCoinbig, wsHandler, errHandler)
 }
 
 func SignedRequestCoinbig(method, path string, postData *url.Values) []byte {
