@@ -31,7 +31,7 @@ type OKEXMessage struct {
 
 var apiLastAccessTime map[string]*time.Time // url-time
 
-var subscribeHandlerOkex = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerOkex = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMap := make(map[string]interface{})
@@ -93,7 +93,7 @@ func WsDepthServeOkex(markets *model.Markets, errHandler ErrHandler) (chan struc
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.OKEX],
+	return WebSocketServe(model.AppConfig.WSUrls[model.OKEX], model.SubscribeDepth,
 		model.GetWSSubscribes(model.OKEX, model.SubscribeDepth), subscribeHandlerOkex, wsHandler, errHandler)
 }
 

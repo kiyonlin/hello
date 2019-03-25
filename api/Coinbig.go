@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-var subscribeHandlerCoinbig = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerCoinbig = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMessage := fmt.Sprintf(`{"datatype":"ALL","data":"%s"}`, v)
@@ -69,7 +69,7 @@ func WsDepthServeCoinbig(markets *model.Markets, errHandler ErrHandler) (chan st
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Coinbig],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Coinbig], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Coinbig, model.SubscribeDepth), subscribeHandlerCoinbig, wsHandler, errHandler)
 }
 

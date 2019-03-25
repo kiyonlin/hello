@@ -124,17 +124,17 @@ func LoadSettings() {
 	}
 }
 
-func GetMarketSettings(market string) map[string]*Setting {
+func GetMarketSymbols(market string) map[string]bool {
 	if AppSettings == nil {
 		LoadSettings()
 	}
-	settings := make(map[string]*Setting)
+	symbols := make(map[string]bool)
 	for _, value := range AppSettings {
 		if value.Market == market {
-			settings[value.Symbol] = &value
+			symbols[value.Symbol] = true
 		}
 	}
-	return settings
+	return symbols
 }
 
 func GetMarkets() []string {

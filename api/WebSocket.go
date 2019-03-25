@@ -7,7 +7,7 @@ import (
 )
 
 type MsgHandler func(message []byte, conn *websocket.Conn)
-type SubscribeHandler func(subscribes []string, conn *websocket.Conn) error
+type SubscribeHandler func(subscribes []interface{}, conn *websocket.Conn, subType string) error
 type ErrHandler func(err error)
 
 func newConnection(url string) (*websocket.Conn, error) {
@@ -59,7 +59,7 @@ func chanHandler(c *websocket.Conn, stopC chan struct{}, errHandler ErrHandler, 
 	}
 }
 
-func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler, msgHandler MsgHandler,
+func WebSocketServe(url, subType string, subscribes []interface{}, subHandler SubscribeHandler, msgHandler MsgHandler,
 	errHandler ErrHandler) (chan struct{}, error) {
 	c, err := newConnection(url)
 	if err != nil {
@@ -67,7 +67,7 @@ func WebSocketServe(url string, subscribes []string, subHandler SubscribeHandler
 		errHandler(err)
 		return nil, err
 	}
-	_ = subHandler(subscribes, c)
+	_ = subHandler(subscribes, c, subType)
 	stopC := make(chan struct{}, 10)
 	go chanHandler(c, stopC, errHandler, msgHandler)
 	return stopC, err

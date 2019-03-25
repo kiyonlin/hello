@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-var subscribeHandlerCoinpark = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerCoinpark = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMap := make(map[string]interface{})
@@ -79,7 +79,7 @@ func WsDepthServeCoinpark(markets *model.Markets, errHandler ErrHandler) (chan s
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Coinpark],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Coinpark], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Coinpark, model.SubscribeDepth), subscribeHandlerCoinpark, wsHandler, errHandler)
 }
 

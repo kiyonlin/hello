@@ -42,7 +42,7 @@ type HuobiMessage struct {
 	} `json:"tick"`
 }
 
-var subscribeHandlerHuobi = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerHuobi = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMap := make(map[string]interface{})
@@ -94,7 +94,7 @@ func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan stru
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Huobi],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Huobi], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Huobi, model.SubscribeDepth), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 

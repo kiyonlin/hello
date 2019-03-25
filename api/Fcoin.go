@@ -18,16 +18,12 @@ import (
 
 var fcoinLastApiAccessTime = util.GetNow()
 var fcoinLock sync.Mutex
-var lastPingFcoin = util.GetNowUnixMillion()
+var lastDepthPingFcoin = util.GetNowUnixMillion()
 
-var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerFcoin = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	var err error = nil
 	subscribeMap := make(map[string]interface{})
-	if strings.Index(subscribes[0], `depth`) == 0 {
-		subscribeMap[`cmd`] = `sub`
-	} else if strings.Index(subscribes[0], `trade`) == 0 {
-		subscribeMap[`cmd`] = `req`
-	}
+	subscribeMap[`cmd`] = `sub`
 	subscribeMap[`args`] = subscribes
 	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
 	if err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
@@ -37,29 +33,9 @@ var subscribeHandlerFcoin = func(subscribes []string, conn *websocket.Conn) erro
 	return err
 }
 
-func WsDealServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
-	recordIndex := 0
-	wsHandler := func(event []byte, conn *websocket.Conn) {
-		if recordIndex%100 == 0 {
-			util.Info(string(event))
-		}
-		responseJson, err := util.NewJSON(event)
-		if err != nil {
-			errHandler(err)
-			return
-		}
-		if responseJson == nil {
-			return
-		}
-
-	}
-	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
-	return WebSocketServe(requestUrl, model.GetWSSubscribes(model.Fcoin, model.SubscribeDeal), subscribeHandlerFcoin,
-		wsHandler, errHandler)
-}
-
 func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
+		//util.Info(string(event))
 		responseJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -68,47 +44,73 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 		if responseJson == nil {
 			return
 		}
-		if util.GetNowUnixMillion()-lastPingFcoin > 30000 {
+		if util.GetNowUnixMillion()-lastDepthPingFcoin > 30000 {
+			lastDepthPingFcoin = util.GetNowUnixMillion()
 			pingMsg := []byte(fmt.Sprintf(`{"cmd":"ping","args":[%d],"id":"id"}`, util.GetNowUnixMillion()))
 			if err := conn.WriteMessage(websocket.TextMessage, pingMsg); err != nil {
 				util.SocketInfo("fcoin server ping client error " + err.Error())
 			}
 		}
-		symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
-		symbolSettings := model.GetMarketSettings(model.Fcoin)
-		if symbolSettings == nil || symbolSettings[symbol] == nil {
-			//util.Notice(symbol + ` not supported`)
-			return
-		}
-		if symbol != "" && symbol != "_" {
-			bidAsk := model.BidAsk{}
-			bidsLen := len(responseJson.Get("bids").MustArray()) / 2
-			bidAsk.Bids = make([]model.Tick, bidsLen)
-			for i := 0; i < bidsLen; i++ {
-				price, _ := responseJson.Get("bids").GetIndex(i * 2).Float64()
-				amount, _ := responseJson.Get("bids").GetIndex(i*2 + 1).Float64()
-				bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
+		if strings.Index(responseJson.Get(`id`).MustString(), `deal#`) == 0 {
+			symbol := strings.Split(responseJson.Get(`id`).MustString(), `#`)[1]
+			ts := responseJson.Get("ts").MustInt()
+			dealLen := len(responseJson.Get(`data`).MustArray())
+			deals := make([]*model.Deal, dealLen)
+			for i := 0; i < dealLen; i++ {
+				dealJson := responseJson.Get(`data`).GetIndex(i)
+				amount, _ := dealJson.Get(`amount`).Float64()
+				ts, _ := dealJson.Get(`ts`).Int()
+				side, _ := dealJson.Get(`side`).String()
+				price, _ := dealJson.Get(`price`).Float64()
+				deals[i] = &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price}
 			}
-			asksLen := len(responseJson.Get("asks").MustArray()) / 2
-			bidAsk.Asks = make([]model.Tick, asksLen)
-			for i := 0; i < asksLen; i++ {
-				price, _ := responseJson.Get("asks").GetIndex(i * 2).Float64()
-				amount, _ := responseJson.Get("asks").GetIndex(i*2 + 1).Float64()
-				bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
+			markets.SetDeals(symbol, model.Fcoin, deals, ts)
+		} else {
+			symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
+			symbols := model.GetMarketSymbols(model.Fcoin)
+			if symbols == nil || symbols[symbol] == false {
+				//util.Notice(symbol + ` not supported`)
+				return
 			}
-			sort.Sort(bidAsk.Asks)
-			sort.Sort(sort.Reverse(bidAsk.Bids))
-			bidAsk.Ts = responseJson.Get("ts").MustInt()
-			if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
-				for _, handler := range model.GetFunctions(model.Fcoin, symbol) {
-					handler(model.Fcoin, symbol)
+			subscribeMap := make(map[string]interface{})
+			subscribeMap[`cmd`] = `req`
+			subscribeMap[`id`] = `deal#` + symbol
+			subscribeMap[`args`] = model.GetWSSubscribe(model.Fcoin, symbol, model.SubscribeDeal)
+			subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
+			if err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
+				util.SocketInfo("fcoin can not request " + err.Error())
+			}
+			if symbol != "" && symbol != "_" {
+				bidAsk := model.BidAsk{}
+				bidsLen := len(responseJson.Get("bids").MustArray()) / 2
+				bidAsk.Bids = make([]model.Tick, bidsLen)
+				for i := 0; i < bidsLen; i++ {
+					price, _ := responseJson.Get("bids").GetIndex(i * 2).Float64()
+					amount, _ := responseJson.Get("bids").GetIndex(i*2 + 1).Float64()
+					bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
+				}
+				asksLen := len(responseJson.Get("asks").MustArray()) / 2
+				bidAsk.Asks = make([]model.Tick, asksLen)
+				for i := 0; i < asksLen; i++ {
+					price, _ := responseJson.Get("asks").GetIndex(i * 2).Float64()
+					amount, _ := responseJson.Get("asks").GetIndex(i*2 + 1).Float64()
+					bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
+				}
+				sort.Sort(bidAsk.Asks)
+				sort.Sort(sort.Reverse(bidAsk.Bids))
+				bidAsk.Ts = responseJson.Get("ts").MustInt()
+				if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
+					for _, handler := range model.GetFunctions(model.Fcoin, symbol) {
+						handler(model.Fcoin, symbol)
+					}
 				}
 			}
 		}
+
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
-	return WebSocketServe(requestUrl, model.GetWSSubscribes(model.Fcoin, model.SubscribeDepth), subscribeHandlerFcoin,
-		wsHandler, errHandler)
+	return WebSocketServe(requestUrl, model.SubscribeDepth, model.GetWSSubscribes(model.Fcoin, model.SubscribeDepth),
+		subscribeHandlerFcoin, wsHandler, errHandler)
 }
 
 func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte {

@@ -101,13 +101,8 @@ var ProcessCarry = func(market, symbol string) {
 				util.Info(fmt.Sprintf(`leftB %f rightB/bidPrice %f/%f NotEnough %f - %f %s`, account.Free,
 					rightBalance, carry.BidPrice, leftBalance, minAmount, carry.ToString()))
 			} else {
-				if model.AppConfig.Env == `test` {
-					carry.DealAskStatus = `NotDo`
-					carry.DealBidStatus = `NotDo`
-				} else {
-					util.Notice(`[worth carry]` + carry.ToString())
-					doCarry = true
-				}
+				util.Notice(`[worth carry]` + carry.ToString())
+				doCarry = true
 			}
 		}
 	}
@@ -146,20 +141,6 @@ func order(carry *model.Carry, orderSide, orderType, market, symbol string, pric
 //	return channel
 //}
 
-func createMarketDealServer(markets *model.Markets, market string) chan struct{} {
-	util.SocketInfo(" create deal chan for " + market)
-	var channel chan struct{}
-	var err error
-	switch market {
-	case model.Fcoin:
-		channel, err = api.WsDealServeFcoin(markets, WSErrHandler)
-	}
-	if err != nil {
-		util.SocketInfo(market + ` can not create deal server ` + err.Error())
-	}
-	return channel
-}
-
 func createMarketDepthServer(markets *model.Markets, market string) chan struct{} {
 	util.SocketInfo(" create depth chan for " + market)
 	var channel chan struct{}
@@ -196,31 +177,20 @@ func MaintainMarketChan() {
 	}
 	socketMaintaining = true
 	for _, market := range model.GetMarkets() {
-		subscribes := model.GetWSSubscribes(market, model.SubscribeDepth)
-		for _, subscribe := range subscribes {
+		symbols := model.GetMarketSymbols(market)
+		for symbol := range symbols {
 			for index := 0; index < model.AppConfig.Channels; index++ {
 				channel := model.AppMarkets.GetDepthChan(market, index)
 				if channel == nil {
 					model.AppMarkets.PutDepthChan(market, index, createMarketDepthServer(model.AppMarkets, market))
-					util.SocketInfo(market + " create new depth channel " + subscribe)
-				} else if model.AppMarkets.RequireDepthChanReset(market, subscribe) {
+					util.SocketInfo(market + " create new depth channel " + symbol)
+				} else if model.AppMarkets.RequireDepthChanReset(market, symbol) {
 					model.AppMarkets.PutDepthChan(market, index, nil)
 					channel <- struct{}{}
 					close(channel)
 					model.AppMarkets.PutDepthChan(market, index, createMarketDepthServer(model.AppMarkets, market))
-					util.SocketInfo(market + " reset depth channel " + subscribe)
+					util.SocketInfo(market + " reset depth channel " + symbol)
 				}
-			}
-			channel := model.AppMarkets.GetDealChan(market)
-			if channel == nil {
-				model.AppMarkets.PutDealChan(market, createMarketDealServer(model.AppMarkets, market))
-				util.SocketInfo(market + " create new deal channel " + subscribe)
-			} else if model.AppMarkets.RequireDealChanReset(market, subscribe) {
-				model.AppMarkets.PutDealChan(market, nil)
-				channel <- struct{}{}
-				close(channel)
-				model.AppMarkets.PutDealChan(market, createMarketDealServer(model.AppMarkets, market))
-				util.SocketInfo(market + " reset deal channel " + subscribe)
 			}
 			break
 		}

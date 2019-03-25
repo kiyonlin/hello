@@ -40,18 +40,31 @@ type Rule struct {
 
 type Markets struct {
 	lock    sync.Mutex
+	DealTs  int
 	BidAsks map[string]map[string]*BidAsk // symbol - market - bidAsk
-	Deals   map[string]map[string][]Deal  // symbol - market - []Deal
+	Deals   map[string]map[string][]*Deal // symbol - market - []Deal
 	wsDepth map[string][]chan struct{}    // market - []depth channel
-	wsDeal  map[string]chan struct{}      // market - deal channel
 }
 
 func NewMarkets() *Markets {
-	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{}),
-		wsDeal: make(map[string]chan struct{})}
+	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{})}
 }
 
-func (markets *Markets) SetBidAsk(symbol string, marketName string, bidAsk *BidAsk) bool {
+func (markets *Markets) SetDeals(symbol, market string, deals []*Deal, ts int) bool {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.Deals == nil {
+		markets.Deals = make(map[string]map[string][]*Deal)
+	}
+	if markets.Deals[symbol] == nil {
+		markets.Deals[symbol] = make(map[string][]*Deal)
+	}
+	markets.Deals[symbol][market] = deals
+	markets.DealTs = ts
+	return true
+}
+
+func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if markets.BidAsks[symbol] == nil {
@@ -150,18 +163,6 @@ func (markets *Markets) GetDepthChan(marketName string, index int) chan struct{}
 	return markets.wsDepth[marketName][index]
 }
 
-func (markets *Markets) GetDealChan(market string) chan struct{} {
-	markets.lock.Lock()
-	defer markets.lock.Unlock()
-	return markets.wsDeal[market]
-}
-
-func (markets *Markets) PutDealChan(market string, channel chan struct{}) {
-	markets.lock.Lock()
-	defer markets.lock.Unlock()
-	markets.wsDeal[market] = channel
-}
-
 func (markets *Markets) PutDepthChan(marketName string, index int, channel chan struct{}) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
@@ -171,12 +172,10 @@ func (markets *Markets) PutDepthChan(marketName string, index int, channel chan 
 	markets.wsDepth[marketName][index] = channel
 }
 
-func (markets *Markets) RequireDepthChanReset(marketName string, subscribe string) bool {
-	//util.SocketInfo(marketName + ` start to check require chan reset or not`)
-	symbol := GetSymbol(marketName, subscribe)
+func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
 	bidAsks := markets.BidAsks[symbol]
 	if bidAsks != nil {
-		bidAsk := bidAsks[marketName]
+		bidAsk := bidAsks[market]
 		if bidAsk != nil {
 			if math.Abs(float64(util.GetNowUnixMillion()-int64(bidAsk.Ts))) < AppConfig.Delay {
 				return false

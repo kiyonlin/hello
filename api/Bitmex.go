@@ -9,22 +9,22 @@ import (
 	"sort"
 )
 
-var subscribeHandlerBitmex = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerBitmex = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	var err error = nil
-	for _, v := range subscribes {
-		subBook := fmt.Sprintf(`{"op": "subscribe", "args": ["orderBookL2:%s"]}`, v)
-		err = conn.WriteMessage(websocket.TextMessage, []byte(subBook))
-		if err != nil {
-			util.SocketInfo("bitmex can not subscribe " + err.Error())
-			return err
-		}
-		//subOrder := fmt.Sprintf(`{"op": "subscribe", "args": ["order:%s"]}`, v)
-		//err = conn.WriteMessage(websocket.TextMessage, []byte(subOrder))
-		//if err != nil {
-		//	util.SocketInfo("bitmex can not subscribe " + err.Error())
-		//	return err
-		//}
-	}
+	//for _, v := range subscribes {
+	//	subBook := fmt.Sprintf(`{"op": "subscribe", "args": ["orderBookL2:%s"]}`, v)
+	//	err = conn.WriteMessage(websocket.TextMessage, []byte(subBook))
+	//	if err != nil {
+	//		util.SocketInfo("bitmex can not subscribe " + err.Error())
+	//		return err
+	//	}
+	//	//subOrder := fmt.Sprintf(`{"op": "subscribe", "args": ["order:%s"]}`, v)
+	//	//err = conn.WriteMessage(websocket.TextMessage, []byte(subOrder))
+	//	//if err != nil {
+	//	//	util.SocketInfo("bitmex can not subscribe " + err.Error())
+	//	//	return err
+	//	//}
+	//}
 	return err
 }
 
@@ -113,7 +113,7 @@ func WsDepthServeBitmex(errHandler ErrHandler) (chan struct{}, error) {
 		//	}
 		//}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Bitmex],
+	return WebSocketServe(model.AppConfig.WSUrls[model.Bitmex], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Bitmex, model.SubscribeDepth), subscribeHandlerBitmex, wsHandler, errHandler)
 }
 

@@ -108,15 +108,15 @@ func dealDiligentSettings() {
 
 func dealLazySettings() {
 	createdAt := util.GetNow().Add(time.Duration(-86400) * time.Second)
-	settings := model.GetMarketSettings(model.OKFUTURE)
+	symbols := model.GetMarketSymbols(model.OKFUTURE)
 	diligentSettings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
 	openShort := 0.0
 	var setting *model.Setting
-	for _, value := range settings {
-		if diligentSettings[value.Symbol] != nil {
+	for symbol := range symbols {
+		if diligentSettings[symbol] != nil {
 			continue
 		}
-		futureAccount, _ := api.GetPositionOkfuture(value.Market, value.Symbol)
+		futureAccount, _ := api.GetPositionOkfuture(model.OKFUTURE, symbol)
 		if futureAccount != nil {
 			short := futureAccount.OpenedShort
 			if strings.Contains(futureAccount.Symbol, `btc`) {
@@ -124,7 +124,7 @@ func dealLazySettings() {
 			}
 			if openShort < short {
 				openShort = short
-				setting = value
+				setting = model.GetSetting(model.FunctionArbitrary, model.OKFUTURE, symbol)
 			}
 		}
 	}
@@ -161,8 +161,8 @@ func CancelOldWorkingOrders() {
 		timeLine := util.GetNow().Add(d)
 		markets := model.GetFunctionMarkets(model.FunctionGrid)
 		for _, market := range markets {
-			settings := model.GetMarketSettings(market)
-			for symbol := range settings {
+			symbols := model.GetMarketSymbols(market)
+			for symbol := range symbols {
 				orders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
 				for orderId, order := range orders {
 					if orderId != `` && order.OrderTime.Before(timeLine) {

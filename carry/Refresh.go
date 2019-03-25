@@ -217,8 +217,15 @@ var ProcessRefresh = func(market, symbol string) {
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
-	if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
-		if setting.FunctionParameter == model.FunRefreshMiddle {
+	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	if delay > 50 {
+		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+		return
+	}
+	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
+	switch setting.FunctionParameter {
+	case model.FunRefreshMiddle:
+		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
 			if askAmount > bidAmount {
 				price = bidPrice
 				if bidAmount*20 > amount {
@@ -232,26 +239,50 @@ var ProcessRefresh = func(market, symbol string) {
 					return
 				}
 			}
-		} else if setting.FunctionParameter == model.FunRefreshSide {
-			amount002 := amount * 0.02
-			if (amount002 > bidAmount && amount002 > askAmount) || (amount002 < askAmount && amount002 < bidAmount) {
-				return
-			}
-			price = getSidePrice(market, symbol, amount, priceDistance)
 		}
-	} else if setting.FunctionParameter == model.FunRefreshSide {
-		return
+		doRefresh(market, symbol, price, amount)
+	case model.FunRefreshSide:
+		amount002 := amount * 0.02
+		if ((price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance) &&
+			((amount002 > bidAmount && amount002 < askAmount) || (amount002 > askAmount && amount002 < bidAmount)) {
+			price = getSidePrice(market, symbol, amount, priceDistance)
+			doRefresh(market, symbol, price, amount)
+		}
+	case model.FunRefreshSeparate:
+		lastSell := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
+		lastBuy := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
+		if lastBuy == nil && lastSell == nil {
+			if askAmount > bidAmount && bidAmount > 0.02*amount && bidAmount < 0.08*amount {
+				placeRefreshOrder(model.OrderSideBuy, market, symbol, price, amount)
+				time.Sleep(time.Millisecond * 500)
+			} else if askAmount <= bidAmount && askAmount > 0.02*amount && askAmount < 0.08*amount {
+				placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
+				time.Sleep(time.Millisecond * 500)
+			}
+		} else if lastBuy == nil && lastSell != nil {
+			if lastSell.Price-askPrice < priceDistance && askAmount < amount*1.1 {
+				placeRefreshOrder(model.OrderSideBuy, market, symbol, price, amount)
+			} else {
+				api.MustCancel(market, symbol, lastSell.OrderId, true)
+				refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
+			}
+		} else if lastBuy != nil && lastSell == nil {
+			if bidPrice-lastBuy.Price < priceDistance && bidAmount < amount*1.1 {
+				placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
+			} else {
+				api.MustCancel(market, symbol, lastBuy.OrderId, true)
+				refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
+			}
+		} else if lastBuy != nil && lastSell != nil {
+			refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
+			refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
+		}
 	}
+}
+
+func doRefresh(market, symbol string, price, amount float64) {
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
-	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	if delay > 50 {
-		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
-		return
-	}
-	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
-	util.Notice(fmt.Sprintf(`%s %s[price distance] price:[%f > %f > %f] amount:[%f - %f - %f][%s] %f - %f delay %d`,
-		market, symbol, askPrice, price, bidPrice, askAmount, amount, bidAmount, symbol, leftBalance, rightBalance, delay))
 	go placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
 	go placeRefreshOrder(model.OrderSideBuy, market, symbol, price, amount)
 	for true {

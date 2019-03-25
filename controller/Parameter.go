@@ -253,10 +253,6 @@ func SetParameters(c *gin.Context) {
 	if len(strings.TrimSpace(maxUsdt)) > 0 {
 		model.AppConfig.MaxUsdt, _ = strconv.ParseFloat(maxUsdt, 64)
 	}
-	env := c.Query("env")
-	if len(strings.TrimSpace(env)) > 0 {
-		model.AppConfig.Env = env
-	}
 	delay := c.Query("delay")
 	if len(strings.TrimSpace(delay)) > 0 {
 		strDelay := strings.Replace(delay, " ", "", -1)

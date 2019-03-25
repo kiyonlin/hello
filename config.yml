@@ -1,7 +1,7 @@
 port: 80
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
-amountrate: 0.05
+amountrate: 0.9
 makeramountrate: 0.05
 orderwait: 1000
 delay: 10000 #按照毫秒计算时间差
@@ -12,14 +12,13 @@ maxusdt: 1500
 inchina: 0
 deduction: 0.8
 mail: haoweizh@qq.com #41685600@qq.com
-handle: 1
+handle: 0
 handlemaker: 1
 handlerefresh: 1
 handlegrid: 1
 waitrefreshrandom: 4000
 waitmaker: 1000
 dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
-env: dk
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
 #huobisecret: 05d114f3-6f455bf3-a640f2c4-06050

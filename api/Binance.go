@@ -17,7 +17,7 @@ import (
 
 var lastTickId = int64(0)
 
-var subscribeHandlerBinance = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerBinance = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	return nil
 }
 
@@ -73,9 +73,11 @@ func WsDepthServeBinance(markets *model.Markets, errHandler ErrHandler) (chan st
 	requestUrl := model.AppConfig.WSUrls[model.Binance]
 
 	for _, subscribe := range model.GetWSSubscribes(model.Binance, model.SubscribeDepth) {
-		requestUrl += subscribe + "/"
+		if str, ok := subscribe.(string); ok {
+			requestUrl += str + "/"
+		}
 	}
-	return WebSocketServe(requestUrl, model.GetWSSubscribes(model.Binance, model.SubscribeDepth),
+	return WebSocketServe(requestUrl, model.SubscribeDepth, model.GetWSSubscribes(model.Binance, model.SubscribeDepth),
 		subscribeHandlerBinance, wsHandler, errHandler)
 }
 func signBinance(postData *url.Values, secretKey string) {

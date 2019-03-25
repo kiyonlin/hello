@@ -50,6 +50,7 @@ const FunctionRefresh = `refresh`
 
 const FunRefreshMiddle = `refresh_parameter_middle`
 const FunRefreshSide = `refresh_parameter_side`
+const FunRefreshSeparate = `refresh_parameter_separate`
 
 var AppDB *gorm.DB
 var AppSettings []Setting
@@ -190,7 +191,7 @@ func SetBalanceTurtleCarry(market, symbol string, turtleCarry *Carry) {
 	BalanceTurtleCarries[market][symbol] = turtleCarry
 }
 
-func getWSSubscribes(market, symbol, subType string) (subscribe string) {
+func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 	switch market {
 	case Huobi: // xrp_btc: market.xrpbtc.depth.step0
 		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
@@ -211,8 +212,11 @@ func getWSSubscribes(market, symbol, subType string) (subscribe string) {
 		return strings.ToLower(strings.Replace(symbol, "_", "", 1)) + `@depth5`
 	case Fcoin:
 		if subType == SubscribeDeal {
-			// btc_usdt: trade.btcusdt
-			return `trade.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+			// btc_usdt: trade.btcusdt, 20
+			subDeal := make([]interface{}, 2)
+			subDeal[0] = `trade.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+			subDeal[1] = 20
+			return subDeal
 		} else {
 			// btc_usdt: depth.L20.btcusdt
 			return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
@@ -375,11 +379,13 @@ func NewConfig() {
 	AppConfig.MarketCost[Bitmex] = 0.0005
 }
 
-func GetAccountInfoSubscribe(marketName string) []string {
+func GetAccountInfoSubscribe(marketName string) []interface{} {
 	switch marketName {
 	case OKFUTURE:
 		//return []string{`ok_sub_futureusd_userinfo`}
-		return []string{`login`}
+		result := make([]interface{}, 1)
+		result[0] = `login`
+		return result
 	}
 	return nil
 }
@@ -394,7 +400,6 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
 	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
-	str += "env: " + config.Env + "\n"
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
@@ -404,12 +409,12 @@ func (config *Config) ToString() string {
 	return str
 }
 
-func GetWSSubscribes(market, subType string) []string {
-	settings := GetMarketSettings(market)
-	subscribes := make([]string, len(settings))
+func GetWSSubscribes(market, subType string) []interface{} {
+	symbols := GetMarketSymbols(market)
+	subscribes := make([]interface{}, len(symbols))
 	i := 0
-	for symbol := range settings {
-		subscribes[i] = getWSSubscribes(market, symbol, subType)
+	for symbol := range symbols {
+		subscribes[i] = GetWSSubscribe(market, symbol, subType)
 		i++
 	}
 	return subscribes

@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-var subscribeHandlerOKFuture = func(subscribes []string, conn *websocket.Conn) error {
+var subscribeHandlerOKFuture = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		postData := url.Values{}
@@ -53,7 +53,7 @@ func _(errHandler ErrHandler) (chan struct{}, error) {
 			return
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE],
+	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE], model.SubscribeDepth,
 		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
@@ -127,7 +127,7 @@ func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan s
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE],
+	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE], model.SubscribeDepth,
 		model.GetWSSubscribes(model.OKFUTURE, model.SubscribeDepth), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
