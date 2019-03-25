@@ -264,6 +264,7 @@ var ProcessRefresh = func(market, symbol string) {
 				api.MustCancel(market, symbol, lastSell.OrderId, true)
 				refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 			}
+			api.RefreshAccount(market)
 		} else if lastBuy != nil && lastSell == nil {
 			if bidPrice-lastBuy.Price < priceDistance && bidAmount < amount*1.1 {
 				placeSeparateOrder(model.OrderSideSell, market, symbol, lastBuy.Price, lastBuy.Amount)
@@ -271,6 +272,7 @@ var ProcessRefresh = func(market, symbol string) {
 				api.MustCancel(market, symbol, lastBuy.OrderId, true)
 				refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 			}
+			api.RefreshAccount(market)
 		} else if lastBuy != nil && lastSell != nil {
 			refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 			refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
