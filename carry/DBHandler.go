@@ -182,7 +182,7 @@ func RefreshAccounts() {
 		if model.AppConfig.Handle == `1` {
 			model.AppConfig.Handle = `0`
 			time.Sleep(time.Second * 5)
-			model.AppConfig.Handle = `0`
+			model.AppConfig.Handle = `1`
 		}
 		markets := model.GetMarkets()
 		timestamp := util.GetNow()
