@@ -254,10 +254,8 @@ var ProcessRefresh = func(market, symbol string) {
 		if lastBuy == nil && lastSell == nil {
 			if askAmount > bidAmount && bidAmount > 0.02*amount && bidAmount < 0.08*amount {
 				placeSeparateOrder(model.OrderSideBuy, market, symbol, price, amount)
-				time.Sleep(time.Millisecond * 500)
 			} else if askAmount <= bidAmount && askAmount > 0.02*amount && askAmount < 0.08*amount {
 				placeSeparateOrder(model.OrderSideSell, market, symbol, price, amount)
-				time.Sleep(time.Millisecond * 500)
 			}
 		} else if lastBuy == nil && lastSell != nil {
 			if lastSell.Price-askPrice < priceDistance && askAmount < amount*1.1 {
