@@ -261,14 +261,14 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		} else if lastBuy == nil && lastSell != nil {
 			if lastSell.Price-askPrice < priceDistance && askAmount < amount*1.1 {
-				placeSeparateOrder(model.OrderSideBuy, market, symbol, price, amount)
+				placeSeparateOrder(model.OrderSideBuy, market, symbol, lastSell.Price, lastSell.Amount)
 			} else {
 				api.MustCancel(market, symbol, lastSell.OrderId, true)
 				refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 			}
 		} else if lastBuy != nil && lastSell == nil {
 			if bidPrice-lastBuy.Price < priceDistance && bidAmount < amount*1.1 {
-				placeSeparateOrder(model.OrderSideSell, market, symbol, price, amount)
+				placeSeparateOrder(model.OrderSideSell, market, symbol, lastBuy.Price, lastBuy.Amount)
 			} else {
 				api.MustCancel(market, symbol, lastBuy.OrderId, true)
 				refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
