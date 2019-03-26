@@ -29,7 +29,37 @@ func ParameterServe() {
 	router.GET(`/refresh`, RefreshParameters)
 	router.GET(`/pw`, GetCode)
 	router.GET("/balance", GetBalance)
+	router.GET(`/symbol`, setSymbol)
 	_ = router.Run(":" + model.AppConfig.Port)
+}
+
+func setSymbol(c *gin.Context) {
+	market := c.Query(`market`)
+	symbol := c.Query(`symbol`)
+	function := c.Query(`function`)
+	parameter := c.Query(`parameter`)
+	valid := false
+	op := c.Query(`op`)
+	if op == `1` {
+		valid = true
+	} else if op == `0` {
+		valid = false
+	} else {
+		c.String(http.StatusOK, `no op!`)
+		return
+	}
+	var setting model.Setting
+	model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ? and function_parameter= ?",
+		market, symbol, function, parameter).Update("valid", valid)
+	rows, _ := model.AppDB.Model(&setting).
+		Select(`market, symbol, function, function_parameter, valid`).Rows()
+	msg := ``
+	for rows.Next() {
+		valid := false
+		_ = rows.Scan(&market, &symbol, &function, &parameter, &valid)
+		msg += fmt.Sprintf("%s %s %s %s %v \n", market, symbol, function, parameter, valid)
+	}
+	c.String(http.StatusOK, msg)
 }
 
 func GetCode(c *gin.Context) {
