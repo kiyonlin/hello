@@ -287,24 +287,26 @@ var ProcessRefresh = func(market, symbol string) {
 		lastSell := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
 		lastBuy := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
 		if lastBuy == nil && lastSell == nil {
-			if askAmount > bidAmount && bidAmount > 0.01*amount && bidAmount < 0.09*amount {
-				util.Notice(fmt.Sprintf(`[原始单bid] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
-					bidAmount, askAmount, bidPrice, askPrice, price))
-				placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount)
-				refreshOrders.setFailSeprate(market, symbol, 0, 0)
-				time.Sleep(time.Millisecond * 500)
-			} else if askAmount <= bidAmount && askAmount > 0.01*amount && askAmount < 0.09*amount {
-				util.Notice(fmt.Sprintf(`[原始单ask] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
-					bidAmount, askAmount, bidPrice, askPrice, price))
-				placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount)
-				refreshOrders.setFailSeprate(market, symbol, 0, 0)
-				time.Sleep(time.Millisecond * 500)
-			} else {
-				fail1, _ := refreshOrders.getFailSeparate(market, symbol)
-				fail1++
-				if fail1 >= 2 {
-					api.RefreshAccount(market)
+			if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
+				if askAmount > bidAmount && bidAmount > 0.01*amount && bidAmount < 0.09*amount {
+					util.Notice(fmt.Sprintf(`[原始单bid] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
+						bidAmount, askAmount, bidPrice, askPrice, price))
+					placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount)
 					refreshOrders.setFailSeprate(market, symbol, 0, 0)
+					time.Sleep(time.Millisecond * 500)
+				} else if askAmount <= bidAmount && askAmount > 0.01*amount && askAmount < 0.09*amount {
+					util.Notice(fmt.Sprintf(`[原始单ask] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
+						bidAmount, askAmount, bidPrice, askPrice, price))
+					placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount)
+					refreshOrders.setFailSeprate(market, symbol, 0, 0)
+					time.Sleep(time.Millisecond * 500)
+				} else {
+					fail1, _ := refreshOrders.getFailSeparate(market, symbol)
+					fail1++
+					if fail1 >= 2 {
+						api.RefreshAccount(market)
+						refreshOrders.setFailSeprate(market, symbol, 0, 0)
+					}
 				}
 			}
 		} else if lastBuy == nil && lastSell != nil {
