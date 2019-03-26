@@ -34,6 +34,22 @@ func ParameterServe() {
 }
 
 func setSymbol(c *gin.Context) {
+	pw := c.Query(`pw`)
+	if code == `` {
+		c.String(http.StatusOK, `请先获取验证码`)
+		return
+	}
+	if pw != code {
+		c.String(http.StatusOK, `验证码错误`)
+		return
+	}
+	waitTime := (util.GetNowUnixMillion() - codeGenTime) / 1000
+	if waitTime > 300 {
+		c.String(http.StatusOK, fmt.Sprintf(`验证码有效时间300秒，已超%d - %d > 300000`,
+			util.GetNowUnixMillion(), codeGenTime))
+		return
+	}
+	code = ``
 	market := c.Query(`market`)
 	symbol := c.Query(`symbol`)
 	function := c.Query(`function`)
