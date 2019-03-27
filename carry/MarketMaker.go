@@ -13,8 +13,6 @@ import (
 
 var marketMaking bool
 
-var lastMaker *model.Order
-
 func setMarketMaking(making bool) {
 	marketMaking = making
 }
@@ -44,7 +42,6 @@ func placeMaker(market, symbol string) {
 	lastPrice := 0.0
 	lastAmount := 0.0
 	lastTs := 0
-	lastSide := ``
 	for _, deal := range model.AppMarkets.Deals[symbol][market] {
 		if deal.Amount*coinPrice > 10000 && util.GetNowUnixMillion()-int64(1000*deal.Ts) < 10000 {
 			bigOrder++
@@ -52,7 +49,6 @@ func placeMaker(market, symbol string) {
 				lastTs = deal.Ts
 				lastPrice = deal.Price
 				lastAmount = deal.Amount
-				lastSide = deal.Side
 			}
 		}
 	}
@@ -60,84 +56,30 @@ func placeMaker(market, symbol string) {
 		lastPrice-model.AppMarkets.BidAsks[symbol][market].Asks[0].Price > priceDistance {
 		return
 	}
-	var amount float64
-	side := ``
-	if lastPrice-model.AppMarkets.BidAsks[symbol][market].Bids[0].Price < priceDistance {
-		side = model.OrderSideBuy
-	} else if model.AppMarkets.BidAsks[symbol][market].Asks[0].Price-lastPrice < priceDistance {
-		side = model.OrderSideSell
-	} else if lastSide == model.OrderSideSell {
-		side = model.OrderSideBuy
-	} else if lastSide == model.OrderSideBuy {
-		side = model.OrderSideSell
+	price := (model.AppMarkets.BidAsks[symbol][market].Bids[0].Price +
+		model.AppMarkets.BidAsks[symbol][market].Asks[0].Price) / 2
+	if price-model.AppMarkets.BidAsks[symbol][market].Bids[0].Price < priceDistance &&
+		model.AppMarkets.BidAsks[symbol][market].Asks[0].Price-price < priceDistance {
+		price = lastPrice
 	}
 	left, right, err := getBalance(market, symbol)
 	if err != nil {
 		return
 	}
-	if side == model.OrderSideSell {
+	side := model.OrderSideBuy
+	amount := math.Min(right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price, lastAmount/2)
+	if left > right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price {
+		side = model.OrderSideSell
 		amount = math.Min(left, lastAmount/2)
-	} else if side == model.OrderSideBuy {
-		amount = math.Min(right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price, lastAmount/2)
 	}
-	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, lastPrice, amount)
+	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	if order.OrderId != `` {
 		time.Sleep(time.Second)
 		api.MustCancel(market, symbol, order.OrderId, true)
 		time.Sleep(time.Second)
 		api.QueryOrder(order)
-		if order.DealAmount > 0.5*order.Amount {
-			lastMaker = order
-		}
 		order.OrderType = model.FunctionMaker
 		model.AppDB.Save(order)
-	}
-}
-
-func placeMakerReverse(market, symbol string) {
-	asks := model.AppMarkets.BidAsks[symbol][market].Asks
-	bids := model.AppMarkets.BidAsks[symbol][market].Bids
-	left, right, err := getBalance(market, symbol)
-	if err != nil {
-		return
-	}
-	left = math.Min(lastMaker.Amount/2, left)
-	right = math.Min(lastMaker.Amount/2, right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price)
-	amount := 0.0
-	var order *model.Order
-	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	if lastMaker.OrderSide == model.OrderSideSell {
-		for i := 0; i < len(asks); i++ {
-			if asks[i].Price-lastMaker.DealPrice < priceDistance {
-				amount += asks[i].Amount
-			} else {
-				break
-			}
-		}
-		if amount < 0.2*right {
-			order = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				lastMaker.DealPrice, right)
-		}
-	} else if lastMaker.OrderSide == model.OrderSideBuy {
-		for i := 0; i < len(bids); i++ {
-			if lastMaker.DealPrice-bids[i].Price < priceDistance {
-				amount += bids[i].Amount
-			} else {
-				break
-			}
-		}
-		if amount < 0.2*left {
-			order = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				lastMaker.DealPrice, left)
-		}
-	}
-	if order != nil && order.Status == model.CarryStatusWorking {
-		time.Sleep(time.Second)
-		api.MustCancel(market, symbol, order.OrderId, true)
-		api.QueryOrder(order)
-		order.OrderType = model.FunctionMaker
-		model.AppDB.Save(order)
-		lastMaker = nil
 	}
 }
 
@@ -166,10 +108,6 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
 		return
 	}
-	if lastMaker == nil {
-		placeMaker(market, symbol)
-	} else {
-		placeMakerReverse(market, symbol)
-	}
+	placeMaker(market, symbol)
 	api.RefreshAccount(market)
 }
