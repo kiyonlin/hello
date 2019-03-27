@@ -43,7 +43,7 @@ func placeMaker(market, symbol string) {
 	lastAmount := 0.0
 	lastTs := 0
 	for _, deal := range model.AppMarkets.Deals[symbol][market] {
-		if deal.Amount*coinPrice > 10000 && util.GetNowUnixMillion()-int64(1000*deal.Ts) < 10000 {
+		if deal.Amount*coinPrice > 10000 && util.GetNowUnixMillion()-int64(deal.Ts) < 10000 {
 			bigOrder++
 			if deal.Ts > lastTs {
 				lastTs = deal.Ts
