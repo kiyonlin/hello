@@ -114,6 +114,13 @@ func QueryOrders(market, symbol, states string) (orders map[string]*model.Order)
 	return nil
 }
 
+func QueryOrder(order *model.Order) {
+	dealOrder := QueryOrderById(order.Market, order.Symbol, order.OrderId)
+	order.Status = dealOrder.Status
+	order.DealPrice = dealOrder.DealPrice
+	order.DealAmount = dealOrder.DealAmount
+}
+
 func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 	var dealAmount, dealPrice float64
 	var status string

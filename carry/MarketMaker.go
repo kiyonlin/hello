@@ -85,9 +85,11 @@ func placeMaker(market, symbol string) {
 		time.Sleep(time.Second)
 		api.MustCancel(market, symbol, order.OrderId, true)
 		time.Sleep(time.Second)
-		order = api.QueryOrderById(market, symbol, order.OrderId)
+		api.QueryOrder(order)
+		if order.DealAmount > 0.5*order.Amount {
+			lastMaker = order
+		}
 		order.OrderType = model.FunctionMaker
-		lastMaker = order
 		model.AppDB.Save(order)
 	}
 }
@@ -132,7 +134,7 @@ func placeMakerReverse(market, symbol string) {
 	if order != nil && order.Status == model.CarryStatusWorking {
 		time.Sleep(time.Second)
 		api.MustCancel(market, symbol, order.OrderId, true)
-		order = api.QueryOrderById(market, symbol, order.OrderId)
+		api.QueryOrder(order)
 		order.OrderType = model.FunctionMaker
 		model.AppDB.Save(order)
 		lastMaker = nil
