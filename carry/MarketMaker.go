@@ -49,11 +49,12 @@ func placeMaker(market, symbol string) {
 				lastTs = deal.Ts
 				lastPrice = deal.Price
 				lastAmount = deal.Amount
+				util.Notice(fmt.Sprintf(`%s %s time: %d, amount: %f`, market, symbol, lastTs, lastAmount))
 			}
 		}
 	}
-	if bigOrder < 3 || model.AppMarkets.BidAsks[symbol][market].Bids[0].Price-lastPrice > priceDistance ||
-		lastPrice-model.AppMarkets.BidAsks[symbol][market].Asks[0].Price > priceDistance {
+	model.AppMarkets.Deals[symbol][market] = nil
+	if bigOrder < 3 {
 		return
 	}
 	price := (model.AppMarkets.BidAsks[symbol][market].Bids[0].Price +
