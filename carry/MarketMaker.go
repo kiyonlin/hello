@@ -71,6 +71,13 @@ func placeMaker(market, symbol string) {
 	if left > right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price {
 		side = model.OrderSideSell
 		amount = math.Min(left, lastAmount/2)
+		if 0.2*amount < model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount {
+			return
+		}
+	} else {
+		if 0.2*amount < model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount {
+			return
+		}
 	}
 	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	if order.OrderId != `` {
