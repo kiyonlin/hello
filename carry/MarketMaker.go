@@ -12,16 +12,115 @@ import (
 
 var marketMaking bool
 
-//var lastMaker *model.Order
-var orderCount int64
+var lastMaker *model.Order
 
 func setMarketMaking(making bool) {
 	marketMaking = making
 }
 
-//func placeReverse()  {
-//	model.AppMarkets.BidAsks
-//}
+func placeMaker(market, symbol string) {
+	coins := strings.Split(symbol, `_`)
+	leftAccount := model.AppAccounts.GetAccount(market, coins[0])
+	if leftAccount == nil {
+		util.Notice(`nil account ` + market + coins[0])
+		//go getAccount()
+		return
+	}
+	leftBalance := leftAccount.Free
+	rightAccount := model.AppAccounts.GetAccount(market, coins[1])
+	if rightAccount == nil {
+		util.Notice(`nil account ` + market + coins[1])
+		//go getAccount()
+		return
+	}
+	rightBalance := rightAccount.Free
+	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	coinPrice, _ := api.GetPrice(coins[0] + `_usdt`)
+	bigOrder := 0
+	lastPrice := 0.0
+	lastAmount := 0.0
+	lastTs := 0
+	lastSide := ``
+	for _, deal := range model.AppMarkets.Deals[symbol][market] {
+		if deal.Amount*coinPrice > 10000 && util.GetNowUnixMillion()-int64(1000*deal.Ts) < 10000 {
+			bigOrder++
+			if deal.Ts > lastTs {
+				lastTs = deal.Ts
+				lastPrice = deal.Price
+				lastAmount = deal.Amount
+				lastSide = deal.Side
+			}
+		}
+	}
+	if bigOrder < 3 || model.AppMarkets.BidAsks[symbol][market].Bids[0].Price-lastPrice > priceDistance ||
+		lastPrice-model.AppMarkets.BidAsks[symbol][market].Asks[0].Price > priceDistance {
+		return
+	}
+	amount := math.Min(leftBalance, rightBalance/lastPrice) * model.AppConfig.MakerAmountRate
+	amount = math.Min(amount, lastAmount/2)
+	side := ``
+	if lastPrice-model.AppMarkets.BidAsks[symbol][market].Bids[0].Price < priceDistance {
+		side = model.OrderSideBuy
+	} else if model.AppMarkets.BidAsks[symbol][market].Asks[0].Price-lastPrice < priceDistance {
+		side = model.OrderSideSell
+	} else if lastSide == model.OrderSideSell {
+		side = model.OrderSideBuy
+	} else if lastSide == model.OrderSideBuy {
+		side = model.OrderSideSell
+	}
+	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, lastPrice, amount)
+	if order.OrderId != `` {
+		time.Sleep(time.Second)
+		api.MustCancel(market, symbol, order.OrderId, true)
+		time.Sleep(time.Second)
+		order = api.QueryOrderById(market, symbol, order.OrderId)
+		order.OrderType = model.FunctionMaker
+		lastMaker = order
+		model.AppDB.Save(order)
+	}
+}
+
+func placeMakerReverse(market, symbol string) {
+	asks := model.AppMarkets.BidAsks[symbol][market].Asks
+	bids := model.AppMarkets.BidAsks[symbol][market].Bids
+	amount := 0.0
+	var order *model.Order
+	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	if lastMaker.OrderSide == model.OrderSideSell {
+		for i := 0; i < len(asks); i++ {
+			if asks[i].Price-lastMaker.DealPrice < priceDistance {
+				amount += asks[i].Amount
+			} else {
+				break
+			}
+		}
+		if amount > 0.05*lastMaker.Amount {
+			order = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+				lastMaker.DealPrice, lastMaker.Amount)
+		}
+	} else if lastMaker.OrderSide == model.OrderSideBuy {
+		for i := 0; i < len(bids); i++ {
+			if lastMaker.DealPrice-bids[i].Price < priceDistance {
+				amount += bids[i].Amount
+			} else {
+				break
+			}
+		}
+		if amount > 0.05*lastMaker.Amount {
+			order = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
+				lastMaker.DealPrice, lastMaker.Amount)
+		}
+	}
+	if order != nil && order.Status == model.CarryStatusWorking {
+		time.Sleep(time.Second)
+		api.MustCancel(market, symbol, order.OrderId, true)
+		order = api.QueryOrderById(market, symbol, order.OrderId)
+		order.OrderType = model.FunctionMaker
+		model.AppDB.Save(order)
+		lastMaker = nil
+		api.RefreshAccount(market)
+	}
+}
 
 var ProcessMake = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleMaker != `1` || marketMaking {
@@ -43,89 +142,14 @@ var ProcessMake = func(market, symbol string) {
 		api.RefreshAccount(market)
 		return
 	}
-	leftAccount := model.AppAccounts.GetAccount(market, coins[0])
-	if leftAccount == nil {
-		util.Notice(`nil account ` + market + coins[0])
-		//go getAccount()
-		return
-	}
-	leftBalance := leftAccount.Free
-	rightAccount := model.AppAccounts.GetAccount(market, coins[1])
-	if rightAccount == nil {
-		util.Notice(`nil account ` + market + coins[1])
-		//go getAccount()
-		return
-	}
-	rightBalance := rightAccount.Free
-	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	current := util.GetNowUnixMillion()
-	delay := current - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	if delay > 50 {
 		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
 		return
 	}
-	coinPrice, _ := api.GetPrice(coins[0] + `_usdt`)
-	bigOrder := 0
-	lastPrice := 0.0
-	lastAmount := 0.0
-	lastTs := 0
-	for _, deal := range model.AppMarkets.Deals[symbol][market] {
-		if deal.Amount*coinPrice > 10000 && current-int64(1000*deal.Ts) < 10000 {
-			bigOrder++
-			if deal.Ts > lastTs {
-				lastTs = deal.Ts
-				lastPrice = deal.Price
-				lastAmount = deal.Amount
-			}
-		}
-	}
-	if bigOrder < 3 {
-		return
-	}
-	bidPrice := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price
-	askPrice := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
-
-	if lastPrice-bidPrice < priceDistance || askPrice-lastPrice < priceDistance {
-		util.Notice(fmt.Sprintf(`to order price %f already have bid: %f, ask: %f`, lastPrice, bidPrice, askPrice))
-		return
-	}
-	amount := math.Min(leftBalance, rightBalance/bidAsk.Bids[0].Price) * model.AppConfig.MakerAmountRate
-	amount = math.Min(amount, lastAmount/2)
-	bidOrder := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, lastPrice, amount)
-	if bidOrder.OrderId == `` || bidOrder.Status == model.CarryStatusFail {
-		return
-	}
-	time.Sleep(time.Second)
-	api.MustCancel(market, symbol, bidOrder.OrderId, true)
-	time.Sleep(time.Second)
-	bidOrder = api.QueryOrderById(market, symbol, bidOrder.OrderId)
-	model.AppDB.Save(bidOrder)
-	if bidOrder.DealAmount > 0.5*bidOrder.Amount {
-		api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, lastPrice, amount)
-	}
-
-	//orderSide := model.OrderSideBuy
-	//if lastMaker != nil && lastMaker.OrderSide == model.OrderSideBuy {
-	//	orderSide = model.OrderSideSell
-	//}
-	//order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
-	//if order == nil {
-	//	return
-	//}
-	//time.Sleep(time.Millisecond * 500)
-	//tempOrder := api.QueryOrderById(market, symbol, lastMaker.OrderId)
-	//if tempOrder != nil {
-	//	order = tempOrder
-	//}
-	//if order.Status == model.CarryStatusWorking {
-	//	api.CancelOrder(market, symbol, lastMaker.OrderId)
-	//}
-	//order.Function = model.FunctionMaker
-	//lastMaker = order
-	//model.AppDB.Save(lastMaker)
-	//time.Sleep(time.Millisecond * time.Duration(model.AppConfig.WaitMaker))
-	//orderCount++
-	if orderCount%30 == 0 {
-		api.RefreshAccount(market)
+	if lastMaker == nil {
+		placeMaker(market, symbol)
+	} else {
+		placeMakerReverse(market, symbol)
 	}
 }
