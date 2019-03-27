@@ -2,6 +2,7 @@ package carry
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"hello/api"
 	"hello/model"
 	"hello/util"
@@ -18,22 +19,25 @@ func setMarketMaking(making bool) {
 	marketMaking = making
 }
 
-func placeMaker(market, symbol string) {
+func getBalance(market, symbol string) (left, right float64, err error) {
 	coins := strings.Split(symbol, `_`)
 	leftAccount := model.AppAccounts.GetAccount(market, coins[0])
 	if leftAccount == nil {
 		util.Notice(`nil account ` + market + coins[0])
 		//go getAccount()
-		return
+		return 0, 0, errors.New(`no left balance`)
 	}
-	leftBalance := leftAccount.Free
 	rightAccount := model.AppAccounts.GetAccount(market, coins[1])
 	if rightAccount == nil {
 		util.Notice(`nil account ` + market + coins[1])
 		//go getAccount()
-		return
+		return 0, 0, errors.New(`no right balance`)
 	}
-	rightBalance := rightAccount.Free
+	return leftAccount.Free, rightAccount.Free, nil
+}
+
+func placeMaker(market, symbol string) {
+	coins := strings.Split(symbol, `_`)
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	coinPrice, _ := api.GetPrice(coins[0] + `_usdt`)
 	bigOrder := 0
@@ -56,8 +60,7 @@ func placeMaker(market, symbol string) {
 		lastPrice-model.AppMarkets.BidAsks[symbol][market].Asks[0].Price > priceDistance {
 		return
 	}
-	amount := math.Min(leftBalance, rightBalance/lastPrice) * model.AppConfig.MakerAmountRate
-	amount = math.Min(amount, lastAmount/2)
+	var amount float64
 	side := ``
 	if lastPrice-model.AppMarkets.BidAsks[symbol][market].Bids[0].Price < priceDistance {
 		side = model.OrderSideBuy
@@ -67,6 +70,15 @@ func placeMaker(market, symbol string) {
 		side = model.OrderSideBuy
 	} else if lastSide == model.OrderSideBuy {
 		side = model.OrderSideSell
+	}
+	left, right, err := getBalance(market, symbol)
+	if err != nil {
+		return
+	}
+	if side == model.OrderSideSell {
+		amount = math.Min(left, lastAmount/2)
+	} else if side == model.OrderSideBuy {
+		amount = math.Min(right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price, lastAmount/2)
 	}
 	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, lastPrice, amount)
 	if order.OrderId != `` {
@@ -83,6 +95,12 @@ func placeMaker(market, symbol string) {
 func placeMakerReverse(market, symbol string) {
 	asks := model.AppMarkets.BidAsks[symbol][market].Asks
 	bids := model.AppMarkets.BidAsks[symbol][market].Bids
+	left, right, err := getBalance(market, symbol)
+	if err != nil {
+		return
+	}
+	left = math.Min(lastMaker.Amount/2, left)
+	right = math.Min(lastMaker.Amount/2, right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price)
 	amount := 0.0
 	var order *model.Order
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
@@ -94,9 +112,9 @@ func placeMakerReverse(market, symbol string) {
 				break
 			}
 		}
-		if amount > 0.2*lastMaker.Amount {
+		if amount < 0.2*right {
 			order = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				lastMaker.DealPrice, lastMaker.Amount)
+				lastMaker.DealPrice, right)
 		}
 	} else if lastMaker.OrderSide == model.OrderSideBuy {
 		for i := 0; i < len(bids); i++ {
@@ -106,9 +124,9 @@ func placeMakerReverse(market, symbol string) {
 				break
 			}
 		}
-		if amount > 0.2*lastMaker.Amount {
+		if amount < 0.2*left {
 			order = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				lastMaker.DealPrice, lastMaker.Amount)
+				lastMaker.DealPrice, left)
 		}
 	}
 	if order != nil && order.Status == model.CarryStatusWorking {
@@ -118,7 +136,6 @@ func placeMakerReverse(market, symbol string) {
 		order.OrderType = model.FunctionMaker
 		model.AppDB.Save(order)
 		lastMaker = nil
-		api.RefreshAccount(market)
 	}
 }
 
@@ -152,4 +169,5 @@ var ProcessMake = func(market, symbol string) {
 	} else {
 		placeMakerReverse(market, symbol)
 	}
+	api.RefreshAccount(market)
 }

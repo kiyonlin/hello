@@ -328,8 +328,7 @@ type Config struct {
 	WaitRefreshRandom int64
 	WaitMaker         int64
 	AmountRate        float64 // 刷单填写数量比率
-	MakerAmountRate   float64
-	Handle            string // 0 不执行处理程序，1执行处理程序
+	Handle            string  // 0 不执行处理程序，1执行处理程序
 	HandleMaker       string
 	HandleRefresh     string
 	HandleGrid        string
@@ -405,7 +404,7 @@ func (config *Config) ToString() string {
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
 	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f waitMaker: %d\n",
 		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.WaitMaker)
-	str += fmt.Sprintf("maker rate: %f waitrefreshrandom: %d\n", config.MakerAmountRate, config.WaitRefreshRandom)
+	str += fmt.Sprintf("waitrefreshrandom: %d\n", config.WaitRefreshRandom)
 	return str
 }
 
