@@ -68,10 +68,10 @@ func placeMaker(market, symbol string) {
 		return
 	}
 	side := model.OrderSideBuy
-	amount := math.Min(right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price, lastAmount/2)
+	amount := math.Floor(math.Min(right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price, lastAmount/2))
 	if left > right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price {
 		side = model.OrderSideSell
-		amount = math.Min(left, lastAmount/2)
+		amount = math.Floor(math.Min(left, lastAmount/2))
 		if 0.2*amount < model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount {
 			return
 		}
