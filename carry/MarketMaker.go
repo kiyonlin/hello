@@ -94,7 +94,7 @@ func placeMakerReverse(market, symbol string) {
 				break
 			}
 		}
-		if amount > 0.05*lastMaker.Amount {
+		if amount > 0.2*lastMaker.Amount {
 			order = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 				lastMaker.DealPrice, lastMaker.Amount)
 		}
@@ -106,7 +106,7 @@ func placeMakerReverse(market, symbol string) {
 				break
 			}
 		}
-		if amount > 0.05*lastMaker.Amount {
+		if amount > 0.2*lastMaker.Amount {
 			order = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 				lastMaker.DealPrice, lastMaker.Amount)
 		}
