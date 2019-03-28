@@ -101,7 +101,9 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				bidAsk.Ts = responseJson.Get("ts").MustInt()
 				if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
 					for _, handler := range model.GetFunctions(model.Fcoin, symbol) {
-						handler(model.Fcoin, symbol)
+						if handler != nil {
+							handler(model.Fcoin, symbol)
+						}
 					}
 				}
 			}
