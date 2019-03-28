@@ -177,7 +177,6 @@ func CancelOldWorkingOrders() {
 }
 
 func RefreshAccounts() {
-	refreshTimes := 0
 	for true {
 		if model.AppConfig.Handle == `1` {
 			model.AppConfig.Handle = `0`
@@ -196,12 +195,9 @@ func RefreshAccounts() {
 				value.PriceInUsdt, _ = api.GetPrice(key + "_usdt")
 				value.Timestamp = timestamp
 			}
-			refreshTimes++
-			if refreshTimes%12 == 0 {
-				model.AccountChannel <- model.AppAccounts.Data[value]
-			}
+			model.AccountChannel <- model.AppAccounts.Data[value]
 		}
-		time.Sleep(time.Minute * 5)
+		time.Sleep(time.Hour)
 	}
 }
 

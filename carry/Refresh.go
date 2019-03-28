@@ -15,6 +15,7 @@ import (
 // fcoin:// 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var bidAskTimes int64
+var lastRefreTime int64
 var processing = false
 var refreshing = false
 var syncRefresh = make(chan interface{}, 10)
@@ -226,8 +227,10 @@ var ProcessRefresh = func(market, symbol string) {
 	defer setRefreshing(false)
 	currencies := strings.Split(symbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
-	if leftAccount == nil {
-		util.Notice(`nil account ` + market + currencies[0])
+	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreTime > 300000 {
+		util.Notice(`nil account or 5min refresh ` + market + currencies[0])
+		time.Sleep(time.Second * 2)
+		lastRefreTime = util.GetNowUnixMillion()
 		api.RefreshAccount(market)
 		return
 	}
