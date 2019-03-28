@@ -191,10 +191,9 @@ var ProcessRefresh = func(market, symbol string) {
 	defer setRefreshing(false)
 	currencies := strings.Split(symbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
-	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 300000 {
+	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 15000 {
 		util.Notice(`nil account or 5min refresh ` + market + currencies[0])
 		time.Sleep(time.Second * 2)
-		lastRefreshTime = util.GetNowUnixMillion()
 		api.RefreshAccount(market)
 		return
 	}
@@ -327,6 +326,7 @@ func doRefresh(market, symbol string, price, amount float64) {
 }
 
 func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) {
+	lastRefreshTime = util.GetNowUnixMillion()
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	order.Function = model.FunctionRefresh
 	refreshOrders.Add(market, symbol, orderSide, order)
@@ -336,6 +336,7 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 }
 
 func placeSeparateOrder(orderSide, market, symbol string, price, amount float64) (result bool) {
+	lastRefreshTime = util.GetNowUnixMillion()
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 	if order.OrderId == `` || order.Status == model.CarryStatusFail {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
