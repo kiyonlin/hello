@@ -293,7 +293,7 @@ func GetPrice(symbol string) (buy float64, err error) {
 	if strs[0] == `FT` || strs[1] == `FT` || model.AppConfig.InChina == 1 {
 		return getBuyPriceFcoin(symbol)
 	}
-	return getBuyPriceOkex(symbol)
+	return getBuyPriceFcoin(symbol)
 }
 
 //CheckOrderValue

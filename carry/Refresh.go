@@ -255,15 +255,14 @@ var ProcessRefresh = func(market, symbol string) {
 		lastBuy := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
 		if lastBuy == nil && lastSell == nil {
 			if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
+				util.Notice(fmt.Sprintf(
+					`[原始单] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
+					bidAmount, askAmount, amount, bidPrice, askPrice, price))
 				if askAmount > bidAmount && bidAmount > 0.005*amount && bidAmount < 0.09*amount {
-					util.Notice(fmt.Sprintf(`[原始单bid] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
-						bidAmount, askAmount, bidPrice, askPrice, price))
 					if !placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount) {
 						api.RefreshAccount(market)
 					}
 				} else if askAmount <= bidAmount && askAmount > 0.005*amount && askAmount < 0.09*amount {
-					util.Notice(fmt.Sprintf(`[原始单ask] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
-						bidAmount, askAmount, bidPrice, askPrice, price))
 					if !placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount) {
 						api.RefreshAccount(market)
 					}
