@@ -221,7 +221,7 @@ var ProcessRefresh = func(market, symbol string) {
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	if delay > 50 {
-		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
 	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
