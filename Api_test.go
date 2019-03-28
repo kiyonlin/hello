@@ -59,20 +59,21 @@ func Test_Api(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, model.Fcoin, `ft_usdt`, ``, 0.09, 3)
-	api.QueryOrder(order)
+	//order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, model.Fcoin, `ft_usdt`, ``, 0.09, 3)
+	//api.QueryOrder(order)
+	order := api.QueryOrderById(model.Fcoin, `xrp_btc`, `I_u7N8mADEnBchAtpdaTxrH-Tr8mJMDMA-MDOmVVr7oM2dOU-AOgzHjI0OG0Qhxv`)
 	fmt.Println(fmt.Sprintf(`fee %f income %f`, order.Fee, order.FeeIncome))
-	testOrder := api.QueryOrderById(model.Fcoin, `eos_btc`, `X0-GKSE7iZkHEYoBfo7UmFEjhP8CfJsP8TiPPFymtWg9IKL4rIyhnz5KVvxWpNqQ`)
-	fmt.Println(testOrder.Status)
-	//api.RefreshAccount(model.Fcoin)
-	//orderId, errMsg, status, amount, price := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, model.Fcoin,
-	//	`eos_usdt`, model.AmountTypeCoinNumber, 2.263, 1)
-	//fmt.Sprintf(`%s %s %s %f %f`, orderId, errMsg, status, amount, price)
-	orders := api.QueryOrders(model.Fcoin, `eos_usdt`, model.CarryStatusSuccess)
-	for key, value := range orders {
-		order := api.QueryOrderById(model.Fcoin, value.Symbol, key)
-		fmt.Println(order.OrderTime.String())
-	}
+	//testOrder := api.QueryOrderById(model.Fcoin, `eos_btc`, `X0-GKSE7iZkHEYoBfo7UmFEjhP8CfJsP8TiPPFymtWg9IKL4rIyhnz5KVvxWpNqQ`)
+	//fmt.Println(testOrder.Status)
+	////api.RefreshAccount(model.Fcoin)
+	////orderId, errMsg, status, amount, price := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, model.Fcoin,
+	////	`eos_usdt`, model.AmountTypeCoinNumber, 2.263, 1)
+	////fmt.Sprintf(`%s %s %s %f %f`, orderId, errMsg, status, amount, price)
+	//orders := api.QueryOrders(model.Fcoin, `eos_usdt`, model.CarryStatusSuccess)
+	//for key, value := range orders {
+	//	order := api.QueryOrderById(model.Fcoin, value.Symbol, key)
+	//	fmt.Println(order.OrderTime.String())
+	//}
 }
 
 func Test_array(t *testing.T) {

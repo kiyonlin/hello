@@ -6,7 +6,6 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -297,7 +296,6 @@ var ProcessRefresh = func(market, symbol string) {
 						bidAmount, askAmount, bidPrice, askPrice, price))
 					if placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount) {
 						refreshOrders.setFailSeparate(market, symbol, 0, 0)
-						time.Sleep(time.Millisecond * 500)
 					} else {
 						fail1++
 					}
@@ -306,7 +304,6 @@ var ProcessRefresh = func(market, symbol string) {
 						bidAmount, askAmount, bidPrice, askPrice, price))
 					if placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount) {
 						refreshOrders.setFailSeparate(market, symbol, 0, 0)
-						time.Sleep(time.Millisecond * 500)
 					} else {
 						fail1++
 					}
@@ -377,8 +374,6 @@ func doRefresh(market, symbol string, price, amount float64) {
 			break
 		}
 	}
-	time.Sleep(time.Millisecond *
-		time.Duration(rand.Int63n(model.AppConfig.WaitRefreshRandom)+model.AppConfig.OrderWait))
 	bidAskTimes++
 	if bidAskTimes%7 == 0 {
 		api.RefreshAccount(market)
