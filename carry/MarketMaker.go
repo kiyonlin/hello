@@ -49,7 +49,7 @@ func placeMaker(market, symbol string) {
 				lastTs = deal.Ts
 				lastPrice = deal.Price
 				lastAmount = deal.Amount
-				util.Notice(fmt.Sprintf(`%s %s time: %d, amount: %f`, market, symbol, lastTs, lastAmount))
+				//util.Notice(fmt.Sprintf(`%s %s time: %d, amount: %f`, market, symbol, lastTs, lastAmount))
 			}
 		}
 	}
