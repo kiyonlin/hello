@@ -291,7 +291,7 @@ var ProcessRefresh = func(market, symbol string) {
 		fail1, fail2 := refreshOrders.getFailSeparate(market, symbol)
 		if lastBuy == nil && lastSell == nil {
 			if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
-				if askAmount > bidAmount && bidAmount > 0.01*amount && bidAmount < 0.09*amount {
+				if askAmount > bidAmount && bidAmount > 0.005*amount && bidAmount < 0.09*amount {
 					util.Notice(fmt.Sprintf(`[原始单bid] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
 						bidAmount, askAmount, bidPrice, askPrice, price))
 					if placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount) {
@@ -299,7 +299,7 @@ var ProcessRefresh = func(market, symbol string) {
 					} else {
 						fail1++
 					}
-				} else if askAmount <= bidAmount && askAmount > 0.01*amount && askAmount < 0.09*amount {
+				} else if askAmount <= bidAmount && askAmount > 0.005*amount && askAmount < 0.09*amount {
 					util.Notice(fmt.Sprintf(`[原始单ask] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
 						bidAmount, askAmount, bidPrice, askPrice, price))
 					if placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount) {
