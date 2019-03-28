@@ -76,6 +76,7 @@ func setSymbol(c *gin.Context) {
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &valid)
 		msg += fmt.Sprintf("%s %s %s %s %v \n", market, symbol, function, parameter, valid)
 	}
+	model.LoadSettings()
 	c.String(http.StatusOK, msg)
 }
 
