@@ -14,53 +14,18 @@ import (
 // fcoin:// 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var bidAskTimes int64
-var lastRefreTime int64
+var lastRefreshTime int64
 var processing = false
 var refreshing = false
 var syncRefresh = make(chan interface{}, 10)
 var refreshOrders = &RefreshOrders{}
 
 type RefreshOrders struct {
-	lock          sync.Mutex
-	bidOrders     map[string]map[string][]*model.Order // market - symbol - orders
-	askOrders     map[string]map[string][]*model.Order // market - symbol - orders
-	lastBid       map[string]map[string]*model.Order   // market - symbol - order
-	lastAsk       map[string]map[string]*model.Order   // market - symbol - order
-	failSeparate1 map[string]map[string]int            // market - symbol - int
-	failSeparate2 map[string]map[string]int            // market - symbol - int
-}
-
-func (refreshOrders *RefreshOrders) getFailSeparate(market, symbol string) (fail1, fail2 int) {
-	if refreshOrders.failSeparate1 == nil {
-		return 0, 0
-	}
-	if refreshOrders.failSeparate2 == nil {
-		return 0, 0
-	}
-	if refreshOrders.failSeparate1[market] == nil {
-		return 0, 0
-	}
-	if refreshOrders.failSeparate2[market] == nil {
-		return 0, 0
-	}
-	return refreshOrders.failSeparate1[market][symbol], refreshOrders.failSeparate2[market][symbol]
-}
-
-func (refreshOrders *RefreshOrders) setFailSeparate(market, symbol string, fail1, fail2 int) {
-	if refreshOrders.failSeparate1 == nil {
-		refreshOrders.failSeparate1 = make(map[string]map[string]int)
-	}
-	if refreshOrders.failSeparate2 == nil {
-		refreshOrders.failSeparate2 = make(map[string]map[string]int)
-	}
-	if refreshOrders.failSeparate1[market] == nil {
-		refreshOrders.failSeparate1[market] = make(map[string]int)
-	}
-	if refreshOrders.failSeparate2[market] == nil {
-		refreshOrders.failSeparate2[market] = make(map[string]int)
-	}
-	refreshOrders.failSeparate1[market][symbol] = fail1
-	refreshOrders.failSeparate2[market][symbol] = fail2
+	lock      sync.Mutex
+	bidOrders map[string]map[string][]*model.Order // market - symbol - orders
+	askOrders map[string]map[string][]*model.Order // market - symbol - orders
+	lastBid   map[string]map[string]*model.Order   // market - symbol - order
+	lastAsk   map[string]map[string]*model.Order   // market - symbol - order
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
@@ -167,7 +132,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
 		if value.Price < bidPrice {
 			util.Notice(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
-			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 		} else if value.Price >= bidPrice && value.Status == model.CarryStatusWorking {
 			bidOrders = append(bidOrders, value)
 		}
@@ -175,7 +140,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	for _, value := range refreshOrders.askOrders[market][symbol] {
 		if value.Price > askPrice {
 			util.Notice(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
-			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 		} else if value.Price <= askPrice && value.Status == model.CarryStatusWorking {
 			askOrders = append(askOrders, value)
 		}
@@ -226,10 +191,10 @@ var ProcessRefresh = func(market, symbol string) {
 	defer setRefreshing(false)
 	currencies := strings.Split(symbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
-	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreTime > 300000 {
+	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 300000 {
 		util.Notice(`nil account or 5min refresh ` + market + currencies[0])
 		time.Sleep(time.Second * 2)
-		lastRefreTime = util.GetNowUnixMillion()
+		lastRefreshTime = util.GetNowUnixMillion()
 		api.RefreshAccount(market)
 		return
 	}
@@ -288,67 +253,46 @@ var ProcessRefresh = func(market, symbol string) {
 	case model.FunRefreshSeparate:
 		lastSell := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
 		lastBuy := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
-		fail1, fail2 := refreshOrders.getFailSeparate(market, symbol)
 		if lastBuy == nil && lastSell == nil {
 			if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
 				if askAmount > bidAmount && bidAmount > 0.005*amount && bidAmount < 0.09*amount {
 					util.Notice(fmt.Sprintf(`[原始单bid] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
 						bidAmount, askAmount, bidPrice, askPrice, price))
-					if placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount) {
-						refreshOrders.setFailSeparate(market, symbol, 0, 0)
-					} else {
-						fail1++
+					if !placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount) {
+						api.RefreshAccount(market)
 					}
 				} else if askAmount <= bidAmount && askAmount > 0.005*amount && askAmount < 0.09*amount {
 					util.Notice(fmt.Sprintf(`[原始单ask] bid amount:%f ask amount: %f bid price: %f ask price: %f %f`,
 						bidAmount, askAmount, bidPrice, askPrice, price))
-					if placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount) {
-						refreshOrders.setFailSeparate(market, symbol, 0, 0)
-					} else {
-						fail1++
+					if !placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount) {
+						api.RefreshAccount(market)
 					}
-				}
-				if fail1 >= 2 {
-					api.RefreshAccount(market)
-					refreshOrders.setFailSeparate(market, symbol, 0, 0)
 				}
 			}
 		} else if lastBuy == nil && lastSell != nil {
 			if lastSell.Price-askPrice < priceDistance && askAmount < amount*1.1 {
-				if placeSeparateOrder(model.OrderSideBuy, market, symbol, lastSell.Price, lastSell.Amount) {
-					refreshOrders.setFailSeparate(market, symbol, 0, 0)
-				} else {
-					fail2++
-					if fail2 >= 2 {
-						api.MustCancel(market, symbol, lastSell.OrderId, true)
-						refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
-						time.Sleep(time.Second * 2)
-						api.RefreshAccount(market)
-						refreshOrders.setFailSeparate(market, symbol, 0, 0)
-					}
+				if !placeSeparateOrder(model.OrderSideBuy, market, symbol, lastSell.Price, lastSell.Amount) {
+					go api.MustCancel(market, symbol, lastSell.OrderId, true)
+					refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
+					time.Sleep(time.Second * 2)
+					api.RefreshAccount(market)
 				}
 			} else {
-				api.MustCancel(market, symbol, lastSell.OrderId, true)
+				go api.MustCancel(market, symbol, lastSell.OrderId, true)
 				refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 			}
 			refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 			refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 		} else if lastBuy != nil && lastSell == nil {
 			if bidPrice-lastBuy.Price < priceDistance && bidAmount < amount*1.1 {
-				if placeSeparateOrder(model.OrderSideSell, market, symbol, lastBuy.Price, lastBuy.Amount) {
-					refreshOrders.setFailSeparate(market, symbol, 0, 0)
-				} else {
-					fail2++
-					if fail2 >= 2 {
-						api.MustCancel(market, symbol, lastBuy.OrderId, true)
-						refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
-						time.Sleep(time.Second * 2)
-						api.RefreshAccount(market)
-						refreshOrders.setFailSeparate(market, symbol, 0, 0)
-					}
+				if !placeSeparateOrder(model.OrderSideSell, market, symbol, lastBuy.Price, lastBuy.Amount) {
+					go api.MustCancel(market, symbol, lastBuy.OrderId, true)
+					refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
+					time.Sleep(time.Second * 2)
+					api.RefreshAccount(market)
 				}
 			} else {
-				api.MustCancel(market, symbol, lastBuy.OrderId, true)
+				go api.MustCancel(market, symbol, lastBuy.OrderId, true)
 				refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 			}
 			refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
@@ -393,6 +337,9 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 
 func placeSeparateOrder(orderSide, market, symbol string, price, amount float64) (result bool) {
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	if order.OrderId == `` || order.Status == model.CarryStatusFail {
+		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	}
 	if order.Status == model.CarryStatusWorking {
 		order.Function = model.FunctionRefresh
 		refreshOrders.Add(market, symbol, orderSide, order)
