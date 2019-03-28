@@ -193,6 +193,7 @@ var ProcessRefresh = func(market, symbol string) {
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
 	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 15000 {
 		util.Notice(`nil account or 5min refresh ` + market + currencies[0])
+		lastRefreshTime = util.GetNowUnixMillion()
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
 		return
