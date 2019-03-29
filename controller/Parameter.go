@@ -250,9 +250,9 @@ func SetParameters(c *gin.Context) {
 	if handleGrid != `` {
 		model.AppConfig.HandleGrid = handleGrid
 	}
-	waitMaker := c.Query(`waitmaker`)
-	if len(waitMaker) > 0 {
-		model.AppConfig.WaitMaker, _ = strconv.ParseInt(waitMaker, 10, 64)
+	refreshLimit := c.Query(`refreshlimit`)
+	if len(refreshLimit) > 0 {
+		model.AppConfig.RefreshLimit, _ = strconv.ParseFloat(refreshLimit, 64)
 	}
 	orderWait := c.Query("orderwait")
 	if orderWait != `` {

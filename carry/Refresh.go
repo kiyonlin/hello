@@ -258,18 +258,20 @@ var ProcessRefresh = func(market, symbol string) {
 				util.Notice(fmt.Sprintf(
 					`[原始单] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
 					bidAmount, askAmount, amount, bidPrice, askPrice, price))
-				if askAmount > bidAmount && bidAmount > 0.005*amount && bidAmount < 0.09*amount {
+				if askAmount > 1.5*bidAmount && bidAmount > 0.005*amount &&
+					bidAmount < model.AppConfig.RefreshLimit*amount {
 					if !placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount) {
 						api.RefreshAccount(market)
 					}
-				} else if askAmount <= bidAmount && askAmount > 0.005*amount && askAmount < 0.09*amount {
+				} else if askAmount <= 1.5*bidAmount && askAmount > 0.005*amount &&
+					askAmount < model.AppConfig.RefreshLimit*amount {
 					if !placeSeparateOrder(model.OrderSideSell, market, symbol, askPrice, amount) {
 						api.RefreshAccount(market)
 					}
 				}
 			}
 		} else if lastBuy == nil && lastSell != nil {
-			if lastSell.Price-askPrice < priceDistance && askAmount < amount*1.1 {
+			if lastSell.Price-askPrice < priceDistance && askAmount < amount*(1.01+model.AppConfig.RefreshLimit) {
 				if !placeSeparateOrder(model.OrderSideBuy, market, symbol, lastSell.Price, lastSell.Amount) {
 					go api.MustCancel(market, symbol, lastSell.OrderId, true)
 					refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
@@ -283,7 +285,7 @@ var ProcessRefresh = func(market, symbol string) {
 			refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 			refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 		} else if lastBuy != nil && lastSell == nil {
-			if bidPrice-lastBuy.Price < priceDistance && bidAmount < amount*1.1 {
+			if bidPrice-lastBuy.Price < priceDistance && bidAmount < amount*(1.01+model.AppConfig.RefreshLimit) {
 				if !placeSeparateOrder(model.OrderSideSell, market, symbol, lastBuy.Price, lastBuy.Amount) {
 					go api.MustCancel(market, symbol, lastBuy.OrderId, true)
 					refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)

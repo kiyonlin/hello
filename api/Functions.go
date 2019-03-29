@@ -70,7 +70,7 @@ func MustCancel(market, symbol, orderId string, mustCancel bool) {
 		if result || !mustCancel || errCode == `3008` { //3008:"submit cancel invalid order state
 			break
 		} else if errCode == `429` || errCode == `4003` {
-			util.Notice(`調用次數繁忙`)
+			util.Notice(`调用次数繁忙`)
 		} else if i >= 3 {
 			break
 		}
