@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"hello/api"
+	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"math"
@@ -77,6 +78,7 @@ func setSymbol(c *gin.Context) {
 		msg += fmt.Sprintf("%s %s %s %s %v \n", market, symbol, function, parameter, valid)
 	}
 	model.LoadSettings()
+	carry.MaintainMarketChan()
 	c.String(http.StatusOK, msg)
 }
 

@@ -121,9 +121,10 @@ func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte
 	uri := model.AppConfig.RestUrls[model.Fcoin] + path
 	current := util.GetNow()
 	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 100000000 {
-		time.Sleep(time.Duration(100) * time.Millisecond)
+		time.Sleep(time.Millisecond * 100)
 		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
 	}
+	fcoinLastApiAccessTime = current
 	currentTime := strconv.FormatInt(current.UnixNano(), 10)[0:13]
 	if method == `GET` && len(body) > 0 {
 		uri += `?` + util.ComposeParams(body)

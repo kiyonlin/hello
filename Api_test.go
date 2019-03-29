@@ -59,8 +59,9 @@ func Test_Api(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	price, _ := api.GetPrice(`btc_usdt`)
-	fmt.Println(price)
+	old := util.GetNow().UnixNano()
+	time.Sleep(time.Millisecond * 100)
+	fmt.Println(util.GetNow().UnixNano() - old)
 	//order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, model.Fcoin, `ft_usdt`, ``, 0.09, 3)
 	//api.QueryOrder(order)
 	order := api.QueryOrderById(model.Fcoin, `xrp_btc`, `I_u7N8mADEnBchAtpdaTxrH-Tr8mJMDMA-MDOmVVr7oM2dOU-AOgzHjI0OG0Qhxv`)

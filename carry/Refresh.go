@@ -133,6 +133,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 		if value.Price < bidPrice {
 			util.Notice(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
 			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+			time.Sleep(time.Second)
 		} else if value.Price >= bidPrice && value.Status == model.CarryStatusWorking {
 			bidOrders = append(bidOrders, value)
 		}
@@ -141,6 +142,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 		if value.Price > askPrice {
 			util.Notice(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
 			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+			time.Sleep(time.Second)
 		} else if value.Price <= askPrice && value.Status == model.CarryStatusWorking {
 			askOrders = append(askOrders, value)
 		}
@@ -192,7 +194,7 @@ var ProcessRefresh = func(market, symbol string) {
 	currencies := strings.Split(symbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
 	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 15000 {
-		util.Notice(`nil account or 5min refresh ` + market + currencies[0])
+		util.Notice(`nil account or 15 seconds refresh ` + market + ` ` + symbol)
 		lastRefreshTime = util.GetNowUnixMillion()
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
@@ -256,8 +258,8 @@ var ProcessRefresh = func(market, symbol string) {
 		if lastBuy == nil && lastSell == nil {
 			if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
 				util.Notice(fmt.Sprintf(
-					`[原始单] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
-					bidAmount, askAmount, amount, bidPrice, askPrice, price))
+					`[原始单%s] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
+					symbol, bidAmount, askAmount, amount, bidPrice, askPrice, price))
 				if askAmount > 1.5*bidAmount && bidAmount > 0.005*amount &&
 					bidAmount < model.AppConfig.RefreshLimit*amount {
 					if !placeSeparateOrder(model.OrderSideBuy, market, symbol, bidPrice, amount) {
