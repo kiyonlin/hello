@@ -12,14 +12,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
 //{"status":3033,"msg":"market order is disabled for symbol bsvusdt"}
-var fcoinLastApiAccessTime = util.GetNow()
-var fcoinLock sync.Mutex
+//var fcoinLastApiAccessTime = util.GetNow()
+//var fcoinLock sync.Mutex
 var lastDepthPingFcoin = util.GetNowUnixMillion()
 
 var subscribeHandlerFcoin = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
@@ -118,15 +117,15 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 }
 
 func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte {
-	fcoinLock.Lock()
-	defer fcoinLock.Unlock()
+	//fcoinLock.Lock()
+	//defer fcoinLock.Unlock()
 	uri := model.AppConfig.RestUrls[model.Fcoin] + path
 	current := util.GetNow()
-	if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 100000000 {
-		time.Sleep(time.Millisecond * 100)
-		util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
-	}
-	fcoinLastApiAccessTime = current
+	//if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 100000000 {
+	//	time.Sleep(time.Millisecond * 100)
+	//	util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
+	//}
+	//fcoinLastApiAccessTime = current
 	currentTime := strconv.FormatInt(current.UnixNano(), 10)[0:13]
 	if method == `GET` && len(body) > 0 {
 		uri += `?` + util.ComposeParams(body)
