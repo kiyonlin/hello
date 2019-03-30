@@ -262,7 +262,7 @@ var ProcessRefresh = func(market, symbol string) {
 			if orderSide != `` {
 				orderResult, order := placeSeparateOrder(orderSide, market, symbol, orderPrice, amount)
 				if orderResult {
-					time.Sleep(time.Minute * 100)
+					time.Sleep(time.Millisecond * 100)
 					reverseResult, reverseOrder := placeSeparateOrder(reverseSide, market, symbol, orderPrice, amount)
 					if !reverseResult {
 						go api.MustCancel(market, symbol, order.OrderId, true)
