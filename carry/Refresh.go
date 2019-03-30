@@ -44,6 +44,12 @@ type RefreshOrders struct {
 //	return refreshOrders.currentSymbol[market]
 //}
 
+//func (refreshOrders *RefreshOrders) addStayTimes(market string) {
+//	refreshOrders.lock.Lock()
+//	defer refreshOrders.lock.Unlock()
+//	if refreshOrders.stayTimes
+//}
+
 func (refreshOrders *RefreshOrders) moveNextSymbol(market string) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
@@ -155,20 +161,20 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	bidOrders := make([]*model.Order, 0)
 	askOrders := make([]*model.Order, 0)
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
-		if value.Price < bidPrice {
+		if value.Price < bidPrice && value.Price < askPrice { // 大于等于卖一的买单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
 			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 			time.Sleep(time.Second)
-		} else if value.Price >= bidPrice && value.Status == model.CarryStatusWorking {
+		} else if value.Price < askPrice && value.Price >= bidPrice && value.Status == model.CarryStatusWorking {
 			bidOrders = append(bidOrders, value)
 		}
 	}
 	for _, value := range refreshOrders.askOrders[market][symbol] {
-		if value.Price > askPrice {
+		if value.Price > askPrice && value.Price > bidPrice { // 小于等于买一的卖单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
 			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 			time.Sleep(time.Second)
-		} else if value.Price <= askPrice && value.Status == model.CarryStatusWorking {
+		} else if value.Price > bidPrice && value.Price <= askPrice && value.Status == model.CarryStatusWorking {
 			askOrders = append(askOrders, value)
 		}
 	}
