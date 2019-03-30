@@ -8,10 +8,16 @@ import (
 	"hello/util"
 	"math"
 	"strings"
+	"sync"
 	"time"
 )
 
 var marketMaking bool
+
+type MakerStatus struct {
+	lock        sync.Mutex
+	lastBigTime map[string]map[string]int64 // market - symbol - unix time
+}
 
 func setMarketMaking(making bool) {
 	marketMaking = making

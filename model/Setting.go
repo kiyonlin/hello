@@ -41,6 +41,19 @@ func GetFunctionMarkets(function string) []string {
 	return markets
 }
 
+func GetFunctionSettings(function, market, funParam string) (settings []*Setting) {
+	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
+		return nil
+	}
+	settings = make([]*Setting, 0)
+	for _, value := range marketSymbolSetting[function][market] {
+		if value.FunctionParameter == funParam || funParam == `` {
+			settings = append(settings, value)
+		}
+	}
+	return settings
+}
+
 func GetSettings(function, market, symbolPrefix string) (settings []*Setting) {
 	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
 		return nil
