@@ -273,7 +273,7 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		doRefresh(market, symbol, price, amount)
 	case model.FunRefreshSeparate:
-		if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
+		if (askPrice-bidPrice)*10000 < bidPrice {
 			util.Notice(fmt.Sprintf(
 				`[原始单%s] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
 				symbol, bidAmount, askAmount, amount, bidPrice, askPrice, price))
