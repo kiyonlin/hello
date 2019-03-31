@@ -63,8 +63,11 @@ func (refreshOrders *RefreshOrders) moveNextSymbol(market string) {
 	if refreshOrders.stayTimes == nil {
 		refreshOrders.stayTimes = make(map[string]int)
 	}
+	previous := refreshOrders.getCurrentSymbol(market)
 	refreshOrders.symbolIndex[market] = refreshOrders.symbolIndex[market] + 1
 	refreshOrders.stayTimes[market] = 0
+	current := refreshOrders.getCurrentSymbol(market)
+	util.Notice(fmt.Sprintf(`%s symbol %s -> %s`, market, previous, current))
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
@@ -283,9 +286,9 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshAble := false
 		refreshDone := false
 		if (askPrice-bidPrice)*10000 < bidPrice {
-			//util.Notice(fmt.Sprintf(
-			//	`[原始单%s] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
-			//	symbol, bidAmount, askAmount, amount, bidPrice, askPrice, price))
+			util.Notice(fmt.Sprintf(
+				`[原始单%s] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
+				symbol, bidAmount, askAmount, amount, bidPrice, askPrice, price))
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price

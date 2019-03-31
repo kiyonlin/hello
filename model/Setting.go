@@ -115,6 +115,7 @@ func LoadSettings() {
 	AppSettings = []Setting{}
 	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
 	marketSymbolSetting = make(map[string]map[string]map[string]*Setting)
+	binanceSettings := make(map[string]*Setting)
 	handlers = make(map[string]map[string][]CarryHandler)
 	for i := range AppSettings {
 		market := AppSettings[i].Market
@@ -127,6 +128,9 @@ func LoadSettings() {
 			marketSymbolSetting[function][market] = make(map[string]*Setting)
 		}
 		marketSymbolSetting[function][market][symbol] = &AppSettings[i]
+		if AppSettings[i].Function == FunctionRefresh {
+			binanceSettings[symbol] = &Setting{Market: Binance, Symbol: AppSettings[i].Symbol}
+		}
 		if handlers[market] == nil {
 			handlers[market] = make(map[string][]CarryHandler)
 		}
@@ -134,6 +138,9 @@ func LoadSettings() {
 			handlers[market][symbol] = make([]CarryHandler, 0)
 		}
 		handlers[market][symbol] = append(handlers[market][symbol], HandlerMap[function])
+	}
+	for _, setting := range binanceSettings {
+		AppSettings = append(AppSettings, *setting)
 	}
 }
 
