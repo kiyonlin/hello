@@ -185,14 +185,14 @@ func RefreshAccount(market string) {
 		}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
-		if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
-			account := model.AppAccounts.GetAccount(model.Binance, `bnb`)
-			if account != nil && account.Free < model.AppConfig.BnbMin {
-				util.Notice(fmt.Sprintf(`[bnb數量不足]%f - %f`, account.Free, model.AppConfig.BnbMin))
-				PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, model.Binance, `bnb_usdt`, ``,
-					0, model.AppConfig.BnbBuy)
-			}
-		}
+		//if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
+		//	account := model.AppAccounts.GetAccount(model.Binance, `bnb`)
+		//	if account != nil && account.Free < model.AppConfig.BnbMin {
+		//		util.Notice(fmt.Sprintf(`[bnb數量不足]%f - %f`, account.Free, model.AppConfig.BnbMin))
+		//		PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, model.Binance, `bnb_usdt`, ``,
+		//			0, model.AppConfig.BnbBuy)
+		//	}
+		//}
 	case model.Fcoin:
 		getAccountFcoin(model.AppAccounts)
 	case model.Coinpark:

@@ -43,6 +43,9 @@ func (refreshOrders *RefreshOrders) getCurrentSymbol(market string) (symbol stri
 }
 
 func (refreshOrders *RefreshOrders) addStayTimes(market, symbol string) {
+	if symbol == `btc_usdt` {
+		return
+	}
 	if refreshOrders.stayTimes == nil {
 		refreshOrders.stayTimes = make(map[string]int)
 	}
@@ -52,11 +55,14 @@ func (refreshOrders *RefreshOrders) addStayTimes(market, symbol string) {
 		limit = 100
 	}
 	if refreshOrders.stayTimes[market] >= limit {
-		refreshOrders.moveNextSymbol(market)
+		refreshOrders.moveNextSymbol(market, symbol)
 	}
 }
 
-func (refreshOrders *RefreshOrders) moveNextSymbol(market string) {
+func (refreshOrders *RefreshOrders) moveNextSymbol(market, symbol string) {
+	if symbol == `btc_usdt` {
+		return
+	}
 	if refreshOrders.symbolIndex == nil {
 		refreshOrders.symbolIndex = make(map[string]int)
 	}
@@ -330,7 +336,7 @@ var ProcessRefresh = func(market, symbol string) {
 				}
 			}
 			if !refreshAble {
-				refreshOrders.moveNextSymbol(market)
+				refreshOrders.moveNextSymbol(market, symbol)
 			}
 			if refreshDone {
 				refreshOrders.addStayTimes(market, symbol)
