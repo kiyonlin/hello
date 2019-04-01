@@ -60,9 +60,6 @@ func (refreshOrders *RefreshOrders) addStayTimes(market, symbol string) {
 }
 
 func (refreshOrders *RefreshOrders) moveNextSymbol(market, symbol string) {
-	if symbol == `btc_usdt` {
-		return
-	}
 	if refreshOrders.symbolIndex == nil {
 		refreshOrders.symbolIndex = make(map[string]int)
 	}
@@ -73,7 +70,7 @@ func (refreshOrders *RefreshOrders) moveNextSymbol(market, symbol string) {
 	refreshOrders.symbolIndex[market] = refreshOrders.symbolIndex[market] + 1
 	refreshOrders.stayTimes[market] = 0
 	current := refreshOrders.getCurrentSymbol(market)
-	util.Notice(fmt.Sprintf(`%s symbol %s -> %s`, market, previous, current))
+	util.Notice(fmt.Sprintf(`[%s] %s symbol %s -> %s`, symbol, market, previous, current))
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
@@ -231,6 +228,9 @@ var ProcessRefresh = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing ||
 		(symbol != refreshOrders.getCurrentSymbol(market) && symbol != `btc_usdt`) {
 		return
+	}
+	if refreshOrders.getCurrentSymbol(market) == `btc_usdt` {
+		refreshOrders.moveNextSymbol(market, symbol)
 	}
 	setRefreshing(true)
 	defer setRefreshing(false)
