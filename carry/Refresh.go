@@ -30,7 +30,7 @@ type RefreshOrders struct {
 	symbolIndex map[string]int                       // market - current refresh symbol index
 }
 
-func (refreshOrders *RefreshOrders) getCurrentSymbol(market string) (symbol string) {
+func (refreshOrders *RefreshOrders) getCurrentSymbol(market, symbol string) (currentSymbol string) {
 	settings := model.GetFunctionSettings(model.FunctionRefresh, market, model.FunRefreshSeparate)
 	if len(settings) == 0 {
 		return ""
@@ -39,6 +39,10 @@ func (refreshOrders *RefreshOrders) getCurrentSymbol(market string) (symbol stri
 		refreshOrders.symbolIndex = make(map[string]int)
 	}
 	index := refreshOrders.symbolIndex[market] % len(settings)
+	if settings[index].Symbol == `btc_usdt` {
+		refreshOrders.moveNextSymbol(market, symbol)
+		index = refreshOrders.symbolIndex[market] % len(settings)
+	}
 	return settings[index].Symbol
 }
 
@@ -51,9 +55,6 @@ func (refreshOrders *RefreshOrders) addStayTimes(market, symbol string) {
 	}
 	refreshOrders.stayTimes[market] = refreshOrders.stayTimes[market] + 1
 	limit := 10
-	if symbol == `eth_usdt` {
-		limit = 100
-	}
 	if refreshOrders.stayTimes[market] >= limit {
 		refreshOrders.moveNextSymbol(market, symbol)
 	}
@@ -66,11 +67,11 @@ func (refreshOrders *RefreshOrders) moveNextSymbol(market, symbol string) {
 	if refreshOrders.stayTimes == nil {
 		refreshOrders.stayTimes = make(map[string]int)
 	}
-	current := refreshOrders.getCurrentSymbol(market)
-	if (symbol == `btc_usdt` && current == `btc_usdt`) || symbol == current {
+	current := refreshOrders.getCurrentSymbol(market, symbol)
+	if symbol == current {
 		refreshOrders.symbolIndex[market] = refreshOrders.symbolIndex[market] + 1
 		refreshOrders.stayTimes[market] = 0
-		next := refreshOrders.getCurrentSymbol(market)
+		next := refreshOrders.getCurrentSymbol(market, symbol)
 		util.Notice(fmt.Sprintf(`[%s] %s symbol %s -> %s`, symbol, market, current, next))
 	}
 }
@@ -227,7 +228,7 @@ func setRefreshing(value bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
-	current := refreshOrders.getCurrentSymbol(market)
+	current := refreshOrders.getCurrentSymbol(market, symbol)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing ||
 		(symbol != current && symbol != `btc_usdt`) {
 		return
