@@ -230,7 +230,6 @@ var ProcessRefresh = func(market, symbol string) {
 		(symbol != current && symbol != `btc_usdt`) {
 		return
 	}
-	util.Notice(`doing ` + symbol)
 	setRefreshing(true)
 	defer setRefreshing(false)
 	currencies := strings.Split(symbol, "_")
@@ -268,6 +267,7 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
+	util.Notice(`doing ` + symbol)
 	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
 	switch setting.FunctionParameter {
 	case model.FunRefreshMiddle:
@@ -334,12 +334,12 @@ var ProcessRefresh = func(market, symbol string) {
 					}
 				}
 			}
-			if !refreshAble {
-				refreshOrders.moveNextSymbol(market, symbol)
-			}
-			if refreshDone {
-				refreshOrders.addStayTimes(market, symbol)
-			}
+		}
+		if !refreshAble {
+			refreshOrders.moveNextSymbol(market, symbol)
+		}
+		if refreshDone {
+			refreshOrders.addStayTimes(market, symbol)
 		}
 	}
 }
