@@ -68,8 +68,6 @@ func (refreshOrders *RefreshOrders) moveNextSymbol(market, symbol string) {
 	if symbol == current {
 		refreshOrders.symbolIndex[market] = refreshOrders.symbolIndex[market] + 1
 		refreshOrders.stayTimes[market] = 0
-		next := refreshOrders.getCurrentSymbol(market, symbol)
-		util.Notice(fmt.Sprintf(`[%s] %s symbol %s -> %s`, symbol, market, current, next))
 	}
 }
 
@@ -267,9 +265,9 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	util.Notice(fmt.Sprintf(
-		`[%s %s %v] 10000dis %f<%f`,
-		current, symbol, (askPrice-bidPrice)*10000 < bidPrice, (askPrice-bidPrice)*10000, bidPrice))
+	//util.Notice(fmt.Sprintf(
+	//	`[%s %s %v] 10000dis %f<%f`,
+	//	current, symbol, (askPrice-bidPrice)*10000 < bidPrice, (askPrice-bidPrice)*10000, bidPrice))
 	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
 	switch setting.FunctionParameter {
 	case model.FunRefreshMiddle:
@@ -292,7 +290,7 @@ var ProcessRefresh = func(market, symbol string) {
 	case model.FunRefreshSeparate:
 		refreshAble := false
 		refreshDone := false
-		if (askPrice-bidPrice)*10000 < bidPrice {
+		if (askPrice-bidPrice-1/math.Pow(10, float64(api.GetPriceDecimal(market, symbol))))*10000 < bidPrice {
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price
