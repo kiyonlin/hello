@@ -169,6 +169,7 @@ func GetMarkets() []string {
 	i := 0
 	for key := range marketMap {
 		markets[i] = key
+		i++
 	}
 	return markets
 }
