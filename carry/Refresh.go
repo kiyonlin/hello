@@ -223,9 +223,9 @@ func setRefreshing(value bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
-	current := refreshOrders.getCurrentSymbol(market, symbol)
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing ||
-		(symbol != current && symbol != `btc_usdt`) {
+	//current := refreshOrders.getCurrentSymbol(market, symbol)
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing {
+		//||(symbol != current && symbol != `btc_usdt`) {
 		return
 	}
 	setRefreshing(true)
@@ -294,12 +294,12 @@ var ProcessRefresh = func(market, symbol string) {
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price
-			if askAmount > 1.5*bidAmount && bidAmount > 0.002*amount &&
+			if askAmount > 1.5*bidAmount && bidAmount > 0.001*amount &&
 				bidAmount < model.AppConfig.RefreshLimit*amount {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = bidPrice
-			} else if askAmount <= 1.5*bidAmount && askAmount > 0.002*amount &&
+			} else if askAmount <= 1.5*bidAmount && askAmount > 0.001*amount &&
 				askAmount < model.AppConfig.RefreshLimit*amount {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
