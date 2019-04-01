@@ -305,13 +305,12 @@ var ProcessRefresh = func(market, symbol string) {
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price
-			if askAmount > 1.5*bidAmount && bidAmount > 0.001*amount &&
-				bidAmount < model.AppConfig.RefreshLimit*amount {
+			bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
+			if askAmount > 1.5*bidAmount && bidAmount < model.AppConfig.RefreshLimit*amount {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = bidPrice
-			} else if askAmount <= 1.5*bidAmount && askAmount > 0.001*amount &&
-				askAmount < model.AppConfig.RefreshLimit*amount {
+			} else if askAmount <= 1.5*bidAmount && askAmount < model.AppConfig.RefreshLimit*amount {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
 				orderPrice = askPrice
@@ -350,6 +349,36 @@ var ProcessRefresh = func(market, symbol string) {
 			refreshOrders.addStayTimes(market, symbol)
 		}
 	}
+}
+
+//卖一上数量不足百分之一的，价格往上，直到累积卖单数量超过百一的价格上下单，如果累积数量直接超过了百分之三，则在此价格的前面一个单位上下单
+func getPriceFromDepth(market, symbol string, amount float64) (bidPrice, askPrice float64) {
+	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	asks := model.AppMarkets.BidAsks[symbol][market].Asks
+	bids := model.AppMarkets.BidAsks[symbol][market].Bids
+	bidAmount := 0.0
+	askAmount := 0.0
+	for i := 0; i < len(bids); i++ {
+		bidAmount += bids[i].Amount
+		if bidAmount > amount*0.01 {
+			bidPrice = bids[i].Price
+			if bidAmount > amount*0.03 {
+				bidPrice = bids[i].Price + priceDistance
+			}
+			break
+		}
+	}
+	for i := 0; i < len(asks); i++ {
+		askAmount += asks[i].Amount
+		if askAmount > amount*0.01 {
+			askPrice = asks[i].Price
+			if askAmount > amount*0.03 {
+				askPrice = asks[i].Price - priceDistance
+			}
+			break
+		}
+	}
+	return bidPrice, askPrice
 }
 
 func doRefresh(market, symbol string, price, amount float64) {
@@ -407,5 +436,4 @@ func placeSeparateOrder(orderSide, market, symbol string, price, amount float64)
 		return true, order
 	}
 	return false, order
-	//return true, &model.Order{OrderId:`sdf`}
 }
