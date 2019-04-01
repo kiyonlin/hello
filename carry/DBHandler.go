@@ -193,7 +193,7 @@ func RefreshAccounts() {
 			//accounts.MarketTotal[marketName] = 0
 			symbols := model.GetMarketSymbols(value)
 			for key, account := range model.AppAccounts.Data[value] {
-				if symbols[key] {
+				if symbols[key+"_usdt"] {
 					account.PriceInUsdt, _ = api.GetPrice(key + "_usdt")
 					account.Timestamp = timestamp
 				}
