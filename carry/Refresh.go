@@ -14,8 +14,8 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var bidAskTimes int64
 var lastRefreshTime int64
-var processing = false
 var refreshing = false
+var refreshingBtcUsdt = false
 var syncRefresh = make(chan interface{}, 10)
 var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
@@ -218,18 +218,29 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	refreshOrders.askOrders[market][symbol] = askOrders
 }
 
-func setRefreshing(value bool) {
-	refreshing = value
+func setRefreshing(symbol string, value bool) {
+	if symbol == `btc_usdt` {
+		refreshingBtcUsdt = value
+	} else {
+		refreshing = value
+	}
+}
+
+func getRefreshing(symbol string) (result bool) {
+	if symbol == `btc_usdt` {
+		return refreshingBtcUsdt
+	} else {
+		return refreshing
+	}
 }
 
 var ProcessRefresh = func(market, symbol string) {
 	//current := refreshOrders.getCurrentSymbol(market, symbol)
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing {
-		//||(symbol != current && symbol != `btc_usdt`) {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || getRefreshing(symbol) {
 		return
 	}
-	setRefreshing(true)
-	defer setRefreshing(false)
+	setRefreshing(symbol, true)
+	defer setRefreshing(symbol, false)
 	currencies := strings.Split(symbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
 	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 15000 {
