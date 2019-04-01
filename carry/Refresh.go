@@ -66,11 +66,13 @@ func (refreshOrders *RefreshOrders) moveNextSymbol(market, symbol string) {
 	if refreshOrders.stayTimes == nil {
 		refreshOrders.stayTimes = make(map[string]int)
 	}
-	previous := refreshOrders.getCurrentSymbol(market)
-	refreshOrders.symbolIndex[market] = refreshOrders.symbolIndex[market] + 1
-	refreshOrders.stayTimes[market] = 0
 	current := refreshOrders.getCurrentSymbol(market)
-	util.Notice(fmt.Sprintf(`[%s] %s symbol %s -> %s`, symbol, market, previous, current))
+	if (symbol == `btc_usdt` && current == `btc_usdt`) || symbol == current {
+		refreshOrders.symbolIndex[market] = refreshOrders.symbolIndex[market] + 1
+		refreshOrders.stayTimes[market] = 0
+		next := refreshOrders.getCurrentSymbol(market)
+		util.Notice(fmt.Sprintf(`[%s] %s symbol %s -> %s`, symbol, market, current, next))
+	}
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
