@@ -368,6 +368,10 @@ func getPriceFromDepth(market, symbol string, amount float64) (bidPrice, askPric
 			break
 		}
 	}
+	bidLimit := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price * 0.0009
+	if bidPrice < bidLimit {
+		bidPrice = bidLimit
+	}
 	for i := 0; i < len(asks); i++ {
 		askAmount += asks[i].Amount
 		if askAmount > amount*0.01 {
@@ -377,6 +381,10 @@ func getPriceFromDepth(market, symbol string, amount float64) (bidPrice, askPric
 			}
 			break
 		}
+	}
+	askLimit := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price * 1.0001
+	if askPrice > askLimit {
+		askPrice = askLimit
 	}
 	return bidPrice, askPrice
 }
