@@ -31,7 +31,7 @@ type RefreshOrders struct {
 }
 
 func (refreshOrders *RefreshOrders) getCurrentSymbol(market, symbol string) (currentSymbol string) {
-	settings := model.GetFunctionSettings(model.FunctionRefresh, market, model.FunRefreshSeparate)
+	settings := model.GetFunctionSettingsButBTCUSDT(model.FunctionRefresh, market, model.FunRefreshSeparate)
 	if len(settings) == 0 {
 		return ""
 	}
@@ -39,15 +39,12 @@ func (refreshOrders *RefreshOrders) getCurrentSymbol(market, symbol string) (cur
 		refreshOrders.symbolIndex = make(map[string]int)
 	}
 	index := refreshOrders.symbolIndex[market] % len(settings)
-	if settings[index].Symbol == `btc_usdt` {
-		refreshOrders.moveNextSymbol(market, symbol)
-		index = refreshOrders.symbolIndex[market] % len(settings)
-	}
 	return settings[index].Symbol
 }
 
 func (refreshOrders *RefreshOrders) addStayTimes(market, symbol string) {
-	if symbol == `btc_usdt` {
+	current := refreshOrders.getCurrentSymbol(market, symbol)
+	if symbol != current {
 		return
 	}
 	if refreshOrders.stayTimes == nil {
@@ -233,6 +230,7 @@ var ProcessRefresh = func(market, symbol string) {
 		(symbol != current && symbol != `btc_usdt`) {
 		return
 	}
+	util.Notice(`doing ` + symbol)
 	setRefreshing(true)
 	defer setRefreshing(false)
 	currencies := strings.Split(symbol, "_")
