@@ -227,8 +227,9 @@ func setRefreshing(value bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
+	current := refreshOrders.getCurrentSymbol(market)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || processing || refreshing ||
-		(symbol != refreshOrders.getCurrentSymbol(market) && symbol != `btc_usdt`) {
+		(symbol != current && symbol != `btc_usdt`) {
 		return
 	}
 	if refreshOrders.getCurrentSymbol(market) == `btc_usdt` {
@@ -295,8 +296,8 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshDone := false
 		if (askPrice-bidPrice)*10000 < bidPrice {
 			util.Notice(fmt.Sprintf(
-				`[原始单%s] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
-				symbol, bidAmount, askAmount, amount, bidPrice, askPrice, price))
+				`[current %s - symbol %s] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
+				current, symbol, bidAmount, askAmount, amount, bidPrice, askPrice, price))
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price
