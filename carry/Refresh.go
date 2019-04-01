@@ -232,9 +232,6 @@ var ProcessRefresh = func(market, symbol string) {
 		(symbol != current && symbol != `btc_usdt`) {
 		return
 	}
-	if refreshOrders.getCurrentSymbol(market) == `btc_usdt` {
-		refreshOrders.moveNextSymbol(market, symbol)
-	}
 	setRefreshing(true)
 	defer setRefreshing(false)
 	currencies := strings.Split(symbol, "_")
@@ -403,4 +400,5 @@ func placeSeparateOrder(orderSide, market, symbol string, price, amount float64)
 		return true, order
 	}
 	return false, order
+	//return true, &model.Order{OrderId:`sdf`}
 }
