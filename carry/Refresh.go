@@ -267,7 +267,9 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	util.Notice(`doing ` + symbol)
+	util.Notice(fmt.Sprintf(
+		`[%s %s %v] 10000dis %f<%f`,
+		current, symbol, (askPrice-bidPrice)*10000 < bidPrice, (askPrice-bidPrice)*10000, bidPrice))
 	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
 	switch setting.FunctionParameter {
 	case model.FunRefreshMiddle:
@@ -291,9 +293,6 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshAble := false
 		refreshDone := false
 		if (askPrice-bidPrice)*10000 < bidPrice {
-			util.Notice(fmt.Sprintf(
-				`[current %s - symbol %s] bid amount:%f ask amount: %f amount: %f bid price: %f ask price: %f %f`,
-				current, symbol, bidAmount, askAmount, amount, bidPrice, askPrice, price))
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price
