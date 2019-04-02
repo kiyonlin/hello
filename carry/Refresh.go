@@ -300,7 +300,7 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshDone := false
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
-		if (askPrice-bidPrice-1/math.Pow(10, float64(api.GetPriceDecimal(market, symbol))))*10000 < bidPrice {
+		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price
