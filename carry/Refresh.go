@@ -367,7 +367,7 @@ func getPriceFromDepth(market, symbol string, amount float64) (bidPrice, askPric
 			break
 		}
 	}
-	bidLimit := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price * 0.0009
+	bidLimit := model.AppMarkets.BidAsks[symbol][market].Bids[0].Price * 0.9999
 	if bidPrice < bidLimit {
 		bidPrice = bidLimit
 	}
