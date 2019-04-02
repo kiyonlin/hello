@@ -359,7 +359,7 @@ func getPriceFromDepth(market, symbol string, amount float64) (bidPrice, askPric
 	askAmount := 0.0
 	for i := 0; i < len(bids); i++ {
 		bidAmount += bids[i].Amount
-		if bidAmount > amount*0.01 {
+		if bidAmount > amount*0.002 {
 			bidPrice = bids[i].Price
 			if bidAmount > amount*0.03 {
 				bidPrice = bids[i].Price + priceDistance
@@ -373,7 +373,7 @@ func getPriceFromDepth(market, symbol string, amount float64) (bidPrice, askPric
 	}
 	for i := 0; i < len(asks); i++ {
 		askAmount += asks[i].Amount
-		if askAmount > amount*0.01 {
+		if askAmount > amount*0.002 {
 			askPrice = asks[i].Price
 			if askAmount > amount*0.03 {
 				askPrice = asks[i].Price - priceDistance
