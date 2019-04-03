@@ -256,6 +256,10 @@ func SetParameters(c *gin.Context) {
 	if len(refreshLimit) > 0 {
 		model.AppConfig.RefreshLimit, _ = strconv.ParseFloat(refreshLimit, 64)
 	}
+	refreshLimitLow := c.Query(`refreshlimitlow`)
+	if len(refreshLimitLow) > 0 {
+		model.AppConfig.RefreshLimitLow, _ = strconv.ParseFloat(refreshLimitLow, 64)
+	}
 	orderWait := c.Query("orderwait")
 	if orderWait != `` {
 		model.AppConfig.OrderWait, _ = strconv.ParseInt(orderWait, 10, 64)

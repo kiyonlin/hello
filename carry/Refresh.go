@@ -272,7 +272,8 @@ var ProcessRefresh = func(market, symbol string) {
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	if delay > 50 {
+	binanceResult, binancePrice := getBinanceInfo(symbol)
+	if delay > 50 || !binanceResult {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
@@ -304,12 +305,16 @@ var ProcessRefresh = func(market, symbol string) {
 			orderSide := ``
 			reverseSide := ``
 			orderPrice := price
-			bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
-			if askAmount > 1.5*bidAmount && bidAmount < model.AppConfig.RefreshLimit*amount {
+			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
+			if askAmount > 1.5*bidAmount && bidAmount < model.AppConfig.RefreshLimit*amount &&
+				bidAmount > model.AppConfig.RefreshLimitLow && 0.9997*price > binancePrice &&
+				0.9983*price < binancePrice {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = bidPrice
-			} else if askAmount <= 1.5*bidAmount && askAmount < model.AppConfig.RefreshLimit*amount {
+			} else if askAmount <= 1.5*bidAmount && askAmount < model.AppConfig.RefreshLimit*amount &&
+				askAmount > model.AppConfig.RefreshLimitLow && 1.0017*price > binancePrice &&
+				1.0003*price < binancePrice {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
 				orderPrice = askPrice
@@ -318,7 +323,6 @@ var ProcessRefresh = func(market, symbol string) {
 				refreshAble = true
 				orderResult, order := placeSeparateOrder(orderSide, market, symbol, orderPrice, amount)
 				if orderResult {
-					time.Sleep(time.Millisecond * 50)
 					reverseResult, reverseOrder := placeSeparateOrder(reverseSide, market, symbol, orderPrice, amount)
 					if !reverseResult {
 						go api.MustCancel(market, symbol, order.OrderId, true)
@@ -350,8 +354,22 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 }
 
-//卖一上数量不足百分之一的，价格往上，直到累积卖单数量超过百一的价格上下单，如果累积数量直接超过了百分之三，则在此价格的前面一个单位上下单
-func getPriceFromDepth(market, symbol string, amount float64) (bidPrice, askPrice float64) {
+func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
+	binanceBidAsks := model.AppMarkets.BidAsks[symbol][model.Binance]
+	if binanceBidAsks == nil || binanceBidAsks.Bids == nil || binanceBidAsks.Asks == nil ||
+		binanceBidAsks.Bids.Len() == 0 || binanceBidAsks.Asks.Len() == 0 {
+		return false, 0
+	}
+	delay := util.GetNowUnixMillion() - int64(binanceBidAsks.Ts)
+	if delay > 1000 {
+		return false, 0
+	}
+	return true, (binanceBidAsks.Bids[0].Price + binanceBidAsks.Asks[0].Price) / 2
+}
+
+//getPriceFromDepth 卖一上数量不足百分之一的，价格往上，直到累积卖单数量超过百一的价格上下单，如果累积数量直接超过了百分之三，
+// 则在此价格的前面一个单位上下单
+func _(market, symbol string, amount float64) (bidPrice, askPrice float64) {
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	asks := model.AppMarkets.BidAsks[symbol][market].Asks
 	bids := model.AppMarkets.BidAsks[symbol][market].Bids

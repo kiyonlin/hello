@@ -43,13 +43,13 @@ func getBalance(market, symbol string) (left, right float64, err error) {
 func placeMaker(market, symbol string) {
 	coins := strings.Split(symbol, `_`)
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	coinPrice, _ := api.GetPrice(coins[0] + `_usdt`)
+	coinPrice, _ := api.GetPrice(coins[0] + `_btc`)
 	bigOrder := 0
 	lastPrice := 0.0
 	lastAmount := 0.0
 	lastTs := 0
 	for _, deal := range model.AppMarkets.Deals[symbol][market] {
-		if deal.Amount*coinPrice > 10000 && util.GetNowUnixMillion()-int64(deal.Ts) < 10000 {
+		if deal.Amount*coinPrice > 200 && util.GetNowUnixMillion()-int64(deal.Ts) < 10000 {
 			bigOrder++
 			if deal.Ts > lastTs {
 				lastTs = deal.Ts

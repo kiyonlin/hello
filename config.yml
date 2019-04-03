@@ -11,11 +11,12 @@ maxusdt: 1500
 inchina: 0
 deduction: 0.8
 mail: haoweizh@qq.com #41685600@qq.com
-handle: 0
+handle: 1
 handlemaker: 1
 handlerefresh: 1
 handlegrid: 1
 refreshlimit: 0.09
+refreshlimitlow: 0.01
 dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
