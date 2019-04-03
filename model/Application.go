@@ -67,6 +67,52 @@ var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
 var BalanceTurtleCarries = make(map[string]map[string]*Carry) // market - symbol - *carry
 
+type Config struct {
+	lock            sync.Mutex
+	Env             string
+	DBConnection    string
+	Channels        int
+	ChannelSlot     float64
+	Delay           float64
+	Deduction       float64
+	MinUsdt         float64            // 折合usdt最小下单金额
+	MaxUsdt         float64            // 折合usdt最大下单金额
+	WSUrls          map[string]string  // marketName - ws url
+	RestUrls        map[string]string  // marketName - rest url
+	MarketCost      map[string]float64 // marketName - order cost
+	HuobiKey        string
+	HuobiSecret     string
+	OkexKey         string
+	OkexSecret      string
+	BinanceKey      string
+	BinanceSecret   string
+	CoinbigKey      string
+	CoinbigSecret   string
+	CoinparkKey     string
+	CoinparkSecret  string
+	BitmexKey       string
+	BitmexSecret    string
+	FcoinKey        string
+	FcoinSecret     string
+	BnbMin          float64
+	BnbBuy          float64
+	OrderWait       int64   // fcoin/coinpark 刷单平均等待时间
+	AmountRate      float64 // 刷单填写数量比率
+	RefreshLimit    float64
+	RefreshLimitLow float64
+	BinanceDisMin   float64
+	BinanceDisMax   float64
+	Handle          string // 0 不执行处理程序，1执行处理程序
+	HandleMaker     string
+	HandleRefresh   string
+	HandleGrid      string
+	SellRate        float64 // fcoin dk 额外卖单下单比例
+	FtMax           float64 // fcoin dk ft上限
+	InChina         int     // 1 in china, otherwise outter china
+	Mail            string
+	Port            string
+}
+
 var dictMap = map[string]map[string]string{ // market - union name - market name
 	Fcoin: {
 		OrderTypeLimit:  `limit`,
@@ -296,50 +342,6 @@ func GetSymbol(market, subscribe string) (symbol string) {
 	return ""
 }
 
-type Config struct {
-	lock            sync.Mutex
-	Env             string
-	DBConnection    string
-	Channels        int
-	ChannelSlot     float64
-	Delay           float64
-	Deduction       float64
-	MinUsdt         float64            // 折合usdt最小下单金额
-	MaxUsdt         float64            // 折合usdt最大下单金额
-	WSUrls          map[string]string  // marketName - ws url
-	RestUrls        map[string]string  // marketName - rest url
-	MarketCost      map[string]float64 // marketName - order cost
-	HuobiKey        string
-	HuobiSecret     string
-	OkexKey         string
-	OkexSecret      string
-	BinanceKey      string
-	BinanceSecret   string
-	CoinbigKey      string
-	CoinbigSecret   string
-	CoinparkKey     string
-	CoinparkSecret  string
-	BitmexKey       string
-	BitmexSecret    string
-	FcoinKey        string
-	FcoinSecret     string
-	BnbMin          float64
-	BnbBuy          float64
-	OrderWait       int64   // fcoin/coinpark 刷单平均等待时间
-	AmountRate      float64 // 刷单填写数量比率
-	RefreshLimit    float64
-	RefreshLimitLow float64
-	Handle          string // 0 不执行处理程序，1执行处理程序
-	HandleMaker     string
-	HandleRefresh   string
-	HandleGrid      string
-	SellRate        float64 // fcoin dk 额外卖单下单比例
-	FtMax           float64 // fcoin dk ft上限
-	InChina         int     // 1 in china, otherwise outter china
-	Mail            string
-	Port            string
-}
-
 func NewConfig() {
 	AppConfig = &Config{}
 	AppConfig.WSUrls = make(map[string]string)
@@ -401,8 +403,8 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)
 	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
 	str += fmt.Sprintf("channels: %d\n", config.Channels)
-	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
-		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
+	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s binanceDis: (%f - %f)\n",
+		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid, config.BinanceDisMin, config.BinanceDisMax)
 	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f RefreshLimit (%f - %f)\n",
 		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.RefreshLimitLow, config.RefreshLimit)
 	return str

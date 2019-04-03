@@ -260,6 +260,14 @@ func SetParameters(c *gin.Context) {
 	if len(refreshLimitLow) > 0 {
 		model.AppConfig.RefreshLimitLow, _ = strconv.ParseFloat(refreshLimitLow, 64)
 	}
+	binanceDisMin := c.Query(`binancedismin`)
+	if len(binanceDisMin) > 0 {
+		model.AppConfig.BinanceDisMin, _ = strconv.ParseFloat(binanceDisMin, 64)
+	}
+	binanceDisMax := c.Query(`binancedismax`)
+	if len(binanceDisMax) > 0 {
+		model.AppConfig.BinanceDisMax, _ = strconv.ParseFloat(binanceDisMax, 64)
+	}
 	orderWait := c.Query("orderwait")
 	if orderWait != `` {
 		model.AppConfig.OrderWait, _ = strconv.ParseInt(orderWait, 10, 64)

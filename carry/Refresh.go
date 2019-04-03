@@ -307,14 +307,14 @@ var ProcessRefresh = func(market, symbol string) {
 			orderPrice := price
 			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
 			if askAmount > 1.5*bidAmount && bidAmount < model.AppConfig.RefreshLimit*amount &&
-				bidAmount > model.AppConfig.RefreshLimitLow && 0.9997*price > binancePrice &&
-				0.9983*price < binancePrice {
+				bidAmount > model.AppConfig.RefreshLimitLow && (1-model.AppConfig.BinanceDisMin)*price > binancePrice &&
+				(1-model.AppConfig.BinanceDisMax)*price < binancePrice {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = bidPrice
 			} else if askAmount <= 1.5*bidAmount && askAmount < model.AppConfig.RefreshLimit*amount &&
-				askAmount > model.AppConfig.RefreshLimitLow && 1.0017*price > binancePrice &&
-				1.0003*price < binancePrice {
+				askAmount > model.AppConfig.RefreshLimitLow && (1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
+				(1+model.AppConfig.BinanceDisMin)*price < binancePrice {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
 				orderPrice = askPrice
