@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-var lastTickId = int64(0)
+var lastTickId = make(map[string]int64) // symbol - int64
 
 var subscribeHandlerBinance = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
 	return nil
@@ -37,9 +37,11 @@ func WsDepthServeBinance(markets *model.Markets, errHandler ErrHandler) (chan st
 			}
 			bidAsk := model.BidAsk{}
 			tickId, _ := json.Get(`lastUpdateId`).Int64()
-			if tickId > lastTickId {
-				lastTickId = tickId
+			if tickId > lastTickId[symbol] {
+				lastTickId[symbol] = tickId
 				bidAsk.Ts = int(util.GetNowUnixMillion())
+			} else {
+				return
 			}
 			bids, _ := json.Get(`bids`).Array()
 			asks, _ := json.Get(`asks`).Array()
