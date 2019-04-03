@@ -387,20 +387,19 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 
 func placeSeparateOrder(orderSide, market, symbol string, price, amount float64) (result bool, order *model.Order) {
 	lastRefreshTime = util.GetNowUnixMillion()
-	order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
-	if order.ErrCode == `1016` {
-		return false, order
-	}
-	if order.OrderId == `` || order.Status == model.CarryStatusFail {
-		time.Sleep(time.Millisecond * 100)
+	for i := 0; i < 3; i++ {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
-	}
-	if order.Status == model.CarryStatusWorking {
-		order.Function = model.FunctionRefresh
-		refreshOrders.Add(market, symbol, orderSide, order)
-		//refreshOrders.SetLastOrder(market, symbol, orderSide, order)
-		model.AppDB.Save(order)
-		return true, order
+		if order.ErrCode == `1016` {
+			return false, order
+		} else if order.OrderId == `` || order.Status == model.CarryStatusFail {
+			time.Sleep(time.Millisecond * 100)
+		} else if order.Status == model.CarryStatusWorking {
+			order.Function = model.FunctionRefresh
+			refreshOrders.Add(market, symbol, orderSide, order)
+			//refreshOrders.SetLastOrder(market, symbol, orderSide, order)
+			model.AppDB.Save(order)
+			return true, order
+		}
 	}
 	return false, order
 }
