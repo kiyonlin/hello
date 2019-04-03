@@ -404,7 +404,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
 	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f RefreshLimit (%f - %f)\n",
-		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.RefreshLimit, config.RefreshLimitLow)
+		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.RefreshLimitLow, config.RefreshLimit)
 	return str
 }
 
