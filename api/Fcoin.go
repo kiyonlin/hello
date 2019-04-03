@@ -17,8 +17,7 @@ import (
 
 // 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
 //{"status":3033,"msg":"market order is disabled for symbol bsvusdt"}
-//var fcoinLastApiAccessTime = util.GetNow()
-//var fcoinLock sync.Mutex
+//{"status":1002,"msg":"system busy"}
 var lastDepthPingFcoin = util.GetNowUnixMillion()
 
 var subscribeHandlerFcoin = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {

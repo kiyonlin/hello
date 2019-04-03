@@ -241,6 +241,9 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price,
 		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
 		orderId, errCode = placeOrderFcoin(orderSide, orderType, symbol, strPrice, strAmount)
+		if orderId == `1002` {
+			time.Sleep(time.Millisecond * 200)
+		}
 	case model.Coinpark:
 		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, strPrice, strAmount)
 		if errCode == `4003` {
