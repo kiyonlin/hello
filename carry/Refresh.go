@@ -21,54 +21,11 @@ var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
 
 type RefreshOrders struct {
-	lock        sync.Mutex
-	bidOrders   map[string]map[string][]*model.Order // market - symbol - orders
-	askOrders   map[string]map[string][]*model.Order // market - symbol - orders
-	lastBid     map[string]map[string]*model.Order   // market - symbol - order
-	lastAsk     map[string]map[string]*model.Order   // market - symbol - order
-	stayTimes   map[string]int                       // market - current symbol refresh times
-	symbolIndex map[string]int                       // market - current refresh symbol index
-}
-
-func (refreshOrders *RefreshOrders) getCurrentSymbol(market, symbol string) (currentSymbol string) {
-	settings := model.GetFunctionSettingsButBTCUSDT(model.FunctionRefresh, market, model.FunRefreshSeparate)
-	if len(settings) == 0 {
-		return ""
-	}
-	if refreshOrders.symbolIndex == nil {
-		refreshOrders.symbolIndex = make(map[string]int)
-	}
-	index := refreshOrders.symbolIndex[market] % len(settings)
-	return settings[index].Symbol
-}
-
-func (refreshOrders *RefreshOrders) addStayTimes(market, symbol string) {
-	current := refreshOrders.getCurrentSymbol(market, symbol)
-	if symbol != current {
-		return
-	}
-	if refreshOrders.stayTimes == nil {
-		refreshOrders.stayTimes = make(map[string]int)
-	}
-	refreshOrders.stayTimes[market] = refreshOrders.stayTimes[market] + 1
-	limit := 10
-	if refreshOrders.stayTimes[market] >= limit {
-		refreshOrders.moveNextSymbol(market, symbol)
-	}
-}
-
-func (refreshOrders *RefreshOrders) moveNextSymbol(market, symbol string) {
-	if refreshOrders.symbolIndex == nil {
-		refreshOrders.symbolIndex = make(map[string]int)
-	}
-	if refreshOrders.stayTimes == nil {
-		refreshOrders.stayTimes = make(map[string]int)
-	}
-	current := refreshOrders.getCurrentSymbol(market, symbol)
-	if symbol == current {
-		refreshOrders.symbolIndex[market] = refreshOrders.symbolIndex[market] + 1
-		refreshOrders.stayTimes[market] = 0
-	}
+	lock      sync.Mutex
+	bidOrders map[string]map[string][]*model.Order // market - symbol - orders
+	askOrders map[string]map[string][]*model.Order // market - symbol - orders
+	lastBid   map[string]map[string]*model.Order   // market - symbol - order
+	lastAsk   map[string]map[string]*model.Order   // market - symbol - order
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
@@ -218,29 +175,18 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	refreshOrders.askOrders[market][symbol] = askOrders
 }
 
-func setRefreshing(symbol string, value bool) {
-	if symbol == `btc_usdt` {
-		refreshingBtcUsdt = value
-	} else {
-		refreshing = value
-	}
-}
-
-func getRefreshing(symbol string) (result bool) {
-	if symbol == `btc_usdt` {
-		return refreshingBtcUsdt
-	} else {
-		return refreshing
-	}
+func setRefreshing(value bool) {
+	refreshing = value
 }
 
 var ProcessRefresh = func(market, symbol string) {
 	//current := refreshOrders.getCurrentSymbol(market, symbol)
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || getRefreshing(symbol) {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshing ||
+		(symbol != `btc_usdt` && refreshingBtcUsdt) {
 		return
 	}
-	setRefreshing(symbol, true)
-	defer setRefreshing(symbol, false)
+	setRefreshing(true)
+	defer setRefreshing(false)
 	currencies := strings.Split(symbol, "_")
 	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
 	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 15000 {
@@ -298,7 +244,6 @@ var ProcessRefresh = func(market, symbol string) {
 		doRefresh(market, symbol, price, amount)
 	case model.FunRefreshSeparate:
 		refreshAble := false
-		refreshDone := false
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
 		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
@@ -331,8 +276,6 @@ var ProcessRefresh = func(market, symbol string) {
 							time.Sleep(time.Second)
 							api.RefreshAccount(market)
 						}
-					} else {
-						refreshDone = true
 					}
 				} else if order.ErrCode == `1016` {
 					if lastOrign1016 {
@@ -345,11 +288,8 @@ var ProcessRefresh = func(market, symbol string) {
 				}
 			}
 		}
-		if !refreshAble {
-			refreshOrders.moveNextSymbol(market, symbol)
-		}
-		if refreshDone {
-			refreshOrders.addStayTimes(market, symbol)
+		if symbol == `btc_usdt` {
+			refreshingBtcUsdt = refreshAble
 		}
 	}
 }
