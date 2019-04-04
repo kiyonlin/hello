@@ -266,10 +266,10 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 			if orderSide != `` {
 				refreshAble = true
-				orderResult, order := placeSeparateOrder(orderSide, market, symbol, orderPrice, amount)
+				orderResult, order := placeSeparateOrder(orderSide, market, symbol, orderPrice, amount, 0)
 				if orderResult {
 					time.Sleep(time.Millisecond * 15)
-					reverseResult, reverseOrder := placeSeparateOrder(reverseSide, market, symbol, orderPrice, amount)
+					reverseResult, reverseOrder := placeSeparateOrder(reverseSide, market, symbol, orderPrice, amount, 4)
 					if !reverseResult {
 						go api.MustCancel(market, symbol, order.OrderId, true)
 						time.Sleep(time.Second * 2)
@@ -385,9 +385,10 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 	syncRefresh <- struct{}{}
 }
 
-func placeSeparateOrder(orderSide, market, symbol string, price, amount float64) (result bool, order *model.Order) {
+func placeSeparateOrder(orderSide, market, symbol string, price, amount float64, retry int) (
+	result bool, order *model.Order) {
 	lastRefreshTime = util.GetNowUnixMillion()
-	for i := 0; i < 3; i++ {
+	for i := 0; i < retry; i++ {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
 		if order.ErrCode == `1016` {
 			return false, order
