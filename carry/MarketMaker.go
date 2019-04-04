@@ -24,22 +24,25 @@ func setMarketMaking(making bool) {
 }
 
 func getBalance(market, symbol, accountType string) (left, right float64, err error) {
+	leverMarket := ``
 	if accountType == model.AccountTypeLever {
-		market = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever, symbol)
+		leverMarket = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever,
+			strings.Replace(symbol, `_`, ``, 1))
 	}
 	coins := strings.Split(symbol, `_`)
-	leftAccount := model.AppAccounts.GetAccount(market, coins[0])
-	if util.GetNowUnixMillion()-api.LastRefreshTime > 15000 {
+	if util.GetNowUnixMillion()-api.LastRefreshTime[market] > 15000 {
 		util.Notice(`15 seconds past, refresh and return ` + market + symbol)
+		api.RefreshAccount(market)
 		return 0, 0, errors.New(`data older than 15 seconds`)
 	}
+	leftAccount := model.AppAccounts.GetAccount(leverMarket, coins[0])
 	if leftAccount == nil {
 		util.Notice(`nil account ` + market + coins[0])
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
 		return 0, 0, errors.New(`no left balance`)
 	}
-	rightAccount := model.AppAccounts.GetAccount(market, coins[1])
+	rightAccount := model.AppAccounts.GetAccount(leverMarket, coins[1])
 	if rightAccount == nil {
 		util.Notice(`nil account ` + market + coins[1])
 		time.Sleep(time.Second * 2)

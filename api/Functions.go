@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var LastRefreshTime int64
+var LastRefreshTime = make(map[string]int64) // market - int64
 
 // 根据不同的网站返回价格小数位
 func GetPriceDecimal(market, symbol string) int {
@@ -174,7 +174,7 @@ func SyncQueryOrderById(market, symbol, orderId string) (order *model.Order) {
 }
 
 func RefreshAccount(market string) {
-	LastRefreshTime = util.GetNowUnixMillion()
+	LastRefreshTime[market] = util.GetNowUnixMillion()
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:

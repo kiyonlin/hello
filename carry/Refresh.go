@@ -367,7 +367,6 @@ func doRefresh(market, symbol string, price, amount float64) {
 }
 
 func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) {
-	api.LastRefreshTime = util.GetNowUnixMillion()
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, ``, price, amount)
 	order.Function = model.FunctionRefresh
 	if order.Status == model.CarryStatusWorking {
@@ -380,7 +379,6 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 
 func placeSeparateOrder(orderSide, market, symbol, accountType string, price, amount float64, retry, insufficient int) (
 	result bool, order *model.Order) {
-	api.LastRefreshTime = util.GetNowUnixMillion()
 	insufficientTimes := 0
 	for i := 0; i < retry; i++ {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
