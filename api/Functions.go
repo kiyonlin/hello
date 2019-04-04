@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var LastRefreshTime int64
+
 // 根据不同的网站返回价格小数位
 func GetPriceDecimal(market, symbol string) int {
 	switch market {
@@ -172,6 +174,7 @@ func SyncQueryOrderById(market, symbol, orderId string) (order *model.Order) {
 }
 
 func RefreshAccount(market string) {
+	LastRefreshTime = util.GetNowUnixMillion()
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
@@ -194,6 +197,8 @@ func RefreshAccount(market string) {
 		//	}
 		//}
 	case model.Fcoin:
+		getLeverAccountFcoin(model.AppAccounts)
+		time.Sleep(time.Millisecond * 15)
 		getAccountFcoin(model.AppAccounts)
 	case model.Coinpark:
 		getAccountCoinpark(model.AppAccounts)
@@ -207,7 +212,7 @@ func RefreshAccount(market string) {
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price,
+func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType string, price,
 	amount float64) (order *model.Order) {
 	priceFormat := `%.` + strconv.Itoa(GetPriceDecimal(model.Fcoin, symbol)) + `f`
 	amountFormat := `%.` + strconv.Itoa(GetAmountDecimal(model.Fcoin, symbol)) + `f`
@@ -240,7 +245,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType string, price,
 	case model.Binance:
 		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
-		orderId, errCode = placeOrderFcoin(orderSide, orderType, symbol, strPrice, strAmount)
+		orderId, errCode = placeOrderFcoin(orderSide, orderType, symbol, accountType, strPrice, strAmount)
 		if orderId == `1002` {
 			time.Sleep(time.Millisecond * 200)
 		}

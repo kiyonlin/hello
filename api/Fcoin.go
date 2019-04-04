@@ -151,7 +151,7 @@ func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte
 // side: buy sell
 // type: limit market
 // fcoin中amount在市价买单中指的是右侧的钱
-func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+func placeOrderFcoin(orderSide, orderType, symbol, accountType, price, amount string) (orderId, errCode string) {
 	postData := make(map[string]interface{})
 	if orderType == model.OrderTypeLimit {
 		postData["price"] = price
@@ -170,6 +170,9 @@ func placeOrderFcoin(orderSide, orderType, symbol, price, amount string) (orderI
 	postData["type"] = orderType
 	postData["side"] = orderSide
 	postData["amount"] = amount
+	if accountType == model.AccountTypeLever {
+		postData[`account_type`] = `margin`
+	}
 	responseBody := SignedRequestFcoin("POST", "/orders", postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
@@ -263,9 +266,37 @@ func queryOrderFcoin(symbol, orderId string) (order *model.Order) {
 	return nil
 }
 
+func getLeverAccountFcoin(accounts *model.Accounts) {
+	responseBody := SignedRequestFcoin(`GET`, `/broker/leveraged_accounts`, nil)
+	balanceJson, err := util.NewJSON(responseBody)
+	if err == nil {
+		status, _ := balanceJson.Get(`status`).String()
+		if status == `ok` {
+			data, _ := balanceJson.Get(`data`).Array()
+			for _, value := range data {
+				accountJson := value.(map[string]interface{})
+				if accountJson[`open`].(bool) {
+					symbol := accountJson[`leveraged_account_type`]
+					base := accountJson[`base`].(string)
+					quote := accountJson[`quote`].(string)
+					freeBase, _ := strconv.ParseFloat(accountJson[`available_base_currency_amount`].(string), 64)
+					freeQuote, _ := strconv.ParseFloat(accountJson[`available_quote_currency_amount`].(string), 64)
+					frozenBase, _ := strconv.ParseFloat(accountJson[`frozen_base_currency_amount`].(string), 64)
+					frozenQuote, _ := strconv.ParseFloat(accountJson[`frozen_quote_currency_amount`].(string), 64)
+					market := fmt.Sprintf(`%s_%s_%s`, model.Fcoin, model.AccountTypeLever, symbol)
+					accountBase := &model.Account{Market: market, Currency: base, Free: freeBase, Frozen: frozenBase}
+					accountQuote := &model.Account{Market: market, Currency: quote, Free: freeQuote, Frozen: frozenQuote}
+					accounts.SetAccount(market, base, accountBase)
+					accounts.SetAccount(market, quote, accountQuote)
+				}
+			}
+		}
+	}
+}
+
 func getAccountFcoin(accounts *model.Accounts) {
 	responseBody := SignedRequestFcoin(`GET`, `/accounts/balance`, nil)
-	balanceJson, err := util.NewJSON([]byte(responseBody))
+	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ := balanceJson.Get("status").Int()
 		if status == 0 {

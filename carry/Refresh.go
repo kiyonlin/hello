@@ -6,14 +6,12 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"strings"
 	"sync"
 	"time"
 )
 
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var bidAskTimes int64
-var lastRefreshTime int64
 var refreshing = false
 var refreshingBtcUsdt = false
 var syncRefresh = make(chan interface{}, 10)
@@ -185,25 +183,14 @@ var ProcessRefresh = func(market, symbol string) {
 		(symbol != `btc_usdt` && refreshingBtcUsdt) {
 		return
 	}
+	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	setRefreshing(true)
 	defer setRefreshing(false)
-	currencies := strings.Split(symbol, "_")
-	leftAccount := model.AppAccounts.GetAccount(market, currencies[0])
-	if leftAccount == nil || util.GetNowUnixMillion()-lastRefreshTime > 15000 {
-		util.Notice(`nil account or 15 seconds refresh ` + market + ` ` + symbol)
-		lastRefreshTime = util.GetNowUnixMillion()
-		time.Sleep(time.Second * 2)
-		api.RefreshAccount(market)
+	//currencies := strings.Split(symbol, "_")
+	leftBalance, rightBalance, err := getBalance(market, symbol, setting.AccountType)
+	if err != nil {
 		return
 	}
-	leftBalance := leftAccount.Free
-	rightAccount := model.AppAccounts.GetAccount(market, currencies[1])
-	if rightAccount == nil {
-		util.Notice(`nil account ` + market + currencies[1])
-		api.RefreshAccount(market)
-		return
-	}
-	rightBalance := rightAccount.Free
 	if model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][market] == nil ||
 		len(model.AppMarkets.BidAsks[symbol][market].Bids) == 0 || len(model.AppMarkets.BidAsks[symbol][market].Asks) == 0 {
 		util.Notice(`nil bid-ask price for ` + symbol)
@@ -216,7 +203,6 @@ var ProcessRefresh = func(market, symbol string) {
 	price := (bidPrice + askPrice) / 2
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	binanceResult, binancePrice := getBinanceInfo(symbol)
 	if delay > 50 || !binanceResult {
@@ -270,11 +256,13 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 			if orderSide != `` {
 				refreshAble = true
-				orderResult, order := placeSeparateOrder(orderSide, market, symbol, orderPrice, amount, 1, 2)
+				orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
+					orderPrice, amount, 1, 2)
 				if orderResult {
 					time.Sleep(time.Millisecond * 15)
 					reverseResult, reverseOrder :=
-						placeSeparateOrder(reverseSide, market, symbol, orderPrice, amount, 4, 1)
+						placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
+							orderPrice, amount, 4, 1)
 					if !reverseResult {
 						go api.MustCancel(market, symbol, order.OrderId, true)
 						time.Sleep(time.Second * 2)
@@ -379,8 +367,8 @@ func doRefresh(market, symbol string, price, amount float64) {
 }
 
 func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) {
-	lastRefreshTime = util.GetNowUnixMillion()
-	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	api.LastRefreshTime = util.GetNowUnixMillion()
+	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, ``, price, amount)
 	order.Function = model.FunctionRefresh
 	if order.Status == model.CarryStatusWorking {
 		refreshOrders.Add(market, symbol, orderSide, order)
@@ -390,12 +378,12 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 	syncRefresh <- struct{}{}
 }
 
-func placeSeparateOrder(orderSide, market, symbol string, price, amount float64, retry, insufficient int) (
+func placeSeparateOrder(orderSide, market, symbol, accountType string, price, amount float64, retry, insufficient int) (
 	result bool, order *model.Order) {
-	lastRefreshTime = util.GetNowUnixMillion()
+	api.LastRefreshTime = util.GetNowUnixMillion()
 	insufficientTimes := 0
 	for i := 0; i < retry; i++ {
-		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 		if order.ErrCode == `1016` {
 			insufficientTimes++
 			if insufficient <= insufficientTimes {

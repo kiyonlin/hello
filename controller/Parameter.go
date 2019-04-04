@@ -67,6 +67,7 @@ func setSymbol(c *gin.Context) {
 	}
 	var setting model.Setting
 	model.AppDB.Model(&setting).Where("function_parameter is null").Update("function_parameter", ``)
+	model.AppDB.Model(&setting).Where("account_type is null").Update("account_type", ``)
 	model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ? and function_parameter= ?",
 		market, symbol, function, parameter).Update("valid", valid)
 	rows, _ := model.AppDB.Model(&setting).

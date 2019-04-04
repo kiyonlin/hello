@@ -23,18 +23,27 @@ func setMarketMaking(making bool) {
 	marketMaking = making
 }
 
-func getBalance(market, symbol string) (left, right float64, err error) {
+func getBalance(market, symbol, accountType string) (left, right float64, err error) {
+	if accountType == model.AccountTypeLever {
+		market = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever, symbol)
+	}
 	coins := strings.Split(symbol, `_`)
 	leftAccount := model.AppAccounts.GetAccount(market, coins[0])
+	if util.GetNowUnixMillion()-api.LastRefreshTime > 15000 {
+		util.Notice(`15 seconds past, refresh and return ` + market + symbol)
+		return 0, 0, errors.New(`data older than 15 seconds`)
+	}
 	if leftAccount == nil {
 		util.Notice(`nil account ` + market + coins[0])
-		//go getAccount()
+		time.Sleep(time.Second * 2)
+		api.RefreshAccount(market)
 		return 0, 0, errors.New(`no left balance`)
 	}
 	rightAccount := model.AppAccounts.GetAccount(market, coins[1])
 	if rightAccount == nil {
 		util.Notice(`nil account ` + market + coins[1])
-		//go getAccount()
+		time.Sleep(time.Second * 2)
+		api.RefreshAccount(market)
 		return 0, 0, errors.New(`no right balance`)
 	}
 	return leftAccount.Free, rightAccount.Free, nil
@@ -69,7 +78,7 @@ func placeMaker(market, symbol string) {
 		model.AppMarkets.BidAsks[symbol][market].Asks[0].Price-price < priceDistance {
 		price = lastPrice
 	}
-	left, right, err := getBalance(market, symbol)
+	left, right, err := getBalance(market, symbol, ``)
 	if err != nil {
 		return
 	}
@@ -86,7 +95,7 @@ func placeMaker(market, symbol string) {
 			return
 		}
 	}
-	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, ``, price, amount)
 	if order.OrderId != `` {
 		time.Sleep(time.Second)
 		api.MustCancel(market, symbol, order.OrderId, true)

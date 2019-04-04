@@ -116,11 +116,11 @@ var ProcessCarry = func(market, symbol string) {
 
 func order(carry *model.Carry, orderSide, orderType, market, symbol string, price, amount float64) {
 	if orderSide == model.OrderSideSell {
-		order := api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
+		order := api.PlaceOrder(orderSide, orderType, market, symbol, ``, ``, price, amount)
 		carry.DealAskOrderId, carry.DealAskErrCode, carry.DealAskStatus, carry.AskAmount, carry.AskPrice =
 			order.OrderId, order.ErrCode, order.Status, order.DealPrice, order.DealPrice
 	} else if orderSide == model.OrderSideBuy {
-		order := api.PlaceOrder(orderSide, orderType, market, symbol, ``, price, amount)
+		order := api.PlaceOrder(orderSide, orderType, market, symbol, ``, ``, price, amount)
 		carry.DealBidOrderId, carry.DealBidErrCode, carry.DealBidStatus, carry.BidAmount, carry.BidPrice =
 			order.OrderId, order.ErrCode, order.Status, order.DealAmount, order.DealPrice
 	}
@@ -209,7 +209,6 @@ func Maintain() {
 	model.HandlerMap[model.FunctionMaker] = ProcessMake
 	model.HandlerMap[model.FunctionGrid] = ProcessGrid
 	model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
-	model.HandlerMap[model.FunctionBalanceTurtle] = ProcessBalanceTurtle
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
 	model.HandlerMap[model.FunctionCarry] = ProcessCarry
 

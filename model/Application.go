@@ -22,7 +22,7 @@ const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
 const Bitmex = `bitmex`
-
+const AccountTypeLever = `lever`
 const SubscribeDepth = `SubscribeDepth`
 const SubscribeDeal = `subscribeDeal`
 const CarryStatusSuccess = "success"
@@ -34,7 +34,6 @@ const OrderSideBuy = `buy`
 const OrderSideSell = `sell`
 const OrderSideLiquidateLong = `liquidateLong`
 const OrderSideLiquidateShort = `liquidateShort`
-const CarryTypeBalance = `balance`
 const CarryTypeFuture = `future`
 const CarryTypeArbitrarySell = `arbitrarysell`
 const CarryTypeArbitraryBuy = `arbitrarybuy`
@@ -44,7 +43,6 @@ const AmountTypeCoinNumber = `coinnumber`
 const FunctionGrid = `grid`
 const FunctionMaker = `maker`
 const FunctionCarry = `carry`
-const FunctionBalanceTurtle = `balanceturtle`
 const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`
 
@@ -65,7 +63,6 @@ var AccountChannel = make(chan map[string]*Account, 50)
 var InnerCarryChannel = make(chan Carry, 50)
 var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
-var BalanceTurtleCarries = make(map[string]map[string]*Carry) // market - symbol - *carry
 
 type Config struct {
 	lock            sync.Mutex
@@ -222,20 +219,6 @@ func GetOrderStatus(market, marketStatus string) (status string) {
 		return CarryStatusWorking
 	}
 	return orderStatusMap[market][marketStatus]
-}
-
-func GetBalanceTurtleCarry(market, symbol string) (turtleCarry *Carry) {
-	if BalanceTurtleCarries[market] == nil {
-		return nil
-	}
-	return BalanceTurtleCarries[market][symbol]
-}
-
-func SetBalanceTurtleCarry(market, symbol string, turtleCarry *Carry) {
-	if BalanceTurtleCarries[market] == nil {
-		BalanceTurtleCarries[market] = make(map[string]*Carry)
-	}
-	BalanceTurtleCarries[market][symbol] = turtleCarry
 }
 
 func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {

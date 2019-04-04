@@ -84,7 +84,7 @@ func arbitraryMarket(market, symbol string, marketBidAsk *model.BidAsk) {
 	}
 	if accountCoin.Free*marketBidAsk.Bids[0].Price > model.AppConfig.MinUsdt {
 		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket,
-			market, symbol, model.AmountTypeCoinNumber, marketBidAsk.Bids[0].Price, accountCoin.Free)
+			market, symbol, model.AmountTypeCoinNumber, ``, marketBidAsk.Bids[0].Price, accountCoin.Free)
 		//orderId, errCode, status, actualAmount, actualPrice :=
 		if order.OrderId == `` || order.OrderId == `0` {
 			util.Notice(fmt.Sprintf(`[arbitrary sell fail]%s %s price%f amount%f`, market, symbol,
@@ -145,7 +145,7 @@ func getBidAmount(market, symbol string, faceValue, bidPrice float64) (amount fl
 func openShort(carry *model.Carry, faceValue float64) {
 	util.Notice(`[open short]` + carry.ToString())
 	order := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol, ``,
-		carry.BidPrice, carry.BidAmount)
+		``, carry.BidPrice, carry.BidAmount)
 	carry.DealBidOrderId = order.OrderId
 	carry.DealBidErrCode = order.ErrCode
 	carry.DealBidStatus = order.Status
@@ -193,7 +193,7 @@ func buyShort(carry *model.Carry, faceValue float64) bool {
 	sellAmount := account.Free - allHoldings*faceValue/carry.AskPrice
 	if sellAmount >= 0 {
 		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, carry.AskWeb, carry.AskSymbol,
-			model.AmountTypeCoinNumber, carry.AskPrice, sellAmount)
+			model.AmountTypeCoinNumber, ``, carry.AskPrice, sellAmount)
 		carry.DealAskOrderId = order.OrderId
 		carry.DealAskErrCode = order.ErrCode
 		carry.DealAskStatus = order.Status
@@ -218,7 +218,7 @@ func buyShort(carry *model.Carry, faceValue float64) bool {
 func liquidShort(carry *model.Carry, faceValue float64) bool {
 	util.Notice(`[liquid short]` + carry.ToString())
 	order := api.PlaceOrder(model.OrderSideLiquidateShort, model.OrderTypeMarket, carry.BidWeb, carry.BidSymbol,
-		model.AmountTypeContractNumber, carry.BidPrice, carry.BidAmount)
+		model.AmountTypeContractNumber, ``, carry.BidPrice, carry.BidAmount)
 	carry.DealBidOrderId = order.OrderId
 	carry.DealBidErrCode = order.ErrCode
 	carry.DealBidStatus = order.Status
@@ -287,7 +287,7 @@ func closeShort(carry *model.Carry, faceValue float64) {
 		currency := carry.AskSymbol[0:index]
 		account := model.AppAccounts.GetAccount(carry.AskWeb, currency)
 		order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeMarket, carry.AskWeb, carry.AskSymbol,
-			model.AmountTypeCoinNumber, carry.AskPrice, account.Free)
+			model.AmountTypeCoinNumber, ``, carry.AskPrice, account.Free)
 		carry.DealAskOrderId = order.OrderId
 		carry.DealAskErrCode = order.ErrCode
 		carry.DealAskStatus = order.Status

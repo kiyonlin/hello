@@ -12,6 +12,7 @@ type Setting struct {
 	Market            string
 	Symbol            string
 	FunctionParameter string
+	AccountType       string
 	Margin            float64 // carry use
 	OpenShortMargin   float64 // arbitrary future use
 	CloseShortMargin  float64 // arbitrary future use
@@ -39,19 +40,6 @@ func GetFunctionMarkets(function string) []string {
 		i++
 	}
 	return markets
-}
-
-func GetFunctionSettingsButBTCUSDT(function, market, funParam string) (settings []*Setting) {
-	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
-		return nil
-	}
-	settings = make([]*Setting, 0)
-	for _, value := range marketSymbolSetting[function][market] {
-		if (value.FunctionParameter == funParam || funParam == ``) && value.Symbol != `btc_usdt` {
-			settings = append(settings, value)
-		}
-	}
-	return settings
 }
 
 func GetSettings(function, market, symbolPrefix string) (settings []*Setting) {

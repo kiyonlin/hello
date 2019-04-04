@@ -59,6 +59,10 @@ func Test_Api(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	api.RefreshAccount(model.Fcoin)
+	//order := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, model.Fcoin, `btc_usdt`, ``,
+	//	model.AccountTypeLever, 4999, 0.001)
+	//fmt.Println(order.OrderId)
 	//order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, model.Fcoin, `bsv_usdt`, ``, 64.94, 30)
 	//api.QueryOrder(order)
 	//order := api.QueryOrderById(model.Fcoin, `xrp_btc`, `I_u7N8mADEnBchAtpdaTxrH-Tr8mJMDMA-MDOmVVr7oM2dOU-AOgzHjI0OG0Qhxv`)

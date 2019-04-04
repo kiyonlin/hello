@@ -84,36 +84,6 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 	return false
 }
 
-func (markets *Markets) NewBalanceTurtle(market, symbol string, leftAccount, rightAccount *Account,
-	currentPrice, lastPrice float64) (*Carry, error) {
-	setting := GetSetting(FunctionBalanceTurtle, market, symbol)
-	if setting == nil {
-		return nil, errors.New(fmt.Sprintf(market + ` has no setting for ` + symbol))
-	}
-	leftAmount := leftAccount.Free + leftAccount.Frozen
-	rightAmount := rightAccount.Free + rightAccount.Frozen
-	lastBalance := leftAmount*lastPrice + rightAmount
-	leftRate := leftAmount * lastPrice / lastBalance
-	rightRate := rightAmount / lastBalance
-	if leftRate < 0.5 {
-		leftRate += (0.5 - leftRate) / 10
-	} else {
-		leftRate -= (leftRate - 0.5) / 10
-	}
-	rightRate = 1 - leftRate
-	askPrice := lastPrice * (1 + 2*setting.TurtleBalanceRate)
-	askBalance := askPrice*leftAmount + rightAmount
-	askAmount := rightRate * (askBalance - lastBalance) / askPrice
-	bidPrice := lastPrice * (1 - 2*setting.TurtleBalanceRate)
-	bidBalance := bidPrice*leftAmount + rightAmount
-	bidAmount := leftRate * (lastBalance - bidBalance) / bidPrice
-	util.Notice(fmt.Sprintf(`比例coin - money %f - %f`, leftRate, rightRate))
-	now := util.GetNowUnixMillion()
-	return &Carry{BidSymbol: symbol, AskSymbol: symbol, BidWeb: market, AskWeb: market, BidAmount: bidAmount,
-		AskAmount: askAmount, BidPrice: bidPrice, AskPrice: askPrice, SideType: CarryTypeBalance, BidTime: now,
-		AskTime: now}, nil
-}
-
 func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
 	if markets.BidAsks[symbol] == nil {
 		return nil, errors.New("no market data " + symbol)

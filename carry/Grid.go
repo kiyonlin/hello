@@ -96,7 +96,7 @@ func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
 	order := &model.Order{OrderSide: orderSide, OrderType: model.OrderTypeLimit, Market: market, Symbol: symbol,
 		AmountType: ``, Price: price, Amount: amount, OrderId: ``, ErrCode: ``,
 		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price}
-	order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, price, amount)
+	order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, ``, price, amount)
 	order.Function = model.FunctionGrid
 	grid := getGrid(order.Market, order.Symbol)
 	if order.OrderSide == model.OrderSideBuy {
