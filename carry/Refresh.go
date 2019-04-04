@@ -257,7 +257,7 @@ var ProcessRefresh = func(market, symbol string) {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = bidPrice
-			} else if askAmount <= 1.5*bidAmount && askAmount < model.AppConfig.RefreshLimit*amount &&
+			} else if 1.5*askAmount <= bidAmount && askAmount < model.AppConfig.RefreshLimit*amount &&
 				askAmount > model.AppConfig.RefreshLimitLow && (1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
 				(1+model.AppConfig.BinanceDisMin)*price < binancePrice {
 				orderSide = model.OrderSideBuy
