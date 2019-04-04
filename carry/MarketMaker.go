@@ -24,7 +24,7 @@ func setMarketMaking(making bool) {
 }
 
 func getBalance(market, symbol, accountType string) (left, right float64, err error) {
-	leverMarket := ``
+	leverMarket := market
 	if accountType == model.AccountTypeLever {
 		leverMarket = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever,
 			strings.Replace(symbol, `_`, ``, 1))
