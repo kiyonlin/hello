@@ -177,6 +177,7 @@ func MaintainTransFee() {
 				order := api.QueryOrderById(value.Market, value.Symbol, value.OrderId)
 				value.Fee = order.Fee
 				value.FeeIncome = order.FeeIncome
+				value.DealAmount = order.DealAmount
 				model.AppDB.Save(&value)
 				if model.AppConfig.Handle == `1` {
 					time.Sleep(time.Second)
