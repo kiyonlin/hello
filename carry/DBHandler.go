@@ -178,10 +178,14 @@ func MaintainTransFee() {
 				value.Fee = order.Fee
 				value.FeeIncome = order.FeeIncome
 				model.AppDB.Save(&value)
-				time.Sleep(time.Second)
+				if model.AppConfig.Handle == `1` {
+					time.Sleep(time.Second)
+				} else {
+					time.Sleep(time.Millisecond * 120)
+				}
 			}
 		}
 		feeIndex = 0
-		time.Sleep(time.Hour)
+		time.Sleep(time.Minute * 5)
 	}
 }

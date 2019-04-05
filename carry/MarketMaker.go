@@ -108,6 +108,8 @@ var ProcessMake = func(market, symbol string) {
 		return
 	}
 	if bigOrderLime > deal.Amount {
+		util.Notice(fmt.Sprintf(`[not big]%f %f %f`, deal.Amount, model.AppMarkets.Deals[symbol][market][0].Amount,
+			model.AppMarkets.Deals[symbol][market][2].Amount))
 		return
 	}
 	orderSide := ``

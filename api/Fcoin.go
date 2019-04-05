@@ -33,6 +33,21 @@ var subscribeHandlerFcoin = func(subscribes []interface{}, conn *websocket.Conn,
 	return err
 }
 
+func requestDeal(symbol string, conn *websocket.Conn) {
+	subscribeMap := make(map[string]interface{})
+	subscribeMap[`cmd`] = `req`
+	subscribeMap[`id`] = `deal#` + symbol
+	subscribeMap[`args`] = model.GetWSSubscribe(model.Fcoin, symbol, model.SubscribeDeal)
+	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
+		util.SocketInfo("fcoin can not request " + err.Error())
+	}
+	time.Sleep(time.Millisecond * 490)
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
+		util.SocketInfo("fcoin can not request " + err.Error())
+	}
+}
+
 func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte, conn *websocket.Conn) {
 		//util.Info(string(event))
@@ -72,14 +87,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				//util.Notice(symbol + ` not supported`)
 				return
 			}
-			subscribeMap := make(map[string]interface{})
-			subscribeMap[`cmd`] = `req`
-			subscribeMap[`id`] = `deal#` + symbol
-			subscribeMap[`args`] = model.GetWSSubscribe(model.Fcoin, symbol, model.SubscribeDeal)
-			subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-			if err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
-				util.SocketInfo("fcoin can not request " + err.Error())
-			}
+			go requestDeal(symbol, conn)
 			if symbol != "" && symbol != "_" {
 				bidAsk := model.BidAsk{}
 				bidsLen := len(responseJson.Get("bids").MustArray()) / 2
