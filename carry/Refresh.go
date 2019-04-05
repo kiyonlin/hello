@@ -256,12 +256,12 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		} else if symbol == `btc_usdt` && math.Abs(price-binancePrice)/binancePrice < 0.0005 {
 			if price > binancePrice {
-				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
+				orderSide = model.OrderSideSell
 				orderPrice = bidPrice + priceDistance
 			} else {
-				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
+				orderSide = model.OrderSideBuy
 				orderPrice = askPrice - priceDistance
 			}
 		}
