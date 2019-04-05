@@ -232,10 +232,10 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshAble := false
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
+		orderSide := ``
+		reverseSide := ``
+		orderPrice := price
 		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
-			orderSide := ``
-			reverseSide := ``
-			orderPrice := price
 			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
 			if askAmount > 1.5*bidAmount &&
 				bidAmount < amount*model.AppConfig.RefreshLimit &&
@@ -254,31 +254,39 @@ var ProcessRefresh = func(market, symbol string) {
 				reverseSide = model.OrderSideSell
 				orderPrice = askPrice
 			}
-			if orderSide != `` {
-				refreshAble = true
-				orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
-					orderPrice, amount, 1, 2)
-				if orderResult {
-					time.Sleep(time.Millisecond * 15)
-					reverseResult, reverseOrder :=
-						placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
-							orderPrice, amount, 4, 1)
-					if !reverseResult {
-						go api.MustCancel(market, symbol, order.OrderId, true)
-						time.Sleep(time.Second * 2)
-						if reverseOrder.ErrCode == `1016` {
-							time.Sleep(time.Second)
-							api.RefreshAccount(market)
-						}
-					}
-				} else if order.ErrCode == `1016` {
-					if lastOrign1016 {
-						lastOrign1016 = false
-						time.Sleep(time.Second * 3)
+		} else if symbol == `btc_usdt` && math.Abs(price-binancePrice)/binancePrice < 0.0005 {
+			if price > binancePrice {
+				orderSide = model.OrderSideSell
+				reverseSide = model.OrderSideBuy
+			} else {
+				orderSide = model.OrderSideBuy
+				reverseSide = model.OrderSideSell
+			}
+		}
+		if orderSide != `` {
+			refreshAble = true
+			orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
+				orderPrice, amount, 1, 2)
+			if orderResult {
+				time.Sleep(time.Millisecond * 15)
+				reverseResult, reverseOrder :=
+					placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
+						orderPrice, amount, 4, 1)
+				if !reverseResult {
+					go api.MustCancel(market, symbol, order.OrderId, true)
+					time.Sleep(time.Second * 2)
+					if reverseOrder.ErrCode == `1016` {
+						time.Sleep(time.Second)
 						api.RefreshAccount(market)
-					} else {
-						lastOrign1016 = true
 					}
+				}
+			} else if order.ErrCode == `1016` {
+				if lastOrign1016 {
+					lastOrign1016 = false
+					time.Sleep(time.Second * 3)
+					api.RefreshAccount(market)
+				} else {
+					lastOrign1016 = true
 				}
 			}
 		}
