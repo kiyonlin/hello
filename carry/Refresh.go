@@ -254,7 +254,7 @@ var ProcessRefresh = func(market, symbol string) {
 				reverseSide = model.OrderSideBuy
 				orderPrice = askPrice
 			}
-		} else if symbol == `btc_usdt` && math.Abs(price-binancePrice)/binancePrice < 0.0005 {
+		} else if symbol == `btc_usdt` && math.Abs(price-binancePrice)/binancePrice < 0.001 {
 			if price > binancePrice {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
