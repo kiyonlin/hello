@@ -31,22 +31,7 @@ func ParameterServe() {
 	router.GET(`/pw`, GetCode)
 	router.GET("/balance", GetBalance)
 	router.GET(`/symbol`, setSymbol)
-	router.GET(`/getsymbol`, getSymbol)
 	_ = router.Run(":" + model.AppConfig.Port)
-}
-
-func getSymbol(c *gin.Context) {
-	var setting model.Setting
-	rows, _ := model.AppDB.Model(&setting).
-		Select(`market, symbol, function, function_parameter, valid`).Rows()
-	msg := ``
-	var market, symbol, function, parameter string
-	for rows.Next() {
-		valid := false
-		_ = rows.Scan(&market, &symbol, &function, &parameter, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %v \n", market, symbol, function, parameter, valid)
-	}
-	c.String(http.StatusOK, msg)
 }
 
 func setSymbol(c *gin.Context) {
@@ -225,7 +210,18 @@ func GetBalance(c *gin.Context) {
 }
 
 func GetParameters(c *gin.Context) {
-	c.String(http.StatusOK, model.AppConfig.ToString())
+	var setting model.Setting
+	rows, _ := model.AppDB.Model(&setting).
+		Select(`market, symbol, function, function_parameter, valid`).Rows()
+	msg := ``
+	var market, symbol, function, parameter string
+	for rows.Next() {
+		valid := false
+		_ = rows.Scan(&market, &symbol, &function, &parameter, &valid)
+		msg += fmt.Sprintf("%s %s %s %s %v \n", market, symbol, function, parameter, valid)
+	}
+	msg += model.AppConfig.ToString()
+	c.String(http.StatusOK, msg)
 }
 
 func RefreshParameters(c *gin.Context) {
