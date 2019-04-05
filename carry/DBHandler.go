@@ -9,51 +9,6 @@ import (
 	"time"
 )
 
-//MaintainOrders
-func _() {
-	for true {
-		var carries []model.Carry
-		model.AppDB.Where(
-			"deal_bid_status = ? OR deal_ask_status = ?", model.CarryStatusWorking, model.CarryStatusWorking).
-			Find(&carries)
-		util.Notice(fmt.Sprintf("deal with working carries %d", len(carries)))
-		for _, carry := range carries {
-			if util.GetNowUnixMillion()-carry.BidTime > 60000 && carry.DealBidStatus == model.CarryStatusWorking {
-				if carry.SideType != `turtle` {
-					api.CancelOrder(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
-				}
-				order := api.QueryOrderById(carry.BidWeb, carry.BidSymbol, carry.DealBidOrderId)
-				carry.DealBidAmount = order.DealAmount
-				carry.DealBidStatus = order.Status
-			}
-			if util.GetNowUnixMillion()-carry.AskTime > 60000 && carry.DealAskStatus == model.CarryStatusWorking {
-				if carry.SideType != `turtle` {
-					api.CancelOrder(carry.AskWeb, carry.AskSymbol, carry.DealAskOrderId)
-				}
-				order := api.QueryOrderById(carry.AskWeb, carry.AskSymbol, carry.DealAskOrderId)
-				carry.DealAskAmount = order.DealAmount
-				carry.DealAskStatus = order.Status
-			}
-			model.CarryChannel <- carry
-			time.Sleep(time.Second * 1)
-		}
-		time.Sleep(time.Minute * 5)
-	}
-}
-
-//InnerCarryServe
-func _() {
-	for true {
-		orderCarry := <-model.InnerCarryChannel
-		util.Notice(fmt.Sprintf(`||||||[bid-ask] [%s %s] [%s %s]`, orderCarry.DealBidOrderId,
-			orderCarry.DealAskOrderId, orderCarry.DealBidStatus, orderCarry.DealAskStatus))
-		if orderCarry.DealBidStatus == `` || orderCarry.DealAskStatus == `` {
-			continue
-		}
-		model.CarryChannel <- orderCarry
-	}
-}
-
 var accountServing = false
 
 func AccountHandlerServe() {
@@ -204,40 +159,29 @@ func RefreshAccounts() {
 	}
 }
 
-//OuterCarryServe
-func _() {
+var feeIndex int
+
+func MaintainTransFee() {
 	for true {
-		var carryInDb model.Carry
-		carry := <-model.CarryChannel
-		model.AppDB.Where("bid_time = ? AND ask_time = ?", carry.BidTime, carry.AskTime).First(&carryInDb)
-		if model.AppDB.NewRecord(&carryInDb) {
-			model.AppDB.Create(&carry)
-		} else {
-			if carry.DealAskAmount != 0 {
-				carryInDb.DealAskAmount = carry.DealAskAmount
+		d, _ := time.ParseDuration("-48h")
+		timeLine := util.GetNow().Add(d)
+		var orders []model.Order
+		for true {
+			model.AppDB.Limit(100).Offset(feeIndex).Where(`fee=? and fee_income=? and date(order_time)>?`,
+				0, 0, timeLine).Find(&orders)
+			if len(orders) == 0 {
+				break
 			}
-			if carry.DealBidAmount != 0 {
-				carryInDb.DealBidAmount = carry.DealBidAmount
+			feeIndex += len(orders)
+			for _, value := range orders {
+				order := api.QueryOrderById(value.Market, value.Symbol, value.OrderId)
+				value.Fee = order.Fee
+				value.FeeIncome = order.FeeIncome
+				model.AppDB.Save(&value)
+				time.Sleep(time.Second)
 			}
-			if carry.DealAskStatus != `` {
-				carryInDb.DealAskStatus = carry.DealAskStatus
-			}
-			if carry.DealBidStatus != `` {
-				carryInDb.DealBidStatus = carry.DealBidStatus
-			}
-			if carry.DealAskOrderId != `` {
-				carryInDb.DealAskOrderId = carry.DealAskOrderId
-			}
-			if carry.DealBidOrderId != `` {
-				carryInDb.DealBidOrderId = carry.DealBidOrderId
-			}
-			if carryInDb.DealAskPrice == 0 {
-				carryInDb.DealAskPrice = carry.DealAskPrice
-			}
-			if carryInDb.DealBidPrice == 0 {
-				carryInDb.DealBidPrice = carry.DealBidPrice
-			}
-			model.AppDB.Save(&carryInDb)
 		}
+		feeIndex = 0
+		time.Sleep(time.Hour)
 	}
 }

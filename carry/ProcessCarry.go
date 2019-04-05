@@ -225,6 +225,7 @@ func Maintain() {
 	go AccountHandlerServe()
 	go RefreshAccounts()
 	go CancelOldWorkingOrders()
+	go MaintainTransFee()
 	//go ProcessInform()
 	//go MaintainAccountChan()
 	for true {

@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/jinzhu/configor"
+	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
+	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"sort"
@@ -59,7 +61,13 @@ func Test_Api(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.RefreshAccount(model.Fcoin)
+	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+	//api.RefreshAccount(model.Fcoin)
+	carry.MaintainTransFee()
 	//order := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, model.Fcoin, `btc_usdt`, ``,
 	//	model.AccountTypeLever, 4999, 0.001)
 	//fmt.Println(order.OrderId)
