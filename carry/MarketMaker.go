@@ -6,21 +6,46 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"math"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 var marketMaking bool
-
-type MakerStatus struct {
-	lock        sync.Mutex
-	lastBigTime map[string]map[string]int64 // market - symbol - unix time
-}
+var makers = make(map[string][]*model.Order) // market - order array
+var makersLock sync.Mutex
 
 func setMarketMaking(making bool) {
 	marketMaking = making
+}
+
+func cancelOldMakers(market string) {
+	makersLock.Lock()
+	defer makersLock.Unlock()
+	d, _ := time.ParseDuration("-5s")
+	timeLine := util.GetNow().Add(d)
+	array := make([]*model.Order, 0)
+	for _, value := range makers[market] {
+		if value.OrderTime.Before(timeLine) {
+			api.MustCancel(market, value.Symbol, value.OrderId, true)
+		} else {
+			array = append(array, value)
+		}
+	}
+	makers[market] = array
+}
+
+func addMaker(market string, order *model.Order) {
+	makersLock.Lock()
+	defer makersLock.Unlock()
+	if makers[market] == nil {
+		array := make([]*model.Order, 1)
+		array[0] = order
+		makers[market] = array
+	} else {
+		makers[market] = append(makers[market], order)
+	}
 }
 
 func getBalance(market, symbol, accountType string) (left, right float64, err error) {
@@ -52,81 +77,16 @@ func getBalance(market, symbol, accountType string) (left, right float64, err er
 	return leftAccount.Free, rightAccount.Free, nil
 }
 
-func placeMaker(market, symbol string) {
-	coins := strings.Split(symbol, `_`)
-	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	coinPrice, _ := api.GetPrice(coins[0] + `_btc`)
-	bigOrder := 0
-	lastPrice := 0.0
-	lastAmount := 0.0
-	lastTs := 0
-	for _, deal := range model.AppMarkets.Deals[symbol][market] {
-		if deal.Amount*coinPrice > 200 && util.GetNowUnixMillion()-int64(deal.Ts) < 10000 {
-			bigOrder++
-			if deal.Ts > lastTs {
-				lastTs = deal.Ts
-				lastPrice = deal.Price
-				lastAmount = deal.Amount
-				//util.Notice(fmt.Sprintf(`%s %s time: %d, amount: %f`, market, symbol, lastTs, lastAmount))
-			}
-		}
-	}
-	model.AppMarkets.Deals[symbol][market] = nil
-	if bigOrder < 3 {
-		return
-	}
-	price := (model.AppMarkets.BidAsks[symbol][market].Bids[0].Price +
-		model.AppMarkets.BidAsks[symbol][market].Asks[0].Price) / 2
-	if price-model.AppMarkets.BidAsks[symbol][market].Bids[0].Price < priceDistance &&
-		model.AppMarkets.BidAsks[symbol][market].Asks[0].Price-price < priceDistance {
-		price = lastPrice
-	}
-	left, right, err := getBalance(market, symbol, ``)
-	if err != nil {
-		return
-	}
-	side := model.OrderSideBuy
-	amount := math.Floor(math.Min(right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price, lastAmount/2))
-	if left > right/model.AppMarkets.BidAsks[symbol][market].Asks[0].Price {
-		side = model.OrderSideSell
-		amount = math.Floor(math.Min(left, lastAmount/2))
-		if 0.2*amount < model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount {
-			return
-		}
-	} else {
-		if 0.2*amount < model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount {
-			return
-		}
-	}
-	order := api.PlaceOrder(side, model.OrderTypeLimit, market, symbol, ``, ``, price, amount)
-	if order.OrderId != `` {
-		time.Sleep(time.Second)
-		api.MustCancel(market, symbol, order.OrderId, true)
-		time.Sleep(time.Second)
-		api.QueryOrder(order)
-		order.OrderType = model.FunctionMaker
-		model.AppDB.Save(order)
-	}
-}
-
 var ProcessMake = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleMaker != `1` || marketMaking {
 		return
 	}
 	setMarketMaking(true)
 	defer setMarketMaking(false)
+	go cancelOldMakers(market)
 	bidAsk := model.AppMarkets.BidAsks[symbol][market]
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 || model.AppMarkets.Deals[symbol] == nil ||
-		model.AppMarkets.Deals[symbol][market] == nil {
-		return
-	}
-	coins := strings.Split(symbol, `_`)
-	if len(coins) != 2 {
-		util.Notice(`symbol format not supported ` + symbol)
-		return
-	}
-	if model.AppAccounts.Data[market][coins[0]] == nil || model.AppAccounts.Data[market][coins[1]] == nil {
-		api.RefreshAccount(market)
+		model.AppMarkets.Deals[symbol][market] == nil || len(model.AppMarkets.Deals[symbol][market]) == 0 {
 		return
 	}
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
@@ -134,6 +94,44 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
 		return
 	}
-	placeMaker(market, symbol)
-	api.RefreshAccount(market)
+	setting := model.GetSetting(model.FunctionMaker, market, symbol)
+	params := strings.Split(setting.FunctionParameter, `_`)
+	if len(params) != 2 {
+		util.Notice(`maker param error: require d_d format param while get ` + setting.FunctionParameter)
+		return
+	}
+	bigOrderLime, errParam1 := strconv.ParseFloat(params[0], 64)
+	amount, errParam2 := strconv.ParseFloat(params[1], 64)
+	deal := model.AppMarkets.Deals[symbol][market][0]
+	left, right, err := getBalance(market, symbol, ``)
+	if err != nil || errParam1 != nil || errParam2 != nil {
+		return
+	}
+	if bigOrderLime > deal.Amount {
+		return
+	}
+	orderSide := ``
+	if deal.Side == model.OrderSideBuy {
+		if amount < right/deal.Price {
+			orderSide = model.OrderSideBuy
+		} else if amount < left {
+			orderSide = model.OrderSideSell
+		}
+	} else if deal.Side == model.OrderSideSell {
+		if amount < left {
+			orderSide = model.OrderSideSell
+		} else if amount < right/deal.Price {
+			orderSide = model.OrderSideBuy
+		}
+	}
+	if orderSide != `` {
+		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
+			setting.AccountType, deal.Price, amount)
+		if order.ErrCode == `1016` {
+			api.RefreshAccount(market)
+		}
+		if order.Status == model.CarryStatusWorking {
+			addMaker(market, order)
+		}
+	}
 }

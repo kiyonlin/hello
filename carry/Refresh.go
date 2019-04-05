@@ -258,11 +258,11 @@ var ProcessRefresh = func(market, symbol string) {
 			if price > binancePrice {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
-				orderPrice = bidPrice + priceDistance
+				orderPrice = (price + bidPrice) / 2
 			} else {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
-				orderPrice = askPrice - priceDistance
+				orderPrice = (price + askPrice) / 2
 			}
 		}
 		if orderSide != `` {
