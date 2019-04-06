@@ -88,7 +88,19 @@ func (markets *Markets) GetConn(market string) *websocket.Conn {
 	return markets.conns[market]
 }
 
-func (markets *Markets) SetDeals(symbol, market string, deal *Deal) bool {
+func (markets *Markets) GetDeal(symbol, market string) (deal *Deal) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.Deals == nil {
+		markets.Deals = make(map[string]map[string]*Deal)
+	}
+	if markets.Deals[symbol] == nil {
+		markets.Deals[symbol] = make(map[string]*Deal)
+	}
+	return markets.Deals[symbol][market]
+}
+
+func (markets *Markets) SetDeal(symbol, market string, deal *Deal) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if markets.Deals == nil {

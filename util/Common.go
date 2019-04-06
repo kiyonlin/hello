@@ -42,7 +42,7 @@ func NewJSON(data []byte) (j *simplejson.Json, err error) {
 }
 func JsonDecodeByte(bytes []byte) map[string]interface{} {
 	jsonMap := make(map[string]interface{})
-	json.Unmarshal(bytes, &jsonMap)
+	_ = json.Unmarshal(bytes, &jsonMap)
 	return jsonMap
 }
 func JsonEncodeMapToByte(stringMap map[string]interface{}) []byte {
@@ -70,7 +70,7 @@ func GetNow() time.Time {
 }
 
 func GetNowUnixMillion() int64 {
-	return GetNow().Unix() * 1000
+	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
 func GetPrecision(num float64) int {

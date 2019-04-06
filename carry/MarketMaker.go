@@ -85,13 +85,14 @@ var ProcessMake = func(market, symbol string) {
 	defer setMarketMaking(false)
 	go cancelOldMakers(market)
 	bidAsk := model.AppMarkets.BidAsks[symbol][market]
-	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 || model.AppMarkets.Deals[symbol] == nil ||
-		model.AppMarkets.Deals[symbol][market] == nil {
+	deal := model.AppMarkets.GetDeal(symbol, market)
+	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 || deal == nil {
 		return
 	}
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	if delay > 50 {
-		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
+	dealDelay := util.GetNowUnixMillion() - int64(deal.Ts)
+	if delay > 200 || dealDelay > 1000 {
+		util.Notice(fmt.Sprintf(`[delay too long] %d %d`, delay, dealDelay))
 		return
 	}
 	setting := model.GetSetting(model.FunctionMaker, market, symbol)
@@ -102,7 +103,6 @@ var ProcessMake = func(market, symbol string) {
 	}
 	bigOrderLine, errParam1 := strconv.ParseFloat(params[0], 64)
 	amount, errParam2 := strconv.ParseFloat(params[1], 64)
-	deal := model.AppMarkets.Deals[symbol][market]
 	left, right, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil || errParam1 != nil || errParam2 != nil || bigOrderLine > deal.Amount {
 		return
