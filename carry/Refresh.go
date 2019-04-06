@@ -13,7 +13,7 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var bidAskTimes int64
 var refreshing = false
-var refreshingBtcUsdt = false
+var btcusdtBigTime *time.Time
 var syncRefresh = make(chan interface{}, 10)
 var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
@@ -178,9 +178,8 @@ func setRefreshing(value bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
-	//current := refreshOrders.getCurrentSymbol(market, symbol)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshing ||
-		(symbol != `btc_usdt` && refreshingBtcUsdt) {
+		(symbol == `btc_usdt` && btcusdtBigTime != nil && util.GetNow().Unix()-btcusdtBigTime.Unix() < 1800) {
 		return
 	}
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
@@ -202,7 +201,9 @@ var ProcessRefresh = func(market, symbol string) {
 	askAmount := model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount
 	if symbol == `btc_usdt` && (bidAmount >= 100 || askAmount >= 100) {
 		util.Notice(`[someone refreshing] sleep 30 minutes`)
-		time.Sleep(time.Minute * 30)
+		myTime := util.GetNow()
+		btcusdtBigTime = &myTime
+		return
 	}
 	price := (bidPrice + askPrice) / 2
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
@@ -233,7 +234,6 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		doRefresh(market, symbol, price, amount)
 	case model.FunRefreshSeparate:
-		refreshAble := false
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
 		orderSide := ``
@@ -272,7 +272,6 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 		if orderSide != `` {
-			refreshAble = true
 			orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
 				orderPrice, amount, 1, 2)
 			if orderResult {
@@ -297,9 +296,6 @@ var ProcessRefresh = func(market, symbol string) {
 					lastOrign1016 = true
 				}
 			}
-		}
-		if symbol == `btc_usdt` {
-			refreshingBtcUsdt = refreshAble
 		}
 	}
 }
