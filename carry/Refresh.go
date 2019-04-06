@@ -200,6 +200,10 @@ var ProcessRefresh = func(market, symbol string) {
 	askPrice := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
 	bidAmount := model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount
 	askAmount := model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount
+	if symbol == `btc_usdt` && (bidAmount >= 100 || askAmount >= 100) {
+		util.Notice(`[someone refreshing] sleep 30 minutes`)
+		time.Sleep(time.Minute * 30)
+	}
 	price := (bidPrice + askPrice) / 2
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))

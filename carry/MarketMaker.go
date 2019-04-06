@@ -107,8 +107,14 @@ var ProcessMake = func(market, symbol string) {
 	if err != nil || errParam1 != nil || errParam2 != nil || bigOrderLine > deal.Amount {
 		return
 	}
-	util.Notice(fmt.Sprintf(`[get big]%f:%f-%f %f_%f`, deal.Amount, amount, bigOrderLine, left, right/deal.Price))
+	util.Info(fmt.Sprintf(`[get big]%f:%f-%f %f_%f`, deal.Amount, amount, bigOrderLine, left, right/deal.Price))
 	orderSide := ``
+	rightAmount := right / deal.Price
+	if left < rightAmount && amount < rightAmount {
+		orderSide = model.OrderSideBuy
+	} else if left > rightAmount && left > amount {
+		orderSide = model.OrderSideSell
+	}
 	if deal.Side == model.OrderSideBuy {
 		if amount < right/deal.Price {
 			orderSide = model.OrderSideSell
@@ -125,9 +131,8 @@ var ProcessMake = func(market, symbol string) {
 	if orderSide != `` {
 		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
 			setting.AccountType, deal.Price, amount)
-		if order.ErrCode == `1016` {
-			api.RefreshAccount(market)
-		}
+		time.Sleep(time.Millisecond * 500)
+		api.RefreshAccount(market)
 		if order.Status == model.CarryStatusWorking {
 			addMaker(market, order)
 		}
