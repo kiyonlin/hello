@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"hello/util"
 	"math"
 	"strings"
@@ -39,15 +40,53 @@ type Rule struct {
 }
 
 type Markets struct {
-	lock    sync.Mutex
-	DealTs  int
-	BidAsks map[string]map[string]*BidAsk // symbol - market - bidAsk
-	Deals   map[string]map[string][]*Deal // symbol - market - []Deal
-	wsDepth map[string][]chan struct{}    // market - []depth channel
+	lock      sync.Mutex
+	DealTs    int
+	BidAsks   map[string]map[string]*BidAsk // symbol - market - bidAsk
+	Deals     map[string]map[string][]*Deal // symbol - market - []Deal
+	wsDepth   map[string][]chan struct{}    // market - []depth channel
+	isWriting map[string]bool               // market - writing
+	conns     map[string]*websocket.Conn    // market - conn
 }
 
 func NewMarkets() *Markets {
 	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{})}
+}
+
+func (markets *Markets) GetIsWriting(market string) bool {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.isWriting == nil {
+		markets.isWriting = make(map[string]bool)
+	}
+	return markets.isWriting[market]
+}
+
+func (markets *Markets) SetIsWriting(market string, isWriting bool) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.isWriting == nil {
+		markets.isWriting = make(map[string]bool)
+	}
+	markets.isWriting[market] = isWriting
+}
+
+func (markets *Markets) SetConn(market string, conn *websocket.Conn) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.conns == nil {
+		markets.conns = make(map[string]*websocket.Conn)
+	}
+	markets.conns[market] = conn
+}
+
+func (markets *Markets) GetConn(market string) *websocket.Conn {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.conns == nil {
+		markets.conns = make(map[string]*websocket.Conn)
+	}
+	return markets.conns[market]
 }
 
 func (markets *Markets) SetDeals(symbol, market string, deals []*Deal, ts int) bool {

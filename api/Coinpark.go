@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"net/url"
@@ -15,7 +14,7 @@ import (
 	"strings"
 )
 
-var subscribeHandlerCoinpark = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerCoinpark = func(subscribes []interface{}, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMap := make(map[string]interface{})
@@ -23,7 +22,7 @@ var subscribeHandlerCoinpark = func(subscribes []interface{}, conn *websocket.Co
 		subscribeMap["channel"] = v
 		subscribeMap[`binary`] = 0
 		subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-		if err = conn.WriteMessage(websocket.TextMessage, subscribeMessage); err != nil {
+		if err = sendToWs(model.Coinpark, subscribeMessage); err != nil {
 			util.SocketInfo("coinpark can not subscribe " + err.Error())
 			return err
 		}
@@ -32,7 +31,7 @@ var subscribeHandlerCoinpark = func(subscribes []interface{}, conn *websocket.Co
 }
 
 func WsDepthServeCoinpark(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		depthJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -79,7 +78,7 @@ func WsDepthServeCoinpark(markets *model.Markets, errHandler ErrHandler) (chan s
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Coinpark], model.SubscribeDepth,
+	return WebSocketServe(model.Coinpark, model.AppConfig.WSUrls[model.Coinpark], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Coinpark, model.SubscribeDepth), subscribeHandlerCoinpark, wsHandler, errHandler)
 }
 

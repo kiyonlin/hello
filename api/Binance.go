@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"math"
@@ -17,12 +16,12 @@ import (
 
 var lastTickId = make(map[string]int64) // symbol - int64
 
-var subscribeHandlerBinance = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerBinance = func(subscribes []interface{}, subType string) error {
 	return nil
 }
 
 func WsDepthServeBinance(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		json, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -81,7 +80,8 @@ func WsDepthServeBinance(markets *model.Markets, errHandler ErrHandler) (chan st
 			requestUrl += str + "/"
 		}
 	}
-	return WebSocketServe(requestUrl, model.SubscribeDepth, model.GetWSSubscribes(model.Binance, model.SubscribeDepth),
+	return WebSocketServe(model.Binance, requestUrl, model.SubscribeDepth,
+		model.GetWSSubscribes(model.Binance, model.SubscribeDepth),
 		subscribeHandlerBinance, wsHandler, errHandler)
 }
 func signBinance(postData *url.Values, secretKey string) {

@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"net/url"
@@ -42,14 +41,14 @@ type HuobiMessage struct {
 	} `json:"tick"`
 }
 
-var subscribeHandlerHuobi = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerHuobi = func(subscribes []interface{}, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMap := make(map[string]interface{})
 		subscribeMap["id"] = strconv.Itoa(util.GetNow().Nanosecond())
 		subscribeMap["sub"] = v
 		subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-		if err = conn.WriteMessage(websocket.TextMessage, subscribeMessage); err != nil {
+		if err = sendToWs(model.Huobi, subscribeMessage); err != nil {
 			util.SocketInfo("huobi can not subscribe " + err.Error())
 			return err
 		}
@@ -59,7 +58,7 @@ var subscribeHandlerHuobi = func(subscribes []interface{}, conn *websocket.Conn,
 }
 
 func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		res := util.UnGzip(event)
 		resMap := util.JsonDecodeByte(res)
 		message := &HuobiMessage{}
@@ -68,7 +67,7 @@ func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan stru
 			pingMap := make(map[string]interface{})
 			pingMap["pong"] = v
 			pingParams := util.JsonEncodeMapToByte(pingMap)
-			if err := conn.WriteMessage(websocket.TextMessage, pingParams); err != nil {
+			if err := sendToWs(model.Huobi, pingParams); err != nil {
 				util.SocketInfo("huobi server ping client error " + err.Error())
 			}
 		} else {
@@ -94,7 +93,7 @@ func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan stru
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Huobi], model.SubscribeDepth,
+	return WebSocketServe(model.Huobi, model.AppConfig.WSUrls[model.Huobi], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Huobi, model.SubscribeDepth), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 

@@ -3,13 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"sort"
 )
 
-var subscribeHandlerBitmex = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) error {
 	var err error = nil
 	//for _, v := range subscribes {
 	//	subBook := fmt.Sprintf(`{"op": "subscribe", "args": ["orderBookL2:%s"]}`, v)
@@ -30,10 +29,10 @@ var subscribeHandlerBitmex = func(subscribes []interface{}, conn *websocket.Conn
 
 func WsDepthServeBitmex(errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		if util.GetNow().Unix()-lastPingTime > 5 { // ping bitmex server every 5 seconds
 			lastPingTime = util.GetNow().Unix()
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(`ping`)); err != nil {
+			if err := sendToWs(model.Bitmex, []byte(`ping`)); err != nil {
 				util.SocketInfo("bitmex server ping client error " + err.Error())
 			}
 		}
@@ -113,7 +112,7 @@ func WsDepthServeBitmex(errHandler ErrHandler) (chan struct{}, error) {
 		//	}
 		//}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Bitmex], model.SubscribeDepth,
+	return WebSocketServe(model.Bitmex, model.AppConfig.WSUrls[model.Bitmex], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Bitmex, model.SubscribeDepth), subscribeHandlerBitmex, wsHandler, errHandler)
 }
 

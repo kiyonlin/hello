@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"io"
@@ -17,11 +16,11 @@ import (
 	"strings"
 )
 
-var subscribeHandlerCoinbig = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerCoinbig = func(subscribes []interface{}, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMessage := fmt.Sprintf(`{"datatype":"ALL","data":"%s"}`, v)
-		if err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
+		if err = sendToWs(model.Coinbig, []byte(subscribeMessage)); err != nil {
 			util.SocketInfo("coinbig can not subscribe " + subscribeMessage + err.Error())
 			return err
 		}
@@ -32,7 +31,7 @@ var subscribeHandlerCoinbig = func(subscribes []interface{}, conn *websocket.Con
 
 func WsDepthServeCoinbig(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	//lastPingTime := util.GetNow().Unix()
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		var out bytes.Buffer
 		r, _ := zlib.NewReader(bytes.NewReader(event))
 		_, _ = io.Copy(&out, r)
@@ -69,7 +68,7 @@ func WsDepthServeCoinbig(markets *model.Markets, errHandler ErrHandler) (chan st
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.Coinbig], model.SubscribeDepth,
+	return WebSocketServe(model.Coinbig, model.AppConfig.WSUrls[model.Coinbig], model.SubscribeDepth,
 		model.GetWSSubscribes(model.Coinbig, model.SubscribeDepth), subscribeHandlerCoinbig, wsHandler, errHandler)
 }
 

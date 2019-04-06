@@ -5,7 +5,6 @@ import (
 	"compress/flate"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
@@ -17,7 +16,7 @@ import (
 	"time"
 )
 
-var subscribeHandlerOKFuture = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerOKFuture = func(subscribes []interface{}, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		postData := url.Values{}
@@ -30,7 +29,7 @@ var subscribeHandlerOKFuture = func(subscribes []interface{}, conn *websocket.Co
 			subBook = fmt.Sprintf(`{'event':'addChannel','channel':'%s','parameters':{'api_key':'%s','sign':'%s'}}`,
 				v, model.AppConfig.OkexKey, getSign(&postData))
 		}
-		err = conn.WriteMessage(websocket.TextMessage, []byte(subBook))
+		err = sendToWs(model.OKFUTURE, []byte(subBook))
 		if err != nil {
 			util.SocketInfo("okfuture can not subscribe " + err.Error())
 			return err
@@ -42,10 +41,10 @@ var subscribeHandlerOKFuture = func(subscribes []interface{}, conn *websocket.Co
 //WsAccountServeOKFuture
 func _(errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping okfuture server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"event":"ping"}`)); err != nil {
+			if err := sendToWs(model.OKFUTURE, []byte(`{"event":"ping"}`)); err != nil {
 				util.SocketInfo("okfuture server ping client error " + err.Error())
 			}
 		}
@@ -53,7 +52,7 @@ func _(errHandler ErrHandler) (chan struct{}, error) {
 			return
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE], model.SubscribeDepth,
+	return WebSocketServe(model.OKFUTURE, model.AppConfig.WSUrls[model.OKFUTURE], model.SubscribeDepth,
 		model.GetAccountInfoSubscribe(model.OKFUTURE), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
@@ -88,10 +87,10 @@ func parseByDepth(bidAsks *model.BidAsk, data interface{}) {
 
 func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		if util.GetNow().Unix()-lastPingTime > 20 { // ping okfuture server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"event":"ping"}`)); err != nil {
+			if err := sendToWs(model.OKFUTURE, []byte(`{"event":"ping"}`)); err != nil {
 				util.SocketInfo("okfuture server ping client error " + err.Error())
 			}
 		}
@@ -127,7 +126,7 @@ func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan s
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.OKFUTURE], model.SubscribeDepth,
+	return WebSocketServe(model.OKFUTURE, model.AppConfig.WSUrls[model.OKFUTURE], model.SubscribeDepth,
 		model.GetWSSubscribes(model.OKFUTURE, model.SubscribeDepth), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 

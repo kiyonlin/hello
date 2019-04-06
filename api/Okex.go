@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"io"
@@ -31,14 +30,14 @@ type OKEXMessage struct {
 
 var apiLastAccessTime map[string]*time.Time // url-time
 
-var subscribeHandlerOkex = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerOkex = func(subscribes []interface{}, subType string) error {
 	var err error = nil
 	for _, v := range subscribes {
 		subscribeMap := make(map[string]interface{})
 		subscribeMap["event"] = "addChannel"
 		subscribeMap["channel"] = v
 		subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-		if err = conn.WriteMessage(websocket.TextMessage, subscribeMessage); err != nil {
+		if err = sendToWs(model.OKEX, subscribeMessage); err != nil {
 			util.SocketInfo("okex can not subscribe " + err.Error())
 			return err
 		}
@@ -49,13 +48,13 @@ var subscribeHandlerOkex = func(subscribes []interface{}, conn *websocket.Conn, 
 
 func WsDepthServeOkex(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		if util.GetNow().Unix()-lastPingTime > 20 { // ping okex server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
 			pingMap := make(map[string]interface{})
 			pingMap["event"] = "ping"
 			pingParams := util.JsonEncodeMapToByte(pingMap)
-			if err := conn.WriteMessage(websocket.TextMessage, pingParams); err != nil {
+			if err := sendToWs(model.OKEX, pingParams); err != nil {
 				util.SocketInfo("okex server ping client error " + err.Error())
 			}
 		}
@@ -93,7 +92,7 @@ func WsDepthServeOkex(markets *model.Markets, errHandler ErrHandler) (chan struc
 			}
 		}
 	}
-	return WebSocketServe(model.AppConfig.WSUrls[model.OKEX], model.SubscribeDepth,
+	return WebSocketServe(model.OKEX, model.AppConfig.WSUrls[model.OKEX], model.SubscribeDepth,
 		model.GetWSSubscribes(model.OKEX, model.SubscribeDepth), subscribeHandlerOkex, wsHandler, errHandler)
 }
 
@@ -294,7 +293,8 @@ func FundTransferOkex(symbol string, amount float64, from, to string) (result bo
 	return false, err.Error()
 }
 
-func getBuyPriceOkex(symbol string) (buy float64, err error) {
+//getBuyPriceOkex
+func _(symbol string) (buy float64, err error) {
 	model.CurrencyPrice[symbol] = 0
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}

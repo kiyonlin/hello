@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"hello/model"
 	"hello/util"
 	"sort"
@@ -20,36 +19,37 @@ import (
 //{"status":1002,"msg":"system busy"}
 var lastDepthPingFcoin = util.GetNowUnixMillion()
 
-var subscribeHandlerFcoin = func(subscribes []interface{}, conn *websocket.Conn, subType string) error {
+var subscribeHandlerFcoin = func(subscribes []interface{}, subType string) error {
 	var err error = nil
 	subscribeMap := make(map[string]interface{})
 	subscribeMap[`cmd`] = `sub`
 	subscribeMap[`args`] = subscribes
 	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-	if err = conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
+	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
 		util.SocketInfo("fcoin can not subscribe " + err.Error())
 		return err
 	}
 	return err
 }
 
-func requestDeal(symbol string, conn *websocket.Conn) {
+func requestDeal(symbol string) {
 	subscribeMap := make(map[string]interface{})
 	subscribeMap[`cmd`] = `req`
 	subscribeMap[`id`] = `deal#` + symbol
 	subscribeMap[`args`] = model.GetWSSubscribe(model.Fcoin, symbol, model.SubscribeDeal)
 	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
+
+	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
 		util.SocketInfo("fcoin can not request " + err.Error())
 	}
 	time.Sleep(time.Millisecond * 490)
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(subscribeMessage)); err != nil {
-		util.SocketInfo("fcoin can not request " + err.Error())
+	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
+		util.SocketInfo("fcoin can not request twice" + err.Error())
 	}
 }
 
 func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
-	wsHandler := func(event []byte, conn *websocket.Conn) {
+	wsHandler := func(event []byte) {
 		//util.Info(string(event))
 		responseJson, err := util.NewJSON(event)
 		if err != nil {
@@ -62,7 +62,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 		if util.GetNowUnixMillion()-lastDepthPingFcoin > 30000 {
 			lastDepthPingFcoin = util.GetNowUnixMillion()
 			pingMsg := []byte(fmt.Sprintf(`{"cmd":"ping","args":[%d],"id":"id"}`, util.GetNowUnixMillion()))
-			if err := conn.WriteMessage(websocket.TextMessage, pingMsg); err != nil {
+			if err := sendToWs(model.Fcoin, pingMsg); err != nil {
 				util.SocketInfo("fcoin server ping client error " + err.Error())
 			}
 		}
@@ -87,7 +87,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				//util.Notice(symbol + ` not supported`)
 				return
 			}
-			go requestDeal(symbol, conn)
+			go requestDeal(symbol)
 			if symbol != "" && symbol != "_" {
 				bidAsk := model.BidAsk{}
 				bidsLen := len(responseJson.Get("bids").MustArray()) / 2
@@ -119,8 +119,8 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
-	return WebSocketServe(requestUrl, model.SubscribeDepth, model.GetWSSubscribes(model.Fcoin, model.SubscribeDepth),
-		subscribeHandlerFcoin, wsHandler, errHandler)
+	return WebSocketServe(model.Fcoin, requestUrl, model.SubscribeDepth,
+		model.GetWSSubscribes(model.Fcoin, model.SubscribeDepth), subscribeHandlerFcoin, wsHandler, errHandler)
 }
 
 func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte {

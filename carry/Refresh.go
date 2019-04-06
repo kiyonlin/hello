@@ -254,12 +254,14 @@ var ProcessRefresh = func(market, symbol string) {
 				reverseSide = model.OrderSideBuy
 				orderPrice = askPrice
 			}
-		} else if symbol == `btc_usdt` && math.Abs(price-binancePrice)/binancePrice < 0.001 {
-			if price > binancePrice {
+		} else if symbol == `btc_usdt` {
+			if price > binancePrice && (1-model.AppConfig.BinanceDisMin)*price > binancePrice &&
+				(1-model.AppConfig.BinanceDisMax)*price < binancePrice {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
 				orderPrice = (price + bidPrice) / 2
-			} else {
+			} else if price <= binancePrice && (1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
+				(1+model.AppConfig.BinanceDisMin)*price < binancePrice {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = (price + askPrice) / 2
