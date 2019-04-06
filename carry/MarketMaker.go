@@ -115,19 +115,6 @@ var ProcessMake = func(market, symbol string) {
 	} else if left > rightAmount && left > amount {
 		orderSide = model.OrderSideSell
 	}
-	if deal.Side == model.OrderSideBuy {
-		if amount < right/deal.Price {
-			orderSide = model.OrderSideSell
-		} else if amount < left {
-			orderSide = model.OrderSideBuy
-		}
-	} else if deal.Side == model.OrderSideSell {
-		if amount < left {
-			orderSide = model.OrderSideBuy
-		} else if amount < right/deal.Price {
-			orderSide = model.OrderSideSell
-		}
-	}
 	if orderSide != `` {
 		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
 			setting.AccountType, deal.Price, amount)
