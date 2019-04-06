@@ -175,6 +175,9 @@ func MaintainTransFee() {
 			feeIndex += len(orders)
 			for _, value := range orders {
 				order := api.QueryOrderById(value.Market, value.Symbol, value.OrderId)
+				if order == nil {
+					continue
+				}
 				value.Fee = order.Fee
 				value.FeeIncome = order.FeeIncome
 				value.DealAmount = order.DealAmount
