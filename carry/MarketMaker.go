@@ -103,7 +103,7 @@ var ProcessMake = func(market, symbol string) {
 	bigOrderLine, errParam1 := strconv.ParseFloat(params[0], 64)
 	amount, errParam2 := strconv.ParseFloat(params[1], 64)
 	deal := model.AppMarkets.Deals[symbol][market][0]
-	left, right, err := getBalance(market, symbol, ``)
+	left, right, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil || errParam1 != nil || errParam2 != nil {
 		return
 	}
