@@ -91,7 +91,7 @@ var ProcessMake = func(market, symbol string) {
 	}
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	dealDelay := util.GetNowUnixMillion() - int64(deal.Ts)
-	if delay > 200 || dealDelay > 1000 {
+	if delay > 200 || dealDelay > 1500 {
 		util.Notice(fmt.Sprintf(`[delay too long] %d %d`, delay, dealDelay))
 		return
 	}
