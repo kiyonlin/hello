@@ -104,27 +104,22 @@ var ProcessMake = func(market, symbol string) {
 	amount, errParam2 := strconv.ParseFloat(params[1], 64)
 	deal := model.AppMarkets.Deals[symbol][market][0]
 	left, right, err := getBalance(market, symbol, setting.AccountType)
-	if err != nil || errParam1 != nil || errParam2 != nil {
-		return
-	}
-	if bigOrderLine > deal.Amount {
-		util.Notice(fmt.Sprintf(`[not big]%f %f %f`, deal.Amount, model.AppMarkets.Deals[symbol][market][0].Amount,
-			model.AppMarkets.Deals[symbol][market][2].Amount))
+	if err != nil || errParam1 != nil || errParam2 != nil || bigOrderLine > deal.Amount {
 		return
 	}
 	util.Notice(fmt.Sprintf(`[get big]%f:%f-%f %f_%f`, deal.Amount, amount, bigOrderLine, left, right/deal.Price))
 	orderSide := ``
 	if deal.Side == model.OrderSideBuy {
 		if amount < right/deal.Price {
-			orderSide = model.OrderSideBuy
-		} else if amount < left {
 			orderSide = model.OrderSideSell
+		} else if amount < left {
+			orderSide = model.OrderSideBuy
 		}
 	} else if deal.Side == model.OrderSideSell {
 		if amount < left {
-			orderSide = model.OrderSideSell
-		} else if amount < right/deal.Price {
 			orderSide = model.OrderSideBuy
+		} else if amount < right/deal.Price {
+			orderSide = model.OrderSideSell
 		}
 	}
 	if orderSide != `` {
