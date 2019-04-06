@@ -32,21 +32,21 @@ var subscribeHandlerFcoin = func(subscribes []interface{}, subType string) error
 	return err
 }
 
-func requestDeal(symbol string) {
-	subscribeMap := make(map[string]interface{})
-	subscribeMap[`cmd`] = `req`
-	subscribeMap[`id`] = `deal#` + symbol
-	subscribeMap[`args`] = model.GetWSSubscribe(model.Fcoin, symbol, model.SubscribeDeal)
-	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-
-	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
-		util.SocketInfo("fcoin can not request " + err.Error())
-	}
-	time.Sleep(time.Millisecond * 490)
-	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
-		util.SocketInfo("fcoin can not request twice" + err.Error())
-	}
-}
+//func requestDeal(symbol string) {
+//	subscribeMap := make(map[string]interface{})
+//	subscribeMap[`cmd`] = `req`
+//	subscribeMap[`id`] = `deal#` + symbol
+//	subscribeMap[`args`] = model.GetWSSubscribe(model.Fcoin, symbol, model.SubscribeDeal)
+//	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
+//
+//	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
+//		util.SocketInfo("fcoin can not request " + err.Error())
+//	}
+//	time.Sleep(time.Millisecond * 490)
+//	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
+//		util.SocketInfo("fcoin can not request twice" + err.Error())
+//	}
+//}
 
 func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte) {
@@ -66,28 +66,20 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				util.SocketInfo("fcoin server ping client error " + err.Error())
 			}
 		}
-		if strings.Index(responseJson.Get(`id`).MustString(), `deal#`) == 0 {
-			symbol := strings.Split(responseJson.Get(`id`).MustString(), `#`)[1]
+		msgType := responseJson.Get(`type`).MustString()
+		symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
+		symbols := model.GetMarketSymbols(model.Fcoin)
+		if symbols == nil || symbols[symbol] == false {
+			//util.Notice(symbol + ` not supported`)
+			return
+		}
+		if err == nil && strings.Index(msgType, `trade.`) == 0 {
 			ts := responseJson.Get("ts").MustInt()
-			dealLen := len(responseJson.Get(`data`).MustArray())
-			deals := make([]*model.Deal, dealLen)
-			for i := 0; i < dealLen; i++ {
-				dealJson := responseJson.Get(`data`).GetIndex(i)
-				amount, _ := dealJson.Get(`amount`).Float64()
-				ts, _ := dealJson.Get(`ts`).Int()
-				side, _ := dealJson.Get(`side`).String()
-				price, _ := dealJson.Get(`price`).Float64()
-				deals[i] = &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price}
-			}
-			markets.SetDeals(symbol, model.Fcoin, deals, ts)
+			amount := responseJson.Get(`amount`).MustFloat64()
+			side := responseJson.Get(`side`).MustString()
+			price := responseJson.Get(`price`).MustFloat64()
+			markets.SetDeals(symbol, model.Fcoin, &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price})
 		} else {
-			symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
-			symbols := model.GetMarketSymbols(model.Fcoin)
-			if symbols == nil || symbols[symbol] == false {
-				//util.Notice(symbol + ` not supported`)
-				return
-			}
-			go requestDeal(symbol)
 			if symbol != "" && symbol != "_" {
 				bidAsk := model.BidAsk{}
 				bidsLen := len(responseJson.Get("bids").MustArray()) / 2

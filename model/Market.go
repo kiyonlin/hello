@@ -41,9 +41,8 @@ type Rule struct {
 
 type Markets struct {
 	lock      sync.Mutex
-	DealTs    int
 	BidAsks   map[string]map[string]*BidAsk // symbol - market - bidAsk
-	Deals     map[string]map[string][]*Deal // symbol - market - []Deal
+	Deals     map[string]map[string]*Deal   // symbol - market - Deal
 	wsDepth   map[string][]chan struct{}    // market - []depth channel
 	isWriting map[string]bool               // market - writing
 	conns     map[string]*websocket.Conn    // market - conn
@@ -89,17 +88,16 @@ func (markets *Markets) GetConn(market string) *websocket.Conn {
 	return markets.conns[market]
 }
 
-func (markets *Markets) SetDeals(symbol, market string, deals []*Deal, ts int) bool {
+func (markets *Markets) SetDeals(symbol, market string, deal *Deal) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if markets.Deals == nil {
-		markets.Deals = make(map[string]map[string][]*Deal)
+		markets.Deals = make(map[string]map[string]*Deal)
 	}
 	if markets.Deals[symbol] == nil {
-		markets.Deals[symbol] = make(map[string][]*Deal)
+		markets.Deals[symbol] = make(map[string]*Deal)
 	}
-	markets.Deals[symbol][market] = deals
-	markets.DealTs = ts
+	markets.Deals[symbol][market] = deal
 	return true
 }
 
@@ -199,8 +197,8 @@ func (markets *Markets) RequireDealChanReset(market string, subscribe string) bo
 	deals := markets.Deals[symbol]
 	if deals != nil {
 		deal := deals[market]
-		if deal != nil && len(deal) > 0 {
-			if float64(util.GetNowUnixMillion()-int64(deal[0].Ts)) < AppConfig.Delay {
+		if deal != nil {
+			if float64(util.GetNowUnixMillion()-int64(deal.Ts)) < AppConfig.Delay {
 				return false
 			}
 		}

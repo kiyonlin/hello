@@ -242,11 +242,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		return strings.ToLower(strings.Replace(symbol, "_", "", 1)) + `@depth5`
 	case Fcoin:
 		if subType == SubscribeDeal {
-			// btc_usdt: trade.btcusdt, 20
-			subDeal := make([]interface{}, 2)
-			subDeal[0] = `trade.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
-			subDeal[1] = 20
-			return subDeal
+			// btc_usdt: trade.btcusdt
+			return `trade.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
 		} else {
 			// btc_usdt: depth.L20.btcusdt
 			return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
@@ -305,9 +302,15 @@ func GetSymbol(market, subscribe string) (symbol string) {
 		}
 		subscribe = subscribe[0:strings.Index(subscribe, `@`)]
 		return getSymbolWithSplit(subscribe, `_`)
-	case Fcoin: // btc_usdt: depth.L20.btcusdt
-		subscribe = strings.Replace(subscribe, "depth.L20.", "", 1)
-		return getSymbolWithSplit(subscribe, "_")
+	case Fcoin: // btc_usdt: depth.L20.btcusdt  btc_usdt: trade.btcusdt
+		if strings.Contains(subscribe, `depth`) {
+			subscribe = strings.Replace(subscribe, "depth.L20.", "", 1)
+			return getSymbolWithSplit(subscribe, "_")
+		}
+		if strings.Contains(subscribe, `trade`) {
+			subscribe = strings.Replace(subscribe, `trade.`, ``, 1)
+			return getSymbolWithSplit(subscribe, `_`)
+		}
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
 		subscribe = strings.Replace(subscribe, `bibox_sub_spot_`, ``, 1)
 		subscribe = strings.Replace(subscribe, `_ticker`, ``, 1)
@@ -395,11 +398,13 @@ func (config *Config) ToString() string {
 
 func GetWSSubscribes(market, subType string) []interface{} {
 	symbols := GetMarketSymbols(market)
-	subscribes := make([]interface{}, len(symbols))
-	i := 0
+	subscribes := make([]interface{}, 0)
 	for symbol := range symbols {
-		subscribes[i] = GetWSSubscribe(market, symbol, subType)
-		i++
+		subscribes = append(subscribes, GetWSSubscribe(market, symbol, subType))
+		setting := GetSetting(FunctionMaker, market, symbol)
+		if setting != nil {
+			subscribes = append(subscribes, GetWSSubscribe(market, symbol, SubscribeDeal))
+		}
 	}
 	return subscribes
 }
