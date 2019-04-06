@@ -100,18 +100,19 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(`maker param error: require d_d format param while get ` + setting.FunctionParameter)
 		return
 	}
-	bigOrderLime, errParam1 := strconv.ParseFloat(params[0], 64)
+	bigOrderLine, errParam1 := strconv.ParseFloat(params[0], 64)
 	amount, errParam2 := strconv.ParseFloat(params[1], 64)
 	deal := model.AppMarkets.Deals[symbol][market][0]
 	left, right, err := getBalance(market, symbol, ``)
 	if err != nil || errParam1 != nil || errParam2 != nil {
 		return
 	}
-	if bigOrderLime > deal.Amount {
+	if bigOrderLine > deal.Amount {
 		util.Notice(fmt.Sprintf(`[not big]%f %f %f`, deal.Amount, model.AppMarkets.Deals[symbol][market][0].Amount,
 			model.AppMarkets.Deals[symbol][market][2].Amount))
 		return
 	}
+	util.Notice(fmt.Sprintf(`[get big]%f:%f-%f %f_%f`, deal.Amount, amount, bigOrderLine, left, right/deal.Price))
 	orderSide := ``
 	if deal.Side == model.OrderSideBuy {
 		if amount < right/deal.Price {
