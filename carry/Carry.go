@@ -1,5 +1,15 @@
 package carry
 
+//
+//import (
+//	"fmt"
+//	"hello/api"
+//	"hello/model"
+//	"hello/util"
+//	"math"
+//	"strings"
+//)
+//
 //var ProcessCarry = func(market, symbol string) {
 //	if model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][model.Fcoin] == nil ||
 //		model.AppMarkets.BidAsks[symbol][model.Huobi] == nil {
@@ -15,7 +25,9 @@ package carry
 //	if delayHuobi > 1500 || delayFcoin > 1500 {
 //		util.Notice(fmt.Sprintf(`[dealy too long]%d - %d`, delayHuobi, delayFcoin))
 //	}
+//	if math.Abs(bidFcoin.Price - bidHuobi.Price)/bidHuobi.Price < 0.001 {
 //
+//	}
 //	carry, err := model.AppMarkets.NewCarry(symbol)
 //	if err != nil {
 //		util.Notice(`can not create carry ` + err.Error())

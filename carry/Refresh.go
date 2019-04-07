@@ -67,7 +67,8 @@ func (refreshOrders *RefreshOrders) CheckRecentOrder(market, symbol string, pric
 		}
 	}
 	refreshOrders.recentOrders[market][symbol][price] = array
-	return len(array) >= 3
+	//return len(array) <= 3
+	return true
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
