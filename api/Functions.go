@@ -118,13 +118,6 @@ func QueryOrders(market, symbol, states string) (orders map[string]*model.Order)
 	return nil
 }
 
-func QueryOrder(order *model.Order) {
-	dealOrder := QueryOrderById(order.Market, order.Symbol, order.OrderId)
-	order.Status = dealOrder.Status
-	order.DealPrice = dealOrder.DealPrice
-	order.DealAmount = dealOrder.DealAmount
-}
-
 func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 	var dealAmount, dealPrice float64
 	var status string
@@ -214,12 +207,8 @@ func RefreshAccount(market string) {
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType string, price,
 	amount float64) (order *model.Order) {
-	priceFormat := `%.` + strconv.Itoa(GetPriceDecimal(model.Fcoin, symbol)) + `f`
-	amountFormat := `%.` + strconv.Itoa(GetAmountDecimal(model.Fcoin, symbol)) + `f`
-	strPrice := fmt.Sprintf(priceFormat, price)
-	strAmount := fmt.Sprintf(amountFormat, amount)
-	price, _ = strconv.ParseFloat(strPrice, 64)
-	amount, _ = strconv.ParseFloat(strAmount, 64)
+	price, strPrice := util.FormatNum(price, GetPriceDecimal(model.Fcoin, symbol))
+	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(model.Fcoin, symbol))
 	if amountType == model.AmountTypeContractNumber {
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}
@@ -265,11 +254,9 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	} else {
 		status = model.CarryStatusWorking
 	}
-	actualAmount, _ := strconv.ParseFloat(strAmount, 64)
-	actualPrice, _ := strconv.ParseFloat(strPrice, 64)
 	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
 		AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
-		Status: status, DealAmount: actualAmount, DealPrice: actualPrice, OrderTime: util.GetNow()}
+		Status: status, DealAmount: amount, DealPrice: price, OrderTime: util.GetNow()}
 }
 
 func GetPrice(symbol string) (buy float64, err error) {

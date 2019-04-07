@@ -199,18 +199,12 @@ var ProcessRefresh = func(market, symbol string) {
 	askPrice := model.AppMarkets.BidAsks[symbol][market].Asks[0].Price
 	bidAmount := model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount
 	askAmount := model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount
-	if symbol == `btc_usdt` && (bidAmount >= 100 || askAmount >= 100) {
-		util.Notice(`[someone refreshing] sleep 30 minutes`)
-		myTime := util.GetNow()
-		btcusdtBigTime = &myTime
-		return
-	}
-	price := (bidPrice + askPrice) / 2
+	price, _ := util.FormatNum((bidPrice+askPrice)/2, api.GetPriceDecimal(market, symbol))
 	amount := math.Min(leftBalance, rightBalance/price) * model.AppConfig.AmountRate
 	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	binanceResult, binancePrice := getBinanceInfo(symbol)
-	if delay > 50 || !binanceResult {
+	if delay > 200 || !binanceResult {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
@@ -271,6 +265,12 @@ var ProcessRefresh = func(market, symbol string) {
 				orderPrice = (price + askPrice) / 2
 			}
 		}
+		if symbol == `btc_usdt` && bidAmount >= 100 && askAmount >= 100 {
+			util.Notice(`[someone refreshing] sleep 30 minutes`)
+			myTime := util.GetNow()
+			btcusdtBigTime = &myTime
+			return
+		}
 		if orderSide != `` {
 			orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
 				orderPrice, amount, 1, 2)
@@ -317,7 +317,7 @@ func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
 //getPriceFromDepth 卖一上数量不足百分之一的，价格往上，直到累积卖单数量超过百一的价格上下单，如果累积数量直接超过了百分之三，
 // 则在此价格的前面一个单位上下单
 func _(market, symbol string, amount float64) (bidPrice, askPrice float64) {
-	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	asks := model.AppMarkets.BidAsks[symbol][market].Asks
 	bids := model.AppMarkets.BidAsks[symbol][market].Bids
 	bidAmount := 0.0

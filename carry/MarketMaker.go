@@ -123,5 +123,8 @@ var ProcessMake = func(market, symbol string) {
 		if order.Status == model.CarryStatusWorking {
 			addMaker(market, order)
 		}
+		if order.OrderId != `` {
+			model.AppDB.Save(order)
+		}
 	}
 }

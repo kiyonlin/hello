@@ -13,7 +13,7 @@ deduction: 0.8
 mail: haoweizh@qq.com #41685600@qq.com
 handle: 1
 handlemaker: 1
-handlerefresh: 0
+handlerefresh: 1
 handlegrid: 1
 refreshlimit: 0.09
 refreshlimitlow: 0.01

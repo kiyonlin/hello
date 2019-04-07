@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -81,4 +82,11 @@ func GetPrecision(num float64) int {
 		}
 	}
 	return 0
+}
+
+func FormatNum(input float64, decimal int) (num float64, str string) {
+	format := `%.` + strconv.Itoa(decimal) + `f`
+	str = fmt.Sprintf(format, input)
+	num, _ = strconv.ParseFloat(str, 64)
+	return num, str
 }

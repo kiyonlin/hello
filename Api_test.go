@@ -89,17 +89,6 @@ func Test_Api(t *testing.T) {
 }
 
 func Test_array(t *testing.T) {
-	symbols := make(map[string]bool)
-	symbols[`fcoin`] = true
-	fmt.Println(symbols[`test`])
-	pingMsg := fmt.Sprintf(`{"cmd":"ping","args":[%d],"id":"id"}`, util.GetNowUnixMillion())
-	fmt.Println(pingMsg)
-	testMap := make(map[string]string)
-	testMap[`1`] = `one`
-	testMap[`2`] = `two`
-	delete(testMap, `1`)
-	fmt.Println(len(testMap))
-	for key, value := range testMap {
-		fmt.Println(key + `-` + value)
-	}
+	a, b := util.FormatNum(0.335, 2)
+	fmt.Println(fmt.Sprintf(`%f %s`, a, b))
 }
