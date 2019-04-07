@@ -17,13 +17,57 @@ var btcusdtBigTime *time.Time
 var syncRefresh = make(chan interface{}, 10)
 var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
+var lastTickBid, lastTickAsk *model.Tick
 
 type RefreshOrders struct {
-	lock      sync.Mutex
-	bidOrders map[string]map[string][]*model.Order // market - symbol - orders
-	askOrders map[string]map[string][]*model.Order // market - symbol - orders
-	lastBid   map[string]map[string]*model.Order   // market - symbol - order
-	lastAsk   map[string]map[string]*model.Order   // market - symbol - order
+	lock         sync.Mutex
+	bidOrders    map[string]map[string][]*model.Order             // market - symbol - orders
+	askOrders    map[string]map[string][]*model.Order             // market - symbol - orders
+	lastBid      map[string]map[string]*model.Order               // market - symbol - order
+	lastAsk      map[string]map[string]*model.Order               // market - symbol - order
+	recentOrders map[string]map[string]map[float64][]*model.Order // market - symbol - price - orders
+}
+
+func (refreshOrders *RefreshOrders) AddRecentOrder(market, symbol string, order *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if order.OrderId == `` || market != model.Fcoin || symbol != `btc_usdt` {
+		return
+	}
+	if refreshOrders.recentOrders == nil {
+		refreshOrders.recentOrders = make(map[string]map[string]map[float64][]*model.Order)
+	}
+	if refreshOrders.recentOrders[market] == nil {
+		refreshOrders.recentOrders[market] = make(map[string]map[float64][]*model.Order)
+	}
+	if refreshOrders.recentOrders[market][symbol] == nil {
+		refreshOrders.recentOrders[market][symbol] = make(map[float64][]*model.Order)
+	}
+	if refreshOrders.recentOrders[market][symbol][order.Price] == nil {
+		refreshOrders.recentOrders[market][symbol][order.Price] = make([]*model.Order, 0)
+	}
+	refreshOrders.recentOrders[market][symbol][order.Price] =
+		append(refreshOrders.recentOrders[market][symbol][order.Price], order)
+}
+
+func (refreshOrders *RefreshOrders) CheckRecentOrder(market, symbol string, price float64) bool {
+	if market != model.Fcoin || symbol != `btc_usdt` {
+		return true
+	}
+	if refreshOrders.recentOrders == nil || refreshOrders.recentOrders[market] == nil ||
+		refreshOrders.recentOrders[market][symbol] == nil {
+		return true
+	}
+	price, _ = util.FormatNum(price, api.GetPriceDecimal(market, symbol))
+	array := make([]*model.Order, 0)
+	now := util.GetNow()
+	for _, value := range refreshOrders.recentOrders[market][symbol][price] {
+		if now.Unix()-value.OrderTime.Unix() < 10 {
+			array = append(array, value)
+		}
+	}
+	refreshOrders.recentOrders[market][symbol][price] = array
+	return len(array) >= 3
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
@@ -209,6 +253,17 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
+	if symbol == `btc_usdt` {
+		if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
+			(lastTickAsk != nil && lastTickAsk.Amount <= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
+			util.Notice(`[someone refreshing] sleep 30 minutes`)
+			myTime := util.GetNow()
+			btcusdtBigTime = &myTime
+			return
+		}
+		lastTickAsk = &model.AppMarkets.BidAsks[symbol][market].Asks[0]
+		lastTickBid = &model.AppMarkets.BidAsks[symbol][market].Bids[0]
+	}
 	switch setting.FunctionParameter {
 	case model.FunRefreshMiddle:
 		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
@@ -265,20 +320,19 @@ var ProcessRefresh = func(market, symbol string) {
 				orderPrice = (price + askPrice) / 2
 			}
 		}
-		if symbol == `btc_usdt` && bidAmount >= 100 && askAmount >= 100 {
-			util.Notice(`[someone refreshing] sleep 30 minutes`)
-			myTime := util.GetNow()
-			btcusdtBigTime = &myTime
-			return
-		}
 		if orderSide != `` {
+			if !refreshOrders.CheckRecentOrder(market, symbol, orderPrice) {
+				util.Notice(fmt.Sprintf(`[same price 3] %s %f`, symbol, orderPrice))
+				return
+			}
 			orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
 				orderPrice, amount, 1, 2)
 			if orderResult {
+				refreshOrders.AddRecentOrder(market, symbol, order)
 				time.Sleep(time.Millisecond * 15)
 				reverseResult, reverseOrder :=
 					placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
-						orderPrice, amount, 4, 1)
+						orderPrice, amount, 1, 1)
 				if !reverseResult {
 					go api.MustCancel(market, symbol, order.OrderId, true)
 					time.Sleep(time.Second * 2)
@@ -389,10 +443,10 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 	syncRefresh <- struct{}{}
 }
 
-func placeSeparateOrder(orderSide, market, symbol, accountType string, price, amount float64, retry, insufficient int) (
+func placeSeparateOrder(orderSide, market, symbol, accountType string, price, amount float64, try, insufficient int) (
 	result bool, order *model.Order) {
 	insufficientTimes := 0
-	for i := 0; i < retry; i++ {
+	for i := 0; i < try; i++ {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 		if order.ErrCode == `1016` {
 			insufficientTimes++
