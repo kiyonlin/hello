@@ -91,7 +91,7 @@ var ProcessMake = func(market, symbol string) {
 	}
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	dealDelay := util.GetNowUnixMillion() - int64(deal.Ts)
-	if delay > 200 || dealDelay > 1500 {
+	if delay > 200 || dealDelay > 2000 {
 		util.Notice(fmt.Sprintf(`[delay too long] %d %d`, delay, dealDelay))
 		return
 	}
@@ -107,7 +107,7 @@ var ProcessMake = func(market, symbol string) {
 	if err != nil || errParam1 != nil || errParam2 != nil || bigOrderLine > deal.Amount {
 		return
 	}
-	util.Info(fmt.Sprintf(`[get big]%f:%f-%f %f_%f`, deal.Amount, amount, bigOrderLine, left, right/deal.Price))
+	util.Notice(fmt.Sprintf(`[get big]%f:%f-%f %f-%f`, deal.Amount, amount, bigOrderLine, left, right/deal.Price))
 	orderSide := ``
 	rightAmount := right / deal.Price
 	if left < rightAmount && amount < rightAmount {
