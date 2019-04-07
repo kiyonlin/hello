@@ -255,10 +255,12 @@ var ProcessRefresh = func(market, symbol string) {
 	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
 	if symbol == `btc_usdt` {
 		if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
-			(lastTickAsk != nil && lastTickAsk.Amount <= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
+			(lastTickAsk != nil && lastTickAsk.Amount >= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
 			util.Notice(`[someone refreshing] sleep 30 minutes`)
 			myTime := util.GetNow()
 			btcusdtBigTime = &myTime
+			lastTickAsk = nil
+			lastTickBid = nil
 			return
 		}
 		lastTickAsk = &model.AppMarkets.BidAsks[symbol][market].Asks[0]
