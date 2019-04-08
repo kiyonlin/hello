@@ -81,6 +81,11 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 			deal := markets.GetDeal(symbol, model.Fcoin)
 			if deal == nil || deal.Ts < ts {
 				markets.SetDeal(symbol, model.Fcoin, &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price})
+				for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
+					if handler != nil && function == model.FunctionMaker {
+						handler(model.Fcoin, symbol)
+					}
+				}
 			} else {
 				util.Notice(`[get an old deal]` + symbol)
 			}
@@ -105,8 +110,8 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				sort.Sort(sort.Reverse(bidAsk.Bids))
 				bidAsk.Ts = responseJson.Get("ts").MustInt()
 				if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
-					for _, handler := range model.GetFunctions(model.Fcoin, symbol) {
-						if handler != nil {
+					for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
+						if handler != nil && function != model.FunctionMaker {
 							handler(model.Fcoin, symbol)
 						}
 					}

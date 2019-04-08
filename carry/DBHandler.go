@@ -2,14 +2,19 @@ package carry
 
 import (
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"strings"
 	"time"
 )
 
 var accountServing = false
+
+var WSErrHandler = func(err error) {
+	print(err)
+	util.SocketInfo(`get error ` + err.Error())
+}
 
 func AccountHandlerServe() {
 	for true {
@@ -21,7 +26,6 @@ func AccountHandlerServe() {
 		cleared := false
 		for _, value := range accounts {
 			current := util.GetNow()
-			//util.Info(fmt.Sprintf(`%s add account %s %f`, value.Market, value.Currency, value.PriceInUsdt))
 			if !cleared {
 				//util.Info(`remove accounts ` + value.Market + util.GetNow().Format("2006-01-02"))
 				model.AppDB.Delete(model.Account{}, "market = ? AND date(created_at) > ?",
@@ -31,82 +35,6 @@ func AccountHandlerServe() {
 			model.AppDB.Create(value)
 		}
 		accountServing = false
-	}
-}
-
-//每个小时查询过去一天内有没有从这种setting里面离开的，
-//       如果有，那么这是一个勤快的setting
-//              如果离开利润低于百分之1.5那么买入利润增加万分之一，
-//              如果进入利润高于千分之1.5，那么进入利润减万分之一
-//       如果没有，那么这是一个懒惰的setting，在懒惰的里面寻找所有持仓量最大的setting
-//              如果进入利润低于百分之1.5，那么进入利润加万分之一
-//              如果离开利润大于万分之5，那么离开利润减万分之一
-func dealDiligentSettings() {
-	createdAt := util.GetNow().Add(time.Duration(-3600) * time.Second)
-	settings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
-	for _, setting := range settings {
-		if setting == nil {
-			continue
-		}
-		util.Notice(fmt.Sprintf(`[modify setting]%s %s`, setting.Market, setting.Symbol))
-		if setting.OpenShortMargin < 0.015 {
-			util.Notice(fmt.Sprintf(`open margin %f < 0.015, + 0.0001`, setting.OpenShortMargin))
-			setting.OpenShortMargin += 0.0001
-		}
-		if setting.CloseShortMargin > 0.0015 {
-			util.Notice(fmt.Sprintf(`close margin %f > 0.0015, - 0.0001`, setting.CloseShortMargin))
-			setting.CloseShortMargin -= 0.0001
-		}
-		model.AppDB.Save(setting)
-	}
-}
-
-func dealLazySettings() {
-	createdAt := util.GetNow().Add(time.Duration(-86400) * time.Second)
-	symbols := model.GetMarketSymbols(model.OKFUTURE)
-	diligentSettings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
-	openShort := 0.0
-	var setting *model.Setting
-	for symbol := range symbols {
-		if diligentSettings[symbol] != nil {
-			continue
-		}
-		futureAccount, _ := api.GetPositionOkfuture(model.OKFUTURE, symbol)
-		if futureAccount != nil {
-			short := futureAccount.OpenedShort
-			if strings.Contains(futureAccount.Symbol, `btc`) {
-				short = short * 10
-			}
-			if openShort < short {
-				openShort = short
-				setting = model.GetSetting(model.FunctionArbitrary, model.OKFUTURE, symbol)
-			}
-		}
-	}
-	if setting != nil {
-		changed := false
-		util.Notice(fmt.Sprintf(`[modify setting]%s %s`, setting.Market, setting.Symbol))
-		if setting.CloseShortMargin < 0.015 {
-			changed = true
-			util.Notice(fmt.Sprintf(`close margin %f < 0.015, + 0.0001`, setting.CloseShortMargin))
-			setting.CloseShortMargin += 0.0001
-		}
-		if setting.OpenShortMargin > 0.0005 {
-			changed = true
-			util.Notice(fmt.Sprintf(`open margin %f > 0.0005, - 0.0001`, setting.OpenShortMargin))
-			setting.OpenShortMargin -= 0.0001
-		}
-		if changed {
-			model.AppDB.Save(setting)
-		}
-	}
-}
-
-func MaintainArbitrarySettings() {
-	for true {
-		dealLazySettings()
-		dealDiligentSettings()
-		time.Sleep(time.Hour)
 	}
 }
 
@@ -193,3 +121,179 @@ func MaintainTransFee() {
 		time.Sleep(time.Minute * 5)
 	}
 }
+
+func createMarketDepthServer(markets *model.Markets, market string) chan struct{} {
+	util.SocketInfo(" create depth chan for " + market)
+	var channel chan struct{}
+	var err error
+	switch market {
+	case model.Huobi:
+		channel, err = api.WsDepthServeHuobi(markets, WSErrHandler)
+	case model.OKEX:
+		channel, err = api.WsDepthServeOkex(markets, WSErrHandler)
+	case model.OKFUTURE:
+		channel, err = api.WsDepthServeOKFuture(markets, WSErrHandler)
+	case model.Binance:
+		channel, err = api.WsDepthServeBinance(markets, WSErrHandler)
+	case model.Fcoin:
+		channel, err = api.WsDepthServeFcoin(markets, WSErrHandler)
+	case model.Coinpark:
+		channel, err = api.WsDepthServeCoinpark(markets, WSErrHandler)
+	case model.Coinbig:
+		channel, err = api.WsDepthServeCoinbig(markets, WSErrHandler)
+	case model.Bitmex:
+		channel, err = api.WsDepthServeBitmex(WSErrHandler)
+	}
+	if err != nil {
+		util.SocketInfo(market + ` can not create depth server ` + err.Error())
+	}
+	return channel
+}
+
+var socketMaintaining = false
+
+func MaintainMarketChan() {
+	if socketMaintaining {
+		return
+	}
+	socketMaintaining = true
+	for _, market := range model.GetMarkets() {
+		symbols := model.GetMarketSymbols(market)
+		for symbol := range symbols {
+			for index := 0; index < model.AppConfig.Channels; index++ {
+				channel := model.AppMarkets.GetDepthChan(market, index)
+				if channel == nil {
+					model.AppMarkets.PutDepthChan(market, index, createMarketDepthServer(model.AppMarkets, market))
+					util.SocketInfo(market + " create new depth channel " + symbol)
+				} else if model.AppMarkets.RequireDepthChanReset(market, symbol) {
+					model.AppMarkets.PutDepthChan(market, index, nil)
+					channel <- struct{}{}
+					close(channel)
+					model.AppMarkets.PutDepthChan(market, index, createMarketDepthServer(model.AppMarkets, market))
+					util.SocketInfo(market + " reset depth channel " + symbol)
+				}
+			}
+			break
+		}
+	}
+	socketMaintaining = false
+}
+
+func Maintain() {
+	util.Notice("start carrying")
+	var err error
+	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+	model.HandlerMap[model.FunctionMaker] = ProcessMake
+	model.HandlerMap[model.FunctionGrid] = ProcessGrid
+	//model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
+	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
+	model.HandlerMap[model.FunctionCarry] = ProcessCarry
+
+	defer model.AppDB.Close()
+	model.AppDB.AutoMigrate(&model.Account{})
+	model.AppDB.AutoMigrate(&model.Setting{})
+	model.AppDB.AutoMigrate(&model.Order{})
+	model.LoadSettings()
+	go AccountHandlerServe()
+	go RefreshAccounts()
+	go CancelOldWorkingOrders()
+	go MaintainTransFee()
+	for true {
+		go MaintainMarketChan()
+		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
+	}
+}
+
+//func createAccountInfoServer(marketName string) chan struct{} {
+//	util.SocketInfo(` create account info chan for ` + marketName)
+//	var channel chan struct{}
+//	var err error
+//	switch marketName {
+//	case model.OKFUTURE:
+//		channel, err = api.WsAccountServeOKFuture(WSErrHandler)
+//	}
+//	if err != nil {
+//		util.SocketInfo(marketName + ` can not create server ` + err.Error())
+//	}
+//	return channel
+//}
+
+////每个小时查询过去一天内有没有从这种setting里面离开的，
+////       如果有，那么这是一个勤快的setting
+////              如果离开利润低于百分之1.5那么买入利润增加万分之一，
+////              如果进入利润高于千分之1.5，那么进入利润减万分之一
+////       如果没有，那么这是一个懒惰的setting，在懒惰的里面寻找所有持仓量最大的setting
+////              如果进入利润低于百分之1.5，那么进入利润加万分之一
+////              如果离开利润大于万分之5，那么离开利润减万分之一
+//func dealDiligentSettings() {
+//	createdAt := util.GetNow().Add(time.Duration(-3600) * time.Second)
+//	settings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
+//	for _, setting := range settings {
+//		if setting == nil {
+//			continue
+//		}
+//		util.Notice(fmt.Sprintf(`[modify setting]%s %s`, setting.Market, setting.Symbol))
+//		if setting.OpenShortMargin < 0.015 {
+//			util.Notice(fmt.Sprintf(`open margin %f < 0.015, + 0.0001`, setting.OpenShortMargin))
+//			setting.OpenShortMargin += 0.0001
+//		}
+//		if setting.CloseShortMargin > 0.0015 {
+//			util.Notice(fmt.Sprintf(`close margin %f > 0.0015, - 0.0001`, setting.CloseShortMargin))
+//			setting.CloseShortMargin -= 0.0001
+//		}
+//		model.AppDB.Save(setting)
+//	}
+//}
+
+//func dealLazySettings() {
+//	createdAt := util.GetNow().Add(time.Duration(-86400) * time.Second)
+//	symbols := model.GetMarketSymbols(model.OKFUTURE)
+//	diligentSettings := model.LoadDiligentSettings(model.OKFUTURE, model.CarryTypeFuture, createdAt)
+//	openShort := 0.0
+//	var setting *model.Setting
+//	for symbol := range symbols {
+//		if diligentSettings[symbol] != nil {
+//			continue
+//		}
+//		futureAccount, _ := api.GetPositionOkfuture(model.OKFUTURE, symbol)
+//		if futureAccount != nil {
+//			short := futureAccount.OpenedShort
+//			if strings.Contains(futureAccount.Symbol, `btc`) {
+//				short = short * 10
+//			}
+//			if openShort < short {
+//				openShort = short
+//				setting = model.GetSetting(model.FunctionArbitrary, model.OKFUTURE, symbol)
+//			}
+//		}
+//	}
+//	if setting != nil {
+//		changed := false
+//		util.Notice(fmt.Sprintf(`[modify setting]%s %s`, setting.Market, setting.Symbol))
+//		if setting.CloseShortMargin < 0.015 {
+//			changed = true
+//			util.Notice(fmt.Sprintf(`close margin %f < 0.015, + 0.0001`, setting.CloseShortMargin))
+//			setting.CloseShortMargin += 0.0001
+//		}
+//		if setting.OpenShortMargin > 0.0005 {
+//			changed = true
+//			util.Notice(fmt.Sprintf(`open margin %f > 0.0005, - 0.0001`, setting.OpenShortMargin))
+//			setting.OpenShortMargin -= 0.0001
+//		}
+//		if changed {
+//			model.AppDB.Save(setting)
+//		}
+//	}
+//}
+//
+//func MaintainArbitrarySettings() {
+//	for true {
+//		dealLazySettings()
+//		dealDiligentSettings()
+//		time.Sleep(time.Hour)
+//	}
+//}

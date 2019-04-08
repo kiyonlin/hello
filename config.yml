@@ -9,7 +9,7 @@ channels: 1
 minusdt: 15
 maxusdt: 1500
 inchina: 0
-deduction: 0.8
+carrydistance: 0.001
 mail: haoweizh@qq.com #41685600@qq.com
 handle: 1
 handlemaker: 1

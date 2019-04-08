@@ -296,11 +296,11 @@ func SetParameters(c *gin.Context) {
 	if ftMax != `` {
 		model.AppConfig.FtMax, _ = strconv.ParseFloat(ftMax, 64)
 	}
-	deduction := c.Query("deduction")
-	if len(strings.TrimSpace(deduction)) > 0 {
-		value, _ := strconv.ParseFloat(deduction, 64)
+	carryDistance := c.Query("carrydistance")
+	if len(strings.TrimSpace(carryDistance)) > 0 {
+		value, _ := strconv.ParseFloat(carryDistance, 64)
 		if value > 0 && value < 1 {
-			model.AppConfig.Deduction = value
+			model.AppConfig.CarryDistance = value
 		}
 	}
 	channelSlot := c.Query("channelslot")

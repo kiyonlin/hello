@@ -1,7 +1,6 @@
 package model
 
 import (
-	"strings"
 	"time"
 )
 
@@ -27,7 +26,7 @@ type Setting struct {
 }
 
 var marketSymbolSetting map[string]map[string]map[string]*Setting // function - marketName - symbol - setting
-var handlers map[string]map[string][]CarryHandler                 // market - symbol - carryHandler
+var handlers map[string]map[string]map[string]CarryHandler        // market - symbol - function- carryHandler
 
 func GetFunctionMarkets(function string) []string {
 	if marketSymbolSetting[function] == nil {
@@ -42,19 +41,6 @@ func GetFunctionMarkets(function string) []string {
 	return markets
 }
 
-func GetSettings(function, market, symbolPrefix string) (settings []*Setting) {
-	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
-		return nil
-	}
-	settings = make([]*Setting, 0)
-	for _, value := range marketSymbolSetting[function][market] {
-		if strings.Index(value.Symbol, symbolPrefix) == 0 {
-			settings = append(settings, value)
-		}
-	}
-	return settings
-}
-
 func GetSetting(function, market, symbol string) *Setting {
 	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
 		return nil
@@ -62,34 +48,7 @@ func GetSetting(function, market, symbol string) *Setting {
 	return marketSymbolSetting[function][market][symbol]
 }
 
-func GetMargin(symbol string) float64 {
-	margins := make(map[string]float64)
-	for _, value := range AppSettings {
-		if margins[value.Symbol] < value.Margin {
-			margins[value.Symbol] = value.Margin
-		}
-	}
-	if margins[symbol] == 0 { // 无值状态下的保护策略
-		margins[symbol] = 1
-	}
-	return margins[symbol]
-}
-
-func LoadDiligentSettings(bidWeb, sideType string, createdAt time.Time) (settings map[string]*Setting) {
-	settings = make(map[string]*Setting)
-	rows, err := AppDB.Model(&Carry{}).Select(`bid_symbol`).Where(
-		`bid_web = ? and side_type = ? and created_at > ?`, bidWeb, sideType, createdAt).Group(`bid_symbol`).Rows()
-	if err == nil {
-		var symbol string
-		for rows.Next() {
-			_ = rows.Scan(&symbol)
-			settings[symbol] = GetSetting(FunctionArbitrary, bidWeb, symbol)
-		}
-	}
-	return settings
-}
-
-func GetFunctions(market, symbol string) []CarryHandler {
+func GetFunctions(market, symbol string) map[string]CarryHandler {
 	if handlers == nil {
 		LoadSettings()
 	}
@@ -104,7 +63,7 @@ func LoadSettings() {
 	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
 	marketSymbolSetting = make(map[string]map[string]map[string]*Setting)
 	binanceSettings := make(map[string]*Setting)
-	handlers = make(map[string]map[string][]CarryHandler)
+	handlers = make(map[string]map[string]map[string]CarryHandler)
 	for i := range AppSettings {
 		market := AppSettings[i].Market
 		function := AppSettings[i].Function
@@ -120,12 +79,12 @@ func LoadSettings() {
 			binanceSettings[symbol] = &Setting{Market: Binance, Symbol: AppSettings[i].Symbol}
 		}
 		if handlers[market] == nil {
-			handlers[market] = make(map[string][]CarryHandler)
+			handlers[market] = make(map[string]map[string]CarryHandler)
 		}
 		if handlers[market][symbol] == nil {
-			handlers[market][symbol] = make([]CarryHandler, 0)
+			handlers[market][symbol] = make(map[string]CarryHandler)
 		}
-		handlers[market][symbol] = append(handlers[market][symbol], HandlerMap[function])
+		handlers[market][symbol][function] = HandlerMap[function]
 	}
 	for _, setting := range binanceSettings {
 		AppSettings = append(AppSettings, *setting)

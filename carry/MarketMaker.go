@@ -23,7 +23,7 @@ func setMarketMaking(making bool) {
 func cancelOldMakers(market string) {
 	makersLock.Lock()
 	defer makersLock.Unlock()
-	d, _ := time.ParseDuration("-5s")
+	d, _ := time.ParseDuration("-3s")
 	timeLine := util.GetNow().Add(d)
 	array := make([]*model.Order, 0)
 	for _, value := range makers[market] {
@@ -89,10 +89,9 @@ var ProcessMake = func(market, symbol string) {
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 || deal == nil {
 		return
 	}
-	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	dealDelay := util.GetNowUnixMillion() - int64(deal.Ts)
-	if delay > 200 || dealDelay > 2000 {
-		util.Notice(fmt.Sprintf(`[delay too long] %d %d`, delay, dealDelay))
+	if dealDelay > 1000 {
+		util.Notice(fmt.Sprintf(`[delay too long] %d`, dealDelay))
 		return
 	}
 	setting := model.GetSetting(model.FunctionMaker, market, symbol)

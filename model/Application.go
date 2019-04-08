@@ -10,7 +10,7 @@ import (
 
 var HandlerMap = make(map[string]CarryHandler)
 
-const ArbitraryCarryUSDT = 100.0
+//const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
 const OKEXOtherContractFaceValue = 10.0
 const OKEX = "okex"
@@ -34,18 +34,19 @@ const OrderSideBuy = `buy`
 const OrderSideSell = `sell`
 const OrderSideLiquidateLong = `liquidateLong`
 const OrderSideLiquidateShort = `liquidateShort`
-const CarryTypeFuture = `future`
-const CarryTypeArbitrarySell = `arbitrarysell`
-const CarryTypeArbitraryBuy = `arbitrarybuy`
+
+//const CarryTypeFuture = `future`
+//const CarryTypeArbitrarySell = `arbitrarysell`
+//const CarryTypeArbitraryBuy = `arbitrarybuy`
 const AmountTypeContractNumber = `contractnumber`
 const AmountTypeCoinNumber = `coinnumber`
 
 const FunctionGrid = `grid`
 const FunctionMaker = `maker`
 const FunctionCarry = `carry`
-const FunctionArbitrary = `arbitrary`
-const FunctionRefresh = `refresh`
 
+//const FunctionArbitrary = `arbitrary`
+const FunctionRefresh = `refresh`
 const FunRefreshMiddle = `refresh_parameter_middle`
 
 //const FunRefreshSide = `refresh_parameter_side`
@@ -58,9 +59,10 @@ var AppMarkets = NewMarkets()
 var AppAccounts = NewAccounts()
 
 var HuobiAccountId = ""
-var CarryChannel = make(chan Carry, 50)
+
+//var CarryChannel = make(chan Carry, 50)
+//var InnerCarryChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
-var InnerCarryChannel = make(chan Carry, 50)
 var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
 
@@ -71,7 +73,6 @@ type Config struct {
 	Channels        int
 	ChannelSlot     float64
 	Delay           float64
-	Deduction       float64
 	MinUsdt         float64            // 折合usdt最小下单金额
 	MaxUsdt         float64            // 折合usdt最大下单金额
 	WSUrls          map[string]string  // marketName - ws url
@@ -93,6 +94,7 @@ type Config struct {
 	FcoinSecret     string
 	BnbMin          float64
 	BnbBuy          float64
+	CarryDistance   float64 // carry价差触发条件
 	OrderWait       int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate      float64 // 刷单填写数量比率
 	RefreshLimit    float64
@@ -383,7 +385,7 @@ func (config *Config) ToString() string {
 	for key, value := range config.MarketCost {
 		str += fmt.Sprintf("-%s base carry cost: %f\n", key, value)
 	}
-	str += fmt.Sprintf("deduction: %f\n", config.Deduction)
+	str += fmt.Sprintf("carry distance: %f\n", config.CarryDistance)
 	str += fmt.Sprintf("delay: %f\n", config.Delay)
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
 	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)

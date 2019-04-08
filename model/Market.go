@@ -1,12 +1,10 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"hello/util"
 	"math"
-	"strings"
 	"sync"
 )
 
@@ -131,46 +129,6 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 		return true
 	}
 	return false
-}
-
-func (markets *Markets) NewCarry(symbol string) (*Carry, error) {
-	if markets.BidAsks[symbol] == nil {
-		return nil, errors.New("no market data " + symbol)
-	}
-	carry := Carry{}
-	carry.BidSymbol = symbol
-	carry.AskSymbol = symbol
-	for k, v := range markets.BidAsks[symbol] {
-		if v == nil {
-			continue
-		}
-		if len(v.Bids) > 0 && carry.AskPrice < v.Bids[0].Price {
-			carry.AskPrice = v.Bids[0].Price
-			carry.AskAmount = v.Bids[0].Amount
-			carry.AskWeb = k
-			carry.AskTime = int64(v.Ts)
-		}
-		if len(v.Asks) > 0 && (carry.BidPrice == 0 || carry.BidPrice > v.Asks[0].Price) {
-			carry.BidPrice = v.Asks[0].Price
-			carry.BidAmount = v.Asks[0].Amount
-			carry.BidWeb = k
-			carry.BidTime = int64(v.Ts)
-		}
-	}
-	currencies := strings.Split(carry.BidSymbol, `_`)
-	if len(currencies) != 2 {
-		return nil, errors.New(`invalid carry symbol`)
-	}
-	carry.Margin = GetMargin(symbol)
-	if carry.BidAmount < carry.AskAmount {
-		carry.Amount = carry.BidAmount
-	} else {
-		carry.Amount = carry.AskAmount
-	}
-	if carry.Amount == 0 {
-		return nil, errors.New(`0 amount carry`)
-	}
-	return &carry, nil
 }
 
 func (markets *Markets) GetDepthChan(marketName string, index int) chan struct{} {
