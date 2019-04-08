@@ -18,6 +18,7 @@ var syncRefresh = make(chan interface{}, 10)
 var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
 var lastTickBid, lastTickAsk *model.Tick
+var refreshChance = true
 
 type RefreshOrders struct {
 	lock         sync.Mutex
@@ -199,7 +200,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
 		if value.Price < bidPrice { // 大于等于卖一的买单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
-			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 			time.Sleep(time.Second)
 		} else if value.Price < askPrice && value.Price >= bidPrice && value.Status == model.CarryStatusWorking {
 			bidOrders = append(bidOrders, value)
@@ -208,7 +209,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	for _, value := range refreshOrders.askOrders[market][symbol] {
 		if value.Price > askPrice { // 小于等于买一的卖单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
-			go api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 			time.Sleep(time.Second)
 		} else if value.Price > bidPrice && value.Price <= askPrice && value.Status == model.CarryStatusWorking {
 			askOrders = append(askOrders, value)
@@ -236,7 +237,8 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	if model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][market] == nil ||
-		len(model.AppMarkets.BidAsks[symbol][market].Bids) == 0 || len(model.AppMarkets.BidAsks[symbol][market].Asks) == 0 {
+		len(model.AppMarkets.BidAsks[symbol][market].Bids) == 0 ||
+		len(model.AppMarkets.BidAsks[symbol][market].Asks) == 0 {
 		util.Notice(`nil bid-ask price for ` + symbol)
 		return
 	}
@@ -253,7 +255,9 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
+	if !refreshChance {
+		go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
+	}
 	if symbol == `btc_usdt` {
 		if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
 			(lastTickAsk != nil && lastTickAsk.Amount >= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
@@ -324,6 +328,10 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 		if orderSide != `` {
+			if refreshChance == false {
+				refreshChance = true
+				return
+			}
 			if !refreshOrders.CheckRecentOrder(market, symbol, orderPrice) {
 				util.Notice(fmt.Sprintf(`[same price 3] %s %f`, symbol, orderPrice))
 				return
@@ -337,7 +345,7 @@ var ProcessRefresh = func(market, symbol string) {
 					placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
 						orderPrice, amount, 1, 1)
 				if !reverseResult {
-					go api.MustCancel(market, symbol, order.OrderId, true)
+					api.MustCancel(market, symbol, order.OrderId, true)
 					time.Sleep(time.Second * 2)
 					if reverseOrder.ErrCode == `1016` {
 						time.Sleep(time.Second)
@@ -353,6 +361,8 @@ var ProcessRefresh = func(market, symbol string) {
 					lastOrign1016 = true
 				}
 			}
+		} else {
+			refreshChance = false
 		}
 	}
 }
@@ -421,9 +431,9 @@ func doRefresh(market, symbol string, price, amount float64) {
 		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
 		if refreshLastBid != nil && refreshLastAsk != nil {
 			if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
-				go api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
+				api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
 			} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
-				go api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
+				api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
 			}
 			break
 		}
