@@ -83,11 +83,12 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				markets.SetDeal(symbol, model.Fcoin, &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price})
 				for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
 					if handler != nil && function == model.FunctionMaker {
+						util.Notice(fmt.Sprintf(`[try makerl]%s`, symbol))
 						handler(model.Fcoin, symbol)
 					}
 				}
 			} else {
-				util.Notice(`[get an old deal]` + symbol)
+				util.Notice(fmt.Sprintf(`[get an old deal]%s %d > %d`, symbol, deal.Ts, ts))
 			}
 		} else {
 			if symbol != "" && symbol != "_" {
