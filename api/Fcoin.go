@@ -87,8 +87,6 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 						handler(model.Fcoin, symbol)
 					}
 				}
-			} else {
-				util.Notice(fmt.Sprintf(`[get an old deal]%s %d > %d`, symbol, deal.Ts, ts))
 			}
 		} else {
 			if symbol != "" && symbol != "_" {
@@ -119,7 +117,6 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				}
 			}
 		}
-
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
 	return WebSocketServe(model.Fcoin, requestUrl, model.SubscribeDepth,

@@ -103,10 +103,11 @@ var ProcessMake = func(market, symbol string) {
 	bigOrderLine, errParam1 := strconv.ParseFloat(params[0], 64)
 	amount, errParam2 := strconv.ParseFloat(params[1], 64)
 	left, right, err := getBalance(market, symbol, setting.AccountType)
+	util.Notice(fmt.Sprintf(`[get big %v]%f:%f-%f %f-%f`, bigOrderLine < deal.Amount, deal.Amount, amount,
+		bigOrderLine, left, right/deal.Price))
 	if err != nil || errParam1 != nil || errParam2 != nil || bigOrderLine > deal.Amount {
 		return
 	}
-	util.Notice(fmt.Sprintf(`[get big]%f:%f-%f %f-%f`, deal.Amount, amount, bigOrderLine, left, right/deal.Price))
 	orderSide := ``
 	rightAmount := right / deal.Price
 	if left < rightAmount && amount < rightAmount {
