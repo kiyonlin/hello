@@ -21,20 +21,24 @@ func setMarketMaking(making bool) {
 	marketMaking = making
 }
 
-func cancelOldMakers(market string) {
-	makersLock.Lock()
-	defer makersLock.Unlock()
-	d, _ := time.ParseDuration("-3s")
-	timeLine := util.GetNow().Add(d)
-	array := make([]*model.Order, 0)
-	for _, value := range makers[market] {
-		if value.OrderTime.Before(timeLine) {
-			api.MustCancel(market, value.Symbol, value.OrderId, true)
-		} else {
-			array = append(array, value)
+func CancelOldMakers() {
+	for true {
+		markets := model.GetFunctionMarkets(model.FunctionMaker)
+		d, _ := time.ParseDuration("-3s")
+		timeLine := util.GetNow().Add(d)
+		array := make([]*model.Order, 0)
+		for _, market := range markets {
+			for _, value := range makers[market] {
+				if value.OrderTime.Before(timeLine) {
+					api.MustCancel(market, value.Symbol, value.OrderId, true)
+				} else {
+					array = append(array, value)
+				}
+			}
+			makers[market] = array
 		}
+		time.Sleep(time.Second)
 	}
-	makers[market] = array
 }
 
 func addMaker(market string, order *model.Order) {
@@ -79,7 +83,6 @@ var ProcessMake = func(market, symbol string) {
 	}
 	setMarketMaking(true)
 	defer setMarketMaking(false)
-	go cancelOldMakers(market)
 	setting := model.GetSetting(model.FunctionMaker, market, symbol)
 	params := strings.Split(setting.FunctionParameter, `_`)
 	if len(params) != 2 {

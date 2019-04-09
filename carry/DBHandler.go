@@ -199,6 +199,7 @@ func Maintain() {
 	model.AppDB.AutoMigrate(&model.Setting{})
 	model.AppDB.AutoMigrate(&model.Order{})
 	model.LoadSettings()
+	go CancelOldMakers()
 	go AccountHandlerServe()
 	go RefreshAccounts()
 	go CancelOldWorkingOrders()
