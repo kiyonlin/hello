@@ -119,10 +119,10 @@ func (markets *Markets) SetBigDeal(symbol, market string, deal *Deal) bool {
 	oldDeal := markets.BigDeals[symbol][market]
 	if err == nil && deal.Amount >= bigOrderLine && (oldDeal == nil || deal.Ts > oldDeal.Ts) {
 		markets.BigDeals[symbol][market] = deal
+		util.Notice(fmt.Sprintf(`[get big]%f-%f`, deal.Amount, bigOrderLine))
 		return true
 	}
 	return false
-	//util.Notice(fmt.Sprintf(`[get big %v]%f:%f-%f`, bigOrderLine < deal.Amount, deal.Amount, amount, bigOrderLine))
 }
 
 func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) bool {

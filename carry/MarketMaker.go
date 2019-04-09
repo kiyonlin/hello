@@ -6,6 +6,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -92,12 +93,17 @@ var ProcessMake = func(market, symbol string) {
 	}
 	amount, err := strconv.ParseFloat(params[1], 64)
 	deal := model.AppMarkets.GetBigDeal(symbol, market)
-	if deal == nil {
+	if model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][market] == nil ||
+		len(model.AppMarkets.BidAsks[symbol][market].Bids) == 0 ||
+		len(model.AppMarkets.BidAsks[symbol][market].Asks) == 0 || deal == nil {
+		util.Notice(`nil bid-ask price for ` + symbol)
 		return
 	}
+	tick := model.AppMarkets.BidAsks[symbol][market]
 	dealDelay := util.GetNowUnixMillion() - int64(deal.Ts)
-	if dealDelay > 1000 {
-		util.Notice(fmt.Sprintf(`[delay too long] %d`, dealDelay))
+	depthDelay := util.GetNowUnixMillion() - int64(tick.Ts)
+	if dealDelay > 1000 || depthDelay > 2000 {
+		util.Notice(fmt.Sprintf(`[delay too long] depth:%d deal:%d`, depthDelay, dealDelay))
 		return
 	}
 	left, right, err := getBalance(market, symbol, setting.AccountType)
@@ -105,11 +111,31 @@ var ProcessMake = func(market, symbol string) {
 		return
 	}
 	orderSide := ``
+	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	rightAmount := right / deal.Price
+	inAll := 0.0
 	if left < rightAmount && amount < rightAmount {
+		for i := 0; i < tick.Asks.Len(); i++ {
+			if tick.Asks[i].Price <= deal.Price+priceDistance {
+				inAll += tick.Asks[i].Amount
+			} else {
+				break
+			}
+		}
 		orderSide = model.OrderSideBuy
 	} else if left > rightAmount && left > amount {
+		for i := 0; i < tick.Bids.Len(); i++ {
+			if tick.Bids[i].Price >= deal.Price-priceDistance {
+				inAll += tick.Bids[i].Amount
+			} else {
+				break
+			}
+		}
 		orderSide = model.OrderSideSell
+	}
+	if inAll >= 0.5*amount {
+		util.Notice(fmt.Sprintf(`[maker price full]deal price:%f, amount in all%f`, deal.Price, inAll))
+		orderSide = ``
 	}
 	if orderSide != `` {
 		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
