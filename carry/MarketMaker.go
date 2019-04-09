@@ -84,9 +84,15 @@ var ProcessMake = func(market, symbol string) {
 	setMarketMaking(true)
 	defer setMarketMaking(false)
 	go cancelOldMakers(market)
-	bidAsk := model.AppMarkets.BidAsks[symbol][market]
-	deal := model.AppMarkets.GetDeal(symbol, market)
-	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 || deal == nil {
+	setting := model.GetSetting(model.FunctionMaker, market, symbol)
+	params := strings.Split(setting.FunctionParameter, `_`)
+	if len(params) != 2 {
+		util.Notice(`maker param error: require d_d format param while get ` + setting.FunctionParameter)
+		return
+	}
+	amount, err := strconv.ParseFloat(params[1], 64)
+	deal := model.AppMarkets.GetBigDeal(symbol, market)
+	if deal == nil {
 		return
 	}
 	dealDelay := util.GetNowUnixMillion() - int64(deal.Ts)
@@ -94,18 +100,8 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[delay too long] %d`, dealDelay))
 		return
 	}
-	setting := model.GetSetting(model.FunctionMaker, market, symbol)
-	params := strings.Split(setting.FunctionParameter, `_`)
-	if len(params) != 2 {
-		util.Notice(`maker param error: require d_d format param while get ` + setting.FunctionParameter)
-		return
-	}
-	bigOrderLine, errParam1 := strconv.ParseFloat(params[0], 64)
-	amount, errParam2 := strconv.ParseFloat(params[1], 64)
 	left, right, err := getBalance(market, symbol, setting.AccountType)
-	util.Notice(fmt.Sprintf(`[get big %v]%f:%f-%f %f-%f`, bigOrderLine < deal.Amount, deal.Amount, amount,
-		bigOrderLine, left, right/deal.Price))
-	if err != nil || errParam1 != nil || errParam2 != nil || bigOrderLine > deal.Amount {
+	if err != nil {
 		return
 	}
 	orderSide := ``

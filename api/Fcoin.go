@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// 下單返回1016 資金不足// 下单返回1002 系统繁忙// 返回426 調用次數太頻繁
+// 下单返回1016 资金不足// 下单返回1002 系统繁忙// 返回426 调用次数太频繁
 //{"status":3033,"msg":"market order is disabled for symbol bsvusdt"}
 //{"status":1002,"msg":"system busy"}
 var lastDepthPingFcoin = util.GetNowUnixMillion()
@@ -78,9 +78,9 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 			amount := responseJson.Get(`amount`).MustFloat64()
 			side := responseJson.Get(`side`).MustString()
 			price := responseJson.Get(`price`).MustFloat64()
-			deal := markets.GetDeal(symbol, model.Fcoin)
-			if deal == nil || deal.Ts < ts {
-				markets.SetDeal(symbol, model.Fcoin, &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price})
+			//deal := markets.GetBigDeal(symbol, model.Fcoin)
+			//if deal == nil || deal.Ts < ts {
+			if markets.SetBigDeal(symbol, model.Fcoin, &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price}) {
 				for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
 					if handler != nil && function == model.FunctionMaker {
 						util.Notice(fmt.Sprintf(`[try makerl]%s`, symbol))

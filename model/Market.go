@@ -5,6 +5,8 @@ import (
 	"github.com/gorilla/websocket"
 	"hello/util"
 	"math"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -40,7 +42,7 @@ type Rule struct {
 type Markets struct {
 	lock      sync.Mutex
 	BidAsks   map[string]map[string]*BidAsk // symbol - market - bidAsk
-	Deals     map[string]map[string]*Deal   // symbol - market - Deal
+	BigDeals  map[string]map[string]*Deal   // symbol - market - Deal
 	wsDepth   map[string][]chan struct{}    // market - []depth channel
 	isWriting map[string]bool               // market - writing
 	conns     map[string]*websocket.Conn    // market - conn
@@ -86,29 +88,41 @@ func (markets *Markets) GetConn(market string) *websocket.Conn {
 	return markets.conns[market]
 }
 
-func (markets *Markets) GetDeal(symbol, market string) (deal *Deal) {
+func (markets *Markets) GetBigDeal(symbol, market string) (deal *Deal) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	if markets.Deals == nil {
-		markets.Deals = make(map[string]map[string]*Deal)
+	if markets.BigDeals == nil {
+		markets.BigDeals = make(map[string]map[string]*Deal)
 	}
-	if markets.Deals[symbol] == nil {
-		markets.Deals[symbol] = make(map[string]*Deal)
+	if markets.BigDeals[symbol] == nil {
+		markets.BigDeals[symbol] = make(map[string]*Deal)
 	}
-	return markets.Deals[symbol][market]
+	return markets.BigDeals[symbol][market]
 }
 
-func (markets *Markets) SetDeal(symbol, market string, deal *Deal) bool {
+func (markets *Markets) SetBigDeal(symbol, market string, deal *Deal) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	if markets.Deals == nil {
-		markets.Deals = make(map[string]map[string]*Deal)
+	setting := GetSetting(FunctionMaker, market, symbol)
+	params := strings.Split(setting.FunctionParameter, `_`)
+	if len(params) != 2 {
+		util.Notice(`maker param error: require d_d format param while get ` + setting.FunctionParameter)
+		return false
 	}
-	if markets.Deals[symbol] == nil {
-		markets.Deals[symbol] = make(map[string]*Deal)
+	if markets.BigDeals == nil {
+		markets.BigDeals = make(map[string]map[string]*Deal)
 	}
-	markets.Deals[symbol][market] = deal
-	return true
+	if markets.BigDeals[symbol] == nil {
+		markets.BigDeals[symbol] = make(map[string]*Deal)
+	}
+	bigOrderLine, err := strconv.ParseFloat(params[0], 64)
+	oldDeal := markets.BigDeals[symbol][market]
+	if err == nil && deal.Amount >= bigOrderLine && (oldDeal == nil || deal.Ts > oldDeal.Ts) {
+		markets.BigDeals[symbol][market] = deal
+		return true
+	}
+	return false
+	//util.Notice(fmt.Sprintf(`[get big %v]%f:%f-%f`, bigOrderLine < deal.Amount, deal.Amount, amount, bigOrderLine))
 }
 
 func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) bool {
@@ -164,7 +178,7 @@ func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
 
 func (markets *Markets) RequireDealChanReset(market string, subscribe string) bool {
 	symbol := GetSymbol(market, subscribe)
-	deals := markets.Deals[symbol]
+	deals := markets.BigDeals[symbol]
 	if deals != nil {
 		deal := deals[market]
 		if deal != nil {

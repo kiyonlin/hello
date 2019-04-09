@@ -331,6 +331,7 @@ var ProcessRefresh = func(market, symbol string) {
 			if refreshChance == false {
 				refreshChance = true
 				return
+
 			}
 			if !refreshOrders.CheckRecentOrder(market, symbol, orderPrice) {
 				util.Notice(fmt.Sprintf(`[same price 3] %s %f`, symbol, orderPrice))
