@@ -56,11 +56,6 @@ func getBalance(market, symbol, accountType string) (left, right float64, err er
 			strings.Replace(symbol, `_`, ``, 1))
 	}
 	coins := strings.Split(symbol, `_`)
-	if util.GetNowUnixMillion()-api.LastRefreshTime[market] > 15000 {
-		util.Notice(`15 seconds past, refresh and return ` + market + symbol)
-		api.RefreshAccount(market)
-		return 0, 0, errors.New(`data older than 15 seconds`)
-	}
 	leftAccount := model.AppAccounts.GetAccount(leverMarket, coins[0])
 	if leftAccount == nil {
 		util.Notice(`nil account ` + market + coins[0])

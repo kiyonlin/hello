@@ -232,6 +232,11 @@ var ProcessRefresh = func(market, symbol string) {
 	setRefreshing(true)
 	defer setRefreshing(false)
 	//currencies := strings.Split(symbol, "_")
+	if util.GetNowUnixMillion()-api.LastRefreshTime[market] > 15000 {
+		util.Notice(`15 seconds past, refresh and return ` + market + symbol)
+		api.RefreshAccount(market)
+		return
+	}
 	leftBalance, rightBalance, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil {
 		return
