@@ -110,6 +110,7 @@ func MaintainTransFee() {
 				value.Fee = order.Fee
 				value.FeeIncome = order.FeeIncome
 				value.DealAmount = order.DealAmount
+				value.Status = order.Status
 				model.AppDB.Save(&value)
 				if model.AppConfig.Handle == `1` {
 					time.Sleep(time.Second)
