@@ -104,6 +104,9 @@ func (markets *Markets) SetBigDeal(symbol, market string, deal *Deal) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	setting := GetSetting(FunctionMaker, market, symbol)
+	if setting == nil {
+		return false
+	}
 	params := strings.Split(setting.FunctionParameter, `_`)
 	if len(params) != 2 {
 		util.Notice(`maker param error: require d_d format param while get ` + setting.FunctionParameter)
