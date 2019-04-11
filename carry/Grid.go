@@ -166,5 +166,6 @@ var ProcessGrid = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`buy id %s at price %f < %f`, grid.buyOrder.OrderId, grid.buyOrder.Price, bidAsk.Bids[0].Price))
 		handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
 	}
+	CancelOldGridOrders()
 	time.Sleep(time.Microsecond * 100)
 }

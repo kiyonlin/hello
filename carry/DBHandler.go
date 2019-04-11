@@ -39,24 +39,21 @@ func AccountHandlerServe() {
 	}
 }
 
-func CancelOldWorkingOrders() {
+func CancelOldGridOrders() {
 	d, _ := time.ParseDuration("-1h")
-	for true {
-		timeLine := util.GetNow().Add(d)
-		markets := model.GetFunctionMarkets(model.FunctionGrid)
-		for _, market := range markets {
-			symbols := model.GetMarketSymbols(market)
-			for symbol := range symbols {
-				orders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
-				for orderId, order := range orders {
-					if orderId != `` && order.OrderTime.Before(timeLine) {
-						result, errCode, msg := api.CancelOrder(market, symbol, orderId)
-						util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
-					}
+	timeLine := util.GetNow().Add(d)
+	markets := model.GetFunctionMarkets(model.FunctionGrid)
+	for _, market := range markets {
+		symbols := model.GetMarketSymbols(market)
+		for symbol := range symbols {
+			orders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
+			for orderId, order := range orders {
+				if orderId != `` && order.OrderTime.Before(timeLine) {
+					result, errCode, msg := api.CancelOrder(market, symbol, orderId)
+					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
 				}
 			}
 		}
-		time.Sleep(time.Hour)
 	}
 }
 
@@ -203,7 +200,6 @@ func Maintain() {
 	go CancelOldMakers()
 	go AccountHandlerServe()
 	go RefreshAccounts()
-	go CancelOldWorkingOrders()
 	go MaintainTransFee()
 	for true {
 		go MaintainMarketChan()
