@@ -115,6 +115,8 @@ var ProcessMake = func(market, symbol string) {
 		for i := 0; i < tick.Asks.Len(); i++ {
 			if tick.Asks[i].Price <= deal.Price {
 				inAll += tick.Asks[i].Amount
+				util.Notice(fmt.Sprintf(`[inall=%f]deal price: %f after add ask %f amount %f`,
+					inAll, deal.Price, tick.Asks[i].Price, tick.Asks[i].Amount))
 			} else {
 				break
 			}
@@ -124,6 +126,8 @@ var ProcessMake = func(market, symbol string) {
 		for i := 0; i < tick.Bids.Len(); i++ {
 			if tick.Bids[i].Price >= deal.Price {
 				inAll += tick.Bids[i].Amount
+				util.Notice(fmt.Sprintf(`[inall=%f]deal price: %f after add bid %f amount %f`,
+					inAll, deal.Price, tick.Bids[i].Price, tick.Bids[i].Amount))
 			} else {
 				break
 			}
