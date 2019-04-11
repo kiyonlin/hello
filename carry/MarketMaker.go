@@ -6,7 +6,6 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -109,12 +108,12 @@ var ProcessMake = func(market, symbol string) {
 		return
 	}
 	orderSide := ``
-	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	//priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	rightAmount := right / deal.Price
 	inAll := 0.0
 	if left < rightAmount && amount < rightAmount {
 		for i := 0; i < tick.Asks.Len(); i++ {
-			if tick.Asks[i].Price < deal.Price+priceDistance {
+			if tick.Asks[i].Price <= deal.Price {
 				inAll += tick.Asks[i].Amount
 			} else {
 				break
@@ -123,7 +122,7 @@ var ProcessMake = func(market, symbol string) {
 		orderSide = model.OrderSideBuy
 	} else if left > rightAmount && left > amount {
 		for i := 0; i < tick.Bids.Len(); i++ {
-			if tick.Bids[i].Price > deal.Price-priceDistance {
+			if tick.Bids[i].Price >= deal.Price {
 				inAll += tick.Bids[i].Amount
 			} else {
 				break
@@ -132,7 +131,7 @@ var ProcessMake = func(market, symbol string) {
 		orderSide = model.OrderSideSell
 	}
 	if inAll >= 0.5*amount {
-		util.Notice(fmt.Sprintf(`[maker price full]price:%f %f-%f, amount:%f-%f, amount in all%f`,
+		util.Notice(fmt.Sprintf(`[maker price full]price:%f %f-%f, amount:%f-%f, amount in all:%f`,
 			deal.Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Bids[0].Amount, tick.Asks[0].Amount, inAll))
 		orderSide = ``
 	}
