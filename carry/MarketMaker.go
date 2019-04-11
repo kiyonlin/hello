@@ -114,7 +114,7 @@ var ProcessMake = func(market, symbol string) {
 	inAll := 0.0
 	if left < rightAmount && amount < rightAmount {
 		for i := 0; i < tick.Asks.Len(); i++ {
-			if tick.Asks[i].Price <= deal.Price+priceDistance {
+			if tick.Asks[i].Price < deal.Price+priceDistance {
 				inAll += tick.Asks[i].Amount
 			} else {
 				break
@@ -123,7 +123,7 @@ var ProcessMake = func(market, symbol string) {
 		orderSide = model.OrderSideBuy
 	} else if left > rightAmount && left > amount {
 		for i := 0; i < tick.Bids.Len(); i++ {
-			if tick.Bids[i].Price >= deal.Price-priceDistance {
+			if tick.Bids[i].Price > deal.Price-priceDistance {
 				inAll += tick.Bids[i].Amount
 			} else {
 				break
@@ -132,7 +132,8 @@ var ProcessMake = func(market, symbol string) {
 		orderSide = model.OrderSideSell
 	}
 	if inAll >= 0.5*amount {
-		util.Notice(fmt.Sprintf(`[maker price full]deal price:%f, amount in all%f`, deal.Price, inAll))
+		util.Notice(fmt.Sprintf(`[maker price full]price:%f %f-%f, amount:%f-%f, amount in all%f`,
+			deal.Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Bids[0].Amount, tick.Asks[0].Amount, inAll))
 		orderSide = ``
 	}
 	if orderSide != `` {
