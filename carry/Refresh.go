@@ -19,6 +19,7 @@ var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
 var lastTickBid, lastTickAsk *model.Tick
 var refreshChance = true
+var canceling = false
 
 type RefreshOrders struct {
 	lock         sync.Mutex
@@ -177,6 +178,7 @@ func (refreshOrders *RefreshOrders) Add(market, symbol, orderSide string, order 
 func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, bidPrice, askPrice float64) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
+	canceling = true
 	if refreshOrders.askOrders == nil {
 		refreshOrders.askOrders = make(map[string]map[string][]*model.Order)
 	}
@@ -217,6 +219,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	}
 	refreshOrders.bidOrders[market][symbol] = bidOrders
 	refreshOrders.askOrders[market][symbol] = askOrders
+	canceling = false
 }
 
 func setRefreshing(value bool) {
@@ -275,6 +278,10 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		lastTickAsk = &model.AppMarkets.BidAsks[symbol][market].Asks[0]
 		lastTickBid = &model.AppMarkets.BidAsks[symbol][market].Bids[0]
+	}
+	if canceling {
+		util.Notice(`[refreshing waiting for canceling]`)
+		return
 	}
 	switch setting.FunctionParameter {
 	case model.FunRefreshMiddle:
