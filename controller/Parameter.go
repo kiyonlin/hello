@@ -35,38 +35,39 @@ func ParameterServe() {
 }
 
 func setSymbol(c *gin.Context) {
-	pw := c.Query(`pw`)
-	if code == `` {
-		c.String(http.StatusOK, `请先获取验证码`)
-		return
-	}
-	if pw != code {
-		c.String(http.StatusOK, `验证码错误`)
-		return
-	}
-	waitTime := (util.GetNowUnixMillion() - codeGenTime) / 1000
-	if waitTime > 300 {
-		c.String(http.StatusOK, fmt.Sprintf(`验证码有效时间300秒，已超%d - %d > 300000`,
-			util.GetNowUnixMillion(), codeGenTime))
-		return
-	}
+	//pw := c.Query(`pw`)
+	//if code == `` {
+	//	c.String(http.StatusOK, `请先获取验证码`)
+	//	return
+	//}
+	//if pw != code {
+	//	c.String(http.StatusOK, `验证码错误`)
+	//	return
+	//}
+	//waitTime := (util.GetNowUnixMillion() - codeGenTime) / 1000
+	//if waitTime > 300 {
+	//	c.String(http.StatusOK, fmt.Sprintf(`验证码有效时间300秒，已超%d - %d > 300000`,
+	//		util.GetNowUnixMillion(), codeGenTime))
+	//	return
+	//}
 	code = ``
 	market := c.Query(`market`)
 	symbol := c.Query(`symbol`)
 	function := c.Query(`function`)
-	amountLimit := c.Query(`amountlimit`)
+	strLimit := c.Query(`limit`)
 	parameter := c.Query(`parameter`)
 	valid := false
+	if market == `` || symbol == `` || function == `` {
+		c.String(http.StatusOK, `market symbo function cannot be empty`)
+	}
 	op := c.Query(`op`)
 	if op == `1` {
 		valid = true
 	} else if op == `0` {
 		valid = false
-	} else {
-		c.String(http.StatusOK, `no op!`)
-		return
 	}
 	var setting model.Setting
+	amountLimit := 0.0
 	model.AppDB.Model(&setting).Where("function_parameter is null").Update("function_parameter", ``)
 	model.AppDB.Model(&setting).Where("account_type is null").Update("account_type", ``)
 	if op != `` {
@@ -77,7 +78,8 @@ func setSymbol(c *gin.Context) {
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{`function_parameter`: parameter})
 	}
-	if amountLimit != `` {
+	if strLimit != `` {
+		amountLimit, _ = strconv.ParseFloat(strLimit, 64)
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{`amount_limit`: amountLimit})
 	}
@@ -87,7 +89,7 @@ func setSymbol(c *gin.Context) {
 	for rows.Next() {
 		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %s %v \n", market, symbol, function, parameter, amountLimit, valid)
+		msg += fmt.Sprintf("%s %s %s %s %f %v \n", market, symbol, function, parameter, amountLimit, valid)
 	}
 	model.LoadSettings()
 	carry.MaintainMarketChan()
@@ -224,13 +226,13 @@ func GetBalance(c *gin.Context) {
 func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).
-		Select(`market, symbol, function, function_parameter, valid`).Rows()
+		Select(`market, symbol, function, function_parameter, amount_limit, valid`).Rows()
 	msg := ``
-	var market, symbol, function, parameter string
+	var market, symbol, function, parameter, amountLimit string
 	for rows.Next() {
 		valid := false
-		_ = rows.Scan(&market, &symbol, &function, &parameter, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %v \n", market, symbol, function, parameter, valid)
+		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
+		msg += fmt.Sprintf("%s %s %s %s %s %v \n", market, symbol, function, parameter, amountLimit, valid)
 	}
 	msg += model.AppConfig.ToString()
 	c.String(http.StatusOK, msg)
