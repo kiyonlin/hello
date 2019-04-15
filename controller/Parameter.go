@@ -82,12 +82,12 @@ func setSymbol(c *gin.Context) {
 			market, symbol, function).Updates(map[string]interface{}{`amount_limit`: amountLimit})
 	}
 	rows, _ := model.AppDB.Model(&setting).
-		Select(`market, symbol, function, function_parameter, valid`).Rows()
+		Select(`market, symbol, function, function_parameter, amount_limit, valid`).Rows()
 	msg := ``
 	for rows.Next() {
 		valid := false
-		_ = rows.Scan(&market, &symbol, &function, &parameter, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %v \n", market, symbol, function, parameter, valid)
+		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
+		msg += fmt.Sprintf("%s %s %s %s %s %v \n", market, symbol, function, parameter, amountLimit, valid)
 	}
 	model.LoadSettings()
 	carry.MaintainMarketChan()
