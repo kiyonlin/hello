@@ -338,6 +338,7 @@ var ProcessRefresh = func(market, symbol string) {
 	case model.FunRefreshSeparate:
 		if !refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit) {
 			util.Notice(fmt.Sprintf(`[limit full] %s %s %f`, market, symbol, setting.AmountLimit))
+			return
 		}
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
