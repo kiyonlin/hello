@@ -72,6 +72,7 @@ type Config struct {
 	Env              string
 	DBConnection     string
 	Channels         int
+	OrderWait        int64 // fcoin/coinpark 刷单平均等待时间
 	ChannelSlot      float64
 	Delay            float64
 	MinUsdt          float64            // 折合usdt最小下单金额
@@ -96,13 +97,13 @@ type Config struct {
 	BnbMin           float64
 	BnbBuy           float64
 	CarryDistance    float64 // carry价差触发条件
-	OrderWait        int64   // fcoin/coinpark 刷单平均等待时间
 	AmountRate       float64 // 刷单填写数量比率
 	RefreshLimit     float64
 	RefreshLimitLow  float64
 	FcoinAmountLimit float64 // 刷单时每个时间段可刷的最大金额上限
 	BinanceDisMin    float64
 	BinanceDisMax    float64
+	EthUsdtDis       float64
 	Handle           string // 0 不执行处理程序，1执行处理程序
 	HandleMaker      string
 	HandleRefresh    string
@@ -390,8 +391,8 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("carry distance: %f\n", config.CarryDistance)
 	str += fmt.Sprintf("delay: %f\n", config.Delay)
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
-	str += fmt.Sprintf("minusdt: %f\n", config.MinUsdt)
-	str += fmt.Sprintf("maxusdt: %f\n", config.MaxUsdt)
+	str += fmt.Sprintf("minusdt: %f maxusdt: %f \n", config.MinUsdt, config.MaxUsdt)
+	str += fmt.Sprintf("EthUsdtDis: %f \n", config.EthUsdtDis)
 	str += fmt.Sprintf("channels: %d FcoinAmountLimit: %f \n", config.Channels, config.FcoinAmountLimit)
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s binanceDis: (%f - %f)\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid, config.BinanceDisMin, config.BinanceDisMax)

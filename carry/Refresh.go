@@ -344,6 +344,10 @@ var ProcessRefresh = func(market, symbol string) {
 		orderPrice := price
 		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
 			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
+			if symbol == `eth_usdt` &&
+				(price > (1+model.AppConfig.EthUsdtDis)*binancePrice || price < (1-model.AppConfig.EthUsdtDis)) {
+				bidPrice, askPrice, bidAmount, askAmount = preDeal(market, symbol, priceDistance)
+			}
 			if askAmount > 1.5*bidAmount &&
 				bidAmount < amount*model.AppConfig.RefreshLimit &&
 				bidAmount > amount*model.AppConfig.RefreshLimitLow &&
@@ -416,6 +420,21 @@ var ProcessRefresh = func(market, symbol string) {
 			refreshChance = false
 		}
 	}
+}
+
+func preDeal(market, symbol string, priceDistance float64) (bidPrice, askPrice, bidAmount, askAmount float64) {
+	tick := model.AppMarkets.BidAsks[symbol][market]
+	bidPrice = tick.Bids[0].Price - priceDistance
+	askPrice = tick.Asks[0].Price + priceDistance
+	bidAmount = tick.Bids[0].Amount
+	askAmount = tick.Asks[0].Amount
+	if len(tick.Bids) > 1 && math.Abs(tick.Bids[1].Price-bidPrice) < priceDistance {
+		bidAmount += tick.Bids[1].Amount
+	}
+	if len(tick.Asks) > 1 && math.Abs(tick.Asks[1].Price-askPrice) < priceDistance {
+		askAmount += tick.Asks[1].Amount
+	}
+	return bidPrice, askPrice, bidAmount, askAmount
 }
 
 func getBinanceInfo(symbol string) (result bool, binancePrice float64) {

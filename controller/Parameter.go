@@ -273,6 +273,10 @@ func SetParameters(c *gin.Context) {
 	if len(refreshLimitLow) > 0 {
 		model.AppConfig.RefreshLimitLow, _ = strconv.ParseFloat(refreshLimitLow, 64)
 	}
+	ethUsdtDis := c.Query(`ethusdtdis`)
+	if len(ethUsdtDis) > 0 {
+		model.AppConfig.EthUsdtDis, _ = strconv.ParseFloat(ethUsdtDis, 64)
+	}
 	fcoinAmountLimit := c.Query(`fcoinamountlimit`)
 	if len(fcoinAmountLimit) > 0 {
 		model.AppConfig.FcoinAmountLimit, _ = strconv.ParseFloat(fcoinAmountLimit, 64)
