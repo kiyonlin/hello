@@ -15,6 +15,7 @@ var bidAskTimes int64
 var refreshing = false
 var btcusdtBigTime *time.Time
 var syncRefresh = make(chan interface{}, 10)
+var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
 var lastTickBid, lastTickAsk *model.Tick
@@ -28,6 +29,39 @@ type RefreshOrders struct {
 	lastBid      map[string]map[string]*model.Order               // market - symbol - order
 	lastAsk      map[string]map[string]*model.Order               // market - symbol - order
 	recentOrders map[string]map[string]map[float64][]*model.Order // market - symbol - price - orders
+	amountLimit  map[string]map[string]map[int]float64            // market - symbol - time start point - amount
+}
+
+func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string) (underLimit bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
+		refreshOrders.amountLimit[market][symbol] == nil {
+		return true
+	}
+	now := util.GetNow()
+	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
+	if refreshOrders.amountLimit[market][symbol][slotNum] < model.AppConfig.FcoinAmountLimit {
+		return true
+	}
+	return false
+}
+
+func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amountInUsdt float64) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.amountLimit == nil {
+		refreshOrders.amountLimit = make(map[string]map[string]map[int]float64)
+	}
+	if refreshOrders.amountLimit[market] == nil {
+		refreshOrders.amountLimit[market] = make(map[string]map[int]float64)
+	}
+	if refreshOrders.amountLimit[market][symbol] == nil {
+		refreshOrders.amountLimit[market][symbol] = make(map[int]float64)
+	}
+	now := util.GetNow()
+	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
+	refreshOrders.amountLimit[market][symbol][slotNum] += amountInUsdt
 }
 
 func (refreshOrders *RefreshOrders) AddRecentOrder(market, symbol string, order *model.Order) {
@@ -138,7 +172,6 @@ func (refreshOrders *RefreshOrders) Add(market, symbol, orderSide string, order 
 			if value.Price == order.Price {
 				priceEqual = true
 				if value.OrderTime.Before(order.OrderTime) {
-					util.Notice(fmt.Sprintf(`newer order at price %f`, value.Price))
 					refreshOrders.bidOrders[order.Market][order.Symbol][key] = order
 				}
 			}
@@ -163,7 +196,6 @@ func (refreshOrders *RefreshOrders) Add(market, symbol, orderSide string, order 
 			if value.Price == order.Price {
 				priceEqual = true
 				if value.OrderTime.Before(order.OrderTime) {
-					util.Notice(fmt.Sprintf(`newer order at price %f`, value.Price))
 					refreshOrders.askOrders[order.Market][order.Symbol][key] = order
 				}
 			}
@@ -235,7 +267,7 @@ var ProcessRefresh = func(market, symbol string) {
 	setRefreshing(true)
 	defer setRefreshing(false)
 	//currencies := strings.Split(symbol, "_")
-	if util.GetNowUnixMillion()-api.LastRefreshTime[market] > 15000 {
+	if util.GetNowUnixMillion()-LastRefreshTime[market] > 15000 {
 		util.Notice(`15 seconds past, refresh and return ` + market + symbol)
 		api.RefreshAccount(market)
 		return
@@ -302,6 +334,9 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		doRefresh(market, symbol, price, amount)
 	case model.FunRefreshSeparate:
+		if !refreshOrders.CheckAmountLimit(market, symbol) {
+			util.Notice(fmt.Sprintf(`[limit full] %s %s %f`, market, symbol, model.AppConfig.FcoinAmountLimit))
+		}
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
 		orderSide := ``
@@ -343,12 +378,12 @@ var ProcessRefresh = func(market, symbol string) {
 			if refreshChance == false {
 				refreshChance = true
 				return
-
 			}
 			if !refreshOrders.CheckRecentOrder(market, symbol, orderPrice) {
 				util.Notice(fmt.Sprintf(`[same price 3] %s %f`, symbol, orderPrice))
 				return
 			}
+			LastRefreshTime[market] = util.GetNowUnixMillion()
 			orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
 				orderPrice, amount, 1, 2)
 			if orderResult {
@@ -364,6 +399,9 @@ var ProcessRefresh = func(market, symbol string) {
 						time.Sleep(time.Second)
 						api.RefreshAccount(market)
 					}
+				} else {
+					priceInUsdt, _ := api.GetPrice(symbol)
+					refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInUsdt)
 				}
 			} else if order.ErrCode == `1016` {
 				if lastOrign1016 {
@@ -434,6 +472,7 @@ func _(market, symbol string, amount float64) (bidPrice, askPrice float64) {
 }
 
 func doRefresh(market, symbol string, price, amount float64) {
+	LastRefreshTime[market] = util.GetNowUnixMillion()
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 	go placeRefreshOrder(model.OrderSideSell, market, symbol, price, amount)
@@ -472,13 +511,14 @@ func placeRefreshOrder(orderSide, market, symbol string, price, amount float64) 
 func placeSeparateOrder(orderSide, market, symbol, accountType string, price, amount float64, try, insufficient int) (
 	result bool, order *model.Order) {
 	insufficientTimes := 0
-	for i := 0; i < try; i++ {
+	for i := 0; i < try; {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 		if order.ErrCode == `1016` {
 			insufficientTimes++
-			if insufficient <= insufficientTimes {
+			if insufficientTimes >= insufficient {
 				return false, order
 			}
+			continue
 		} else if order.Status == model.CarryStatusWorking {
 			order.Function = model.FunctionRefresh
 			refreshOrders.Add(market, symbol, orderSide, order)
@@ -486,6 +526,7 @@ func placeSeparateOrder(orderSide, market, symbol, accountType string, price, am
 			model.AppDB.Save(order)
 			return true, order
 		}
+		i++
 		time.Sleep(time.Millisecond * 100)
 	}
 	return false, order

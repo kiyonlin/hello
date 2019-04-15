@@ -89,6 +89,10 @@ func Test_Api(t *testing.T) {
 }
 
 func Test_array(t *testing.T) {
+	now := time.Now()
+	nowsec := (now.Hour()*3600 + now.Minute()*60 + now.Second())
+	slotNum := int(nowsec / model.RefreshTimeSlot)
+	fmt.Println(slotNum)
 	a, b := util.FormatNum(0.335, 2)
 	fmt.Println(fmt.Sprintf(`%f %s`, a, b))
 }

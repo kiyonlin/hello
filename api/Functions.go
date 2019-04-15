@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-var LastRefreshTime = make(map[string]int64) // market - int64
-
 // 根据不同的网站返回价格小数位
 func GetPriceDecimal(market, symbol string) int {
 	switch market {
@@ -143,31 +141,29 @@ func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 		Status: status}
 }
 
-func SyncQueryOrderById(market, symbol, orderId string) (order *model.Order) {
-	if orderId == `0` || orderId == `` {
-		return nil
-	}
-	for i := 0; i < 100; i++ {
-		order = QueryOrderById(market, symbol, orderId)
-		if order == nil {
-			continue
-		}
-		if order.Status == model.CarryStatusSuccess || order.Status == model.CarryStatusFail {
-			return order
-		}
-		if i > 10 {
-			cancelResult, cancelErrCode, cancelMsg := CancelOrder(market, symbol, orderId)
-			util.Notice(fmt.Sprintf(`[cancel order] %v %s %s`, cancelResult, cancelErrCode, cancelMsg))
-		}
-		time.Sleep(time.Second * 3)
-	}
-	util.Notice(fmt.Sprintf(`can not query %s %s %s, return %s`, market, symbol, orderId, order.Status))
-	return order
-	//return order.DealAmount, order.DealPrice, order.Status
-}
+//func SyncQueryOrderById(market, symbol, orderId string) (order *model.Order) {
+//	if orderId == `0` || orderId == `` {
+//		return nil
+//	}
+//	for i := 0; i < 100; i++ {
+//		order = QueryOrderById(market, symbol, orderId)
+//		if order == nil {
+//			continue
+//		}
+//		if order.Status == model.CarryStatusSuccess || order.Status == model.CarryStatusFail {
+//			return order
+//		}
+//		if i > 10 {
+//			cancelResult, cancelErrCode, cancelMsg := CancelOrder(market, symbol, orderId)
+//			util.Notice(fmt.Sprintf(`[cancel order] %v %s %s`, cancelResult, cancelErrCode, cancelMsg))
+//		}
+//		time.Sleep(time.Second * 3)
+//	}
+//	util.Notice(fmt.Sprintf(`can not query %s %s %s, return %s`, market, symbol, orderId, order.Status))
+//	return order
+//}
 
 func RefreshAccount(market string) {
-	LastRefreshTime[market] = util.GetNowUnixMillion()
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
