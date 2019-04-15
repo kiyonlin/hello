@@ -32,7 +32,7 @@ type RefreshOrders struct {
 	amountLimit  map[string]map[string]map[int]float64            // market - symbol - time start point - amount
 }
 
-func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string) (underLimit bool) {
+func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amountLimit float64) (underLimit bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
 	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
@@ -41,7 +41,7 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string) (und
 	}
 	now := util.GetNow()
 	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
-	if refreshOrders.amountLimit[market][symbol][slotNum] < model.AppConfig.FcoinAmountLimit {
+	if refreshOrders.amountLimit[market][symbol][slotNum] < amountLimit {
 		return true
 	}
 	return false
@@ -267,9 +267,11 @@ var ProcessRefresh = func(market, symbol string) {
 	setRefreshing(true)
 	defer setRefreshing(false)
 	//currencies := strings.Split(symbol, "_")
-	if util.GetNowUnixMillion()-LastRefreshTime[market] > 15000 {
+	now := util.GetNowUnixMillion()
+	if now-LastRefreshTime[market] > 15000 {
 		util.Notice(`15 seconds past, refresh and return ` + market + symbol)
 		api.RefreshAccount(market)
+		LastRefreshTime[market] = now
 		return
 	}
 	leftBalance, rightBalance, err := getBalance(market, symbol, setting.AccountType)
@@ -334,8 +336,8 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		doRefresh(market, symbol, price, amount)
 	case model.FunRefreshSeparate:
-		if !refreshOrders.CheckAmountLimit(market, symbol) {
-			util.Notice(fmt.Sprintf(`[limit full] %s %s %f`, market, symbol, model.AppConfig.FcoinAmountLimit))
+		if !refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit) {
+			util.Notice(fmt.Sprintf(`[limit full] %s %s %f`, market, symbol, setting.AmountLimit))
 		}
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))

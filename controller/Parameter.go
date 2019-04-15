@@ -54,6 +54,7 @@ func setSymbol(c *gin.Context) {
 	market := c.Query(`market`)
 	symbol := c.Query(`symbol`)
 	function := c.Query(`function`)
+	amountLimit := c.Query(`amountlimit`)
 	parameter := c.Query(`parameter`)
 	valid := false
 	op := c.Query(`op`)
@@ -68,8 +69,18 @@ func setSymbol(c *gin.Context) {
 	var setting model.Setting
 	model.AppDB.Model(&setting).Where("function_parameter is null").Update("function_parameter", ``)
 	model.AppDB.Model(&setting).Where("account_type is null").Update("account_type", ``)
-	model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-		market, symbol, function).Updates(map[string]interface{}{"valid": valid, `function_parameter`: parameter})
+	if op != `` {
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{"valid": valid})
+	}
+	if parameter != `` {
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`function_parameter`: parameter})
+	}
+	if amountLimit != `` {
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`amount_limit`: amountLimit})
+	}
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, valid`).Rows()
 	msg := ``
@@ -276,10 +287,6 @@ func SetParameters(c *gin.Context) {
 	ethUsdtDis := c.Query(`ethusdtdis`)
 	if len(ethUsdtDis) > 0 {
 		model.AppConfig.EthUsdtDis, _ = strconv.ParseFloat(ethUsdtDis, 64)
-	}
-	fcoinAmountLimit := c.Query(`fcoinamountlimit`)
-	if len(fcoinAmountLimit) > 0 {
-		model.AppConfig.FcoinAmountLimit, _ = strconv.ParseFloat(fcoinAmountLimit, 64)
 	}
 	binanceDisMin := c.Query(`binancedismin`)
 	if len(binanceDisMin) > 0 {

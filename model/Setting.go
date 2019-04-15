@@ -18,7 +18,7 @@ type Setting struct {
 	Chance            float64 // arbitrary future use
 	GridAmount        float64
 	GridPriceDistance float64
-	TurtleBalanceRate float64
+	AmountLimit       float64
 	Valid             bool
 	ID                uint `gorm:"primary_key"`
 	CreatedAt         time.Time

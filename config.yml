@@ -11,7 +11,7 @@ maxusdt: 1500
 inchina: 0
 carrydistance: 0.001
 mail: haoweizh@qq.com #41685600@qq.com
-handle: 0
+handle: 1
 handlemaker: 1
 handlerefresh: 1
 handlegrid: 1
@@ -19,9 +19,8 @@ refreshlimit: 0.09
 refreshlimitlow: 0.01
 binancedismin: 0.0002
 binancedismax: 0.0018
-fcoinamountlimit: 100
 ethusdtdis: 0.0008
-dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=mydb password=dbuser sslmode=disable
+dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
 #huobisecret: 05d114f3-6f455bf3-a640f2c4-06050

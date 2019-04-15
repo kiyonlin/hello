@@ -68,51 +68,50 @@ var CurrencyPrice = make(map[string]float64)
 var GetBuyPriceTime = make(map[string]int64)
 
 type Config struct {
-	lock             sync.Mutex
-	Env              string
-	DBConnection     string
-	Channels         int
-	OrderWait        int64 // fcoin/coinpark 刷单平均等待时间
-	ChannelSlot      float64
-	Delay            float64
-	MinUsdt          float64            // 折合usdt最小下单金额
-	MaxUsdt          float64            // 折合usdt最大下单金额
-	WSUrls           map[string]string  // marketName - ws url
-	RestUrls         map[string]string  // marketName - rest url
-	MarketCost       map[string]float64 // marketName - order cost
-	HuobiKey         string
-	HuobiSecret      string
-	OkexKey          string
-	OkexSecret       string
-	BinanceKey       string
-	BinanceSecret    string
-	CoinbigKey       string
-	CoinbigSecret    string
-	CoinparkKey      string
-	CoinparkSecret   string
-	BitmexKey        string
-	BitmexSecret     string
-	FcoinKey         string
-	FcoinSecret      string
-	BnbMin           float64
-	BnbBuy           float64
-	CarryDistance    float64 // carry价差触发条件
-	AmountRate       float64 // 刷单填写数量比率
-	RefreshLimit     float64
-	RefreshLimitLow  float64
-	FcoinAmountLimit float64 // 刷单时每个时间段可刷的最大金额上限
-	BinanceDisMin    float64
-	BinanceDisMax    float64
-	EthUsdtDis       float64
-	Handle           string // 0 不执行处理程序，1执行处理程序
-	HandleMaker      string
-	HandleRefresh    string
-	HandleGrid       string
-	SellRate         float64 // fcoin dk 额外卖单下单比例
-	FtMax            float64 // fcoin dk ft上限
-	InChina          int     // 1 in china, otherwise outter china
-	Mail             string
-	Port             string
+	lock            sync.Mutex
+	Env             string
+	DBConnection    string
+	Channels        int
+	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
+	ChannelSlot     float64
+	Delay           float64
+	MinUsdt         float64            // 折合usdt最小下单金额
+	MaxUsdt         float64            // 折合usdt最大下单金额
+	WSUrls          map[string]string  // marketName - ws url
+	RestUrls        map[string]string  // marketName - rest url
+	MarketCost      map[string]float64 // marketName - order cost
+	HuobiKey        string
+	HuobiSecret     string
+	OkexKey         string
+	OkexSecret      string
+	BinanceKey      string
+	BinanceSecret   string
+	CoinbigKey      string
+	CoinbigSecret   string
+	CoinparkKey     string
+	CoinparkSecret  string
+	BitmexKey       string
+	BitmexSecret    string
+	FcoinKey        string
+	FcoinSecret     string
+	BnbMin          float64
+	BnbBuy          float64
+	CarryDistance   float64 // carry价差触发条件
+	AmountRate      float64 // 刷单填写数量比率
+	RefreshLimit    float64
+	RefreshLimitLow float64
+	BinanceDisMin   float64
+	BinanceDisMax   float64
+	EthUsdtDis      float64
+	Handle          string // 0 不执行处理程序，1执行处理程序
+	HandleMaker     string
+	HandleRefresh   string
+	HandleGrid      string
+	SellRate        float64 // fcoin dk 额外卖单下单比例
+	FtMax           float64 // fcoin dk ft上限
+	InChina         int     // 1 in china, otherwise outter china
+	Mail            string
+	Port            string
 }
 
 var dictMap = map[string]map[string]string{ // market - union name - market name
@@ -393,7 +392,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
 	str += fmt.Sprintf("minusdt: %f maxusdt: %f \n", config.MinUsdt, config.MaxUsdt)
 	str += fmt.Sprintf("EthUsdtDis: %f \n", config.EthUsdtDis)
-	str += fmt.Sprintf("channels: %d FcoinAmountLimit: %f \n", config.Channels, config.FcoinAmountLimit)
+	str += fmt.Sprintf("channels: %d \n", config.Channels)
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s binanceDis: (%f - %f)\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid, config.BinanceDisMin, config.BinanceDisMax)
 	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f RefreshLimit (%f - %f)\n",
