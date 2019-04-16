@@ -382,7 +382,7 @@ var ProcessRefresh = func(market, symbol string) {
 				orderPrice = (price + askPrice) / 2
 			}
 		}
-		if orderPrice == lastRefreshPriceEthUsdt && symbol == `eth_usdt` {
+		if math.Abs(orderPrice-lastRefreshPriceEthUsdt) < priceDistance && symbol == `eth_usdt` {
 			orderSide = ``
 		}
 		if orderSide != `` {
