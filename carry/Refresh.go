@@ -21,6 +21,7 @@ var lastOrign1016 = false
 var lastTickBid, lastTickAsk *model.Tick
 var refreshChance = true
 var canceling = false
+var lastRefreshPriceEthUsdt = 0.0
 
 type RefreshOrders struct {
 	lock         sync.Mutex
@@ -345,7 +346,7 @@ var ProcessRefresh = func(market, symbol string) {
 		orderSide := ``
 		reverseSide := ``
 		orderPrice := price
-		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
+		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance || symbol == `eth_usdt` {
 			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
 			if symbol == `eth_usdt` &&
 				(price > (1+model.AppConfig.EthUsdtDis)*binancePrice || price < (1-model.AppConfig.EthUsdtDis)) {
@@ -381,6 +382,9 @@ var ProcessRefresh = func(market, symbol string) {
 				orderPrice = (price + askPrice) / 2
 			}
 		}
+		if orderPrice == lastRefreshPriceEthUsdt && symbol == `eth_usdt` {
+			orderSide = ``
+		}
 		if orderSide != `` {
 			if refreshChance == false {
 				refreshChance = true
@@ -409,6 +413,9 @@ var ProcessRefresh = func(market, symbol string) {
 				} else {
 					priceInUsdt, _ := api.GetPrice(symbol)
 					refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInUsdt)
+					if symbol == `eth_usdt` {
+						lastRefreshPriceEthUsdt = orderPrice
+					}
 				}
 			} else if order.ErrCode == `1016` {
 				if lastOrign1016 {
