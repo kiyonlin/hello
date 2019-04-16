@@ -399,7 +399,6 @@ var ProcessRefresh = func(market, symbol string) {
 				orderPrice, amount, 1, 2)
 			if orderResult {
 				refreshOrders.AddRecentOrder(market, symbol, order)
-				//time.Sleep(time.Millisecond * 15)
 				reverseResult, reverseOrder :=
 					placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
 						orderPrice, amount, 1, 1)
@@ -428,6 +427,7 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		} else {
 			refreshChance = false
+			lastRefreshPriceEthUsdt = 0.0
 		}
 	}
 }
