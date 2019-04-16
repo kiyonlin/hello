@@ -33,19 +33,19 @@ type RefreshOrders struct {
 	amountLimit  map[string]map[string]map[int]float64            // market - symbol - time start point - amount
 }
 
-func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amountLimit float64) (underLimit bool) {
+func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amountLimit float64) (underLimit bool, amount float64) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
 	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
 		refreshOrders.amountLimit[market][symbol] == nil {
-		return true
+		return true, 0.0
 	}
 	now := util.GetNow()
 	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
 	if refreshOrders.amountLimit[market][symbol][slotNum] < amountLimit {
-		return true
+		return true, refreshOrders.amountLimit[market][symbol][slotNum]
 	}
-	return false
+	return false, refreshOrders.amountLimit[market][symbol][slotNum]
 }
 
 func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amountInUsdt float64) {
@@ -261,7 +261,7 @@ func setRefreshing(value bool) {
 
 var ProcessRefresh = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshing ||
-		(symbol == `btc_usdt` && btcusdtBigTime != nil && util.GetNow().Unix()-btcusdtBigTime.Unix() < 1800) {
+		(symbol == `btc_usdt` && btcusdtBigTime != nil && util.GetNow().Unix()-btcusdtBigTime.Unix() < 900) {
 		return
 	}
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
@@ -304,7 +304,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if symbol == `btc_usdt` {
 		if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
 			(lastTickAsk != nil && lastTickAsk.Amount >= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
-			util.Notice(`[someone refreshing] sleep 30 minutes`)
+			util.Notice(`[someone refreshing] sleep 15 minutes`)
 			myTime := util.GetNow()
 			btcusdtBigTime = &myTime
 			lastTickAsk = nil
@@ -337,8 +337,9 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		doRefresh(market, symbol, price, amount)
 	case model.FunRefreshSeparate:
-		if !refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit) {
-			util.Notice(fmt.Sprintf(`[limit full] %s %s %f`, market, symbol, setting.AmountLimit))
+		haveAmount, usedAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
+		if !haveAmount {
+			util.Notice(fmt.Sprintf(`[limit full] %s %s %f<%f`, market, symbol, setting.AmountLimit, usedAmount))
 			return
 		}
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
