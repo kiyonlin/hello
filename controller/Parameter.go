@@ -88,6 +88,8 @@ func setSymbol(c *gin.Context) {
 	msg := ``
 	for rows.Next() {
 		valid := false
+		var market, symbol, function, parameter string
+		var amountLimit float64
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
 		msg += fmt.Sprintf("%s %s %s %s %f %v \n", market, symbol, function, parameter, amountLimit, valid)
 	}
