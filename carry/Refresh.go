@@ -64,6 +64,8 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	}
 	now := util.GetNow()
 	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
+	refreshOrders.amountLimit[market][symbol][slotNum+1] = 0
+	refreshOrders.amountLimit[market][symbol][slotNum-1] = 0
 	if refreshOrders.amountLimit[market][symbol][slotNum] < amountLimit {
 		return true
 	}
