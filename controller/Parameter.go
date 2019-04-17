@@ -70,6 +70,7 @@ func setSymbol(c *gin.Context) {
 	amountLimit := 0.0
 	model.AppDB.Model(&setting).Where("function_parameter is null").Update("function_parameter", ``)
 	model.AppDB.Model(&setting).Where("account_type is null").Update("account_type", ``)
+	model.AppDB.Model(&setting).Where("amount_limit is null").Update("amount_limit", ``)
 	if op != `` {
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{"valid": valid})
@@ -88,8 +89,6 @@ func setSymbol(c *gin.Context) {
 	msg := ``
 	for rows.Next() {
 		valid := false
-		var market, symbol, function, parameter string
-		var amountLimit float64
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
 		msg += fmt.Sprintf("%s %s %s %s %f %v \n", market, symbol, function, parameter, amountLimit, valid)
 	}
@@ -230,8 +229,8 @@ func GetParameters(c *gin.Context) {
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, amount_limit, valid`).Rows()
 	msg := ``
-	var market, symbol, function, parameter, amountLimit string
 	for rows.Next() {
+		var market, symbol, function, parameter, amountLimit string
 		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
 		msg += fmt.Sprintf("%s %s %s %s %s %v \n", market, symbol, function, parameter, amountLimit, valid)
