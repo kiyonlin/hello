@@ -86,6 +86,7 @@ func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amou
 	now := util.GetNow()
 	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
 	refreshOrders.amountLimit[market][symbol][slotNum] += amountInUsdt
+	util.Notice(fmt.Sprintf(`[+limit amount]%s %s %d %f`, market, symbol, slotNum, amountInUsdt))
 }
 
 func (refreshOrders *RefreshOrders) AddRecentOrder(market, symbol string, order *model.Order) {
