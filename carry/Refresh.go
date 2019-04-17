@@ -21,31 +21,54 @@ var lastOrign1016 = false
 var lastTickBid, lastTickAsk *model.Tick
 var refreshChance = true
 var canceling = false
-var lastRefreshPriceEthUsdt = 0.0
 
 type RefreshOrders struct {
-	lock         sync.Mutex
-	bidOrders    map[string]map[string][]*model.Order             // market - symbol - orders
-	askOrders    map[string]map[string][]*model.Order             // market - symbol - orders
-	lastBid      map[string]map[string]*model.Order               // market - symbol - order
-	lastAsk      map[string]map[string]*model.Order               // market - symbol - order
-	recentOrders map[string]map[string]map[float64][]*model.Order // market - symbol - price - orders
-	amountLimit  map[string]map[string]map[int]float64            // market - symbol - time start point - amount
+	lock             sync.Mutex
+	bidOrders        map[string]map[string][]*model.Order             // market - symbol - orders
+	askOrders        map[string]map[string][]*model.Order             // market - symbol - orders
+	lastBid          map[string]map[string]*model.Order               // market - symbol - order
+	lastAsk          map[string]map[string]*model.Order               // market - symbol - order
+	recentOrders     map[string]map[string]map[float64][]*model.Order // market - symbol - price - orders
+	amountLimit      map[string]map[string]map[int]float64            // market - symbol - time start point - amount
+	lastRefreshPrice map[string]map[string]float64                    // market - symbol - price
 }
 
-func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amountLimit float64) (underLimit bool, amount float64) {
+func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, price float64) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.lastRefreshPrice == nil {
+		refreshOrders.lastRefreshPrice = make(map[string]map[string]float64)
+	}
+	if refreshOrders.lastRefreshPrice[market] == nil {
+		refreshOrders.lastRefreshPrice[market] = make(map[string]float64)
+	}
+	refreshOrders.lastRefreshPrice[market][symbol] = price
+}
+
+func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string, price, priceDistance float64) (same bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.lastRefreshPrice == nil || refreshOrders.lastRefreshPrice[market] == nil ||
+		(symbol != `btc_usdt` && symbol != `eth_usdt`) {
+		return false
+	}
+	return math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance
+}
+
+func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amountLimit float64) (underLimit bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
 	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
 		refreshOrders.amountLimit[market][symbol] == nil {
-		return true, 0.0
+		return true
 	}
 	now := util.GetNow()
 	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
 	if refreshOrders.amountLimit[market][symbol][slotNum] < amountLimit {
-		return true, refreshOrders.amountLimit[market][symbol][slotNum]
+		return true
 	}
-	return false, refreshOrders.amountLimit[market][symbol][slotNum]
+	util.Notice(fmt.Sprintf(`[limit full]%s %s %d %f`, market, symbol, slotNum, refreshOrders.amountLimit[market][symbol][slotNum]))
+	return false
 }
 
 func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amountInUsdt float64) {
@@ -337,9 +360,8 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		doRefresh(market, symbol, price, amount)
 	case model.FunRefreshSeparate:
-		haveAmount, usedAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
+		haveAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
 		if !haveAmount {
-			util.Notice(fmt.Sprintf(`[limit full] %s %s %f<%f`, market, symbol, setting.AmountLimit, usedAmount))
 			return
 		}
 		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
@@ -347,7 +369,7 @@ var ProcessRefresh = func(market, symbol string) {
 		orderSide := ``
 		reverseSide := ``
 		orderPrice := price
-		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance || symbol == `eth_usdt` {
+		if symbol != `btc_usdt` || ((price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance) {
 			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
 			if symbol == `eth_usdt` &&
 				(price > (1+model.AppConfig.EthUsdtDis)*binancePrice || price < (1-model.AppConfig.EthUsdtDis)) {
@@ -371,19 +393,19 @@ var ProcessRefresh = func(market, symbol string) {
 				orderPrice = askPrice
 			}
 		} else if symbol == `btc_usdt` {
-			if price > binancePrice && (1-model.AppConfig.BinanceDisMin)*price > binancePrice &&
+			if (1-model.AppConfig.BinanceDisMin)*price > binancePrice &&
 				(1-model.AppConfig.BinanceDisMax)*price < binancePrice {
 				orderSide = model.OrderSideBuy
 				reverseSide = model.OrderSideSell
 				orderPrice = (price + bidPrice) / 2
-			} else if price <= binancePrice && (1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
+			} else if (1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
 				(1+model.AppConfig.BinanceDisMin)*price < binancePrice {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = (price + askPrice) / 2
 			}
 		}
-		if math.Abs(orderPrice-lastRefreshPriceEthUsdt) < priceDistance && symbol == `eth_usdt` {
+		if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
 			orderSide = ``
 		}
 		if orderSide != `` {
@@ -413,9 +435,7 @@ var ProcessRefresh = func(market, symbol string) {
 				} else {
 					priceInUsdt, _ := api.GetPrice(symbol)
 					refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInUsdt)
-					if symbol == `eth_usdt` {
-						lastRefreshPriceEthUsdt = orderPrice
-					}
+					refreshOrders.SetLastRefreshPrice(market, symbol, orderPrice)
 				}
 			} else if order.ErrCode == `1016` {
 				if lastOrign1016 {
@@ -428,7 +448,7 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		} else {
 			refreshChance = false
-			lastRefreshPriceEthUsdt = 0.0
+			refreshOrders.SetLastRefreshPrice(market, symbol, 0.0)
 		}
 	}
 }
