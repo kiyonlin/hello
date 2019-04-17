@@ -203,21 +203,19 @@ func RefreshAccount(market string) {
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType string, price,
 	amount float64) (order *model.Order) {
+	valid := false
 	if model.AppMarkets.BidAsks != nil && model.AppMarkets.BidAsks[symbol] != nil &&
 		model.AppMarkets.BidAsks[symbol][market] != nil {
 		bidAsk := model.AppMarkets.BidAsks[symbol][market]
-		valid := true
-		if len(bidAsk.Bids) > 0 && orderSide == model.OrderSideSell && price < bidAsk.Bids[0].Price*0.999 {
-			valid = false
+		if len(bidAsk.Bids) > 0 && orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.999 {
+			valid = true
+		} else if len(bidAsk.Asks) > 0 && orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.001 {
+			valid = true
 		}
-		if len(bidAsk.Asks) > 0 && orderSide == model.OrderSideBuy && price > bidAsk.Asks[0].Price*1.001 {
-			valid = false
-		}
-		if !valid {
-			util.Notice(fmt.Sprintf(`[place order limit]%s %s %s %f bid1 %f ask1 %f`, market, symbol, orderSide,
-				price, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price))
-			return
-		}
+	}
+	if !valid {
+		util.Notice(fmt.Sprintf(`[place order limit]%s %s %s %f`, market, symbol, orderSide, price))
+		return
 	}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(model.Fcoin, symbol))
 	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(model.Fcoin, symbol))

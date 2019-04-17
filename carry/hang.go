@@ -99,14 +99,29 @@ func rehang(market, symbol string, midPrice float64, accountType string, hangDis
 	}
 	minAmount := math.Min(left, right/midPrice)
 	minAmount = math.Min(minAmount, reserveAmount)
-	bid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
-		midPrice*(1-hangDis), (right/midPrice)-minAmount)
-	ask = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
-		midPrice*(1+hangDis), left-minAmount)
+	for i := 0; i < 3; i++ {
+		bid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
+			midPrice*(1-hangDis), (right/midPrice)-minAmount)
+		if bid != nil && bid.Status == model.CarryStatusWorking && bid.OrderId != `` {
+			bid.Function = model.FunctionHang
+			model.AppDB.Save(bid)
+			break
+		}
+	}
+	for i := 0; i < 3; i++ {
+		ask = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
+			midPrice*(1+hangDis), left-minAmount)
+		if ask != nil && ask.Status == model.CarryStatusWorking && ask.OrderId != `` {
+			ask.Function = model.FunctionHang
+			model.AppDB.Save(ask)
+			break
+		}
+	}
 	now := util.GetNow()
 	hangStatus.setLastHangTime(symbol, &now)
 	hangStatus.setHangOrders(symbol, bid, ask)
 	model.AppConfig.HandleRefresh = `1`
+
 	util.Notice(fmt.Sprintf(`[rehang]%s %s midprice %f left %f right %f`, market, symbol, midPrice, left, right))
 }
 
