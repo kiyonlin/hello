@@ -44,6 +44,7 @@ const AmountTypeCoinNumber = `coinnumber`
 const FunctionGrid = `grid`
 const FunctionMaker = `maker`
 const FunctionCarry = `carry`
+const FunctionHang = `hang`
 
 //const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`

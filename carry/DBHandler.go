@@ -191,7 +191,7 @@ func Maintain() {
 	//model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
 	model.HandlerMap[model.FunctionCarry] = ProcessCarry
-
+	model.HandlerMap[model.FunctionHang] = ProcessHang
 	defer model.AppDB.Close()
 	model.AppDB.AutoMigrate(&model.Account{})
 	model.AppDB.AutoMigrate(&model.Setting{})

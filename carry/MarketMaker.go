@@ -52,7 +52,7 @@ func addMaker(market string, order *model.Order) {
 	}
 }
 
-func getBalance(market, symbol, accountType string) (left, right float64, err error) {
+func getBalance(market, symbol, accountType string) (left, right, leftFroze, rightFroze float64, err error) {
 	leverMarket := market
 	if accountType == model.AccountTypeLever {
 		leverMarket = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever,
@@ -64,16 +64,16 @@ func getBalance(market, symbol, accountType string) (left, right float64, err er
 		util.Notice(`nil account ` + market + coins[0])
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
-		return 0, 0, errors.New(`no left balance`)
+		return 0, 0, 0, 0, errors.New(`no left balance`)
 	}
 	rightAccount := model.AppAccounts.GetAccount(leverMarket, coins[1])
 	if rightAccount == nil {
 		util.Notice(`nil account ` + market + coins[1])
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
-		return 0, 0, errors.New(`no right balance`)
+		return 0, 0, 0, 0, errors.New(`no right balance`)
 	}
-	return leftAccount.Free, rightAccount.Free, nil
+	return leftAccount.Free, rightAccount.Free, leftAccount.Frozen, rightAccount.Frozen, nil
 }
 
 var ProcessMake = func(market, symbol string) {
@@ -103,7 +103,7 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[delay too long] depth:%d deal:%d`, depthDelay, dealDelay))
 		return
 	}
-	left, right, err := getBalance(market, symbol, setting.AccountType)
+	left, right, _, _, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil {
 		return
 	}

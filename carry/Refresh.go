@@ -301,7 +301,7 @@ var ProcessRefresh = func(market, symbol string) {
 		LastRefreshTime[market] = now
 		return
 	}
-	leftBalance, rightBalance, err := getBalance(market, symbol, setting.AccountType)
+	leftBalance, rightBalance, _, _, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil {
 		return
 	}
