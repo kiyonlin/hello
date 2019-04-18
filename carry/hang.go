@@ -121,7 +121,6 @@ func rehang(market, symbol string, midPrice float64, accountType string, hangDis
 	hangStatus.setLastHangTime(symbol, &now)
 	hangStatus.setHangOrders(symbol, bid, ask)
 	model.AppConfig.HandleRefresh = `1`
-
 	util.Notice(fmt.Sprintf(`[rehang]%s %s midprice %f left %f right %f`, market, symbol, midPrice, left, right))
 }
 
@@ -157,8 +156,8 @@ var ProcessHang = func(market, symbol string) {
 	d, _ := time.ParseDuration("-3610s")
 	timeLine := now.Add(d)
 	lastHang := hangStatus.getLastHangTime(symbol)
-	if bid == nil || ask == nil || bidAsk.Bids[0].Price*(1-rehangDis) < bid.Price ||
-		bidAsk.Asks[0].Price*(1+rehangDis) > ask.Price || lastHang == nil || lastHang.Before(timeLine) {
+	if (bid != nil && bidAsk.Bids[0].Price*(1-rehangDis) < bid.Price) ||
+		(ask != nil && bidAsk.Asks[0].Price*(1+rehangDis) > ask.Price) || lastHang == nil || lastHang.Before(timeLine) {
 		price := (bidAsk.Bids[0].Price + bidAsk.Asks[0].Price) / 2
 		rehang(market, symbol, price, setting.AccountType, hangDis, reserveAmount)
 	}
