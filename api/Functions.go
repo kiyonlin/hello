@@ -203,6 +203,10 @@ func RefreshAccount(market string) {
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType string, price,
 	amount float64) (order *model.Order) {
+	if amount == 0 {
+		util.Notice(`can not place order with amount 0`)
+		return nil
+	}
 	valid := false
 	if model.AppMarkets.BidAsks != nil && model.AppMarkets.BidAsks[symbol] != nil &&
 		model.AppMarkets.BidAsks[symbol][market] != nil {

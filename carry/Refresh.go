@@ -258,21 +258,23 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	}
 	bidOrders := make([]*model.Order, 0)
 	askOrders := make([]*model.Order, 0)
+	d, _ := time.ParseDuration("-3601s")
+	timeLine := util.GetNow().Add(d)
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
-		if value.Price < bidPrice { // 大于等于卖一的买单已经成交，无需取消
+		if value.Price < bidPrice && value.OrderTime.Before(timeLine) { // 大于等于卖一的买单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 			time.Sleep(time.Second)
-		} else if value.Price < askPrice && value.Price >= bidPrice && value.Status == model.CarryStatusWorking {
+		} else if value.Price < askPrice && value.Status == model.CarryStatusWorking {
 			bidOrders = append(bidOrders, value)
 		}
 	}
 	for _, value := range refreshOrders.askOrders[market][symbol] {
-		if value.Price > askPrice { // 小于等于买一的卖单已经成交，无需取消
+		if value.Price > askPrice && value.OrderTime.Before(timeLine) { // 小于等于买一的卖单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 			time.Sleep(time.Second)
-		} else if value.Price > bidPrice && value.Price <= askPrice && value.Status == model.CarryStatusWorking {
+		} else if value.Price > bidPrice && value.Status == model.CarryStatusWorking {
 			askOrders = append(askOrders, value)
 		}
 	}
