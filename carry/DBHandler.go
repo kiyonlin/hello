@@ -40,7 +40,7 @@ func AccountHandlerServe() {
 }
 
 func CancelOldGridOrders() {
-	d, _ := time.ParseDuration("-1h")
+	d, _ := time.ParseDuration("-3610s")
 	timeLine := util.GetNow().Add(d)
 	markets := model.GetFunctionMarkets(model.FunctionGrid)
 	for _, market := range markets {
