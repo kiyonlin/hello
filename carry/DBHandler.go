@@ -93,8 +93,9 @@ func MaintainTransFee() {
 		timeLine := util.GetNow().Add(d)
 		var orders []model.Order
 		for true {
-			model.AppDB.Limit(100).Offset(feeIndex).Where(`fee=? and fee_income=? and date(order_time)>?`,
-				0, 0, timeLine).Find(&orders)
+			model.AppDB.Limit(100).Offset(feeIndex).Where(
+				`fee=? and fee_income=? and date(order_time)>? and status=?`,
+				0, 0, timeLine, model.CarryStatusWorking).Find(&orders)
 			if len(orders) == 0 {
 				break
 			}

@@ -19,7 +19,6 @@ var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
 var lastTickBid, lastTickAsk *model.Tick
-var refreshChance = true
 var canceling = false
 
 type RefreshOrders struct {
@@ -234,7 +233,7 @@ func (refreshOrders *RefreshOrders) Add(market, symbol, orderSide string, order 
 	}
 }
 
-func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, bidPrice, askPrice float64) {
+func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, bidPrice, askPrice float64, process bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
 	canceling = true
@@ -261,19 +260,19 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	d, _ := time.ParseDuration("-3601s")
 	timeLine := util.GetNow().Add(d)
 	for _, value := range refreshOrders.bidOrders[market][symbol] {
-		if value.Price < bidPrice && value.OrderTime.Before(timeLine) { // 大于等于卖一的买单已经成交，无需取消
+		if value.Price < bidPrice && value.OrderTime.Before(timeLine) && process { // 大于等于卖一的买单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 100)
 		} else if value.Price < askPrice && value.Status == model.CarryStatusWorking {
 			bidOrders = append(bidOrders, value)
 		}
 	}
 	for _, value := range refreshOrders.askOrders[market][symbol] {
-		if value.Price > askPrice && value.OrderTime.Before(timeLine) { // 小于等于买一的卖单已经成交，无需取消
+		if value.Price > askPrice && value.OrderTime.Before(timeLine) && process { // 小于等于买一的卖单已经成交，无需取消
 			util.Notice(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
 			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 100)
 		} else if value.Price > bidPrice && value.Status == model.CarryStatusWorking {
 			askOrders = append(askOrders, value)
 		}
@@ -326,9 +325,12 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	if !refreshChance {
-		go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice)
+	nowTime := util.GetNow()
+	if nowTime.Hour() == 0 && nowTime.Minute() == 0 && nowTime.Second() < 10 {
+		refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice, true)
+		return
 	}
+	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice, false)
 	if symbol == `btc_usdt` {
 		if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
 			(lastTickAsk != nil && lastTickAsk.Amount >= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
@@ -414,10 +416,6 @@ var ProcessRefresh = func(market, symbol string) {
 			orderSide = ``
 		}
 		if orderSide != `` {
-			if refreshChance == false {
-				refreshChance = true
-				return
-			}
 			if !refreshOrders.CheckRecentOrder(market, symbol, orderPrice) {
 				util.Notice(fmt.Sprintf(`[same price 3] %s %f`, symbol, orderPrice))
 				return
@@ -452,7 +450,6 @@ var ProcessRefresh = func(market, symbol string) {
 				}
 			}
 		} else {
-			refreshChance = false
 			refreshOrders.SetLastRefreshPrice(market, symbol, 0.0)
 		}
 	}
