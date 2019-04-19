@@ -325,12 +325,12 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	nowTime := util.GetNow()
-	if nowTime.Hour() == 0 && nowTime.Minute() == 0 && nowTime.Second() < 10 {
-		refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice, true)
-		return
-	}
-	go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice, false)
+	//nowTime := util.GetNow()
+	//if nowTime.Hour() == 0 && nowTime.Minute() == 0 && nowTime.Second() < 10 {
+	//	refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice, true)
+	//	return
+	//}
+	//go refreshOrders.CancelRefreshOrders(market, symbol, bidPrice, askPrice, false)
 	if symbol == `btc_usdt` {
 		if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
 			(lastTickAsk != nil && lastTickAsk.Amount >= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
@@ -573,8 +573,7 @@ func placeSeparateOrder(orderSide, market, symbol, accountType string, price, am
 			continue
 		} else if order.Status == model.CarryStatusWorking {
 			order.Function = model.FunctionRefresh
-			refreshOrders.Add(market, symbol, orderSide, order)
-			//refreshOrders.SetLastOrder(market, symbol, orderSide, order)
+			//refreshOrders.Add(market, symbol, orderSide, order)
 			model.AppDB.Save(order)
 			return true, order
 		}

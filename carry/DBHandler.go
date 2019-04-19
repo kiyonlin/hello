@@ -39,22 +39,25 @@ func AccountHandlerServe() {
 	}
 }
 
-func CancelOldGridOrders() {
-	d, _ := time.ParseDuration("-3610s")
-	timeLine := util.GetNow().Add(d)
-	markets := model.GetFunctionMarkets(model.FunctionGrid)
+var CancelAllOrders = func() {
+	previousHandle := model.AppConfig.Handle
+	model.AppConfig.Handle = `0`
+	markets := model.GetMarkets()
 	for _, market := range markets {
 		symbols := model.GetMarketSymbols(market)
 		for symbol := range symbols {
+			util.Notice(fmt.Sprintf(`[cancel old orders] %s %s`, market, symbol))
 			orders := api.QueryOrders(market, symbol, model.CarryStatusWorking)
-			for orderId, order := range orders {
-				if orderId != `` && order.OrderTime.Before(timeLine) {
+			for orderId := range orders {
+				if orderId != `` {
 					result, errCode, msg := api.CancelOrder(market, symbol, orderId)
 					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
+					time.Sleep(time.Millisecond * 100)
 				}
 			}
 		}
 	}
+	model.AppConfig.Handle = previousHandle
 }
 
 func RefreshAccounts() {
@@ -202,6 +205,7 @@ func Maintain() {
 	go AccountHandlerServe()
 	go RefreshAccounts()
 	go MaintainTransFee()
+	go util.StartMidNightTimer(CancelAllOrders)
 	for true {
 		go MaintainMarketChan()
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)

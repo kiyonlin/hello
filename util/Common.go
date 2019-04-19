@@ -6,12 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bitly/go-simplejson"
-	"github.com/pkg/errors"
 	"io/ioutil"
-	"math"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -54,14 +51,6 @@ func JsonEncodeMapToByte(stringMap map[string]interface{}) []byte {
 	return jsonBytes
 }
 
-func GetCurrencyFromSymbol(symbol string) (currency string, err error) {
-	index := strings.Index(symbol, `_`)
-	if index < 0 {
-		return ``, errors.New(`wrong symbol format`)
-	}
-	return symbol[0:index], nil
-}
-
 func GetNow() time.Time {
 	location, err := time.LoadLocation("Asia/Shanghai")
 	if err == nil {
@@ -74,19 +63,22 @@ func GetNowUnixMillion() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func GetPrecision(num float64) int {
-	for i := 0; true; i++ {
-		temp := num * math.Pow(10, float64(i))
-		if temp == math.Floor(temp) {
-			return i
-		}
-	}
-	return 0
-}
-
 func FormatNum(input float64, decimal int) (num float64, str string) {
 	format := `%.` + strconv.Itoa(decimal) + `f`
 	str = fmt.Sprintf(format, input)
 	num, _ = strconv.ParseFloat(str, 64)
 	return num, str
+}
+
+func StartMidNightTimer(f func()) {
+	go func() {
+		for {
+			now := time.Now()
+			next := now.Add(time.Hour * 24)
+			next = time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
+			t := time.NewTimer(next.Sub(now))
+			<-t.C
+			f()
+		}
+	}()
 }
