@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/jinzhu/configor"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -240,4 +242,21 @@ func Test_simulation(t *testing.T) {
 	}
 	testBalance()
 	//testRSI()
+}
+
+func Test_tick(t *testing.T) {
+	//for i := 0; i < 10; i++ {
+	dialer := &websocket.Dialer{
+		Proxy: http.ProxyFromEnvironment,
+	}
+	c, _, _ := dialer.Dial(`wss://api.fcoin.com/v2/ws`, nil)
+	subscribeMap := make(map[string]interface{})
+	subscribeMap[`cmd`] = `sub`
+	subscribeMap[`args`] = `ticker.btcusdt`
+	msg := `{"args":["ticker.ethusdt"],"cmd":"sub"}`
+	c.WriteMessage(websocket.TextMessage, []byte(msg))
+	for true {
+		_, data, _ := c.ReadMessage()
+		util.Notice(string(data))
+	}
 }

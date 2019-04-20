@@ -376,9 +376,9 @@ var ProcessRefresh = func(market, symbol string) {
 		orderSide := ``
 		reverseSide := ``
 		orderPrice := price
-		if symbol != `btc_usdt` || ((price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance) {
+		if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
 			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
-			if symbol == `eth_usdt` &&
+			if (symbol == `eth_usdt` || symbol == `btc_usdt`) &&
 				(price > (1+model.AppConfig.EthUsdtDis)*binancePrice || price < (1-model.AppConfig.EthUsdtDis)) {
 				bidPrice, askPrice, bidAmount, askAmount = preDeal(market, symbol, priceDistance)
 			}
@@ -398,18 +398,6 @@ var ProcessRefresh = func(market, symbol string) {
 				orderSide = model.OrderSideSell
 				reverseSide = model.OrderSideBuy
 				orderPrice = askPrice
-			}
-		} else if symbol == `btc_usdt` {
-			if (1-model.AppConfig.BinanceDisMin)*price > binancePrice &&
-				(1-model.AppConfig.BinanceDisMax)*price < binancePrice {
-				orderSide = model.OrderSideBuy
-				reverseSide = model.OrderSideSell
-				orderPrice = (price + bidPrice) / 2
-			} else if (1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
-				(1+model.AppConfig.BinanceDisMin)*price < binancePrice {
-				orderSide = model.OrderSideSell
-				reverseSide = model.OrderSideBuy
-				orderPrice = (price + askPrice) / 2
 			}
 		}
 		if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
