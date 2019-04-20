@@ -61,6 +61,8 @@ func Test_Api(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	orders := api.QueryOrders(model.Fcoin, `btc_usdt`, model.CarryStatusWorking)
+	fmt.Println(len(orders))
 	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	if err != nil {
 		util.Notice(err.Error())
@@ -89,6 +91,10 @@ func Test_Api(t *testing.T) {
 }
 
 func Test_array(t *testing.T) {
+	var m map[string]string
+	for key, value := range m {
+		fmt.Println(key + value)
+	}
 	now := time.Now()
 	nowsec := (now.Hour()*3600 + now.Minute()*60 + now.Second())
 	slotNum := int(nowsec / model.RefreshTimeSlot)

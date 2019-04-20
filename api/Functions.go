@@ -109,7 +109,16 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 func QueryOrders(market, symbol, states string) (orders map[string]*model.Order) {
 	switch market {
 	case model.Fcoin:
-		return queryOrdersFcoin(symbol, states)
+		orders := make(map[string]*model.Order)
+		normal := queryOrdersFcoin(symbol, states, ``)
+		lever := queryOrdersFcoin(symbol, states, model.AccountTypeLever)
+		for key, value := range normal {
+			orders[key] = value
+		}
+		for key, value := range lever {
+			orders[key] = value
+		}
+		return orders
 	default:
 		util.Notice(market + ` not supported`)
 	}
