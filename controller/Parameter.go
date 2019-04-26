@@ -287,9 +287,9 @@ func SetParameters(c *gin.Context) {
 	if len(refreshLimitLow) > 0 {
 		model.AppConfig.RefreshLimitLow, _ = strconv.ParseFloat(refreshLimitLow, 64)
 	}
-	ethUsdtDis := c.Query(`ethusdtdis`)
+	ethUsdtDis := c.Query(`predealdis`)
 	if len(ethUsdtDis) > 0 {
-		model.AppConfig.EthUsdtDis, _ = strconv.ParseFloat(ethUsdtDis, 64)
+		model.AppConfig.PreDealDis, _ = strconv.ParseFloat(ethUsdtDis, 64)
 	}
 	binanceDisMin := c.Query(`binancedismin`)
 	if len(binanceDisMin) > 0 {

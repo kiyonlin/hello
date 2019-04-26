@@ -378,26 +378,26 @@ var ProcessRefresh = func(market, symbol string) {
 		orderPrice := price
 		if price-bidPrice <= priceDistance || askPrice-price <= priceDistance {
 			//bidPrice, askPrice = getPriceFromDepth(market, symbol, amount)
-			if (symbol == `eth_usdt` || symbol == `btc_usdt`) &&
-				(price > (1+model.AppConfig.EthUsdtDis)*binancePrice || price < (1-model.AppConfig.EthUsdtDis)) {
-				bidPrice, askPrice, bidAmount, askAmount = preDeal(market, symbol, priceDistance)
-			}
-			if askAmount > 1.5*bidAmount &&
-				bidAmount < amount*model.AppConfig.RefreshLimit &&
-				bidAmount > amount*model.AppConfig.RefreshLimitLow &&
-				(1-model.AppConfig.BinanceDisMin)*price > binancePrice &&
-				(1-model.AppConfig.BinanceDisMax)*price < binancePrice {
-				orderSide = model.OrderSideBuy
-				reverseSide = model.OrderSideSell
-				orderPrice = bidPrice
-			} else if 1.5*askAmount <= bidAmount &&
-				askAmount < amount*model.AppConfig.RefreshLimit &&
-				askAmount > amount*model.AppConfig.RefreshLimitLow &&
-				(1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
-				(1+model.AppConfig.BinanceDisMin)*price < binancePrice {
-				orderSide = model.OrderSideSell
-				reverseSide = model.OrderSideBuy
-				orderPrice = askPrice
+			if symbol == `eth_usdt` || symbol == `btc_usdt` {
+				_, orderSide, reverseSide, orderPrice = preDeal(market, symbol, price, binancePrice, amount)
+			} else {
+				if askAmount > 1.5*bidAmount &&
+					bidAmount < amount*model.AppConfig.RefreshLimit &&
+					bidAmount > amount*model.AppConfig.RefreshLimitLow &&
+					(1-model.AppConfig.BinanceDisMin)*price > binancePrice &&
+					(1-model.AppConfig.BinanceDisMax)*price < binancePrice {
+					orderSide = model.OrderSideBuy
+					reverseSide = model.OrderSideSell
+					orderPrice = bidPrice
+				} else if 1.5*askAmount <= bidAmount &&
+					askAmount < amount*model.AppConfig.RefreshLimit &&
+					askAmount > amount*model.AppConfig.RefreshLimitLow &&
+					(1+model.AppConfig.BinanceDisMax)*price > binancePrice &&
+					(1+model.AppConfig.BinanceDisMin)*price < binancePrice {
+					orderSide = model.OrderSideSell
+					reverseSide = model.OrderSideBuy
+					orderPrice = askPrice
+				}
 			}
 		}
 		if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
@@ -443,19 +443,53 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 }
 
-func preDeal(market, symbol string, priceDistance float64) (bidPrice, askPrice, bidAmount, askAmount float64) {
+func preDeal(market, symbol string, price, binancePrice, amount float64) (
+	result bool, orderSide, reverseSide string, orderPrice float64) {
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	limit := int(math.Abs(price-binancePrice) / binancePrice /
+		(model.AppConfig.PreDealDis - model.AppConfig.BinanceDisMin))
 	tick := model.AppMarkets.BidAsks[symbol][market]
-	bidPrice = tick.Bids[0].Price - priceDistance
-	askPrice = tick.Asks[0].Price + priceDistance
-	bidAmount = tick.Bids[0].Amount
-	askAmount = tick.Asks[0].Amount
-	if len(tick.Bids) > 1 && math.Abs(tick.Bids[1].Price-bidPrice) < priceDistance {
-		bidAmount += tick.Bids[1].Amount
+	if price > binancePrice {
+		if tick.Asks[0].Amount <= 1.5*tick.Bids[0].Amount || (1-model.AppConfig.BinanceDisMin)*price < binancePrice ||
+			(1-model.AppConfig.BinanceDisMax)*price > binancePrice {
+			return false, ``, ``, 0
+		}
+		if limit > tick.Bids.Len() {
+			limit = tick.Bids.Len()
+		}
+		for orderPrice = tick.Bids[limit].Price; orderPrice < tick.Bids[0].Price+0.9*priceDistance; orderPrice += priceDistance {
+			bidAmount := 0.0
+			for j := 0; tick.Bids[j].Price > orderPrice-0.9*priceDistance; j++ {
+				bidAmount += tick.Bids[j].Amount
+			}
+			if bidAmount < amount*model.AppConfig.RefreshLimit &&
+				bidAmount > amount*model.AppConfig.RefreshLimitLow &&
+				(1-model.AppConfig.BinanceDisMin)*orderPrice > binancePrice {
+				return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
+			}
+		}
+		return false, ``, ``, 0
+	} else {
+		if tick.Bids[0].Amount <= 1.5*tick.Asks[0].Amount || (1+model.AppConfig.BinanceDisMax)*price < binancePrice ||
+			(1+model.AppConfig.BinanceDisMin)*price > binancePrice {
+			return false, ``, ``, 0
+		}
+		if limit > tick.Asks.Len() {
+			limit = tick.Asks.Len()
+		}
+		for orderPrice = tick.Asks[limit].Price; orderPrice > tick.Asks[0].Price-0.9*priceDistance; orderPrice -= priceDistance {
+			askAmount := 0.0
+			for j := 0; tick.Asks[j].Price < orderPrice+0.9*priceDistance; j++ {
+				askAmount += tick.Asks[j].Amount
+			}
+			if askAmount < amount*model.AppConfig.RefreshLimit &&
+				askAmount > amount*model.AppConfig.RefreshLimitLow &&
+				(1+model.AppConfig.BinanceDisMin)*orderPrice < binancePrice {
+				return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
+			}
+		}
+		return false, ``, ``, 0
 	}
-	if len(tick.Asks) > 1 && math.Abs(tick.Asks[1].Price-askPrice) < priceDistance {
-		askAmount += tick.Asks[1].Amount
-	}
-	return bidPrice, askPrice, bidAmount, askAmount
 }
 
 func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
