@@ -214,7 +214,9 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	amount float64) (order *model.Order) {
 	if amount == 0 {
 		util.Notice(`can not place order with amount 0`)
-		return nil
+		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
+			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
 	valid := false
 	if model.AppMarkets.BidAsks != nil && model.AppMarkets.BidAsks[symbol] != nil &&

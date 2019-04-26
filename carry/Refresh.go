@@ -387,7 +387,7 @@ var ProcessRefresh = func(market, symbol string) {
 				if !reverseResult {
 					api.MustCancel(market, symbol, order.OrderId, true)
 					time.Sleep(time.Second * 2)
-					if reverseOrder.ErrCode == `1016` {
+					if reverseOrder != nil && reverseOrder.ErrCode == `1016` {
 						time.Sleep(time.Second)
 						api.RefreshAccount(market)
 					}
@@ -396,7 +396,7 @@ var ProcessRefresh = func(market, symbol string) {
 					refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
 					refreshOrders.SetLastRefreshPrice(market, symbol, orderPrice)
 				}
-			} else if order.ErrCode == `1016` {
+			} else if order != nil && order.ErrCode == `1016` {
 				if lastOrign1016 {
 					lastOrign1016 = false
 					time.Sleep(time.Second * 3)
@@ -556,7 +556,7 @@ func placeSeparateOrder(orderSide, market, symbol, accountType string, price, am
 			i++
 			continue
 		}
-		if order.ErrCode == `1016` {
+		if order != nil && order.ErrCode == `1016` {
 			insufficientTimes++
 			if insufficientTimes >= insufficient {
 				return false, order
