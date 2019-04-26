@@ -371,7 +371,7 @@ var ProcessRefresh = func(market, symbol string) {
 		if !haveAmount {
 			return
 		}
-		util.Notice(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
+		util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
 		orderSide := ``
 		reverseSide := ``
@@ -587,6 +587,9 @@ func placeSeparateOrder(orderSide, market, symbol, accountType string, price, am
 	insufficientTimes := 0
 	for i := 0; i < try; {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
+		if order == nil {
+			continue
+		}
 		if order.ErrCode == `1016` {
 			insufficientTimes++
 			if insufficientTimes >= insufficient {
