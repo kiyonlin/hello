@@ -553,6 +553,7 @@ func placeSeparateOrder(orderSide, market, symbol, accountType string, price, am
 	for i := 0; i < try; {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 		if order == nil {
+			i++
 			continue
 		}
 		if order.ErrCode == `1016` {
