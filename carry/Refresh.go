@@ -464,7 +464,7 @@ func preDeal(market, symbol string, price, binancePrice, amount float64) (
 			}
 			if bidAmount < amount*model.AppConfig.RefreshLimit &&
 				bidAmount > amount*model.AppConfig.RefreshLimitLow &&
-				(1-model.AppConfig.BinanceDisMin)*orderPrice > binancePrice {
+				(1-model.AppConfig.BinanceOrderDis)*orderPrice > binancePrice {
 				return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
 			}
 		}
@@ -484,7 +484,7 @@ func preDeal(market, symbol string, price, binancePrice, amount float64) (
 			}
 			if askAmount < amount*model.AppConfig.RefreshLimit &&
 				askAmount > amount*model.AppConfig.RefreshLimitLow &&
-				(1+model.AppConfig.BinanceDisMin)*orderPrice < binancePrice {
+				(1+model.AppConfig.BinanceOrderDis)*orderPrice < binancePrice {
 				return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
 			}
 		}

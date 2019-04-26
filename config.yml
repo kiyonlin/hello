@@ -20,6 +20,7 @@ refreshlimitlow: 0
 binancedismin: 0.0002
 binancedismax: 0.0020
 predealdis: 0.0007
+binanceorderdis: 0.0005
 dbconnection: host=47.75.162.203 port=5432 user=dbuser dbname=simon password=dbuser sslmode=disable
 #sammi huobi
 #huobikey: 003fe1c2-1a5a12e1-73668e50-6773e

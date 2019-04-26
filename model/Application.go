@@ -104,6 +104,7 @@ type Config struct {
 	BinanceDisMin   float64
 	BinanceDisMax   float64
 	PreDealDis      float64
+	BinanceOrderDis float64
 	Handle          string // 0 不执行处理程序，1执行处理程序
 	HandleMaker     string
 	HandleRefresh   string
@@ -392,7 +393,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("delay: %f\n", config.Delay)
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
 	str += fmt.Sprintf("minusdt: %f maxusdt: %f \n", config.MinUsdt, config.MaxUsdt)
-	str += fmt.Sprintf("PreDealDis: %f \n", config.PreDealDis)
+	str += fmt.Sprintf("PreDealDis: %f Binance order dis: %f\n", config.PreDealDis, config.BinanceOrderDis)
 	str += fmt.Sprintf("channels: %d \n", config.Channels)
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s binanceDis: (%f - %f)\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid, config.BinanceDisMin, config.BinanceDisMax)

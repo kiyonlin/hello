@@ -299,6 +299,10 @@ func SetParameters(c *gin.Context) {
 	if len(binanceDisMax) > 0 {
 		model.AppConfig.BinanceDisMax, _ = strconv.ParseFloat(binanceDisMax, 64)
 	}
+	binanceOrderDis := c.Query(`binanceorderdis`)
+	if len(binanceOrderDis) > 0 {
+		model.AppConfig.BinanceOrderDis, _ = strconv.ParseFloat(binanceOrderDis, 64)
+	}
 	orderWait := c.Query("orderwait")
 	if orderWait != `` {
 		model.AppConfig.OrderWait, _ = strconv.ParseInt(orderWait, 10, 64)
