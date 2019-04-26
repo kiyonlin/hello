@@ -425,7 +425,7 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 		} else if tick.Bids[0].Price > binancePrice*(1+model.AppConfig.PreDealDis) {
 			for orderPrice = binancePrice * (1 + model.AppConfig.BinanceOrderDis); orderPrice < tick.Bids[0].Price+0.9*priceDistance; orderPrice += priceDistance {
 				bidAmount := 0.0
-				for i := 0; tick.Bids[i].Price > orderPrice-0.9*priceDistance && i < tick.Bids.Len(); i++ {
+				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price > orderPrice-0.9*priceDistance; i++ {
 					bidAmount += tick.Bids[i].Amount
 				}
 				if bidAmount < amount*model.AppConfig.RefreshLimit &&
@@ -444,7 +444,7 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 		} else if tick.Asks[0].Price < binancePrice*(1-model.AppConfig.PreDealDis) {
 			for orderPrice = binancePrice * (1 - model.AppConfig.BinanceOrderDis); orderPrice > tick.Asks[0].Price-0.9*priceDistance; orderPrice -= priceDistance {
 				askAmount := 0.0
-				for i := 0; tick.Asks[i].Price < orderPrice+0.9*priceDistance && i < tick.Asks.Len(); i++ {
+				for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price < orderPrice+0.9*priceDistance; i++ {
 					askAmount += tick.Asks[i].Amount
 				}
 				if askAmount < amount*model.AppConfig.RefreshLimit &&
