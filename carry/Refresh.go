@@ -552,10 +552,6 @@ func placeSeparateOrder(orderSide, market, symbol, accountType string, price, am
 	insufficientTimes := 0
 	for i := 0; i < try; {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
-		if order == nil {
-			i++
-			continue
-		}
 		if order != nil && order.ErrCode == `1016` {
 			insufficientTimes++
 			if insufficientTimes >= insufficient {

@@ -230,7 +230,9 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	}
 	if !valid {
 		util.Notice(fmt.Sprintf(`[place order limit]%s %s %s %f`, market, symbol, orderSide, price))
-		return
+		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
+			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(model.Fcoin, symbol))
 	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(model.Fcoin, symbol))
