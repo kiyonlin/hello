@@ -419,7 +419,8 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 		tick.Bids[0].Price < binancePrice*(1+model.AppConfig.BinanceDisMax) {
 		if tick.Bids[0].Price < binancePrice*(1+model.AppConfig.PreDealDis) {
 			if tick.Bids[0].Amount < amount*model.AppConfig.RefreshLimit &&
-				tick.Bids[0].Amount > amount*model.AppConfig.RefreshLimitLow {
+				tick.Bids[0].Amount > amount*model.AppConfig.RefreshLimitLow &&
+				tick.Asks[0].Amount > 2*tick.Bids[0].Amount {
 				return true, model.OrderSideBuy, model.OrderSideSell, tick.Bids[0].Price
 			}
 		} else if tick.Bids[0].Price > binancePrice*(1+model.AppConfig.PreDealDis) {
@@ -429,7 +430,8 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 					bidAmount += tick.Bids[i].Amount
 				}
 				if bidAmount < amount*model.AppConfig.RefreshLimit &&
-					bidAmount > amount*model.AppConfig.RefreshLimitLow {
+					bidAmount > amount*model.AppConfig.RefreshLimitLow &&
+					tick.Asks[0].Amount > 2*bidAmount {
 					return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
 				}
 			}
@@ -438,7 +440,8 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 		tick.Asks[0].Price < binancePrice*(1-model.AppConfig.BinanceDisMin) {
 		if tick.Asks[0].Price > binancePrice*(1-model.AppConfig.PreDealDis) {
 			if tick.Asks[0].Amount < amount*model.AppConfig.RefreshLimit &&
-				tick.Asks[0].Amount > amount*model.AppConfig.RefreshLimitLow {
+				tick.Asks[0].Amount > amount*model.AppConfig.RefreshLimitLow &&
+				tick.Bids[0].Amount > 2*tick.Asks[0].Amount {
 				return true, model.OrderSideSell, model.OrderSideBuy, tick.Asks[0].Price
 			}
 		} else if tick.Asks[0].Price < binancePrice*(1-model.AppConfig.PreDealDis) {
@@ -448,7 +451,8 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 					askAmount += tick.Asks[i].Amount
 				}
 				if askAmount < amount*model.AppConfig.RefreshLimit &&
-					askAmount > amount*model.AppConfig.RefreshLimitLow {
+					askAmount > amount*model.AppConfig.RefreshLimitLow &&
+					tick.Bids[0].Amount > 2*askAmount {
 					return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
 				}
 			}
