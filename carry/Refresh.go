@@ -434,6 +434,8 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 					bidAmount > amount*model.AppConfig.RefreshLimitLow &&
 					tick.Asks[0].Amount > 2*bidAmount {
 					if orderPrice > tick.Bids[0].Price {
+						util.Notice(fmt.Sprintf(`[price error] order price: %f bid1: %f`,
+							orderPrice, tick.Bids[0].Price))
 						orderPrice = tick.Bids[0].Price
 					}
 					return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
@@ -458,6 +460,7 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 					askAmount > amount*model.AppConfig.RefreshLimitLow &&
 					tick.Bids[0].Amount > 2*askAmount {
 					if orderPrice < tick.Asks[0].Price {
+						util.Notice(fmt.Sprintf(`[price error] order price: %f ask1 %f`, orderPrice, tick.Asks[0].Price))
 						orderPrice = tick.Asks[0].Price
 					}
 					return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
