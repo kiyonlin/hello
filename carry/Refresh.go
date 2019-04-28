@@ -18,7 +18,8 @@ var syncRefresh = make(chan interface{}, 10)
 var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var lastOrign1016 = false
-var lastTickBid, lastTickAsk *model.Tick
+
+//var lastTickBid, lastTickAsk *model.Tick
 var canceling = false
 
 type RefreshOrders struct {
@@ -324,19 +325,19 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	if symbol == `btc_usdt` {
-		if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
-			(lastTickAsk != nil && lastTickAsk.Amount >= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
-			util.Notice(`[someone refreshing] sleep 15 minutes`)
-			myTime := util.GetNow()
-			btcusdtBigTime = &myTime
-			lastTickAsk = nil
-			lastTickBid = nil
-			return
-		}
-		lastTickAsk = &model.AppMarkets.BidAsks[symbol][market].Asks[0]
-		lastTickBid = &model.AppMarkets.BidAsks[symbol][market].Bids[0]
-	}
+	//if symbol == `btc_usdt` {
+	//	if (lastTickBid != nil && lastTickBid.Amount >= 100 && lastTickBid.Price == bidPrice && bidAmount >= 100) ||
+	//		(lastTickAsk != nil && lastTickAsk.Amount >= 100 && lastTickAsk.Price == askPrice && askAmount >= 100) {
+	//		util.Notice(`[someone refreshing] sleep 15 minutes`)
+	//		myTime := util.GetNow()
+	//		btcusdtBigTime = &myTime
+	//		lastTickAsk = nil
+	//		lastTickBid = nil
+	//		return
+	//	}
+	//	lastTickAsk = &model.AppMarkets.BidAsks[symbol][market].Asks[0]
+	//	lastTickBid = &model.AppMarkets.BidAsks[symbol][market].Bids[0]
+	//}
 	if canceling {
 		util.Notice(`[refreshing waiting for canceling]`)
 		return
@@ -424,14 +425,17 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 				return true, model.OrderSideBuy, model.OrderSideSell, tick.Bids[0].Price
 			}
 		} else if tick.Bids[0].Price > binancePrice*(1+model.AppConfig.PreDealDis) {
-			for orderPrice = binancePrice * (1 + model.AppConfig.BinanceOrderDis); orderPrice < tick.Bids[0].Price+0.9*priceDistance; orderPrice += priceDistance {
+			for orderPrice = binancePrice * (1 + model.AppConfig.BinanceOrderDis); orderPrice < tick.Bids[0].Price+0.1*priceDistance; orderPrice += priceDistance {
 				bidAmount := 0.0
-				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price > orderPrice-0.9*priceDistance; i++ {
+				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price > orderPrice-0.1*priceDistance; i++ {
 					bidAmount += tick.Bids[i].Amount
 				}
 				if bidAmount < amount*model.AppConfig.RefreshLimit &&
 					bidAmount > amount*model.AppConfig.RefreshLimitLow &&
 					tick.Asks[0].Amount > 2*bidAmount {
+					if orderPrice > tick.Bids[0].Price {
+						orderPrice = tick.Bids[0].Price
+					}
 					return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
 				}
 			}
@@ -445,14 +449,17 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 				return true, model.OrderSideSell, model.OrderSideBuy, tick.Asks[0].Price
 			}
 		} else if tick.Asks[0].Price < binancePrice*(1-model.AppConfig.PreDealDis) {
-			for orderPrice = binancePrice * (1 - model.AppConfig.BinanceOrderDis); orderPrice > tick.Asks[0].Price-0.9*priceDistance; orderPrice -= priceDistance {
+			for orderPrice = binancePrice * (1 - model.AppConfig.BinanceOrderDis); orderPrice > tick.Asks[0].Price-0.1*priceDistance; orderPrice -= priceDistance {
 				askAmount := 0.0
-				for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price < orderPrice+0.9*priceDistance; i++ {
+				for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price < orderPrice+0.1*priceDistance; i++ {
 					askAmount += tick.Asks[i].Amount
 				}
 				if askAmount < amount*model.AppConfig.RefreshLimit &&
 					askAmount > amount*model.AppConfig.RefreshLimitLow &&
 					tick.Bids[0].Amount > 2*askAmount {
+					if orderPrice < tick.Asks[0].Price {
+						orderPrice = tick.Asks[0].Price
+					}
 					return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
 				}
 			}
@@ -556,7 +563,10 @@ func placeSeparateOrder(orderSide, market, symbol, accountType string, price, am
 	insufficientTimes := 0
 	for i := 0; i < try; {
 		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
-		if order != nil && order.ErrCode == `1016` {
+		if order == nil {
+			break
+		}
+		if order.ErrCode == `1016` {
 			insufficientTimes++
 			if insufficientTimes >= insufficient {
 				return false, order
