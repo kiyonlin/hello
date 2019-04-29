@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/jinzhu/configor"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
-	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"sort"
@@ -52,53 +50,4 @@ func Test_RefreshAccount(t *testing.T) {
 	for _, value := range sortedKLine {
 		fmt.Println(fmt.Sprintf(`%s %f`, value.Id, value.Price))
 	}
-}
-
-func Test_Api(t *testing.T) {
-	model.NewConfig()
-	err := configor.Load(model.AppConfig, "./config.yml")
-	if err != nil {
-		util.Notice(err.Error())
-		return
-	}
-	orders := api.QueryOrders(model.Fcoin, `btc_usdt`, model.CarryStatusWorking)
-	fmt.Println(len(orders))
-	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
-	if err != nil {
-		util.Notice(err.Error())
-		return
-	}
-	api.RefreshAccount(model.Fcoin)
-	carry.MaintainTransFee()
-	//order := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, model.Fcoin, `btc_usdt`, ``,
-	//	model.AccountTypeLever, 4999, 0.001)
-	//fmt.Println(order.OrderId)
-	//order := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, model.Fcoin, `bsv_usdt`, ``, 64.94, 30)
-	//api.QueryOrder(order)
-	//order := api.QueryOrderById(model.Fcoin, `xrp_btc`, `I_u7N8mADEnBchAtpdaTxrH-Tr8mJMDMA-MDOmVVr7oM2dOU-AOgzHjI0OG0Qhxv`)
-	//fmt.Println(fmt.Sprintf(`status %s errcode %s`, order.Status, order.ErrCode))
-	//testOrder := api.QueryOrderById(model.Fcoin, `eos_btc`, `X0-GKSE7iZkHEYoBfo7UmFEjhP8CfJsP8TiPPFymtWg9IKL4rIyhnz5KVvxWpNqQ`)
-	//fmt.Println(testOrder.Status)
-	////api.RefreshAccount(model.Fcoin)
-	////orderId, errMsg, status, amount, price := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, model.Fcoin,
-	////	`eos_usdt`, model.AmountTypeCoinNumber, 2.263, 1)
-	////fmt.Sprintf(`%s %s %s %f %f`, orderId, errMsg, status, amount, price)
-	//orders := api.QueryOrders(model.Fcoin, `eos_usdt`, model.CarryStatusSuccess)
-	//for key, value := range orders {
-	//	order := api.QueryOrderById(model.Fcoin, value.Symbol, key)
-	//	fmt.Println(order.OrderTime.String())
-	//}
-}
-
-func Test_array(t *testing.T) {
-	var m map[string]string
-	for key, value := range m {
-		fmt.Println(key + value)
-	}
-	now := time.Now()
-	nowsec := (now.Hour()*3600 + now.Minute()*60 + now.Second())
-	slotNum := int(nowsec / model.RefreshTimeSlot)
-	fmt.Println(slotNum)
-	a, b := util.FormatNum(0.335, 2)
-	fmt.Println(fmt.Sprintf(`%f %s`, a, b))
 }
