@@ -278,6 +278,10 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Notice(`[refreshing waiting for canceling]`)
 		return
 	}
+	haveAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
+	if !haveAmount {
+		return
+	}
 	switch setting.FunctionParameter {
 	case model.FunRefreshMiddle:
 		price, _ := util.FormatNum((bidPrice+askPrice)/2, api.GetPriceDecimal(market, symbol))
@@ -298,10 +302,6 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		doRefresh(market, symbol, ``, price, amount)
 	case model.FunRefreshSeparate:
-		haveAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
-		if !haveAmount {
-			return
-		}
 		util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
 		refreshAble, _, _, orderPrice := preDeal(market, symbol, binancePrice, amount)
