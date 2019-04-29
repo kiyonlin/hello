@@ -49,8 +49,7 @@ func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, p
 func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string, price, priceDistance float64) (same bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
-	if refreshOrders.lastRefreshPrice == nil || refreshOrders.lastRefreshPrice[market] == nil ||
-		(symbol != `btc_usdt` && symbol != `eth_usdt`) {
+	if refreshOrders.lastRefreshPrice == nil || refreshOrders.lastRefreshPrice[market] == nil {
 		return false
 	}
 	return math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance
@@ -293,7 +292,7 @@ var ProcessRefresh = func(market, symbol string) {
 		//|| (symbol == `btc_usdt` && btcusdtBigTime != nil && util.GetNow().Unix()-btcusdtBigTime.Unix() < 900) {
 		return
 	}
-	pointGetTick := time.Now().Nanosecond()
+	pointGetTick := time.Now().UnixNano()
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	setRefreshing(true)
 	defer setRefreshing(false)
@@ -381,19 +380,22 @@ var ProcessRefresh = func(market, symbol string) {
 				return
 			}
 			LastRefreshTime[market] = util.GetNowUnixMillion()
-			pointBefore1 := time.Now().Nanosecond()
+			pointBefore1 := time.Now().UnixNano()
 			orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
 				orderPrice, amount, 1, 2)
-			pointAfter1 := time.Now().Nanosecond()
+			pointAfter1 := time.Now().UnixNano()
 			if orderResult {
 				refreshOrders.AddRecentOrder(market, symbol, order)
-				pointBefore2 := time.Now().Nanosecond()
+				pointBefore2 := time.Now().UnixNano()
 				reverseResult, reverseOrder :=
 					placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
 						orderPrice, amount, 1, 1)
-				pointAfter2 := time.Now().Nanosecond()
+				pointAfter2 := time.Now().UnixNano()
 				util.Notice(fmt.Sprintf(`>>>>>>>>>>>%d %d %d %d %d`, pointGetTick,
-					pointBefore1-pointGetTick, pointAfter1-pointBefore1, pointBefore2-pointAfter1, pointAfter2-pointAfter1))
+					(pointBefore1-pointGetTick)/int64(time.Millisecond),
+					(pointAfter1-pointBefore1)/int64(time.Millisecond),
+					(pointBefore2-pointAfter1)/int64(time.Millisecond),
+					(pointAfter2-pointAfter1)/int64(time.Millisecond)))
 				if !reverseResult {
 					api.MustCancel(market, symbol, order.OrderId, true)
 					time.Sleep(time.Second * 2)
