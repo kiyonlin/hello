@@ -307,6 +307,7 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshAble, _, _, orderPrice := preDeal(market, symbol, binancePrice, amount)
 		if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
 			util.Notice(fmt.Sprintf(`[jump over] %s %s %f`, market, symbol, orderPrice))
+			refreshOrders.SetLastRefreshPrice(market, symbol, 0)
 			refreshAble = false
 		}
 		if refreshAble {

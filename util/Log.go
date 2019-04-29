@@ -10,7 +10,7 @@ var socket, info, notice *log.Logger
 var socketInfoFile, infoFile, noticeFile *os.File
 var socketCount, infoCount, noticeCount int
 
-const flushLines = 100
+const flushLines = 10
 
 var socketLines = make([]string, flushLines)
 var infoLines = make([]string, flushLines)
