@@ -13,7 +13,8 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var bidAskTimes int64
 var refreshing = false
-var btcusdtBigTime *time.Time
+
+//var btcusdtBigTime *time.Time
 var syncRefresh = make(chan interface{}, 10)
 var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
@@ -288,10 +289,11 @@ func setRefreshing(value bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshing ||
-		(symbol == `btc_usdt` && btcusdtBigTime != nil && util.GetNow().Unix()-btcusdtBigTime.Unix() < 900) {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshing {
+		//|| (symbol == `btc_usdt` && btcusdtBigTime != nil && util.GetNow().Unix()-btcusdtBigTime.Unix() < 900) {
 		return
 	}
+	pointGetTick := time.Now().Nanosecond()
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	setRefreshing(true)
 	defer setRefreshing(false)
@@ -370,6 +372,7 @@ var ProcessRefresh = func(market, symbol string) {
 			askPrice, bidAmount, askAmount))
 		_, orderSide, reverseSide, orderPrice := preDeal(market, symbol, binancePrice, amount)
 		if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
+			util.Notice(fmt.Sprintf(`[jump over] %s %s %f`, market, symbol, orderPrice))
 			orderSide = ``
 		}
 		if orderSide != `` {
@@ -378,13 +381,19 @@ var ProcessRefresh = func(market, symbol string) {
 				return
 			}
 			LastRefreshTime[market] = util.GetNowUnixMillion()
+			pointBefore1 := time.Now().Nanosecond()
 			orderResult, order := placeSeparateOrder(orderSide, market, symbol, setting.AccountType,
 				orderPrice, amount, 1, 2)
+			pointAfter1 := time.Now().Nanosecond()
 			if orderResult {
 				refreshOrders.AddRecentOrder(market, symbol, order)
+				pointBefore2 := time.Now().Nanosecond()
 				reverseResult, reverseOrder :=
 					placeSeparateOrder(reverseSide, market, symbol, setting.AccountType,
 						orderPrice, amount, 1, 1)
+				pointAfter2 := time.Now().Nanosecond()
+				util.Notice(fmt.Sprintf(`>>>>>>>>>>>%d %d %d %d %d`, pointGetTick,
+					pointBefore1-pointGetTick, pointAfter1-pointBefore1, pointBefore2-pointAfter1, pointAfter2-pointAfter1))
 				if !reverseResult {
 					api.MustCancel(market, symbol, order.OrderId, true)
 					time.Sleep(time.Second * 2)
