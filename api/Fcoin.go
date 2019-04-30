@@ -73,7 +73,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 			//util.Notice(symbol + ` not supported`)
 			return
 		}
-		if err == nil && strings.Index(msgType, `trade.`) == 0 {
+		if strings.Index(msgType, `trade.`) == 0 {
 			ts := responseJson.Get("ts").MustInt()
 			amount := responseJson.Get(`amount`).MustFloat64()
 			side := responseJson.Get(`side`).MustString()
@@ -202,9 +202,9 @@ func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 		msg, _ = responseJson.Get(`msg`).String()
 	}
 	util.Notice(orderId + "fcoin cancel order" + string(responseBody))
-	if status == 0 || status == 3008 { // 3008代表订单状态已经处于完成
-		return true, ``, msg
-	}
+	//if status == 0 || status == 3008 { // 3008代表订单状态已经处于完成
+	//	return true, ``, msg
+	//}
 	return false, strconv.FormatInt(int64(status), 10), msg
 }
 
@@ -331,14 +331,12 @@ func getBuyPriceFcoin(symbol string) (buy float64, err error) {
 	model.CurrencyPrice[symbol] = 0
 	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	responseBody := SignedRequestFcoin(`GET`, `/market/ticker/`+requestSymbol, nil)
+	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
-		orderJson, err := util.NewJSON([]byte(responseBody))
-		if err == nil {
-			orderJson = orderJson.Get(`data`)
-			tickerType, _ := orderJson.Get(`type`).String()
-			if strings.Contains(tickerType, requestSymbol) {
-				model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
-			}
+		orderJson = orderJson.Get(`data`)
+		tickerType, _ := orderJson.Get(`type`).String()
+		if strings.Contains(tickerType, requestSymbol) {
+			model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
 		}
 	}
 	return model.CurrencyPrice[symbol], nil
