@@ -47,7 +47,11 @@ func (refreshOrders *RefreshOrders) CheckLastChancePrice(market, symbol string, 
 	if refreshOrders.lastChancePrice == nil || refreshOrders.lastChancePrice[market] == nil {
 		return false
 	}
-	return math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance
+	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance {
+		util.Notice(fmt.Sprintf(`[jump 1] %s %s %f`, market, symbol, price))
+		return true
+	}
+	return false
 }
 
 func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, price, priceDistance float64) {
@@ -75,8 +79,12 @@ func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string,
 	if refreshOrders.lastRefreshPrice == nil || refreshOrders.lastRefreshPrice[market] == nil {
 		return false
 	}
-	return math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance &&
-		refreshOrders.samePriceCount[market][symbol] >= 2
+	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance &&
+		refreshOrders.samePriceCount[market][symbol] >= 2 {
+		util.Notice(fmt.Sprintf(`[jump 2] %s %s %f`, market, symbol, price))
+		return true
+	}
+	return false
 }
 
 func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amountLimit float64) (underLimit bool) {
@@ -337,10 +345,11 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
 		refreshAble, _, _, orderPrice := preDeal(market, symbol, binancePrice, amount)
-		if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, priceDistance) ||
-			refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
-			util.Notice(fmt.Sprintf(`[jump over] %s %s %f`, market, symbol, orderPrice))
+		if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, priceDistance) {
 			refreshOrders.SetLastChancePrice(market, symbol, 0)
+			refreshAble = false
+		}
+		if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
 			refreshAble = false
 		}
 		if refreshAble {
@@ -356,6 +365,9 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	tick := model.AppMarkets.BidAsks[symbol][market]
+	if math.Abs(tick.Bids[0].Price-tick.Asks[0].Price) > priceDistance*1.1 {
+		return false, "", "", 0
+	}
 	if tick.Bids[0].Price > binancePrice*(1+model.AppConfig.BinanceDisMin) &&
 		tick.Bids[0].Price < binancePrice*(1+model.AppConfig.BinanceDisMax) {
 		if tick.Bids[0].Price < binancePrice*(1+model.AppConfig.PreDealDis) {
