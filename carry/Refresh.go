@@ -356,7 +356,8 @@ var ProcessRefresh = func(market, symbol string) {
 			point2 := time.Now().UnixNano()
 			doRefresh(market, symbol, setting.AccountType, orderPrice, priceDistance, amount)
 			point3 := time.Now().UnixNano()
-			util.Notice(fmt.Sprintf(`[speed]%d %d`, point2-point1, point3-point2))
+			util.Notice(fmt.Sprintf(`[speed]%d %d price:%f %f amount:%f %f`,
+				point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
 		}
 	}
 }
