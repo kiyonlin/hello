@@ -470,10 +470,10 @@ func doRefresh(market, symbol, accountType string, price, amount float64) {
 
 func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amount float64) {
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
+	if order.Status == model.CarryStatusFail && order.ErrCode != `1016` {
+		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
+	}
 	order.Function = model.FunctionRefresh
-	//if order.Status == model.CarryStatusWorking {
-	//	refreshOrders.AddRefreshOrders(market, symbol, orderSide, order)
-	//}
 	refreshOrders.SetLastOrder(market, symbol, orderSide, order)
 	model.AppDB.Save(order)
 	syncRefresh <- struct{}{}
