@@ -451,16 +451,12 @@ func doRefresh(market, symbol, accountType string, price, amount float64) {
 				refreshOrders.SetLastRefreshPrice(market, symbol, 0)
 				if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
 					api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
-					if refreshLastBid.ErrCode == `1016` {
-						time.Sleep(time.Second * 2)
-						api.RefreshAccount(market)
-					}
 				} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
 					api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
-					if refreshLastAsk.ErrCode == `1016` {
-						time.Sleep(time.Second * 2)
-						api.RefreshAccount(market)
-					}
+				}
+				if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
+					time.Sleep(time.Second * 2)
+					api.RefreshAccount(market)
 				}
 			}
 			break
@@ -470,9 +466,6 @@ func doRefresh(market, symbol, accountType string, price, amount float64) {
 
 func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amount float64) {
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
-	if order.Status == model.CarryStatusFail && order.ErrCode != `1016` {
-		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
-	}
 	order.Function = model.FunctionRefresh
 	refreshOrders.SetLastOrder(market, symbol, orderSide, order)
 	model.AppDB.Save(order)
