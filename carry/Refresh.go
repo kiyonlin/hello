@@ -241,6 +241,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshing {
 		return
 	}
+	point1 := time.Now().UnixNano()
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	setRefreshing(true)
 	defer setRefreshing(false)
@@ -311,20 +312,11 @@ var ProcessRefresh = func(market, symbol string) {
 			refreshAble = false
 		}
 		if refreshAble {
+			point2 := time.Now().UnixNano()
 			doRefresh(market, symbol, setting.AccountType, orderPrice, amount)
+			point3 := time.Now().UnixNano()
+			util.Notice(fmt.Sprintf(`[speed]%d %d`, point2-point1, point3-point2))
 		}
-		//	if orderResult {
-		//		if !reverseResult {
-		//			api.MustCancel(market, symbol, order.OrderId, true)
-		//			time.Sleep(time.Second * 2)
-		//		} else {
-		//			priceInSymbol, _ := api.GetPrice(symbol)
-		//			refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
-		//			refreshOrders.SetLastRefreshPrice(market, symbol, orderPrice)
-		//		}
-		//} else {
-		//	refreshOrders.SetLastRefreshPrice(market, symbol, 0.0)
-		//}
 	}
 }
 
