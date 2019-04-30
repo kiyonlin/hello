@@ -68,20 +68,15 @@ func GetAmountDecimal(market, symbol string) int {
 }
 
 func MustCancel(market, symbol, orderId string, mustCancel bool) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 2; i++ {
 		result, errCode, _ := CancelOrder(market, symbol, orderId)
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
-		if result || !mustCancel || errCode == `3008` { //3008:"submit cancel invalid order state
+		if result || !mustCancel { //3008:"submit cancel invalid order state
 			break
 		} else if errCode == `429` || errCode == `4003` {
 			util.Notice(`调用次数繁忙`)
-		} else if i >= 3 {
-			break
 		}
-		if i == 99 {
-			model.AppConfig.Handle = `0`
-		}
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second)
 	}
 }
 
@@ -287,7 +282,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	}
 	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
 		AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
-		Status: status, DealAmount: amount, DealPrice: price, OrderTime: util.GetNow()}
+		Status: status, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 }
 
 func GetPrice(symbol string) (buy float64, err error) {
