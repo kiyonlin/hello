@@ -80,7 +80,7 @@ func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string,
 		return false
 	}
 	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance &&
-		refreshOrders.samePriceCount[market][symbol] >= 2 {
+		refreshOrders.samePriceCount[market][symbol] >= 1 {
 		util.Notice(fmt.Sprintf(`[jump 2] %s %s %f`, market, symbol, price))
 		return true
 	}
