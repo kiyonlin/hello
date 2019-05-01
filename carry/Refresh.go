@@ -68,7 +68,7 @@ func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, p
 		refreshOrders.samePriceCount[market] = make(map[string]int)
 		refreshOrders.samePriceTime[market] = make(map[string]*time.Time)
 	}
-	d, _ := time.ParseDuration("-600s")
+	d, _ := time.ParseDuration("-601s")
 	timeLine := util.GetNow().Add(d)
 	if refreshOrders.samePriceTime[market][symbol] != nil && refreshOrders.samePriceTime[market][symbol].Before(timeLine) {
 		refreshOrders.lastRefreshPrice[market][symbol] = 0
