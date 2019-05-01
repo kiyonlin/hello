@@ -48,10 +48,10 @@ const FunctionHang = `hang`
 
 //const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`
-const FunRefreshMiddle = `refresh_parameter_middle`
 
+//const FunRefreshMiddle = `refresh_parameter_middle`
 //const FunRefreshSide = `refresh_parameter_side`
-const FunRefreshSeparate = `refresh_parameter_separate`
+//const FunRefreshSeparate = `refresh_parameter_separate`
 const RefreshTimeSlot = 600 // fcoin refresh time slot in seconds (10 min)
 
 var AppDB *gorm.DB
@@ -73,6 +73,8 @@ type Config struct {
 	Env             string
 	DBConnection    string
 	Channels        int
+	InChina         int // 1 in china, otherwise outter china
+	Between         int64
 	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
 	ChannelSlot     float64
 	Delay           float64
@@ -111,7 +113,6 @@ type Config struct {
 	HandleGrid      string
 	SellRate        float64 // fcoin dk 额外卖单下单比例
 	FtMax           float64 // fcoin dk ft上限
-	InChina         int     // 1 in china, otherwise outter china
 	Mail            string
 	Port            string
 }
@@ -399,6 +400,7 @@ func (config *Config) ToString() string {
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid, config.BinanceDisMin, config.BinanceDisMax)
 	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f RefreshLimit (%f - %f)\n",
 		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.RefreshLimitLow, config.RefreshLimit)
+	str += fmt.Sprintf("between: %d\n", config.Between)
 	return str
 }
 

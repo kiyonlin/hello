@@ -283,6 +283,10 @@ func SetParameters(c *gin.Context) {
 	if len(refreshLimit) > 0 {
 		model.AppConfig.RefreshLimit, _ = strconv.ParseFloat(refreshLimit, 64)
 	}
+	between := c.Query(`between`)
+	if len(between) > 0 {
+		model.AppConfig.Between, _ = strconv.ParseInt(between, 10, 64)
+	}
 	refreshLimitLow := c.Query(`refreshlimitlow`)
 	if len(refreshLimitLow) > 0 {
 		model.AppConfig.RefreshLimitLow, _ = strconv.ParseFloat(refreshLimitLow, 64)

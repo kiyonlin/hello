@@ -322,43 +322,22 @@ var ProcessRefresh = func(market, symbol string) {
 	if !haveAmount {
 		return
 	}
-	switch setting.FunctionParameter {
-	case model.FunRefreshMiddle:
-		price, _ := util.FormatNum((bidPrice+askPrice)/2, api.GetPriceDecimal(market, symbol))
-		if (price-bidPrice) <= priceDistance || (askPrice-price) <= priceDistance {
-			if askAmount > bidAmount {
-				price = bidPrice
-				if bidAmount*20 > amount {
-					util.Notice(fmt.Sprintf(`[refresh crash]bid:%f - %f`, bidAmount, amount))
-					return
-				}
-			} else {
-				price = askPrice
-				if askAmount*20 > amount {
-					util.Notice(fmt.Sprintf(`[refresh crash]ask:%f - %f`, askAmount, amount))
-					return
-				}
-			}
-		}
-		doRefresh(market, symbol, ``, price, priceDistance, amount)
-	case model.FunRefreshSeparate:
-		util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
-			askPrice, bidAmount, askAmount))
-		refreshAble, _, _, orderPrice := preDeal(market, symbol, binancePrice, amount)
-		if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, priceDistance) {
-			refreshOrders.SetLastChancePrice(market, symbol, 0)
-			refreshAble = false
-		}
-		if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
-			refreshAble = false
-		}
-		if refreshAble {
-			point2 := time.Now().UnixNano()
-			doRefresh(market, symbol, setting.AccountType, orderPrice, priceDistance, amount)
-			point3 := time.Now().UnixNano()
-			util.Notice(fmt.Sprintf(`[speed]%d %d price:%f %f amount:%f %f`,
-				point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
-		}
+	util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
+		askPrice, bidAmount, askAmount))
+	refreshAble, orderSide, orderReverse, orderPrice := preDeal(market, symbol, binancePrice, amount)
+	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, priceDistance) {
+		refreshOrders.SetLastChancePrice(market, symbol, 0)
+		refreshAble = false
+	}
+	if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
+		refreshAble = false
+	}
+	if refreshAble {
+		point2 := time.Now().UnixNano()
+		doRefresh(market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice, priceDistance, amount)
+		point3 := time.Now().UnixNano()
+		util.Notice(fmt.Sprintf(`[speed]%d %d price:%f %f amount:%f %f`,
+			point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
 	}
 }
 
@@ -478,12 +457,13 @@ func _(market, symbol string, amount float64) (bidPrice, askPrice float64) {
 	return bidPrice, askPrice
 }
 
-func doRefresh(market, symbol, accountType string, price, priceDistance, amount float64) {
+func doRefresh(market, symbol, accountType, orderSide, orderReverse string, price, priceDistance, amount float64) {
 	LastRefreshTime[market] = util.GetNowUnixMillion()
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
-	go placeRefreshOrder(model.OrderSideSell, market, symbol, accountType, price, amount)
-	go placeRefreshOrder(model.OrderSideBuy, market, symbol, accountType, price, amount)
+	placeRefreshOrder(orderSide, market, symbol, accountType, price, amount)
+	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
+	placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
 	refreshOrders.SetLastChancePrice(market, symbol, 0)
 	for true {
 		<-syncRefresh
