@@ -77,19 +77,20 @@ func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, p
 		samePriceTime := util.GetNow()
 		refreshOrders.samePriceTime[market][symbol] = &samePriceTime
 	}
-	d, _ := time.ParseDuration("-601s")
-	timeLine := util.GetNow().Add(d)
-	if refreshOrders.samePriceTime[market][symbol] != nil && refreshOrders.samePriceTime[market][symbol].Before(timeLine) {
-		refreshOrders.lastRefreshPrice[market][symbol] = 0
-		refreshOrders.samePriceTime[market][symbol] = nil
-		refreshOrders.samePriceCount[market][symbol] = 0
-	}
 }
 
 func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string, price, priceDistance float64) (over bool) {
 	//refreshOrders.lock.Lock()
 	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.lastRefreshPrice == nil || refreshOrders.lastRefreshPrice[market] == nil {
+		return false
+	}
+	d, _ := time.ParseDuration("-601s")
+	timeLine := util.GetNow().Add(d)
+	if refreshOrders.samePriceTime[market][symbol] != nil && refreshOrders.samePriceTime[market][symbol].Before(timeLine) {
+		refreshOrders.lastRefreshPrice[market][symbol] = 0
+		refreshOrders.samePriceTime[market][symbol] = nil
+		refreshOrders.samePriceCount[market][symbol] = 0
 		return false
 	}
 	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance &&
