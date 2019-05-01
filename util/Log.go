@@ -70,10 +70,9 @@ func SocketInfo(message string) {
 		socket, socketInfoFile, _ = initLog(getPath("socketInfo"))
 	}
 	i := socketCount % flushLines
+	socketLines[i-1] = message
 	if i == flushLines-1 {
-		go println(socket, socketLines)
-	} else {
-		socketLines[i] = message
+		go printLines(socket, socketLines)
 	}
 	socketCount++
 }
@@ -86,10 +85,9 @@ func Info(message string) {
 		info, infoFile, _ = initLog(getPath("info"))
 	}
 	i := infoCount % flushLines
+	infoLines[i-1] = message
 	if i == flushLines-1 {
 		go printLines(info, infoLines)
-	} else {
-		infoLines[i] = message
 	}
 	infoCount++
 }
@@ -102,10 +100,9 @@ func Notice(message string) {
 		notice, noticeFile, _ = initLog(getPath("notice"))
 	}
 	i := noticeCount % flushLines
+	noticeLines[i-1] = message
 	if i == flushLines-1 {
 		go printLines(notice, noticeLines)
-	} else {
-		noticeLines[i] = message
 	}
 	noticeCount++
 }
