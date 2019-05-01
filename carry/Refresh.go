@@ -13,7 +13,7 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var refreshing = false
 
-var syncRefresh = make(chan interface{}, 2)
+var syncRefresh = make(chan interface{}, 20)
 var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var canceling = false
