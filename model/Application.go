@@ -59,7 +59,6 @@ var AppSettings []Setting
 var AppConfig *Config
 var AppMarkets = NewMarkets()
 var AppAccounts = NewAccounts()
-
 var HuobiAccountId = ""
 
 //var CarryChannel = make(chan Carry, 50)

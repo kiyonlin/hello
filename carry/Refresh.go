@@ -20,6 +20,7 @@ var canceling = false
 type RefreshOrders struct {
 	lock             sync.Mutex
 	samePriceCount   map[string]map[string]int             // market - symbol - continue same price count
+	samePriceTime    map[string]map[string]*time.Time      // market - symbol - first time new order price
 	bidOrders        map[string]map[string][]*model.Order  // market - symbol - orders
 	askOrders        map[string]map[string][]*model.Order  // market - symbol - orders
 	lastBid          map[string]map[string]*model.Order    // market - symbol - order
@@ -60,16 +61,28 @@ func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, p
 	if refreshOrders.lastRefreshPrice == nil {
 		refreshOrders.lastRefreshPrice = make(map[string]map[string]float64)
 		refreshOrders.samePriceCount = make(map[string]map[string]int)
+		refreshOrders.samePriceTime = make(map[string]map[string]*time.Time)
 	}
 	if refreshOrders.lastRefreshPrice[market] == nil {
 		refreshOrders.lastRefreshPrice[market] = make(map[string]float64)
 		refreshOrders.samePriceCount[market] = make(map[string]int)
+		refreshOrders.samePriceTime[market] = make(map[string]*time.Time)
+	}
+
+	d, _ := time.ParseDuration("-600s")
+	timeLine := util.GetNow().Add(d)
+	if refreshOrders.samePriceTime[market][symbol] != nil && refreshOrders.samePriceTime[market][symbol].Before(timeLine) {
+		refreshOrders.lastRefreshPrice[market][symbol] = 0
+		refreshOrders.samePriceTime[market][symbol] = nil
+		refreshOrders.samePriceCount[market][symbol] = 0
 	}
 	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance {
 		refreshOrders.samePriceCount[market][symbol]++
 	} else {
 		refreshOrders.lastRefreshPrice[market][symbol] = price
 		refreshOrders.samePriceCount[market][symbol] = 0
+		samePriceTime := util.GetNow()
+		refreshOrders.samePriceTime[market][symbol] = &samePriceTime
 	}
 }
 
