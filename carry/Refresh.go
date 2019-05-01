@@ -18,7 +18,7 @@ var refreshOrders = &RefreshOrders{}
 var canceling = false
 
 type RefreshOrders struct {
-	lock             sync.Mutex
+	//lock             sync.Mutex
 	samePriceCount   map[string]map[string]int             // market - symbol - continue same price count
 	samePriceTime    map[string]map[string]*time.Time      // market - symbol - first time new order price
 	bidOrders        map[string]map[string][]*model.Order  // market - symbol - orders
@@ -31,8 +31,8 @@ type RefreshOrders struct {
 }
 
 func (refreshOrders *RefreshOrders) SetLastChancePrice(market, symbol string, price float64) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.lastChancePrice == nil {
 		refreshOrders.lastChancePrice = make(map[string]map[string]float64)
 	}
@@ -43,8 +43,8 @@ func (refreshOrders *RefreshOrders) SetLastChancePrice(market, symbol string, pr
 }
 
 func (refreshOrders *RefreshOrders) CheckLastChancePrice(market, symbol string, price, priceDistance float64) (same bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.lastChancePrice == nil || refreshOrders.lastChancePrice[market] == nil {
 		return false
 	}
@@ -56,8 +56,8 @@ func (refreshOrders *RefreshOrders) CheckLastChancePrice(market, symbol string, 
 }
 
 func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, price, priceDistance float64) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.lastRefreshPrice == nil {
 		refreshOrders.lastRefreshPrice = make(map[string]map[string]float64)
 		refreshOrders.samePriceCount = make(map[string]map[string]int)
@@ -68,13 +68,13 @@ func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, p
 		refreshOrders.samePriceCount[market] = make(map[string]int)
 		refreshOrders.samePriceTime[market] = make(map[string]*time.Time)
 	}
-	//d, _ := time.ParseDuration("-600s")
-	//timeLine := util.GetNow().Add(d)
-	//if refreshOrders.samePriceTime[market][symbol] != nil && refreshOrders.samePriceTime[market][symbol].Before(timeLine) {
-	//	refreshOrders.lastRefreshPrice[market][symbol] = 0
-	//	refreshOrders.samePriceTime[market][symbol] = nil
-	//	refreshOrders.samePriceCount[market][symbol] = 0
-	//}
+	d, _ := time.ParseDuration("-600s")
+	timeLine := util.GetNow().Add(d)
+	if refreshOrders.samePriceTime[market][symbol] != nil && refreshOrders.samePriceTime[market][symbol].Before(timeLine) {
+		refreshOrders.lastRefreshPrice[market][symbol] = 0
+		refreshOrders.samePriceTime[market][symbol] = nil
+		refreshOrders.samePriceCount[market][symbol] = 0
+	}
 	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance {
 		refreshOrders.samePriceCount[market][symbol]++
 	} else {
@@ -86,8 +86,8 @@ func (refreshOrders *RefreshOrders) SetLastRefreshPrice(market, symbol string, p
 }
 
 func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string, price, priceDistance float64) (over bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.lastRefreshPrice == nil || refreshOrders.lastRefreshPrice[market] == nil {
 		return false
 	}
@@ -100,8 +100,8 @@ func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string,
 }
 
 func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amountLimit float64) (underLimit bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
 		refreshOrders.amountLimit[market][symbol] == nil {
 		return true
@@ -118,8 +118,8 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 }
 
 func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amountInUsdt float64) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.amountLimit == nil {
 		refreshOrders.amountLimit = make(map[string]map[string]map[int]float64)
 	}
@@ -136,8 +136,8 @@ func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amou
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if orderSide == model.OrderSideSell {
 		if refreshOrders.lastAsk == nil {
 			refreshOrders.lastAsk = make(map[string]map[string]*model.Order)
@@ -159,8 +159,8 @@ func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide strin
 }
 
 func (refreshOrders *RefreshOrders) GetLastOrder(market, symbol, orderSide string) (lastOrder *model.Order) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if orderSide == model.OrderSideSell {
 		if refreshOrders.lastAsk == nil {
 			refreshOrders.lastAsk = make(map[string]map[string]*model.Order)
@@ -183,8 +183,8 @@ func (refreshOrders *RefreshOrders) GetLastOrder(market, symbol, orderSide strin
 }
 
 func (refreshOrders *RefreshOrders) AddRefreshOrders(market, symbol, orderSide string, order *model.Order) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	if orderSide == model.OrderSideBuy {
 		if refreshOrders.bidOrders == nil {
 			refreshOrders.bidOrders = make(map[string]map[string][]*model.Order)
@@ -236,8 +236,8 @@ func (refreshOrders *RefreshOrders) AddRefreshOrders(market, symbol, orderSide s
 }
 
 func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, bidPrice, askPrice float64, process bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	//refreshOrders.lock.Lock()
+	//defer refreshOrders.lock.Unlock()
 	canceling = true
 	if refreshOrders.askOrders == nil {
 		refreshOrders.askOrders = make(map[string]map[string][]*model.Order)
