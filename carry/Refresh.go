@@ -6,7 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"sync"
+	//"sync"
 	"time"
 )
 
