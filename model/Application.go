@@ -245,6 +245,9 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		}
 		return
 	case Binance: // xrp_btc: xrpbtc@depth5
+		if symbol == `bch_usdt` {
+			symbol = `bchabc_usdt`
+		}
 		return strings.ToLower(strings.Replace(symbol, "_", "", 1)) + `@depth5`
 	case Fcoin:
 		if subType == SubscribeDeal {
