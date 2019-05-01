@@ -341,8 +341,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
 		refreshAble = false
-	}
-	if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
+	} else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
 		refreshAble = false
 	}
 	if refreshAble {
@@ -439,7 +438,6 @@ func doRefresh(market, symbol, accountType, orderSide, orderReverse string, pric
 	placeRefreshOrder(orderSide, market, symbol, accountType, price, amount)
 	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
 	placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
-	refreshOrders.SetLastChancePrice(market, symbol, 0)
 }
 
 func receiveRefresh(market, symbol string, price, priceDistance, amount float64) {
