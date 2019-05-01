@@ -91,6 +91,8 @@ func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string,
 		refreshOrders.lastRefreshPrice[market][symbol] = 0
 		refreshOrders.samePriceTime[market][symbol] = nil
 		refreshOrders.samePriceCount[market][symbol] = 0
+		util.Notice(fmt.Sprintf(`[10min clear]%s %f %d`,
+			symbol, price, refreshOrders.samePriceTime[market][symbol].Unix()))
 		return false
 	}
 	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance &&
