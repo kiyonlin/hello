@@ -10,12 +10,6 @@ var socket, info, notice *log.Logger
 var socketInfoFile, infoFile, noticeFile *os.File
 var socketCount, infoCount, noticeCount int
 
-const flushLines = 1
-
-var socketLines = make([]string, flushLines)
-var infoLines = make([]string, flushLines)
-var noticeLines = make([]string, flushLines)
-
 const logRoot = "./log/"
 
 func initLog(path string) (*log.Logger, *os.File, error) {
@@ -69,11 +63,7 @@ func SocketInfo(message string) {
 		}
 		socket, socketInfoFile, _ = initLog(getPath("socketInfo"))
 	}
-	i := socketCount % flushLines
-	socketLines[i] = message
-	if i == flushLines-1 {
-		go printLines(socket, socketLines)
-	}
+	socket.Println(message)
 	socketCount++
 }
 
@@ -84,11 +74,7 @@ func Info(message string) {
 		}
 		info, infoFile, _ = initLog(getPath("info"))
 	}
-	i := infoCount % flushLines
-	infoLines[i] = message
-	if i == flushLines-1 {
-		go printLines(info, infoLines)
-	}
+	info.Println(message)
 	infoCount++
 }
 
@@ -99,16 +85,6 @@ func Notice(message string) {
 		}
 		notice, noticeFile, _ = initLog(getPath("notice"))
 	}
-	i := noticeCount % flushLines
-	noticeLines[i] = message
-	if i == flushLines-1 {
-		go printLines(notice, noticeLines)
-	}
+	notice.Println(message)
 	noticeCount++
-}
-
-func printLines(logger *log.Logger, lines []string) {
-	for _, value := range lines {
-		logger.Println(value)
-	}
 }

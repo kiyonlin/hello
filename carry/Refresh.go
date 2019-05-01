@@ -432,6 +432,7 @@ func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
 }
 
 func doRefresh(market, symbol, accountType, orderSide, orderReverse string, price, priceDistance, amount float64) {
+	go receiveRefresh(market, symbol, price, priceDistance, amount)
 	LastRefreshTime[market] = util.GetNowUnixMillion()
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
@@ -439,28 +440,9 @@ func doRefresh(market, symbol, accountType, orderSide, orderReverse string, pric
 	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
 	placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
 	refreshOrders.SetLastChancePrice(market, symbol, 0)
+}
 
-	//refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
-	//refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
-	//if refreshLastBid != nil && refreshLastAsk != nil {
-	//	if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusWorking {
-	//		priceInSymbol, _ := api.GetPrice(symbol)
-	//		refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
-	//		refreshOrders.SetLastChancePrice(market, symbol, price)
-	//		refreshOrders.SetLastRefreshPrice(market, symbol, price, priceDistance)
-	//	} else {
-	//		if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
-	//			api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
-	//		} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
-	//			api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
-	//		}
-	//		if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
-	//			time.Sleep(time.Second * 2)
-	//			api.RefreshAccount(market)
-	//		}
-	//	}
-	//}
-
+func receiveRefresh(market, symbol string, price, priceDistance, amount float64) {
 	for true {
 		util.Notice(fmt.Sprintf(`[before receive]%s %s %f %f`, market, symbol, price, amount))
 		_ = <-syncRefresh
