@@ -50,7 +50,7 @@ func (refreshOrders *RefreshOrders) CheckLastChancePrice(market, symbol string, 
 		return false
 	}
 	if math.Abs(refreshOrders.lastChancePrice[market][symbol]-price) < priceDistance {
-		util.Notice(fmt.Sprintf(`[jump 1] %s %s %f`, market, symbol, price))
+		util.Info(fmt.Sprintf(`[jump 1] %s %s %f`, market, symbol, price))
 		return true
 	}
 	return false
@@ -94,7 +94,7 @@ func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string,
 	}
 	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance &&
 		refreshOrders.samePriceCount[market][symbol] >= 2 {
-		util.Notice(fmt.Sprintf(`[jump 2] %s %s %f`, market, symbol, price))
+		util.Info(fmt.Sprintf(`[jump 2] %s %s %f`, market, symbol, price))
 		return true
 	}
 	return false
@@ -444,9 +444,9 @@ func doRefresh(market, symbol, accountType, orderSide, orderReverse string, pric
 
 func receiveRefresh(market, symbol string, price, priceDistance, amount float64) {
 	for true {
-		util.Notice(fmt.Sprintf(`[before receive]%s %s %f %f`, market, symbol, price, amount))
+		//util.Notice(fmt.Sprintf(`[before receive]%s %s %f %f`, market, symbol, price, amount))
 		_ = <-syncRefresh
-		util.Notice(fmt.Sprintf(`[after receive]%s %s %f %f`, market, symbol, price, amount))
+		//util.Notice(fmt.Sprintf(`[after receive]%s %s %f %f`, market, symbol, price, amount))
 		refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
 		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
 		if refreshLastBid != nil && refreshLastAsk != nil {
@@ -479,8 +479,8 @@ func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amo
 	}
 	order.Function = model.FunctionRefresh
 	refreshOrders.SetLastOrder(market, symbol, orderSide, order)
-	util.Notice(fmt.Sprintf(`[before send]%s %s %f %f`, orderSide, symbol, price, amount))
+	//util.Notice(fmt.Sprintf(`[before send]%s %s %f %f`, orderSide, symbol, price, amount))
 	syncRefresh <- struct{}{}
-	util.Notice(fmt.Sprintf(`[before send]%s %s %f %f`, orderSide, symbol, price, amount))
+	//util.Notice(fmt.Sprintf(`[after send]%s %s %f %f`, orderSide, symbol, price, amount))
 	model.AppDB.Save(order)
 }
