@@ -12,7 +12,7 @@ import (
 
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var refreshing = false
-var syncRefresh = make(chan interface{}, 10)
+var syncRefresh = make(chan interface{}, 9)
 var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var canceling = false
@@ -478,7 +478,7 @@ func doRefresh(market, symbol, accountType, orderSide, orderReverse string, pric
 	placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
 	refreshOrders.SetLastChancePrice(market, symbol, 0)
 	for true {
-		<-syncRefresh
+		_ = <-syncRefresh
 		refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
 		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
 		if refreshLastBid != nil && refreshLastAsk != nil {
@@ -511,6 +511,6 @@ func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amo
 	}
 	order.Function = model.FunctionRefresh
 	refreshOrders.SetLastOrder(market, symbol, orderSide, order)
-	model.AppDB.Save(order)
 	syncRefresh <- struct{}{}
+	model.AppDB.Save(order)
 }
