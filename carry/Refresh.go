@@ -12,7 +12,8 @@ import (
 
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var refreshing = false
-var syncRefresh = make(chan interface{}, 9)
+
+//var syncRefresh = make(chan interface{}, 9)
 var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var canceling = false
@@ -477,30 +478,53 @@ func doRefresh(market, symbol, accountType, orderSide, orderReverse string, pric
 	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
 	placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
 	refreshOrders.SetLastChancePrice(market, symbol, 0)
-	for true {
-		_ = <-syncRefresh
-		refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
-		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
-		if refreshLastBid != nil && refreshLastAsk != nil {
-			if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusWorking {
-				priceInSymbol, _ := api.GetPrice(symbol)
-				refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
-				refreshOrders.SetLastChancePrice(market, symbol, price)
-				refreshOrders.SetLastRefreshPrice(market, symbol, price, priceDistance)
-			} else {
-				if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
-					api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
-				} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
-					api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
-				}
-				if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
-					time.Sleep(time.Second * 2)
-					api.RefreshAccount(market)
-				}
+
+	refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
+	refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
+	if refreshLastBid != nil && refreshLastAsk != nil {
+		if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusWorking {
+			priceInSymbol, _ := api.GetPrice(symbol)
+			refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
+			refreshOrders.SetLastChancePrice(market, symbol, price)
+			refreshOrders.SetLastRefreshPrice(market, symbol, price, priceDistance)
+		} else {
+			if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
+				api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
+			} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
+				api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
 			}
-			break
+			if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
+				time.Sleep(time.Second * 2)
+				api.RefreshAccount(market)
+			}
 		}
 	}
+
+	//
+	//for true {
+	//	_ = <-syncRefresh
+	//	refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
+	//	refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
+	//	if refreshLastBid != nil && refreshLastAsk != nil {
+	//		if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusWorking {
+	//			priceInSymbol, _ := api.GetPrice(symbol)
+	//			refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
+	//			refreshOrders.SetLastChancePrice(market, symbol, price)
+	//			refreshOrders.SetLastRefreshPrice(market, symbol, price, priceDistance)
+	//		} else {
+	//			if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
+	//				api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
+	//			} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
+	//				api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
+	//			}
+	//			if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
+	//				time.Sleep(time.Second * 2)
+	//				api.RefreshAccount(market)
+	//			}
+	//		}
+	//		break
+	//	}
+	//}
 }
 
 func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amount float64) {
@@ -511,6 +535,6 @@ func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amo
 	}
 	order.Function = model.FunctionRefresh
 	refreshOrders.SetLastOrder(market, symbol, orderSide, order)
-	syncRefresh <- struct{}{}
+	//syncRefresh <- struct{}{}
 	model.AppDB.Save(order)
 }

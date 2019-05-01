@@ -12,6 +12,24 @@ import (
 	"time"
 )
 
+func Test_chan(t *testing.T) {
+	c := make(chan int, 3)
+	go func() {
+		for i := 0; i < 10; i = i + 1 {
+			c <- i
+		}
+		//close(c)
+	}()
+	for true {
+		//j:=<- c
+		//fmt.Println(j)
+		<-c
+		fmt.Println(`get one`)
+	}
+	fmt.Println("Finished")
+
+}
+
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	err := configor.Load(model.AppConfig, "./config.yml")
