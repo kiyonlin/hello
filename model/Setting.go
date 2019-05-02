@@ -7,6 +7,7 @@ import (
 type CarryHandler func(market, symbol string)
 
 type Setting struct {
+	Valid             bool
 	Function          string
 	Market            string
 	Symbol            string
@@ -19,7 +20,11 @@ type Setting struct {
 	GridAmount        float64
 	GridPriceDistance float64
 	AmountLimit       float64
-	Valid             bool
+	RefreshLimit      float64
+	RefreshLimitLow   float64
+	BinanceDisMin     float64
+	BinanceDisMax     float64
+	RefreshSameTime   int  // 1 stands for same time, otherwise separate
 	ID                uint `gorm:"primary_key"`
 	CreatedAt         time.Time
 	UpdatedAt         time.Time

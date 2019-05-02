@@ -100,18 +100,14 @@ type Config struct {
 	BnbBuy          float64
 	CarryDistance   float64 // carry价差触发条件
 	AmountRate      float64 // 刷单填写数量比率
-	RefreshLimit    float64
-	RefreshLimitLow float64
-	BinanceDisMin   float64
-	BinanceDisMax   float64
 	PreDealDis      float64
 	BinanceOrderDis float64
 	Handle          string // 0 不执行处理程序，1执行处理程序
 	HandleMaker     string
 	HandleRefresh   string
 	HandleGrid      string
+	RefreshSeparate string  // 1:分开下单 0:多线程同时下单
 	SellRate        float64 // fcoin dk 额外卖单下单比例
-	FtMax           float64 // fcoin dk ft上限
 	Mail            string
 	Port            string
 }
@@ -398,11 +394,11 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("minusdt: %f maxusdt: %f \n", config.MinUsdt, config.MaxUsdt)
 	str += fmt.Sprintf("PreDealDis: %f Binance order dis: %f\n", config.PreDealDis, config.BinanceOrderDis)
 	str += fmt.Sprintf("channels: %d \n", config.Channels)
-	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s binanceDis: (%f - %f)\n",
-		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid, config.BinanceDisMin, config.BinanceDisMax)
-	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f ftmax %f RefreshLimit (%f - %f)\n",
-		config.OrderWait, config.AmountRate, config.SellRate, config.FtMax, config.RefreshLimitLow, config.RefreshLimit)
-	str += fmt.Sprintf("between: %d\n", config.Between)
+	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
+		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
+	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f RefreshLimit\n",
+		config.OrderWait, config.AmountRate, config.SellRate)
+	str += fmt.Sprintf("between: %d refreshseparate:%s \n", config.Between, config.RefreshSeparate)
 	return str
 }
 

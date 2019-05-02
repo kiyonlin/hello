@@ -1,6 +1,4 @@
 port: 80
-bnbmin: 20 #价值20usd的bnb
-bnbbuy: 20 #价值20usd的bnb
 amountrate: 0.95
 makeramountrate: 0.1
 orderwait: 3000
@@ -11,12 +9,8 @@ minusdt: 15
 maxusdt: 1500
 inchina: 0
 mail: haoweizh@qq.com
-refreshlimit: 0.02
-refreshlimitlow: 0.0002
-binancedismin: 0.0002
-binancedismax: 0.003
 carrydistance: 0.001
-handle: 1
+handle: 0
 binanceorderdis: 0.0013
 predealdis: 0.0013
 between: 10
@@ -27,17 +21,13 @@ waitrefreshrandom: 4000
 dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=simon password=Boluo160820 sslmode=disable
 #dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=dk password=Boluo160820 sslmode=disable
 env: simon
-#sammi huobi
-#huobikey: 003fe1c2-1a5a12e1-73668e50-6773e
-#huobisecret: 05d114f3-6f455bf3-a640f2c4-06050
+bnbmin: 20 #价值20usd的bnb
+bnbbuy: 20 #价值20usd的bnb
 huobikey: f5be33c8-e44026c8-4db512d3-908b3
 huobisecret: 1826ba5a-022a7442-07a876f8-1075e
 #sammi okex
 okexkey: b90179cb-9a1a-41be-a3c0-3784aaaa5ae2
 okexsecret: FA268A0824C7988E366435F82EF6BAC6
-#simon okex
-#okexkey: f8b9e6ac-dbd6-469e-9b10-4c1efc9d8d4c
-#okexsecret: 66786EDBC5F3230B7943DB520F86B492
 #sammi binance
 binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
 binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
@@ -47,12 +37,5 @@ binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
 # simon fcoin
 fcoinkey: b4f28ad197c64cdbb072328b37c654bd
 fcoinsecret: 588dd6887ac14629bd6e7653d7952938
-#bp fcoin
-#fcoinkey: 8591deef96d14b079ea582f47bc7ed4a
-#fcoinsecret: 1ccd9a3fe67344f0aab6c463a93385dd
-#bitmex test
-#bitmexkey: pS4bU4i2fUlEpdZjGzcjP83h
-#bitmexsecret: yLl0t87-dSbwu_R4mLLIVkNRlI3d7Kr2a9ZgtRDUjbm07GQm
-#bitmex
 bitmexkey: Esp86jOtjFZH4Gprd_cdk4pE
 bitmexsecret: XC-m2-XMOJoX0FBfOcs60qkRprQcFDKMMfTyPpPBWOsKRccE

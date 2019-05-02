@@ -93,12 +93,14 @@ var feeIndex int
 func MaintainTransFee() {
 	for true {
 		d, _ := time.ParseDuration("-48h")
-		timeLine := util.GetNow().Add(d)
+		lastDays2 := util.GetNow().Add(d)
+		d, _ = time.ParseDuration(`-1h`)
+		lastHour := util.GetNow().Add(d)
 		var orders []model.Order
 		for true {
 			model.AppDB.Limit(100).Offset(feeIndex).Where(
 				`fee=? and fee_income=? and date(order_time)>? and status=?`,
-				0, 0, timeLine, model.CarryStatusWorking).Find(&orders)
+				0, 0, lastDays2, model.CarryStatusWorking).Find(&orders)
 			if len(orders) == 0 {
 				break
 			}
@@ -121,6 +123,44 @@ func MaintainTransFee() {
 			}
 		}
 		feeIndex = 0
+		// deal fee check
+		var setting model.Setting
+		symbolEarn := make(map[string]float64)  // symbol - earn
+		symbolInall := make(map[string]float64) // symbol - in all
+		strTime := fmt.Sprintf(`%d-%d-%d %d:%d:%d`, lastHour.Year(), lastHour.Month(), lastHour.Day(),
+			lastHour.Hour(), lastHour.Minute(), lastHour.Second())
+		rows, _ := model.AppDB.Model(&orders).Select(`symbol, order_side,round(sum(fee),4), 
+			round(sum(fee_income),4),round(sum(price*deal_amount)/sum(deal_amount),4),
+			round(sum(price*deal_amount),0)`).
+			Where(`deal_amount>? and status != ? and order_time>?`, 0, `fail`, strTime).
+			Group(`order_side, symbol`).Rows()
+		for rows.Next() {
+			var symbol, side string
+			var fee, feeIncome, price, inAll float64
+			_ = rows.Scan(&symbol, &side, &fee, &feeIncome, &price, &inAll)
+			if side == model.OrderSideBuy {
+				fee = fee * price
+			}
+			if side == model.OrderSideSell {
+				feeIncome = feeIncome * price
+			}
+			symbolEarn[symbol] += feeIncome - fee
+			symbolInall[symbol] += inAll
+		}
+		for key, value := range symbolInall {
+			if value != 0 {
+				rate := symbolEarn[key] / value
+				msg := fmt.Sprintf(`[check fee rate]%s %f %f %f`, key, symbolEarn[key], value, rate)
+				util.Notice(msg)
+				if rate < -0.0001 {
+					_ = util.SendMail(model.AppConfig.Mail, `手续费异常`, msg)
+					model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+						model.Fcoin, key, model.FunctionRefresh).
+						Updates(map[string]interface{}{`refresh_same_time`: `1`})
+					model.LoadSettings()
+				}
+			}
+		}
 		time.Sleep(time.Minute * 5)
 	}
 }

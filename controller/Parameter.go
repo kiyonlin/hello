@@ -56,6 +56,11 @@ func setSymbol(c *gin.Context) {
 	function := c.Query(`function`)
 	strLimit := c.Query(`limit`)
 	parameter := c.Query(`parameter`)
+	binanceDisMin := c.Query(`binancedismin`)
+	binanceDisMax := c.Query(`binancedismax`)
+	refreshLimitLowStr := c.Query(`refreshlimitlow`)
+	refreshLimitStr := c.Query(`refreshlimit`)
+	refreshSameTime := c.Query(`refreshsametime`)
 	valid := false
 	if market == `` || symbol == `` || function == `` {
 		c.String(http.StatusOK, `market symbo function cannot be empty`)
@@ -84,13 +89,38 @@ func setSymbol(c *gin.Context) {
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{`amount_limit`: amountLimit})
 	}
+	if binanceDisMin != `` {
+		bDisMin, _ := strconv.ParseFloat(binanceDisMin, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`binance_dis_min`: bDisMin})
+	}
+	if binanceDisMax != `` {
+		bDisMax, _ := strconv.ParseFloat(binanceDisMax, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`binance_dis_man`: bDisMax})
+	}
+	if refreshLimitLowStr != `` {
+		refreshLimitLow, _ := strconv.ParseFloat(refreshLimitLowStr, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`refresh_limit_low`: refreshLimitLow})
+	}
+	if refreshLimitStr != `` {
+		refreshLimit, _ := strconv.ParseFloat(refreshLimitStr, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`refresh_limit`: refreshLimit})
+	}
+	if refreshSameTime != `` {
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`refresh_same_time`: refreshSameTime})
+	}
 	rows, _ := model.AppDB.Model(&setting).
-		Select(`market, symbol, function, function_parameter, amount_limit, valid`).Rows()
+		Select(`market, symbol, function, function_parameter, amount_limit, refresh_same_time, valid`).Rows()
 	msg := ``
 	for rows.Next() {
 		valid := false
-		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %f %v \n", market, symbol, function, parameter, amountLimit, valid)
+		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &refreshSameTime, &valid)
+		msg += fmt.Sprintf("%s %s %s %s %f %d %v \n", market, symbol, function, parameter, amountLimit,
+			refreshSameTime, valid)
 	}
 	model.LoadSettings()
 	carry.MaintainMarketChan()
@@ -227,15 +257,66 @@ func GetBalance(c *gin.Context) {
 func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).
-		Select(`market, symbol, function, function_parameter, amount_limit, valid`).Rows()
+		Select(`market, symbol, function, function_parameter, amount_limit, binance_dis_min,
+		binance_dis_max,refresh_limit_low, refresh_limit, refresh_same_time, valid`).Rows()
 	msg := ``
 	for rows.Next() {
-		var market, symbol, function, parameter, amountLimit string
+		var market, symbol, function, parameter, amountLimit, binanceDisMin, binanceDisMax,
+			refreshLimitLow, refreshLimit string
+		var refreshSameTime int
 		valid := false
-		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %s %v \n", market, symbol, function, parameter, amountLimit, valid)
+		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &binanceDisMin, &binanceDisMax,
+			&refreshLimitLow, &refreshLimit, &refreshSameTime, &valid)
+		msg += fmt.Sprintf("%s %s %s %s %s binancedismin:%s binancedismax:%s refreshlimitlow:%s "+
+			"refreshlimit:%s refreshsametime:%d %v \n", market, symbol, function, parameter, amountLimit,
+			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, refreshSameTime, valid)
 	}
 	msg += model.AppConfig.ToString()
+	var orders model.Order
+	rows, _ = model.AppDB.Model(&orders).Select(`date(order_time), symbol, order_side,count(*),
+		round(sum(fee),4) as fee, round(sum(fee_income),4) as fee_income,
+		round(sum(price*deal_amount)/sum(deal_amount),4) as price,round(sum(price*deal_amount),0) as inall`).
+		Where(`deal_amount>? and status != ?`, 0, `fail`).
+		Group(`order_side, symbol, date(order_time)`).Order(`date(order_time) desc`).
+		Limit(12).Rows()
+	for rows.Next() {
+		var date, symbol, side, count string
+		var fee, feeIncome, price, inAll float64
+		_ = rows.Scan(&date, &symbol, &side, &count, &fee, &feeIncome, &price, &inAll)
+		if side == model.OrderSideBuy {
+			fee = fee * price
+		}
+		if side == model.OrderSideSell {
+			feeIncome = feeIncome * price
+		}
+		rate := 0.0
+		if inAll > 0 {
+			rate = 10000 * (feeIncome - fee) / inAll
+		}
+		msg += fmt.Sprintf("%s %s %s %s pay: %f earn: %f amount:%f rate(万分之):%f\n",
+			date, symbol, side, count, fee, feeIncome, inAll, rate)
+	}
+	d, _ := time.ParseDuration(`-1h`)
+	lastHour := util.GetNow().Add(d)
+	strTime := fmt.Sprintf(`%d-%d-%d %d:%d:%d`, lastHour.Year(), lastHour.Month(), lastHour.Day(),
+		lastHour.Hour(), lastHour.Minute(), lastHour.Second())
+	rows, _ = model.AppDB.Model(&orders).Select(`symbol, order_side,round(sum(fee),4), 
+			round(sum(fee_income),4),round(sum(price*deal_amount)/sum(deal_amount),4),
+			round(sum(price*deal_amount),0)`).
+		Where(`deal_amount>? and status != ? and order_time>?`, 0, `fail`, strTime).
+		Group(`order_side, symbol`).Rows()
+	for rows.Next() {
+		var symbol, side string
+		var fee, feeIncome, price, inAll float64
+		_ = rows.Scan(&symbol, &side, &fee, &feeIncome, &price, &inAll)
+		if side == model.OrderSideBuy {
+			fee = fee * price
+		}
+		if side == model.OrderSideSell {
+			feeIncome = feeIncome * price
+		}
+	}
+
 	c.String(http.StatusOK, msg)
 }
 
@@ -279,29 +360,17 @@ func SetParameters(c *gin.Context) {
 	if handleGrid != `` {
 		model.AppConfig.HandleGrid = handleGrid
 	}
-	refreshLimit := c.Query(`refreshlimit`)
-	if len(refreshLimit) > 0 {
-		model.AppConfig.RefreshLimit, _ = strconv.ParseFloat(refreshLimit, 64)
+	refreshSeparate := c.Query(`refreshseparate`)
+	if len(refreshSeparate) > 0 {
+		model.AppConfig.RefreshSeparate = refreshSeparate
 	}
 	between := c.Query(`between`)
 	if len(between) > 0 {
 		model.AppConfig.Between, _ = strconv.ParseInt(between, 10, 64)
 	}
-	refreshLimitLow := c.Query(`refreshlimitlow`)
-	if len(refreshLimitLow) > 0 {
-		model.AppConfig.RefreshLimitLow, _ = strconv.ParseFloat(refreshLimitLow, 64)
-	}
-	ethUsdtDis := c.Query(`predealdis`)
-	if len(ethUsdtDis) > 0 {
-		model.AppConfig.PreDealDis, _ = strconv.ParseFloat(ethUsdtDis, 64)
-	}
-	binanceDisMin := c.Query(`binancedismin`)
-	if len(binanceDisMin) > 0 {
-		model.AppConfig.BinanceDisMin, _ = strconv.ParseFloat(binanceDisMin, 64)
-	}
-	binanceDisMax := c.Query(`binancedismax`)
-	if len(binanceDisMax) > 0 {
-		model.AppConfig.BinanceDisMax, _ = strconv.ParseFloat(binanceDisMax, 64)
+	predealdis := c.Query(`predealdis`)
+	if len(predealdis) > 0 {
+		model.AppConfig.PreDealDis, _ = strconv.ParseFloat(predealdis, 64)
 	}
 	binanceOrderDis := c.Query(`binanceorderdis`)
 	if len(binanceOrderDis) > 0 {
@@ -318,10 +387,6 @@ func SetParameters(c *gin.Context) {
 	sellRate := c.Query(`sellrate`)
 	if sellRate != `` {
 		model.AppConfig.SellRate, _ = strconv.ParseFloat(sellRate, 64)
-	}
-	ftMax := c.Query(`ftmax`)
-	if ftMax != `` {
-		model.AppConfig.FtMax, _ = strconv.ParseFloat(ftMax, 64)
 	}
 	carryDistance := c.Query("carrydistance")
 	if len(strings.TrimSpace(carryDistance)) > 0 {

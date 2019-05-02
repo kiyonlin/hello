@@ -221,9 +221,9 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	if model.AppMarkets.BidAsks != nil && model.AppMarkets.BidAsks[symbol] != nil &&
 		model.AppMarkets.BidAsks[symbol][market] != nil {
 		bidAsk := model.AppMarkets.BidAsks[symbol][market]
-		if len(bidAsk.Bids) > 0 && orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.999 {
+		if len(bidAsk.Bids) > 0 && orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.998 {
 			valid = true
-		} else if len(bidAsk.Asks) > 0 && orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.001 {
+		} else if len(bidAsk.Asks) > 0 && orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.002 {
 			valid = true
 		}
 	}

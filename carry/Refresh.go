@@ -340,7 +340,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 		askPrice, bidAmount, askAmount))
-	refreshAble, orderSide, orderReverse, orderPrice := preDeal(market, symbol, binancePrice, amount)
+	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
 		refreshAble = false
@@ -349,25 +349,26 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	if refreshAble {
 		point2 := time.Now().UnixNano()
-		doRefresh(market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice, priceDistance, amount)
+		doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
+			priceDistance, amount)
 		point3 := time.Now().UnixNano()
 		util.Notice(fmt.Sprintf(`[speed]%d %d price:%f %f amount:%f %f`,
 			point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
 	}
 }
 
-func preDeal(market, symbol string, binancePrice, amount float64) (
+func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount float64) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	tick := model.AppMarkets.BidAsks[symbol][market]
 	if math.Abs(tick.Bids[0].Price-tick.Asks[0].Price) > priceDistance*1.1 {
 		return false, "", "", 0
 	}
-	if tick.Bids[0].Price > binancePrice*(1+model.AppConfig.BinanceDisMin) &&
-		tick.Bids[0].Price < binancePrice*(1+model.AppConfig.BinanceDisMax) {
+	if tick.Bids[0].Price > binancePrice*(1+setting.BinanceDisMin) &&
+		tick.Bids[0].Price < binancePrice*(1+setting.BinanceDisMax) {
 		if tick.Bids[0].Price < binancePrice*(1+model.AppConfig.PreDealDis) {
-			if tick.Bids[0].Amount < amount*model.AppConfig.RefreshLimit &&
-				tick.Bids[0].Amount > amount*model.AppConfig.RefreshLimitLow &&
+			if tick.Bids[0].Amount < amount*setting.RefreshLimit &&
+				tick.Bids[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Asks[0].Amount > 2*tick.Bids[0].Amount {
 				return true, model.OrderSideBuy, model.OrderSideSell, tick.Bids[0].Price
 			}
@@ -377,8 +378,7 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price > orderPrice-0.1*priceDistance; i++ {
 					bidAmount += tick.Bids[i].Amount
 				}
-				if bidAmount < amount*model.AppConfig.RefreshLimit &&
-					bidAmount > amount*model.AppConfig.RefreshLimitLow &&
+				if bidAmount < amount*setting.RefreshLimit && bidAmount > amount*setting.RefreshLimitLow &&
 					tick.Asks[0].Amount > 2*bidAmount {
 					if orderPrice > tick.Bids[0].Price {
 						util.Notice(fmt.Sprintf(`[price error] order price: %f bid1: %f`,
@@ -390,11 +390,11 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 			}
 		}
 	}
-	if tick.Asks[0].Price > binancePrice*(1-model.AppConfig.BinanceDisMax) &&
-		tick.Asks[0].Price < binancePrice*(1-model.AppConfig.BinanceDisMin) {
+	if tick.Asks[0].Price > binancePrice*(1-setting.BinanceDisMax) &&
+		tick.Asks[0].Price < binancePrice*(1-setting.BinanceDisMin) {
 		if tick.Asks[0].Price > binancePrice*(1-model.AppConfig.PreDealDis) {
-			if tick.Asks[0].Amount < amount*model.AppConfig.RefreshLimit &&
-				tick.Asks[0].Amount > amount*model.AppConfig.RefreshLimitLow &&
+			if tick.Asks[0].Amount < amount*setting.RefreshLimit &&
+				tick.Asks[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Bids[0].Amount > 2*tick.Asks[0].Amount {
 				return true, model.OrderSideSell, model.OrderSideBuy, tick.Asks[0].Price
 			}
@@ -404,8 +404,7 @@ func preDeal(market, symbol string, binancePrice, amount float64) (
 				for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price < orderPrice+0.1*priceDistance; i++ {
 					askAmount += tick.Asks[i].Amount
 				}
-				if askAmount < amount*model.AppConfig.RefreshLimit &&
-					askAmount > amount*model.AppConfig.RefreshLimitLow &&
+				if askAmount < amount*setting.RefreshLimit && askAmount > amount*setting.RefreshLimitLow &&
 					tick.Bids[0].Amount > 2*askAmount {
 					if orderPrice < tick.Asks[0].Price {
 						util.Notice(fmt.Sprintf(`[price error] order price: %f ask1 %f`, orderPrice, tick.Asks[0].Price))
@@ -433,14 +432,20 @@ func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
 	return true, (binanceBidAsks.Bids[0].Price + binanceBidAsks.Asks[0].Price) / 2
 }
 
-func doRefresh(market, symbol, accountType, orderSide, orderReverse string, price, priceDistance, amount float64) {
+func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, orderReverse string,
+	price, priceDistance, amount float64) {
 	go receiveRefresh(market, symbol, price, priceDistance, amount)
 	LastRefreshTime[market] = util.GetNowUnixMillion()
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
-	placeRefreshOrder(orderSide, market, symbol, accountType, price, amount)
-	time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
-	placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
+	if setting.RefreshSameTime == 1 {
+		go placeRefreshOrder(orderSide, market, symbol, accountType, price, amount)
+		go placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
+	} else {
+		placeRefreshOrder(orderSide, market, symbol, accountType, price, amount)
+		time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
+		placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
+	}
 }
 
 func receiveRefresh(market, symbol string, price, priceDistance, amount float64) {
