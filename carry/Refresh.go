@@ -425,7 +425,7 @@ func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
 		return false, 0
 	}
 	delay := util.GetNowUnixMillion() - int64(binanceBidAsks.Ts)
-	if delay > 2000 {
+	if delay > 5000 {
 		util.Notice(fmt.Sprintf(`[binance %s]delay %d`, symbol, delay))
 		return false, 0
 	}
