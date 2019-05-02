@@ -97,7 +97,7 @@ func setSymbol(c *gin.Context) {
 	if binanceDisMax != `` {
 		bDisMax, _ := strconv.ParseFloat(binanceDisMax, 64)
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-			market, symbol, function).Updates(map[string]interface{}{`binance_dis_man`: bDisMax})
+			market, symbol, function).Updates(map[string]interface{}{`binance_dis_max`: bDisMax})
 	}
 	if refreshLimitLowStr != `` {
 		refreshLimitLow, _ := strconv.ParseFloat(refreshLimitLowStr, 64)
