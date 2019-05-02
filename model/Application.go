@@ -282,6 +282,8 @@ func getSymbolWithSplit(original, split string) (symbol string) {
 		moneyCurrency = "eth"
 	} else if strings.Contains(original, `ft1808`) && strings.LastIndex(original, `ft1808`)+6 == len(original) {
 		moneyCurrency = `ft1808`
+	} else if strings.Contains(original, `pax`) && strings.LastIndex(original, `pax`)+3 == len(original) {
+		moneyCurrency = `pax`
 	}
 	return original[0:strings.LastIndex(original, moneyCurrency)] + split + moneyCurrency
 }
