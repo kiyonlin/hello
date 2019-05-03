@@ -323,7 +323,7 @@ var ProcessRefresh = func(market, symbol string) {
 	bidAmount := model.AppMarkets.BidAsks[symbol][market].Bids[0].Amount
 	askAmount := model.AppMarkets.BidAsks[symbol][market].Asks[0].Amount
 	amount := math.Min(leftBalance, rightBalance/askPrice) * model.AppConfig.AmountRate
-	priceDistance := 0.9 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	binanceResult, binancePrice := getBinanceInfo(symbol)
 	if delay > 200 || !binanceResult {
@@ -335,25 +335,31 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	haveAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
-	if !haveAmount {
-		return
-	}
-	util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
-		askPrice, bidAmount, askAmount))
-	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
-	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, priceDistance) {
-		refreshOrders.SetLastChancePrice(market, symbol, 0)
-		refreshAble = false
-	} else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, priceDistance) {
-		refreshAble = false
-	}
-	if refreshAble {
-		point2 := time.Now().UnixNano()
-		doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
-			priceDistance, amount)
-		point3 := time.Now().UnixNano()
-		util.Notice(fmt.Sprintf(`[speed]%d %d price:%f %f amount:%f %f`,
-			point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
+	if haveAmount {
+		if model.AppConfig.Env == `simon` {
+			cancelHang(market, symbol)
+			return
+		}
+		util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
+			askPrice, bidAmount, askAmount))
+		refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
+		if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
+			refreshOrders.SetLastChancePrice(market, symbol, 0)
+			refreshAble = false
+		} else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, 0.9*priceDistance) {
+			refreshAble = false
+		}
+		if refreshAble {
+			point2 := time.Now().UnixNano()
+			doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
+				0.9*priceDistance, amount)
+			point3 := time.Now().UnixNano()
+			util.Notice(fmt.Sprintf(`[speed]%d %d price:%f %f amount:%f %f`,
+				point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
+		}
+	} else if model.AppConfig.Env == `simon` {
+		bidAsk := model.AppMarkets.BidAsks[symbol][market]
+		hang(market, symbol, bidAsk)
 	}
 }
 

@@ -56,18 +56,36 @@ var ProcessHang = func(market, symbol string) {
 	}
 	hangStatus.setHanging(symbol, true)
 	defer hangStatus.setHanging(symbol, false)
-	setting := model.GetSetting(model.FunctionHang, market, symbol)
 	bidAsk := model.AppMarkets.BidAsks[symbol][market]
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
 		return
 	}
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	if delay > 500 {
+	if delay > 200 {
 		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	hang(market, symbol, bidAsk)
+}
+
+func cancelHang(market, symbol string) {
+	bids, asks := hangStatus.getHangOrders(symbol)
+	for _, value := range bids {
+		api.MustCancel(market, symbol, value.OrderId, true)
+		util.Notice(fmt.Sprintf(`[cancel hang]%s %s`, market, symbol))
+		time.Sleep(time.Millisecond * 20)
+	}
+	for _, value := range asks {
+		api.MustCancel(market, symbol, value.OrderId, true)
+		util.Notice(fmt.Sprintf(`[cancel hang]%s %s`, market, symbol))
+		time.Sleep(time.Millisecond * 20)
+	}
+}
+
+func hang(market, symbol string, bidAsk *model.BidAsk) {
 	now := util.GetNow()
+	setting := model.GetSetting(model.FunctionHang, market, symbol)
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	d, _ := time.ParseDuration("-3610s")
 	lastMin60 := now.Add(d)
 	d, _ = time.ParseDuration(`-1800`)
@@ -112,8 +130,8 @@ var ProcessHang = func(market, symbol string) {
 	hangStatus.setHangOrders(symbol, newBids, newAsks)
 	api.RefreshAccount(market)
 }
-
 func hangAsks(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
+	util.Notice(fmt.Sprintf(`[hang] asks % %s`, market, symbol))
 	if free > (1-model.AppConfig.AmountRate)*froze {
 		if bidAsk.Bids[0].Amount*2 < bidAsk.Asks[0].Amount {
 			placeHangOrder(orders, model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price, free/3)
@@ -127,6 +145,7 @@ func hangAsks(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string
 }
 
 func hangBids(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
+	util.Notice(fmt.Sprintf(`[hang] bids % %s`, market, symbol))
 	if free > (1-model.AppConfig.AmountRate)*froze {
 		if bidAsk.Asks[0].Amount*2 < bidAsk.Bids[0].Amount {
 			placeHangOrder(orders, model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price, free/3)
