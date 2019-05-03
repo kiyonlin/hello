@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var hangingOrders = make([]*model.Order, 0)
+var hangingOrders = make(map[string][]*model.Order, 0) // symbol - order list
 var hanging = false
 
 func setHanging(value bool) {
@@ -35,7 +35,7 @@ var ProcessHang = func(market, symbol string) {
 }
 
 func cancelHang(market, symbol string) {
-	for _, value := range hangingOrders {
+	for _, value := range hangingOrders[symbol] {
 		api.MustCancel(market, symbol, value.OrderId, true)
 		util.Notice(fmt.Sprintf(`[cancel hang]%s %s`, market, symbol))
 		time.Sleep(time.Millisecond * 20)
@@ -51,7 +51,7 @@ func hang(market, symbol string, bidAsk *model.BidAsk) {
 	d, _ = time.ParseDuration(`-1800s`)
 	lastMin30 := now.Add(d)
 	newHangingOrders := make([]*model.Order, 0)
-	for _, value := range hangingOrders {
+	for _, value := range hangingOrders[symbol] {
 		if value.OrderSide == model.OrderSideBuy {
 			if value.Price-bidAsk.Bids[0].Price > 0.1*priceDistance {
 				continue // 已经成交
@@ -74,7 +74,7 @@ func hang(market, symbol string, bidAsk *model.BidAsk) {
 			}
 		}
 	}
-	hangingOrders = newHangingOrders
+	hangingOrders[symbol] = newHangingOrders
 	leftFree, rightFree, leftFroze, rightFroze, err := getBalance(market, symbol, setting.AccountType)
 	price := bidAsk.Asks[0].Price
 	if err == nil && leftFroze*price+rightFroze <
@@ -123,6 +123,6 @@ func placeHangOrder(orderSide, market, symbol string, price, amount float64) {
 	if order.Status != model.CarryStatusFail && order.OrderId != `` {
 		model.AppDB.Save(order)
 		time.Sleep(time.Millisecond * 20)
-		hangingOrders = append(hangingOrders, order)
+		hangingOrders[symbol] = append(hangingOrders[symbol], order)
 	}
 }
