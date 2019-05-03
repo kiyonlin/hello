@@ -62,8 +62,8 @@ var ProcessHang = func(market, symbol string) {
 		return
 	}
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	if delay > 200 {
-		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
+	if delay > 500 {
+		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
