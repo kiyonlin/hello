@@ -80,40 +80,36 @@ func hang(market, symbol string, bidAsk *model.BidAsk) {
 	if err == nil && leftFroze*price+rightFroze <
 		((leftFree+leftFroze)*price+rightFree+rightFroze)*model.AppConfig.AmountRate {
 		leftFree = leftFree * 0.99
-		rightFree = rightFree / bidAsk.Bids[0].Price * 0.99
+		rightFree = rightFree / price * 0.99
 		if bidAsk.Bids[0].Amount > bidAsk.Asks[0].Amount {
-			hangBids(bidAsk, market, symbol, rightFree, rightFroze, priceDistance)
-			hangAsks(bidAsk, market, symbol, leftFree, leftFroze, priceDistance)
+			hangBids(bidAsk, market, symbol, rightFree, priceDistance)
+			hangAsks(bidAsk, market, symbol, leftFree, priceDistance)
 		} else {
-			hangAsks(bidAsk, market, symbol, leftFree, leftFroze, priceDistance)
-			hangBids(bidAsk, market, symbol, rightFree, rightFroze, priceDistance)
+			hangAsks(bidAsk, market, symbol, leftFree, priceDistance)
+			hangBids(bidAsk, market, symbol, rightFree, priceDistance)
 		}
 	}
 	api.RefreshAccount(market)
 }
-func hangAsks(bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
-	if free > (1-model.AppConfig.AmountRate)*froze {
-		if bidAsk.Bids[0].Amount*2 < bidAsk.Asks[0].Amount {
-			placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price, free/3)
-			placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+3*priceDistance, free/3)
-			placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+9*priceDistance, free/3)
-		} else {
-			placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+3*priceDistance, free/2)
-			placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+9*priceDistance, free/2)
-		}
+func hangAsks(bidAsk *model.BidAsk, market, symbol string, free, priceDistance float64) {
+	if bidAsk.Bids[0].Amount*2 < bidAsk.Asks[0].Amount {
+		placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price, free/3)
+		placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+3*priceDistance, free/3)
+		placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+9*priceDistance, free/3)
+	} else {
+		placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+3*priceDistance, free/2)
+		placeHangOrder(model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+9*priceDistance, free/2)
 	}
 }
 
-func hangBids(bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
-	if free > (1-model.AppConfig.AmountRate)*froze {
-		if bidAsk.Asks[0].Amount*2 < bidAsk.Bids[0].Amount {
-			placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price, free/3)
-			placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-3*priceDistance, free/3)
-			placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-9*priceDistance, free/3)
-		} else {
-			placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-3*priceDistance, free/2)
-			placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-9*priceDistance, free/2)
-		}
+func hangBids(bidAsk *model.BidAsk, market, symbol string, free, priceDistance float64) {
+	if bidAsk.Asks[0].Amount*2 < bidAsk.Bids[0].Amount {
+		placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price, free/3)
+		placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-3*priceDistance, free/3)
+		placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-9*priceDistance, free/3)
+	} else {
+		placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-3*priceDistance, free/2)
+		placeHangOrder(model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-9*priceDistance, free/2)
 	}
 }
 
