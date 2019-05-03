@@ -338,7 +338,6 @@ var ProcessRefresh = func(market, symbol string) {
 	if haveAmount {
 		if model.AppConfig.Env == `simon` {
 			cancelHang(market, symbol)
-			return
 		}
 		util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))

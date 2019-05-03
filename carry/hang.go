@@ -48,7 +48,7 @@ func hang(market, symbol string, bidAsk *model.BidAsk) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	d, _ := time.ParseDuration("-3610s")
 	lastMin60 := now.Add(d)
-	d, _ = time.ParseDuration(`-1800`)
+	d, _ = time.ParseDuration(`-1800s`)
 	lastMin30 := now.Add(d)
 	newHangingOrders := make([]*model.Order, 0)
 	for _, value := range hangingOrders {
@@ -67,7 +67,8 @@ func hang(market, symbol string, bidAsk *model.BidAsk) {
 				continue
 			}
 			if (value.Price-13*priceDistance-bidAsk.Asks[0].Price > 0.1*priceDistance &&
-				value.OrderTime.After(lastMin30)) || value.OrderTime.Before(lastMin60) {
+				value.OrderTime.After(lastMin30)) ||
+				value.OrderTime.Before(lastMin60) {
 				api.MustCancel(market, symbol, value.OrderId, true)
 			} else {
 				newHangingOrders = append(newHangingOrders, value)
