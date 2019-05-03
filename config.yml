@@ -18,8 +18,8 @@ handlerefresh: 1
 handlegrid: 1
 handlemaker: 1
 waitrefreshrandom: 4000
-#dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=simon password=Boluo160820 sslmode=disable
-dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=dk password=Boluo160820 sslmode=disable
+dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=simon password=Boluo160820 sslmode=disable
+#dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=dk password=Boluo160820 sslmode=disable
 env: simon
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb
@@ -32,10 +32,10 @@ okexsecret: FA268A0824C7988E366435F82EF6BAC6
 binancekey: v5Z6FuiPMmBxFtUjWWrEIkD8RCjyL8Q136YoRVkJWRYfrdIQuYTfDqprCrE0FK1S
 binancesecret: 2QdNzj7NSlejGZWnhBES1MWWHWPA5ciw7AxukXB8q4dAO95u5kUwpBVGRjgEuL3L
 #dk fcoin
-fcoinkey: 1101ff04791e44ff88a4d77e74270443
-fcoinsecret: 0cea49360e6f45a8978a9c62578f9c6b
+#fcoinkey: 1101ff04791e44ff88a4d77e74270443
+#fcoinsecret: 0cea49360e6f45a8978a9c62578f9c6b
 # simon fcoin
-#fcoinkey: b4f28ad197c64cdbb072328b37c654bd
-#fcoinsecret: 588dd6887ac14629bd6e7653d7952938
+fcoinkey: b4f28ad197c64cdbb072328b37c654bd
+fcoinsecret: 588dd6887ac14629bd6e7653d7952938
 bitmexkey: Esp86jOtjFZH4Gprd_cdk4pE
 bitmexsecret: XC-m2-XMOJoX0FBfOcs60qkRprQcFDKMMfTyPpPBWOsKRccE
