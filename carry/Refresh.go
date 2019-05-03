@@ -96,7 +96,7 @@ func (refreshOrders *RefreshOrders) CheckLastRefreshPrice(market, symbol string,
 		return false
 	}
 	if math.Abs(refreshOrders.lastRefreshPrice[market][symbol]-price) < priceDistance &&
-		refreshOrders.samePriceCount[market][symbol] >= 2 {
+		refreshOrders.samePriceCount[market][symbol] >= 1 {
 		util.Info(fmt.Sprintf(`[jump 2] %s %s %f`, market, symbol, price))
 		return true
 	}
@@ -366,52 +366,55 @@ func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount
 	}
 	if tick.Bids[0].Price > binancePrice*(1+setting.BinanceDisMin) &&
 		tick.Bids[0].Price < binancePrice*(1+setting.BinanceDisMax) {
-		if tick.Bids[0].Price < binancePrice*(1+model.AppConfig.PreDealDis) {
+		if tick.Bids[0].Price <= binancePrice*(1+model.AppConfig.BinanceOrderDis) {
 			if tick.Bids[0].Amount < amount*setting.RefreshLimit &&
 				tick.Bids[0].Amount > amount*setting.RefreshLimitLow &&
-				tick.Asks[0].Amount > 2*tick.Bids[0].Amount {
+				tick.Asks[0].Amount > 2*tick.Bids[0].Amount &&
+				tick.Asks[0].Amount < model.AppConfig.PreDealDis*tick.Bids[0].Amount {
 				return true, model.OrderSideBuy, model.OrderSideSell, tick.Bids[0].Price
 			}
-		} else if tick.Bids[0].Price > binancePrice*(1+model.AppConfig.PreDealDis) {
-			for orderPrice = binancePrice * (1 + model.AppConfig.BinanceOrderDis); orderPrice < tick.Bids[0].Price+0.1*priceDistance; orderPrice += priceDistance {
-				bidAmount := 0.0
-				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price > orderPrice-0.1*priceDistance; i++ {
-					bidAmount += tick.Bids[i].Amount
+		} else {
+			bidAmount := tick.Bids[0].Amount
+			orderPrice = tick.Bids[0].Price - priceDistance
+			if len(tick.Bids) > 1 && tick.Bids[0].Price-tick.Bids[1].Price < 1.1*priceDistance {
+				bidAmount += tick.Bids[1].Amount
+			}
+			if bidAmount < amount*setting.RefreshLimit && bidAmount > amount*setting.RefreshLimitLow &&
+				tick.Asks[0].Amount > 2*tick.Bids[0].Amount &&
+				tick.Asks[0].Amount < model.AppConfig.PreDealDis*tick.Bids[0].Amount {
+				if orderPrice > tick.Bids[0].Price {
+					util.Notice(fmt.Sprintf(`[price error] order price: %f bid1: %f`,
+						orderPrice, tick.Bids[0].Price))
+					orderPrice = tick.Bids[0].Price
 				}
-				if bidAmount < amount*setting.RefreshLimit && bidAmount > amount*setting.RefreshLimitLow &&
-					tick.Asks[0].Amount > 2*bidAmount {
-					if orderPrice > tick.Bids[0].Price {
-						util.Notice(fmt.Sprintf(`[price error] order price: %f bid1: %f`,
-							orderPrice, tick.Bids[0].Price))
-						orderPrice = tick.Bids[0].Price
-					}
-					return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
-				}
+				return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
 			}
 		}
 	}
 	if tick.Asks[0].Price > binancePrice*(1-setting.BinanceDisMax) &&
 		tick.Asks[0].Price < binancePrice*(1-setting.BinanceDisMin) {
-		if tick.Asks[0].Price > binancePrice*(1-model.AppConfig.PreDealDis) {
+		if tick.Asks[0].Price >= binancePrice*(1-model.AppConfig.BinanceOrderDis) {
 			if tick.Asks[0].Amount < amount*setting.RefreshLimit &&
 				tick.Asks[0].Amount > amount*setting.RefreshLimitLow &&
-				tick.Bids[0].Amount > 2*tick.Asks[0].Amount {
+				tick.Bids[0].Amount > 2*tick.Asks[0].Amount &&
+				tick.Bids[0].Amount < model.AppConfig.PreDealDis*tick.Asks[0].Amount {
 				return true, model.OrderSideSell, model.OrderSideBuy, tick.Asks[0].Price
 			}
-		} else if tick.Asks[0].Price < binancePrice*(1-model.AppConfig.PreDealDis) {
-			for orderPrice = binancePrice * (1 - model.AppConfig.BinanceOrderDis); orderPrice > tick.Asks[0].Price-0.1*priceDistance; orderPrice -= priceDistance {
-				askAmount := 0.0
-				for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price < orderPrice+0.1*priceDistance; i++ {
-					askAmount += tick.Asks[i].Amount
+		} else {
+			askAmount := tick.Asks[0].Amount
+			orderPrice = tick.Asks[0].Price + priceDistance
+			if len(tick.Asks) > 1 && tick.Asks[1].Price-tick.Asks[0].Price < 1.1*priceDistance {
+				askAmount += tick.Asks[1].Amount
+			}
+			if askAmount < amount*setting.RefreshLimit && askAmount > amount*setting.RefreshLimitLow &&
+				tick.Bids[0].Amount > 2*tick.Asks[0].Amount &&
+				tick.Bids[0].Amount < model.AppConfig.PreDealDis*tick.Asks[0].Amount {
+				if orderPrice < tick.Asks[0].Price {
+					util.Notice(fmt.Sprintf(`[price error] order price: %f ask1 %f`,
+						orderPrice, tick.Asks[0].Price))
+					orderPrice = tick.Asks[0].Price
 				}
-				if askAmount < amount*setting.RefreshLimit && askAmount > amount*setting.RefreshLimitLow &&
-					tick.Bids[0].Amount > 2*askAmount {
-					if orderPrice < tick.Asks[0].Price {
-						util.Notice(fmt.Sprintf(`[price error] order price: %f ask1 %f`, orderPrice, tick.Asks[0].Price))
-						orderPrice = tick.Asks[0].Price
-					}
-					return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
-				}
+				return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
 			}
 		}
 	}
@@ -456,19 +459,23 @@ func receiveRefresh(market, symbol string, price, priceDistance, amount float64)
 		refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
 		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
 		if refreshLastBid != nil && refreshLastAsk != nil {
-			if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusWorking {
+			if refreshLastBid.Status == model.CarryStatusWorking &&
+				refreshLastAsk.Status == model.CarryStatusWorking {
 				priceInSymbol, _ := api.GetPrice(symbol)
 				refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
 				refreshOrders.SetLastChancePrice(market, symbol, price)
 				refreshOrders.SetLastRefreshPrice(market, symbol, price, priceDistance)
 			} else {
-				if refreshLastBid.Status == model.CarryStatusWorking && refreshLastAsk.Status == model.CarryStatusFail {
+				if refreshLastBid.Status == model.CarryStatusWorking &&
+					refreshLastAsk.Status == model.CarryStatusFail {
 					api.MustCancel(refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
-				} else if refreshLastAsk.Status == model.CarryStatusWorking && refreshLastBid.Status == model.CarryStatusFail {
+				} else if refreshLastAsk.Status == model.CarryStatusWorking &&
+					refreshLastBid.Status == model.CarryStatusFail {
 					api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
 				}
+				time.Sleep(time.Second)
 				if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
-					time.Sleep(time.Second * 2)
+					time.Sleep(time.Second * 1)
 					api.RefreshAccount(market)
 				}
 			}
