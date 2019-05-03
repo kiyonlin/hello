@@ -6,47 +6,37 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"strconv"
-	"strings"
-	"sync"
 	"time"
 )
 
 var hangStatus = HangStatus{}
 
 type HangStatus struct {
-	lock         sync.Mutex
-	hanging      map[string]bool         // symbol - *time
-	lastHangTime map[string]*time.Time   // symbol - *time
-	bid          map[string]*model.Order // symbol - *order
-	ask          map[string]*model.Order // symbol - *order
+	hanging map[string]bool // symbol - *time
+	//lastHangTime map[string]*time.Time   // symbol - *time
+	bid map[string][]*model.Order // symbol - *orders
+	ask map[string][]*model.Order // symbol - *orders
 }
 
-func (hangStatus *HangStatus) getHangOrders(symbol string) (bid, ask *model.Order) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
+func (hangStatus *HangStatus) getHangOrders(symbol string) (bid, ask []*model.Order) {
 	if hangStatus.bid == nil || hangStatus.ask == nil {
 		return nil, nil
 	}
 	return hangStatus.bid[symbol], hangStatus.ask[symbol]
 }
 
-func (hangStatus *HangStatus) setHangOrders(symbol string, bid, ask *model.Order) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
+func (hangStatus *HangStatus) setHangOrders(symbol string, bid, ask []*model.Order) {
 	if hangStatus.bid == nil {
-		hangStatus.bid = make(map[string]*model.Order)
+		hangStatus.bid = make(map[string][]*model.Order)
 	}
 	if hangStatus.ask == nil {
-		hangStatus.ask = make(map[string]*model.Order)
+		hangStatus.ask = make(map[string][]*model.Order)
 	}
 	hangStatus.bid[symbol] = bid
 	hangStatus.ask[symbol] = ask
 }
 
 func (hangStatus *HangStatus) getHanging(symbol string) bool {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
 	if hangStatus.hanging == nil {
 		return false
 	}
@@ -54,74 +44,10 @@ func (hangStatus *HangStatus) getHanging(symbol string) bool {
 }
 
 func (hangStatus *HangStatus) setHanging(symbol string, value bool) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
 	if hangStatus.hanging == nil {
 		hangStatus.hanging = make(map[string]bool)
 	}
 	hangStatus.hanging[symbol] = value
-}
-
-func (hangStatus *HangStatus) getLastHangTime(symbol string) (lasthangTime *time.Time) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
-	if hangStatus.lastHangTime == nil {
-		return nil
-	}
-	return hangStatus.lastHangTime[symbol]
-}
-
-func (hangStatus *HangStatus) setLastHangTime(symbol string, hangTime *time.Time) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
-	if hangStatus.lastHangTime == nil {
-		hangStatus.lastHangTime = make(map[string]*time.Time)
-	}
-	hangStatus.lastHangTime[symbol] = hangTime
-}
-
-// 暂停刷单，撤上次挂单，等待3秒，查可用余额，预留刷单资金，剩余的挂单，启动刷单
-func rehang(market, symbol string, midPrice float64, accountType string, hangDis float64, reserveAmount float64) {
-	model.AppConfig.HandleRefresh = `0`
-	bid, ask := hangStatus.getHangOrders(symbol)
-	if bid != nil && bid.OrderId != `` {
-		api.MustCancel(market, symbol, bid.OrderId, true)
-	}
-	if ask != nil && ask.OrderId != `` {
-		api.MustCancel(market, symbol, ask.OrderId, true)
-	}
-	time.Sleep(time.Second * 3)
-	api.RefreshAccount(market)
-	hangStatus.setHangOrders(symbol, nil, nil)
-	left, right, _, _, err := getBalance(market, symbol, accountType)
-	if err != nil || midPrice == 0 {
-		return
-	}
-	minAmount := math.Min(left, right/midPrice)
-	minAmount = math.Min(minAmount, reserveAmount)
-	for i := 0; i < 3; i++ {
-		bid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
-			midPrice*(1-hangDis), (right/midPrice)-minAmount)
-		if bid != nil && bid.Status == model.CarryStatusWorking && bid.OrderId != `` {
-			bid.Function = model.FunctionHang
-			model.AppDB.Save(bid)
-			break
-		}
-	}
-	for i := 0; i < 3; i++ {
-		ask = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
-			midPrice*(1+hangDis), left-minAmount)
-		if ask != nil && ask.Status == model.CarryStatusWorking && ask.OrderId != `` {
-			ask.Function = model.FunctionHang
-			model.AppDB.Save(ask)
-			break
-		}
-	}
-	now := util.GetNow()
-	hangStatus.setLastHangTime(symbol, &now)
-	hangStatus.setHangOrders(symbol, bid, ask)
-	model.AppConfig.HandleRefresh = `1`
-	util.Notice(fmt.Sprintf(`[rehang]%s %s midprice %f left %f right %f`, market, symbol, midPrice, left, right))
 }
 
 var ProcessHang = func(market, symbol string) {
@@ -130,11 +56,6 @@ var ProcessHang = func(market, symbol string) {
 	}
 	hangStatus.setHanging(symbol, true)
 	defer hangStatus.setHanging(symbol, false)
-	now := util.GetNow()
-	if now.Hour() == 0 && now.Minute() == 0 && now.Second() < 10 {
-		hangStatus.setLastHangTime(symbol, nil)
-		return
-	}
 	setting := model.GetSetting(model.FunctionHang, market, symbol)
 	bidAsk := model.AppMarkets.BidAsks[symbol][market]
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
@@ -145,20 +66,86 @@ var ProcessHang = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[delay too long] %d`, delay))
 		return
 	}
-	params := strings.Split(setting.FunctionParameter, `_`)
-	if len(params) != 3 {
-		util.Notice(fmt.Sprintf(`[param wrong format] %s %s %s`, market, symbol, setting.FunctionParameter))
-	}
-	hangDis, _ := strconv.ParseFloat(params[0], 64)
-	rehangDis, _ := strconv.ParseFloat(params[1], 64)
-	reserveAmount, _ := strconv.ParseFloat(params[2], 64)
-	bid, ask := hangStatus.getHangOrders(symbol)
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	now := util.GetNow()
 	d, _ := time.ParseDuration("-3610s")
-	timeLine := now.Add(d)
-	lastHang := hangStatus.getLastHangTime(symbol)
-	if (bid != nil && bidAsk.Bids[0].Price*(1-rehangDis) < bid.Price) ||
-		(ask != nil && bidAsk.Asks[0].Price*(1+rehangDis) > ask.Price) || lastHang == nil || lastHang.Before(timeLine) {
-		price := (bidAsk.Bids[0].Price + bidAsk.Asks[0].Price) / 2
-		rehang(market, symbol, price, setting.AccountType, hangDis, reserveAmount)
+	lastMin60 := now.Add(d)
+	d, _ = time.ParseDuration(`-1800`)
+	lastMin30 := now.Add(d)
+	newBids := make([]*model.Order, 0)
+	newAsks := make([]*model.Order, 0)
+	bids, asks := hangStatus.getHangOrders(symbol)
+	for _, value := range bids {
+		if value.Price-bidAsk.Bids[0].Price > 0.1*priceDistance {
+			continue // 已经成交
+		}
+		if (bidAsk.Bids[0].Price-13*priceDistance-value.Price > 0.1*priceDistance &&
+			value.OrderTime.After(lastMin30)) || value.OrderTime.Before(lastMin60) {
+			api.MustCancel(market, symbol, value.OrderId, true)
+		} else {
+			newBids = append(newBids, value)
+		}
+	}
+	for _, value := range asks {
+		if bidAsk.Asks[0].Price-value.Price > 0.1*priceDistance {
+			continue
+		}
+		if (value.Price-13*priceDistance-bidAsk.Asks[0].Price > 0.1*priceDistance &&
+			value.OrderTime.After(lastMin30)) || value.OrderTime.Before(lastMin60) {
+			api.MustCancel(market, symbol, value.OrderId, true)
+		} else {
+			newAsks = append(newAsks, value)
+		}
+	}
+	leftFree, rightFree, leftFroze, rightFroze, err := getBalance(market, symbol, setting.AccountType)
+	leftFree = leftFree * model.AppConfig.AmountRate
+	rightFree = rightFree * model.AppConfig.AmountRate
+	if err == nil {
+		if bidAsk.Bids[0].Amount > bidAsk.Asks[0].Amount {
+			hangBids(newBids, bidAsk, market, symbol, rightFree, rightFroze, priceDistance)
+			hangAsks(newAsks, bidAsk, market, symbol, leftFree, leftFroze, priceDistance)
+		} else {
+			hangAsks(newAsks, bidAsk, market, symbol, leftFree, leftFroze, priceDistance)
+			hangBids(newBids, bidAsk, market, symbol, rightFree, rightFroze, priceDistance)
+		}
+	}
+	hangStatus.setHangOrders(symbol, newBids, newAsks)
+	api.RefreshAccount(market)
+}
+
+func hangAsks(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
+	if free > (1-model.AppConfig.AmountRate)*froze {
+		if bidAsk.Bids[0].Amount*2 < bidAsk.Asks[0].Amount {
+			placeHangOrder(orders, model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price, free/3)
+			placeHangOrder(orders, model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+3*priceDistance, free/3)
+			placeHangOrder(orders, model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+9*priceDistance, free/3)
+		} else {
+			placeHangOrder(orders, model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+3*priceDistance, free/2)
+			placeHangOrder(orders, model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price+9*priceDistance, free/2)
+		}
+	}
+}
+
+func hangBids(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
+	if free > (1-model.AppConfig.AmountRate)*froze {
+		if bidAsk.Asks[0].Amount*2 < bidAsk.Bids[0].Amount {
+			placeHangOrder(orders, model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price, free/3)
+			placeHangOrder(orders, model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-3*priceDistance, free/3)
+			placeHangOrder(orders, model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-9*priceDistance, free/3)
+		} else {
+			placeHangOrder(orders, model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-3*priceDistance, free/2)
+			placeHangOrder(orders, model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price-9*priceDistance, free/2)
+		}
+	}
+}
+
+func placeHangOrder(orders []*model.Order, orderSide, market, symbol string, price, amount float64) {
+	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
+	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
+		setting.AccountType, price, amount)
+	if order.Status != model.CarryStatusFail && order.OrderId != `` {
+		orders = append(orders, order)
+		model.AppDB.Save(order)
+		time.Sleep(time.Millisecond * 20)
 	}
 }
