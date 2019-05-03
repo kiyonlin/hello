@@ -40,6 +40,7 @@ func cancelHang(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[cancel hang]%s %s`, market, symbol))
 		time.Sleep(time.Millisecond * 20)
 	}
+	hangingOrders[symbol] = nil
 }
 
 func hang(market, symbol string, bidAsk *model.BidAsk) {
