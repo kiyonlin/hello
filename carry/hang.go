@@ -99,7 +99,7 @@ var ProcessHang = func(market, symbol string) {
 	}
 	leftFree, rightFree, leftFroze, rightFroze, err := getBalance(market, symbol, setting.AccountType)
 	leftFree = leftFree * model.AppConfig.AmountRate
-	rightFree = rightFree * model.AppConfig.AmountRate
+	rightFree = rightFree / bidAsk.Bids[0].Price * model.AppConfig.AmountRate
 	if err == nil {
 		if bidAsk.Bids[0].Amount > bidAsk.Asks[0].Amount {
 			hangBids(newBids, bidAsk, market, symbol, rightFree, rightFroze, priceDistance)
