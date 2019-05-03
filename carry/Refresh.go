@@ -442,7 +442,7 @@ func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, o
 		go placeRefreshOrder(orderSide, market, symbol, accountType, price, amount)
 		go placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
 	} else {
-		placeRefreshOrder(orderSide, market, symbol, accountType, price, amount)
+		placeRefreshOrder(orderSide, market, symbol, accountType, price, amount*0.9999)
 		time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
 		placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
 	}
