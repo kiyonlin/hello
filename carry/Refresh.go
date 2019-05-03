@@ -358,6 +358,7 @@ var ProcessRefresh = func(market, symbol string) {
 				point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
 		}
 	} else if model.AppConfig.Env == `simon` {
+		util.Notice(fmt.Sprintf(`[hang] %s %s`, market, symbol))
 		bidAsk := model.AppMarkets.BidAsks[symbol][market]
 		hang(market, symbol, bidAsk)
 	}

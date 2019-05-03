@@ -131,7 +131,6 @@ func hang(market, symbol string, bidAsk *model.BidAsk) {
 	api.RefreshAccount(market)
 }
 func hangAsks(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
-	util.Notice(fmt.Sprintf(`[hang] asks % %s`, market, symbol))
 	if free > (1-model.AppConfig.AmountRate)*froze {
 		if bidAsk.Bids[0].Amount*2 < bidAsk.Asks[0].Amount {
 			placeHangOrder(orders, model.OrderSideSell, market, symbol, bidAsk.Asks[0].Price, free/3)
@@ -145,7 +144,6 @@ func hangAsks(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string
 }
 
 func hangBids(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string, free, froze, priceDistance float64) {
-	util.Notice(fmt.Sprintf(`[hang] bids % %s`, market, symbol))
 	if free > (1-model.AppConfig.AmountRate)*froze {
 		if bidAsk.Asks[0].Amount*2 < bidAsk.Bids[0].Amount {
 			placeHangOrder(orders, model.OrderSideBuy, market, symbol, bidAsk.Bids[0].Price, free/3)
