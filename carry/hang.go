@@ -140,7 +140,7 @@ func hangBids(orders []*model.Order, bidAsk *model.BidAsk, market, symbol string
 }
 
 func placeHangOrder(orders []*model.Order, orderSide, market, symbol string, price, amount float64) {
-	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
+	setting := model.GetSetting(model.FunctionHang, market, symbol)
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
 		setting.AccountType, price, amount)
 	if order.Status != model.CarryStatusFail && order.OrderId != `` {
