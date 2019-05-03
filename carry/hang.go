@@ -6,7 +6,6 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"strconv"
 	"time"
 )
 
@@ -75,10 +74,11 @@ func hang(market, symbol string, bidAsk *model.BidAsk) {
 			}
 		}
 	}
-	all, _ := strconv.ParseFloat(setting.FunctionParameter, 64)
 	hangingOrders = newHangingOrders
 	leftFree, rightFree, leftFroze, rightFroze, err := getBalance(market, symbol, setting.AccountType)
-	if err == nil && leftFroze+rightFroze < all*model.AppConfig.AmountRate {
+	price := bidAsk.Asks[0].Price
+	if err == nil && leftFroze*price+rightFroze <
+		((leftFree+leftFroze)*price+rightFree+rightFroze)*model.AppConfig.AmountRate {
 		leftFree = leftFree * 0.99
 		rightFree = rightFree / bidAsk.Bids[0].Price * 0.99
 		if bidAsk.Bids[0].Amount > bidAsk.Asks[0].Amount {
