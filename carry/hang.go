@@ -21,7 +21,7 @@ var ProcessHang = func(market, symbol string) {
 		return
 	}
 	setHanging(true)
-	setHanging(false)
+	defer setHanging(false)
 	bidAsk := model.AppMarkets.BidAsks[symbol][market]
 	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
 		return
