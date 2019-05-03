@@ -56,7 +56,7 @@ func GetAmountDecimal(market, symbol string) int {
 		//{"status":3006,"msg":"limit amount decimal: 2"}
 		switch symbol {
 		case `btc_usdt`, `btc_pax`, `eos_usdt`, `eth_btc`, `eth_usdt`, `ltc_usdt`, `ltc_btc`, `ltc_eth`,
-			`etc_usdt`, `etc_btc`, `etc_eth`, `bch_btc`, `bch_usdt`, `bsv_usdt`:
+			`etc_usdt`, `etc_btc`, `etc_eth`, `bch_btc`, `bch_usdt`, `bsv_usdt`, `zec_usdt`, `xlm_usdt`:
 			return 4
 		case `eos_btc`, `xrp_usdt`, `eos_eth`, `iota_usdt`, `ft_usdt`, `ft_btc`, `ft_eth`:
 			return 2
