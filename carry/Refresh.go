@@ -7,8 +7,6 @@ import (
 	"hello/util"
 	"math"
 	"sync"
-
-	//"sync"
 	"time"
 )
 
@@ -339,20 +337,11 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshOrders.getRefreshing(market, symbol) {
 		return
 	}
-	point1 := time.Now().UnixNano()
-	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	refreshOrders.setRefreshing(market, symbol, true)
 	defer refreshOrders.setRefreshing(market, symbol, false)
-	//currencies := strings.Split(symbol, "_")
-	now := util.GetNowUnixMillion()
-	if now-LastRefreshTime[market] > 15000 {
-		util.Notice(`15 seconds past, refresh and return ` + market + symbol)
-		api.RefreshAccount(market)
-		LastRefreshTime[market] = now
-		return
-	}
+	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	leftFree, rightFree, leftFroze, rightFroze, err := getBalance(market, symbol, setting.AccountType)
-	if err != nil || model.AppMarkets.BidAsks[symbol] == nil {
+	if err != nil {
 		return
 	}
 	tick := model.AppMarkets.BidAsks[symbol][market]
@@ -360,24 +349,34 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	bidPrice := tick.Bids[0].Price
-	askPrice := tick.Asks[0].Price
-	bidAmount := tick.Bids[0].Amount
-	askAmount := tick.Asks[0].Amount
-	amount := math.Min(leftFree, rightFree/askPrice) * model.AppConfig.AmountRate
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	binanceResult, binancePrice := getBinanceInfo(symbol)
-	if delay > 200 || !binanceResult {
-		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
-		return
-	}
-	if canceling {
-		util.Notice(`[refreshing waiting for canceling]`)
-		return
-	}
 	haveAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
 	if haveAmount {
+		now := util.GetNowUnixMillion()
+		if now-LastRefreshTime[market] > 15000 {
+			util.Notice(`15 seconds past, refresh and return ` + market + symbol)
+			api.RefreshAccount(market)
+			LastRefreshTime[market] = now
+			return
+		}
+		if model.AppMarkets.BidAsks[symbol] == nil {
+			return
+		}
+		bidPrice := tick.Bids[0].Price
+		askPrice := tick.Asks[0].Price
+		bidAmount := tick.Bids[0].Amount
+		askAmount := tick.Asks[0].Amount
+		amount := math.Min(leftFree, rightFree/askPrice) * model.AppConfig.AmountRate
+		priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+		delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+		binanceResult, binancePrice := getBinanceInfo(symbol)
+		if delay > 200 || !binanceResult {
+			util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+			return
+		}
+		if canceling {
+			util.Notice(`[refreshing waiting for canceling]`)
+			return
+		}
 		util.Info(fmt.Sprintf(`[depth %s] price %f %f amount %f %f`, symbol, bidPrice,
 			askPrice, bidAmount, askAmount))
 		refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
@@ -393,15 +392,11 @@ var ProcessRefresh = func(market, symbol string) {
 				api.RefreshAccount(market)
 				return
 			}
-			point2 := time.Now().UnixNano()
 			doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
 				0.9*priceDistance, amount)
-			point3 := time.Now().UnixNano()
 			if !refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit) {
 				time.Sleep(time.Second * 2)
 			}
-			util.Notice(fmt.Sprintf(`[speed]%d %d price:%f %f amount:%f %f`,
-				point2-point1, point3-point2, bidPrice, askPrice, bidAmount, askAmount))
 		}
 	} else {
 		needCancel := validRefreshHang(market, symbol, tick)
