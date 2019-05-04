@@ -97,9 +97,9 @@ func placeHangOrder(orderSide, market, symbol, accountType string, price, amount
 	}
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
 		accountType, price, amount)
+	time.Sleep(time.Millisecond * 20)
 	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
 		model.AppDB.Save(order)
-		time.Sleep(time.Millisecond * 20)
 		hangingOrders := refreshOrders.getRefreshHang(symbol)
 		hangingOrders = append(hangingOrders, order)
 		refreshOrders.setRefreshHang(symbol, hangingOrders)

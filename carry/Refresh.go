@@ -384,6 +384,7 @@ var ProcessRefresh = func(market, symbol string) {
 			return
 		} else {
 			refreshHang(market, symbol, setting.AccountType, leftFree, leftFroze, rightFree, rightFroze, tick)
+			time.Sleep(time.Second * 2)
 			api.RefreshAccount(market)
 		}
 	}
@@ -394,19 +395,24 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 	rightFroze = rightFroze / tick.Asks[0].Price
 	if rightFroze+leftFroze < (leftFree+leftFroze+rightFree+rightFroze)*model.AppConfig.AmountRate {
 		hangingOrders := refreshOrders.getRefreshHang(symbol)
-		ask := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
-			tick.Asks[9].Price, leftFree)
-		if ask != nil && ask.OrderId != `` && ask.Status != model.CarryStatusFail {
-			hangingOrders = append(hangingOrders, ask)
-			model.AppDB.Save(ask)
+		if leftFree*model.AppConfig.AmountRate*tick.Asks[0].Price > 5 {
+			ask := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
+				tick.Asks[9].Price, leftFree*model.AppConfig.AmountRate)
+			if ask != nil && ask.OrderId != `` && ask.Status != model.CarryStatusFail {
+				hangingOrders = append(hangingOrders, ask)
+				model.AppDB.Save(ask)
+			}
 		}
-		bid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
-			tick.Bids[9].Price, rightFree)
-		if bid != nil && bid.OrderId != `` && bid.Status != model.CarryStatusFail {
-			hangingOrders = append(hangingOrders, bid)
-			model.AppDB.Save(bid)
+		time.Sleep(time.Millisecond * 20)
+		if rightFree*model.AppConfig.AmountRate*tick.Asks[0].Price > 5 {
+			bid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
+				tick.Bids[9].Price, rightFree*model.AppConfig.AmountRate)
+			if bid != nil && bid.OrderId != `` && bid.Status != model.CarryStatusFail {
+				hangingOrders = append(hangingOrders, bid)
+				model.AppDB.Save(bid)
+			}
+			refreshOrders.setRefreshHang(symbol, hangingOrders)
 		}
-		refreshOrders.setRefreshHang(symbol, hangingOrders)
 	}
 }
 
