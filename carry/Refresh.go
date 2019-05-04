@@ -435,7 +435,7 @@ func validRefreshHang(market, symbol string, tick *model.BidAsk) (needCancel boo
 	newHangOrders := make([]*model.Order, 0)
 	for _, value := range hangOrders {
 		if value != nil && value.OrderSide == model.OrderSideBuy {
-			if value.Price > tick.Bids[14].Price && value.Price < tick.Bids[4].Price {
+			if value.Price > tick.Bids[14].Price && value.Price < tick.Bids[5].Price {
 				newHangOrders = append(newHangOrders, value)
 			} else {
 				needCancel = true
@@ -443,7 +443,7 @@ func validRefreshHang(market, symbol string, tick *model.BidAsk) (needCancel boo
 			}
 		}
 		if value != nil && value.OrderSide == model.OrderSideSell {
-			if value.Price < tick.Asks[14].Price && value.Price > tick.Asks[4].Price {
+			if value.Price < tick.Asks[14].Price && value.Price > tick.Asks[5].Price {
 				newHangOrders = append(newHangOrders, value)
 			} else {
 				needCancel = true
