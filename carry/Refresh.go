@@ -37,6 +37,9 @@ func (refreshOrders *RefreshOrders) setRefreshHang(symbol string, hangOrders []*
 		refreshOrders.fcoinHang = make(map[string][]*model.Order)
 	}
 	refreshOrders.fcoinHang[symbol] = hangOrders
+	if hangOrders != nil {
+		util.Notice(fmt.Sprintf(`[refresh hang queue]%s %d`, symbol, len(hangOrders)))
+	}
 }
 
 func (refreshOrders *RefreshOrders) getRefreshHang(symbol string) (hangOrders []*model.Order) {
@@ -400,6 +403,7 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 				tick.Asks[9].Price, leftFree*model.AppConfig.AmountRate)
 			if ask != nil && ask.OrderId != `` && ask.Status != model.CarryStatusFail {
 				hangingOrders = append(hangingOrders, ask)
+				ask.OrderType = model.FunctionHang
 				model.AppDB.Save(ask)
 			}
 		}
@@ -409,10 +413,11 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 				tick.Bids[9].Price, rightFree*model.AppConfig.AmountRate)
 			if bid != nil && bid.OrderId != `` && bid.Status != model.CarryStatusFail {
 				hangingOrders = append(hangingOrders, bid)
+				bid.OrderType = model.FunctionHang
 				model.AppDB.Save(bid)
 			}
-			refreshOrders.setRefreshHang(symbol, hangingOrders)
 		}
+		refreshOrders.setRefreshHang(symbol, hangingOrders)
 	}
 }
 

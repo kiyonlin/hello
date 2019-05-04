@@ -15,6 +15,26 @@ func setHanging(value bool) {
 	hanging = value
 }
 
+func getHangingOrders(symbol string) (hanging []*model.Order) {
+	if hangingOrders == nil {
+		hangingOrders = make(map[string][]*model.Order)
+	}
+	if hangingOrders[symbol] == nil {
+		hangingOrders[symbol] = make([]*model.Order, 0)
+	}
+	return hangingOrders[symbol]
+}
+
+func setHangingOrders(symbol string, orders []*model.Order) {
+	if hangingOrders == nil {
+		hangingOrders = make(map[string][]*model.Order)
+	}
+	if hangingOrders[symbol] == nil {
+		hangingOrders[symbol] = make([]*model.Order, 0)
+	}
+	hangingOrders[symbol] = orders
+}
+
 var ProcessHang = func(market, symbol string) {
 	if hanging || model.AppConfig.Handle != `1` {
 		return
@@ -87,7 +107,7 @@ func validHang(market, symbol string, tick *model.BidAsk) (needCancel bool) {
 			}
 		}
 	}
-	refreshOrders.setRefreshHang(symbol, newHangOrders)
+	setHangingOrders(symbol, newHangOrders)
 	return needCancel
 }
 
@@ -99,9 +119,9 @@ func placeHangOrder(orderSide, market, symbol, accountType string, price, amount
 		accountType, price, amount)
 	time.Sleep(time.Millisecond * 20)
 	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
+		order.OrderType = model.FunctionHang
 		model.AppDB.Save(order)
-		hangingOrders := refreshOrders.getRefreshHang(symbol)
-		hangingOrders = append(hangingOrders, order)
-		refreshOrders.setRefreshHang(symbol, hangingOrders)
+		orders := getHangingOrders(symbol)
+		hangingOrders[symbol] = append(orders, order)
 	}
 }
