@@ -5,7 +5,6 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"math"
 	"time"
 )
 
@@ -22,8 +21,12 @@ var ProcessHang = func(market, symbol string) {
 	}
 	setHanging(true)
 	defer setHanging(false)
-	bidAsk := model.AppMarkets.BidAsks[symbol][market]
-	if len(bidAsk.Asks) == 0 || bidAsk.Bids.Len() == 0 {
+	if model.AppMarkets.BidAsks[symbol] == nil {
+		return
+	}
+	tick := model.AppMarkets.BidAsks[symbol][market]
+	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 {
+		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
@@ -32,86 +35,59 @@ var ProcessHang = func(market, symbol string) {
 		return
 	}
 	setting := model.GetSetting(model.FunctionHang, market, symbol)
-	hang(market, symbol, setting.AccountType, bidAsk)
+	if validHang(market, symbol, tick) {
+		time.Sleep(time.Second)
+		api.RefreshAccount(market)
+		return
+	}
+	hang(market, symbol, setting.AccountType, tick)
 }
 
-func cancelHang(market, symbol string) {
-	for _, value := range hangingOrders[symbol] {
-		api.MustCancel(market, symbol, value.OrderId, true)
-		util.Notice(fmt.Sprintf(`[cancel hang]%s %s`, market, symbol))
-		time.Sleep(time.Millisecond * 20)
-	}
-	hangingOrders[symbol] = nil
-}
-
-func hang(market, symbol, accountType string, bidAsk *model.BidAsk) {
-	now := util.GetNow()
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	d, _ := time.ParseDuration("-3610s")
-	//lastMin60 := now.Add(d)
-	d, _ = time.ParseDuration(`-1800s`)
-	lastMin30 := now.Add(d)
-	newHangingOrders := make([]*model.Order, 0)
-	for _, value := range hangingOrders[symbol] {
-		if value.OrderSide == model.OrderSideBuy {
-			if value.Price-bidAsk.Bids[0].Price > 0.1*priceDistance {
-				continue // 已经成交
-			}
-			if bidAsk.Bids[0].Price-13*priceDistance-value.Price > 0.1*priceDistance &&
-				value.OrderTime.After(lastMin30) {
-				api.MustCancel(market, symbol, value.OrderId, true)
-			} else {
-				newHangingOrders = append(newHangingOrders, value)
-			}
-		} else if value.OrderSide == model.OrderSideSell {
-			if bidAsk.Asks[0].Price-value.Price > 0.1*priceDistance {
-				continue
-			}
-			if value.Price-13*priceDistance-bidAsk.Asks[0].Price > 0.1*priceDistance &&
-				value.OrderTime.After(lastMin30) {
-				api.MustCancel(market, symbol, value.OrderId, true)
-			} else {
-				newHangingOrders = append(newHangingOrders, value)
-			}
-		}
-	}
-	hangingOrders[symbol] = newHangingOrders
+func hang(market, symbol, accountType string, tick *model.BidAsk) {
 	leftFree, rightFree, leftFroze, rightFroze, err := getBalance(market, symbol, accountType)
-	price := bidAsk.Asks[0].Price
-	if err == nil && leftFroze*price+rightFroze <
-		((leftFree+leftFroze)*price+rightFree+rightFroze)*model.AppConfig.AmountRate {
-		leftFree = leftFree * 0.99
-		rightFree = rightFree / price * 0.99
-		if bidAsk.Bids[0].Amount > bidAsk.Asks[0].Amount {
-			hangBids(bidAsk, market, symbol, accountType, rightFree, priceDistance)
-			hangAsks(bidAsk, market, symbol, accountType, leftFree, priceDistance)
-		} else {
-			hangAsks(bidAsk, market, symbol, accountType, leftFree, priceDistance)
-			hangBids(bidAsk, market, symbol, accountType, rightFree, priceDistance)
-		}
+	if err != nil {
+		return
 	}
-	api.RefreshAccount(market)
-}
-func hangAsks(bidAsk *model.BidAsk, market, symbol, accountType string, free, priceDistance float64) {
-	if bidAsk.Bids[0].Amount*2 < bidAsk.Asks[0].Amount {
-		placeHangOrder(model.OrderSideSell, market, symbol, accountType, bidAsk.Asks[0].Price, free/3)
-		placeHangOrder(model.OrderSideSell, market, symbol, accountType, bidAsk.Asks[0].Price+3*priceDistance, free/3)
-		placeHangOrder(model.OrderSideSell, market, symbol, accountType, bidAsk.Asks[0].Price+9*priceDistance, free/3)
-	} else {
-		placeHangOrder(model.OrderSideSell, market, symbol, accountType, bidAsk.Asks[0].Price+3*priceDistance, free/2)
-		placeHangOrder(model.OrderSideSell, market, symbol, accountType, bidAsk.Asks[0].Price+9*priceDistance, free/2)
+	rightFree = rightFree / tick.Asks[0].Price
+	rightFroze = rightFroze / tick.Asks[0].Price
+	if rightFroze+leftFroze < (leftFree+leftFroze+rightFree+rightFroze)*model.AppConfig.AmountRate {
+		placeHangOrder(model.OrderSideSell, market, symbol, accountType,
+			tick.Asks[3].Price, leftFree*model.AppConfig.AmountRate/2)
+		placeHangOrder(model.OrderSideSell, market, symbol, accountType,
+			tick.Asks[9].Price, leftFree*model.AppConfig.AmountRate/2)
+		placeHangOrder(model.OrderSideBuy, market, symbol, accountType,
+			tick.Bids[3].Price, rightFree*model.AppConfig.AmountRate/2)
+		placeHangOrder(model.OrderSideBuy, market, symbol, accountType,
+			tick.Bids[9].Price, rightFree*model.AppConfig.AmountRate/2)
 	}
 }
 
-func hangBids(bidAsk *model.BidAsk, market, symbol, accountType string, free, priceDistance float64) {
-	if bidAsk.Asks[0].Amount*2 < bidAsk.Bids[0].Amount {
-		placeHangOrder(model.OrderSideBuy, market, symbol, accountType, bidAsk.Bids[0].Price, free/3)
-		placeHangOrder(model.OrderSideBuy, market, symbol, accountType, bidAsk.Bids[0].Price-3*priceDistance, free/3)
-		placeHangOrder(model.OrderSideBuy, market, symbol, accountType, bidAsk.Bids[0].Price-9*priceDistance, free/3)
-	} else {
-		placeHangOrder(model.OrderSideBuy, market, symbol, accountType, bidAsk.Bids[0].Price-3*priceDistance, free/2)
-		placeHangOrder(model.OrderSideBuy, market, symbol, accountType, bidAsk.Bids[0].Price-9*priceDistance, free/2)
+func validHang(market, symbol string, tick *model.BidAsk) (needCancel bool) {
+	needCancel = false
+	if hangingOrders == nil || hangingOrders[symbol] == nil {
+		return needCancel
 	}
+	newHangOrders := make([]*model.Order, 0)
+	for _, value := range hangingOrders[symbol] {
+		if value != nil && value.OrderSide == model.OrderSideBuy {
+			if value.Price > tick.Bids[14].Price && value.Price < tick.Bids[1].Price {
+				newHangOrders = append(newHangOrders, value)
+			} else {
+				needCancel = true
+				api.MustCancel(market, symbol, value.OrderId, true)
+			}
+		}
+		if value != nil && value.OrderSide == model.OrderSideSell {
+			if value.Price < tick.Asks[14].Price && value.Price > tick.Asks[1].Price {
+				newHangOrders = append(newHangOrders, value)
+			} else {
+				needCancel = true
+				api.MustCancel(market, symbol, value.OrderId, true)
+			}
+		}
+	}
+	refreshOrders.setRefreshHang(symbol, newHangOrders)
+	return needCancel
 }
 
 func placeHangOrder(orderSide, market, symbol, accountType string, price, amount float64) {
@@ -120,9 +96,11 @@ func placeHangOrder(orderSide, market, symbol, accountType string, price, amount
 	}
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
 		accountType, price, amount)
-	if order.Status != model.CarryStatusFail && order.OrderId != `` {
+	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
 		model.AppDB.Save(order)
 		time.Sleep(time.Millisecond * 20)
-		hangingOrders[symbol] = append(hangingOrders[symbol], order)
+		hangingOrders := refreshOrders.getRefreshHang(symbol)
+		hangingOrders = append(hangingOrders, order)
+		refreshOrders.setRefreshHang(symbol, hangingOrders)
 	}
 }
