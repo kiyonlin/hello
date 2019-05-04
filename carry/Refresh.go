@@ -142,7 +142,7 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	return false
 }
 
-func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amountInUsdt float64) {
+func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amountInUsdt, amountLimit float64) {
 	//refreshOrders.lock.Lock()
 	//defer refreshOrders.lock.Unlock()
 	if refreshOrders.amountLimit == nil {
@@ -158,6 +158,9 @@ func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amou
 	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
 	refreshOrders.amountLimit[market][symbol][slotNum] += amountInUsdt
 	util.Notice(fmt.Sprintf(`[+limit amount]%s %s %d %f`, market, symbol, slotNum, amountInUsdt))
+	if refreshOrders.amountLimit[market][symbol][slotNum] > amountLimit {
+		time.Sleep(time.Second * 2)
+	}
 }
 
 func (refreshOrders *RefreshOrders) SetLastOrder(market, symbol, orderSide string, order *model.Order) {
@@ -386,7 +389,12 @@ var ProcessRefresh = func(market, symbol string) {
 			api.RefreshAccount(market)
 			return
 		} else {
-			refreshHang(market, symbol, setting.AccountType, leftFree, leftFroze, rightFree, rightFroze, tick)
+			orders := refreshOrders.getRefreshHang(symbol)
+			if orders == nil || len(orders) == 0 {
+				refreshHang(market, symbol, setting.AccountType, leftFree, leftFroze, rightFree, rightFroze, tick)
+			} else {
+				util.Notice(fmt.Sprintf(`[other hanging]%s %d`, symbol, len(orders)))
+			}
 			time.Sleep(time.Second * 2)
 			api.RefreshAccount(market)
 		}
@@ -538,7 +546,7 @@ func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
 
 func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, orderReverse string,
 	price, priceDistance, amount float64) {
-	go receiveRefresh(market, symbol, price, priceDistance, amount)
+	go receiveRefresh(market, symbol, price, priceDistance, amount, setting.AmountLimit)
 	LastRefreshTime[market] = util.GetNowUnixMillion()
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
@@ -552,7 +560,7 @@ func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, o
 	}
 }
 
-func receiveRefresh(market, symbol string, price, priceDistance, amount float64) {
+func receiveRefresh(market, symbol string, price, priceDistance, amount, amountLimit float64) {
 	for true {
 		//util.Notice(fmt.Sprintf(`[before receive]%s %s %f %f`, market, symbol, price, amount))
 		_ = <-syncRefresh
@@ -563,7 +571,7 @@ func receiveRefresh(market, symbol string, price, priceDistance, amount float64)
 			if refreshLastBid.Status == model.CarryStatusWorking &&
 				refreshLastAsk.Status == model.CarryStatusWorking {
 				priceInSymbol, _ := api.GetPrice(symbol)
-				refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol)
+				refreshOrders.AddRefreshAmount(market, symbol, 2*amount*priceInSymbol, amountLimit)
 				refreshOrders.SetLastChancePrice(market, symbol, price)
 				refreshOrders.SetLastRefreshPrice(market, symbol, price, priceDistance)
 			} else {
