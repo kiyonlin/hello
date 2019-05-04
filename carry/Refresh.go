@@ -387,7 +387,7 @@ var ProcessRefresh = func(market, symbol string) {
 			refreshAble = false
 		}
 		if refreshAble {
-			if cancelRefreshHang(market, symbol) {
+			if model.AppConfig.Env == `simon` && cancelRefreshHang(market, symbol) {
 				time.Sleep(time.Second * 2)
 				api.RefreshAccount(market)
 				return
@@ -398,7 +398,7 @@ var ProcessRefresh = func(market, symbol string) {
 				time.Sleep(time.Second * 2)
 			}
 		}
-	} else {
+	} else if model.AppConfig.Env == `simon` {
 		needCancel := validRefreshHang(market, symbol, tick)
 		if needCancel {
 			util.Notice(fmt.Sprintf(`[hang] %s %s need cancel:%v`, market, symbol, needCancel))
