@@ -384,6 +384,7 @@ var ProcessRefresh = func(market, symbol string) {
 			return
 		} else {
 			refreshHang(market, symbol, setting.AccountType, leftFree, leftFroze, rightFree, rightFroze, tick)
+			api.RefreshAccount(market)
 		}
 	}
 }

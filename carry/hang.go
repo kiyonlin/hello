@@ -41,6 +41,7 @@ var ProcessHang = func(market, symbol string) {
 		return
 	}
 	hang(market, symbol, setting.AccountType, tick)
+	api.RefreshAccount(market)
 }
 
 func hang(market, symbol, accountType string, tick *model.BidAsk) {
