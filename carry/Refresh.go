@@ -31,6 +31,7 @@ type RefreshOrders struct {
 	lastChancePrice  map[string]map[string]float64         // market - symbol - chance price
 	lastRefreshPrice map[string]map[string]float64         // market - symbol - refresh price
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
+	fcoinHanging     map[string]bool                       // symbol - isHanging
 }
 
 func (refreshOrders *RefreshOrders) setRefreshHang(symbol string, hangBid, hangAsk *model.Order) {
@@ -337,6 +338,20 @@ func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refresh
 	refreshOrders.refreshing[market][symbol] = refreshing
 }
 
+func (refreshOrders *RefreshOrders) setFcoinHanging(symbol string, hanging bool) (current bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.fcoinHanging == nil {
+		refreshOrders.fcoinHanging = make(map[string]bool)
+	}
+	if refreshOrders.fcoinHanging[symbol] {
+		return true
+	} else {
+		refreshOrders.fcoinHanging[symbol] = hanging
+		return false
+	}
+}
+
 var ProcessRefresh = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` ||
 		refreshOrders.getRefreshing(market, symbol) {
@@ -345,7 +360,7 @@ var ProcessRefresh = func(market, symbol string) {
 	refreshOrders.setRefreshing(market, symbol, true)
 	defer refreshOrders.setRefreshing(market, symbol, false)
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
-	leftFree, rightFree, leftFroze, rightFroze, err := getBalance(market, symbol, setting.AccountType)
+	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil {
 		return
 	}
@@ -417,19 +432,20 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 	} else {
-		go refreshOrders.refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze, tick)
+		go refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree, tick)
 	}
 }
 
-func (refreshOrders *RefreshOrders) refreshHang(market, symbol, accountType string,
-	hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze float64, tick *model.BidAsk) {
-	refreshOrders.lock.Lock()
-	refreshOrders.lock.Unlock()
+func refreshHang(market, symbol, accountType string,
+	hangRate, amountLimit, leftFree, rightFree float64, tick *model.BidAsk) {
+	if refreshOrders.setFcoinHanging(symbol, true) {
+		return
+	}
+	defer refreshOrders.setFcoinHanging(symbol, false)
 	if hangRate == 0.0 {
 		return
 	}
 	rightFree = rightFree / tick.Asks[0].Price
-	rightFroze = rightFroze / tick.Asks[0].Price
 	needRefresh := false
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if leftFree*hangRate*tick.Asks[0].Price > 5 && hangAsk == nil && tick.Asks[0].Amount > amountLimit {
