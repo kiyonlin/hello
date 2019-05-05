@@ -414,7 +414,7 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 	} else {
-		refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze, tick)
+		go refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze, tick)
 	}
 }
 
@@ -433,7 +433,7 @@ func refreshHang(market, symbol, accountType string,
 			hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 				accountType, tick.Asks[11].Price, leftFree*hangRate)
 			if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
-				hangAsk.OrderType = model.FunctionHang
+				hangAsk.Function = model.FunctionHang
 				model.AppDB.Save(hangAsk)
 			} else {
 				needRefresh = true
@@ -443,7 +443,7 @@ func refreshHang(market, symbol, accountType string,
 			hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 				accountType, tick.Bids[11].Price, rightFree*hangRate)
 			if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
-				hangBid.OrderType = model.FunctionHang
+				hangBid.Function = model.FunctionHang
 				model.AppDB.Save(hangBid)
 			} else {
 				needRefresh = true
@@ -452,7 +452,6 @@ func refreshHang(market, symbol, accountType string,
 		refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 		if needRefresh {
 			api.RefreshAccount(market)
-			time.Sleep(time.Second * 2)
 		}
 	}
 }
@@ -462,7 +461,7 @@ func validRefreshHang(market, symbol string, amountLimit float64, tick *model.Bi
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		if hangBid.Price < tick.Bids[14].Price || hangBid.Price > tick.Bids[6].Price || tick.Bids[0].Amount < amountLimit {
-			util.Notice(fmt.Sprintf(`[cancel hang bid]%s %s %f <bid15:%f >bid6:%f amount:%f`,
+			util.Notice(fmt.Sprintf(`[cancel hang bid]%s %s %f <bid15:%f >bid7:%f amount:%f`,
 				market, symbol, hangBid.Price, tick.Bids[14].Price, tick.Bids[5].Price, tick.Bids[0].Amount))
 			needCancel = true
 			go api.MustCancel(market, symbol, hangBid.OrderId, true)
@@ -498,7 +497,7 @@ func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount
 	result bool, orderSide, reverseSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	tick := model.AppMarkets.BidAsks[symbol][market]
-	if math.Abs(tick.Bids[0].Price-tick.Asks[0].Price) > priceDistance*1.1 {
+	if math.Abs(tick.Bids[0].Price-tick.Asks[0].Price) > priceDistance*1.1 && symbol != `btc_pax` {
 		return false, "", "", 0
 	}
 	if tick.Bids[0].Price > binancePrice*(1+setting.BinanceDisMin) &&
