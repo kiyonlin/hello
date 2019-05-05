@@ -202,9 +202,9 @@ func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
 		msg, _ = responseJson.Get(`msg`).String()
 	}
 	util.Notice(orderId + "fcoin cancel order" + string(responseBody))
-	//if status == 0 || status == 3008 { // 3008代表订单状态已经处于完成
-	//	return true, ``, msg
-	//}
+	if status == 0 { // 3008代表订单状态已经处于完成
+		return true, ``, msg
+	}
 	return false, strconv.FormatInt(int64(status), 10), msg
 }
 

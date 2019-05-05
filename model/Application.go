@@ -398,7 +398,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("channels: %d \n", config.Channels)
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
-	str += fmt.Sprintf("orderwait: %d amountrate: %f sellrate %f\n",
+	str += fmt.Sprintf("orderwait: %d amountrate: %f hangrate %f\n",
 		config.OrderWait, config.AmountRate, config.HangRate)
 	str += fmt.Sprintf("between: %d refreshseparate:%s \n", config.Between, config.RefreshSeparate)
 	return str
