@@ -6,6 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -406,20 +407,23 @@ var ProcessRefresh = func(market, symbol string) {
 			api.RefreshAccount(market)
 			return
 		} else {
-			refreshHang(market, symbol, setting.AccountType, leftFree, leftFroze, rightFree, rightFroze, tick)
+			hangRate, err := strconv.ParseFloat(setting.FunctionParameter, 64)
+			if err == nil && hangRate > 0 {
+				refreshHang(market, symbol, setting.AccountType, leftFree, leftFroze, rightFree, rightFroze, hangRate, tick)
+			}
 		}
 	}
 }
 
-func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightFree, rightFroze float64, tick *model.BidAsk) {
+func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightFree, rightFroze, hangRate float64, tick *model.BidAsk) {
 	rightFree = rightFree / tick.Asks[0].Price
 	rightFroze = rightFroze / tick.Asks[0].Price
 	needRefresh := false
 	if rightFroze+leftFroze < (leftFree+leftFroze+rightFree+rightFroze)*model.AppConfig.AmountRate {
 		hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
-		if leftFree*model.AppConfig.HangRate*tick.Asks[0].Price > 5 && hangAsk == nil {
+		if leftFree*hangRate*tick.Asks[0].Price > 5 && hangAsk == nil {
 			hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
-				tick.Asks[11].Price, leftFree*model.AppConfig.HangRate)
+				tick.Asks[11].Price, leftFree*hangRate)
 			if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
 				hangAsk.OrderType = model.FunctionHang
 				model.AppDB.Save(hangAsk)
@@ -427,9 +431,9 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 				needRefresh = true
 			}
 		}
-		if rightFree*model.AppConfig.HangRate*tick.Asks[0].Price > 5 && hangBid == nil {
+		if rightFree*hangRate*tick.Asks[0].Price > 5 && hangBid == nil {
 			hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
-				tick.Bids[11].Price, rightFree*model.AppConfig.HangRate)
+				tick.Bids[11].Price, rightFree*hangRate)
 			if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
 				hangBid.OrderType = model.FunctionHang
 				model.AppDB.Save(hangBid)

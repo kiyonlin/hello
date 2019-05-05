@@ -106,8 +106,7 @@ type Config struct {
 	HandleMaker     string
 	HandleRefresh   string
 	HandleGrid      string
-	RefreshSeparate string  // 1:分开下单 0:多线程同时下单
-	HangRate        float64 // fcoin dk 额外刷单下单比例
+	RefreshSeparate string // 1:分开下单 0:多线程同时下单
 	Mail            string
 	Port            string
 }
@@ -398,8 +397,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("channels: %d \n", config.Channels)
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
-	str += fmt.Sprintf("orderwait: %d amountrate: %f hangrate %f\n",
-		config.OrderWait, config.AmountRate, config.HangRate)
+	str += fmt.Sprintf("orderwait: %d amountrate: %f\n", config.OrderWait, config.AmountRate)
 	str += fmt.Sprintf("between: %d refreshseparate:%s \n", config.Between, config.RefreshSeparate)
 	return str
 }
