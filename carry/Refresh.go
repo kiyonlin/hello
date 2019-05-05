@@ -346,12 +346,19 @@ var ProcessRefresh = func(market, symbol string) {
 	if err != nil {
 		return
 	}
+	hangRate := 0.0
+	amountLimit := 0.0
+	parameters := strings.Split(setting.FunctionParameter, `_`)
+	if len(parameters) == 2 {
+		hangRate, _ = strconv.ParseFloat(parameters[0], 64)
+		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
+	}
 	tick := model.AppMarkets.BidAsks[symbol][market]
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	if validRefreshHang(market, symbol, tick) {
+	if validRefreshHang(market, symbol, amountLimit, tick) {
 		util.Notice(fmt.Sprintf(`[hang] %s %s need cancel`, market, symbol))
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
@@ -407,18 +414,12 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 	} else {
-		refreshHang(market, symbol, setting, leftFree, leftFroze, rightFree, rightFroze, tick)
+		refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze, tick)
 	}
 }
 
-func refreshHang(market, symbol string, setting *model.Setting, leftFree, leftFroze, rightFree, rightFroze float64, tick *model.BidAsk) {
-	hangRate := 0.0
-	amountLimit := 0.0
-	parameters := strings.Split(setting.FunctionParameter, `_`)
-	if len(parameters) == 2 {
-		hangRate, _ = strconv.ParseFloat(parameters[0], 64)
-		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
-	}
+func refreshHang(market, symbol, accountType string,
+	hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze float64, tick *model.BidAsk) {
 	if hangRate == 0.0 {
 		return
 	}
@@ -430,7 +431,7 @@ func refreshHang(market, symbol string, setting *model.Setting, leftFree, leftFr
 		hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 		if leftFree*hangRate*tick.Asks[0].Price > 5 && hangAsk == nil && tick.Asks[0].Amount > amountLimit {
 			hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				setting.AccountType, tick.Asks[11].Price, leftFree*hangRate)
+				accountType, tick.Asks[11].Price, leftFree*hangRate)
 			if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
 				hangAsk.OrderType = model.FunctionHang
 				model.AppDB.Save(hangAsk)
@@ -440,7 +441,7 @@ func refreshHang(market, symbol string, setting *model.Setting, leftFree, leftFr
 		}
 		if rightFree*hangRate*tick.Asks[0].Price > 5 && hangBid == nil && tick.Bids[0].Amount > amountLimit {
 			hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				setting.AccountType, tick.Bids[11].Price, rightFree*hangRate)
+				accountType, tick.Bids[11].Price, rightFree*hangRate)
 			if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
 				hangBid.OrderType = model.FunctionHang
 				model.AppDB.Save(hangBid)
@@ -456,22 +457,22 @@ func refreshHang(market, symbol string, setting *model.Setting, leftFree, leftFr
 	}
 }
 
-func validRefreshHang(market, symbol string, tick *model.BidAsk) (needCancel bool) {
+func validRefreshHang(market, symbol string, amountLimit float64, tick *model.BidAsk) (needCancel bool) {
 	needCancel = false
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
-		if hangBid.Price < tick.Bids[14].Price || hangBid.Price > tick.Bids[6].Price {
-			util.Notice(fmt.Sprintf(`[cancel hang bid]%s %s %f <bid15:%f >bid6:%f`,
-				market, symbol, hangBid.Price, tick.Bids[14].Price, tick.Bids[5].Price))
+		if hangBid.Price < tick.Bids[14].Price || hangBid.Price > tick.Bids[6].Price || tick.Bids[0].Amount < amountLimit {
+			util.Notice(fmt.Sprintf(`[cancel hang bid]%s %s %f <bid15:%f >bid6:%f amount:%f`,
+				market, symbol, hangBid.Price, tick.Bids[14].Price, tick.Bids[5].Price, tick.Bids[0].Amount))
 			needCancel = true
 			go api.MustCancel(market, symbol, hangBid.OrderId, true)
 			hangBid = nil
 		}
 	}
 	if hangAsk != nil {
-		if hangAsk.Price > tick.Asks[14].Price || hangAsk.Price < tick.Asks[6].Price {
-			util.Notice(fmt.Sprintf(`[cancel hang ask]%s %s %f >ask15:%f <ask7:%f`,
-				market, symbol, hangAsk.Price, tick.Asks[14].Price, tick.Asks[7].Price))
+		if hangAsk.Price > tick.Asks[14].Price || hangAsk.Price < tick.Asks[6].Price || tick.Asks[0].Amount < amountLimit {
+			util.Notice(fmt.Sprintf(`[cancel hang ask]%s %s %f >ask15:%f <ask7:%f amount:%f`,
+				market, symbol, hangAsk.Price, tick.Asks[14].Price, tick.Asks[7].Price, tick.Asks[0].Amount))
 			needCancel = true
 			go api.MustCancel(market, symbol, hangAsk.OrderId, true)
 			hangAsk = nil
