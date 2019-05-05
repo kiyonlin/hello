@@ -17,22 +17,18 @@ type HangStatus struct {
 	hangOrders map[string][]*model.Order // symbol - orders
 }
 
-func (hangStatus *HangStatus) setHanging(symbol string, value bool) {
+func (hangStatus *HangStatus) setHanging(symbol string, value bool) (current bool) {
 	hangStatus.lock.Lock()
 	defer hangStatus.lock.Unlock()
 	if hangStatus.hanging == nil {
 		hangStatus.hanging = make(map[string]bool)
 	}
-	hangStatus.hanging[symbol] = value
-}
-
-func (hangStatus *HangStatus) getHanging(symbol string) (hanging bool) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
-	if hangStatus.hanging == nil {
+	if hangStatus.hanging[symbol] {
+		return true
+	} else {
+		hangStatus.hanging[symbol] = value
 		return false
 	}
-	return hangStatus.hanging[symbol]
 }
 
 func (hangStatus *HangStatus) getHangOrders(symbol string) (hanging []*model.Order) {
@@ -58,10 +54,9 @@ func (hangStatus *HangStatus) setHangOrders(symbol string, orders []*model.Order
 }
 
 var ProcessHang = func(market, symbol string) {
-	if hangStatus.getHanging(symbol) || model.AppConfig.Handle != `1` {
+	if hangStatus.setHanging(symbol, true) || model.AppConfig.Handle != `1` {
 		return
 	}
-	hangStatus.setHanging(symbol, true)
 	defer hangStatus.setHanging(symbol, false)
 	if model.AppMarkets.BidAsks[symbol] == nil {
 		return
@@ -79,11 +74,11 @@ var ProcessHang = func(market, symbol string) {
 	setting := model.GetSetting(model.FunctionHang, market, symbol)
 	if validHang(market, symbol, tick) {
 		time.Sleep(time.Second)
-		api.RefreshAccount(market)
+		go api.RefreshAccount(market)
 		return
 	}
 	hang(market, symbol, setting.AccountType, tick)
-	api.RefreshAccount(market)
+	go api.RefreshAccount(market)
 }
 
 func hang(market, symbol, accountType string, tick *model.BidAsk) {
@@ -94,13 +89,13 @@ func hang(market, symbol, accountType string, tick *model.BidAsk) {
 	rightFree = rightFree / tick.Asks[0].Price
 	rightFroze = rightFroze / tick.Asks[0].Price
 	if rightFroze+leftFroze < (leftFree+leftFroze+rightFree+rightFroze)*model.AppConfig.AmountRate {
-		placeHangOrder(model.OrderSideSell, market, symbol, accountType,
+		go placeHangOrder(model.OrderSideSell, market, symbol, accountType,
 			tick.Asks[3].Price, leftFree*model.AppConfig.AmountRate/2)
-		placeHangOrder(model.OrderSideSell, market, symbol, accountType,
+		go placeHangOrder(model.OrderSideSell, market, symbol, accountType,
 			tick.Asks[9].Price, leftFree*model.AppConfig.AmountRate/2)
-		placeHangOrder(model.OrderSideBuy, market, symbol, accountType,
+		go placeHangOrder(model.OrderSideBuy, market, symbol, accountType,
 			tick.Bids[3].Price, rightFree*model.AppConfig.AmountRate/2)
-		placeHangOrder(model.OrderSideBuy, market, symbol, accountType,
+		go placeHangOrder(model.OrderSideBuy, market, symbol, accountType,
 			tick.Bids[9].Price, rightFree*model.AppConfig.AmountRate/2)
 	}
 }

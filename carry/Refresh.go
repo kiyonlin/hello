@@ -317,16 +317,7 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 	canceling = false
 }
 
-func (refreshOrders *RefreshOrders) getRefreshing(market, symbol string) (refreshing bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
-	if refreshOrders.refreshing == nil || refreshOrders.refreshing[market] == nil {
-		return false
-	}
-	return refreshOrders.refreshing[market][symbol]
-}
-
-func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refreshing bool) {
+func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refreshing bool) (current bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
 	if refreshOrders.refreshing == nil {
@@ -335,7 +326,12 @@ func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refresh
 	if refreshOrders.refreshing[market] == nil {
 		refreshOrders.refreshing[market] = make(map[string]bool)
 	}
-	refreshOrders.refreshing[market][symbol] = refreshing
+	if refreshOrders.refreshing[market][symbol] {
+		return true
+	} else {
+		refreshOrders.refreshing[market][symbol] = refreshing
+		return false
+	}
 }
 
 func (refreshOrders *RefreshOrders) setFcoinHanging(symbol string, hanging bool) (current bool) {
@@ -354,10 +350,9 @@ func (refreshOrders *RefreshOrders) setFcoinHanging(symbol string, hanging bool)
 
 var ProcessRefresh = func(market, symbol string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` ||
-		refreshOrders.getRefreshing(market, symbol) {
+		refreshOrders.setRefreshing(market, symbol, true) {
 		return
 	}
-	refreshOrders.setRefreshing(market, symbol, true)
 	defer refreshOrders.setRefreshing(market, symbol, false)
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
@@ -378,8 +373,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	if validRefreshHang(market, symbol, amountLimit, tick) {
 		util.Notice(fmt.Sprintf(`[hang] %s %s need cancel`, market, symbol))
-		time.Sleep(time.Second * 2)
-		api.RefreshAccount(market)
+		go api.RefreshAccount(market)
 		return
 	}
 	haveAmount := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
