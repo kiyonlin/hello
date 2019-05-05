@@ -131,8 +131,8 @@ func (markets *Markets) SetBigDeal(symbol, market string, deal *Deal) bool {
 func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	if symbol == `bchabc_usdt` {
-		symbol = `bch_usdt`
+	if len(symbol) > 7 && symbol[0:7] == `bchabc_` {
+		symbol = `bch_` + symbol[7:]
 	}
 	if markets.BidAsks[symbol] == nil {
 		markets.BidAsks[symbol] = map[string]*BidAsk{}
