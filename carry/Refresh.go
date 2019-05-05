@@ -387,7 +387,7 @@ var ProcessRefresh = func(market, symbol string) {
 			refreshAble = false
 		}
 		if refreshAble {
-			if model.AppConfig.Env == `simon` && cancelRefreshHang(market, symbol) {
+			if cancelRefreshHang(market, symbol) {
 				time.Sleep(time.Second * 2)
 				api.RefreshAccount(market)
 				return
@@ -398,7 +398,7 @@ var ProcessRefresh = func(market, symbol string) {
 				time.Sleep(time.Second * 2)
 			}
 		}
-	} else if model.AppConfig.Env == `simon` {
+	} else {
 		needCancel := validRefreshHang(market, symbol, tick)
 		if needCancel {
 			util.Notice(fmt.Sprintf(`[hang] %s %s need cancel:%v`, market, symbol, needCancel))
@@ -417,9 +417,9 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 	needRefresh := false
 	if rightFroze+leftFroze < (leftFree+leftFroze+rightFree+rightFroze)*model.AppConfig.AmountRate {
 		hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
-		if leftFree*model.AppConfig.AmountRate*tick.Asks[0].Price > 5 && hangAsk == nil {
+		if leftFree*model.AppConfig.HangRate*tick.Asks[0].Price > 5 && hangAsk == nil {
 			hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
-				tick.Asks[9].Price, leftFree*model.AppConfig.AmountRate)
+				tick.Asks[9].Price, leftFree*model.AppConfig.HangRate)
 			if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
 				hangAsk.OrderType = model.FunctionHang
 				model.AppDB.Save(hangAsk)
@@ -427,9 +427,9 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 				needRefresh = true
 			}
 		}
-		if rightFree*model.AppConfig.AmountRate*tick.Asks[0].Price > 5 && hangBid == nil {
+		if rightFree*model.AppConfig.HangRate*tick.Asks[0].Price > 5 && hangBid == nil {
 			hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
-				tick.Bids[9].Price, rightFree*model.AppConfig.AmountRate)
+				tick.Bids[9].Price, rightFree*model.AppConfig.HangRate)
 			if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
 				hangBid.OrderType = model.FunctionHang
 				model.AppDB.Save(hangBid)

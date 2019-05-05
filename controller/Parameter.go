@@ -384,9 +384,9 @@ func SetParameters(c *gin.Context) {
 	if amountRate != `` {
 		model.AppConfig.AmountRate, _ = strconv.ParseFloat(amountRate, 64)
 	}
-	sellRate := c.Query(`sellrate`)
-	if sellRate != `` {
-		model.AppConfig.SellRate, _ = strconv.ParseFloat(sellRate, 64)
+	hangRate := c.Query(`hangrate`)
+	if hangRate != `` {
+		model.AppConfig.HangRate, _ = strconv.ParseFloat(hangRate, 64)
 	}
 	carryDistance := c.Query("carrydistance")
 	if len(strings.TrimSpace(carryDistance)) > 0 {

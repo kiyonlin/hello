@@ -1,5 +1,6 @@
 port: 80
 amountrate: 0.95
+hangrate: 0.2
 makeramountrate: 0.1
 orderwait: 3000
 delay: 3000 #按照毫秒计算时间差
