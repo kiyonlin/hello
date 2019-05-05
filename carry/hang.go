@@ -43,14 +43,16 @@ func (hangStatus *HangStatus) getHangOrders(symbol string) (hanging []*model.Ord
 	return hangStatus.hangOrders[symbol]
 }
 
-func (hangStatus *HangStatus) setHangOrders(symbol string, orders []*model.Order) {
+func (hangStatus *HangStatus) appendHandOrder(symbol string, order *model.Order) {
+	hangStatus.lock.Lock()
+	defer hangStatus.lock.Unlock()
 	if hangStatus.hangOrders == nil {
 		hangStatus.hangOrders = make(map[string][]*model.Order)
 	}
 	if hangStatus.hangOrders[symbol] == nil {
 		hangStatus.hangOrders[symbol] = make([]*model.Order, 0)
 	}
-	hangStatus.hangOrders[symbol] = orders
+	hangStatus.hangOrders[symbol] = append(hangStatus.hangOrders[symbol], order)
 }
 
 var ProcessHang = func(market, symbol string) {
@@ -102,11 +104,10 @@ func hang(market, symbol, accountType string, tick *model.BidAsk) {
 
 func validHang(market, symbol string, tick *model.BidAsk) (needCancel bool) {
 	needCancel = false
-	newHangOrders := make([]*model.Order, 0)
 	for _, value := range hangStatus.getHangOrders(symbol) {
 		if value != nil && value.OrderSide == model.OrderSideBuy {
 			if value.Price > tick.Bids[14].Price && value.Price < tick.Bids[1].Price {
-				newHangOrders = append(newHangOrders, value)
+				hangStatus.appendHandOrder(symbol, value)
 			} else {
 				needCancel = true
 				go api.MustCancel(market, symbol, value.OrderId, true)
@@ -114,14 +115,13 @@ func validHang(market, symbol string, tick *model.BidAsk) (needCancel bool) {
 		}
 		if value != nil && value.OrderSide == model.OrderSideSell {
 			if value.Price < tick.Asks[14].Price && value.Price > tick.Asks[1].Price {
-				newHangOrders = append(newHangOrders, value)
+				hangStatus.appendHandOrder(symbol, value)
 			} else {
 				needCancel = true
 				go api.MustCancel(market, symbol, value.OrderId, true)
 			}
 		}
 	}
-	hangStatus.setHangOrders(symbol, newHangOrders)
 	return needCancel
 }
 
@@ -134,8 +134,6 @@ func placeHangOrder(orderSide, market, symbol, accountType string, price, amount
 	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
 		order.OrderType = model.FunctionHang
 		model.AppDB.Save(order)
-		orders := hangStatus.getHangOrders(symbol)
-		orders = append(orders, order)
-		hangStatus.setHangOrders(symbol, orders)
+		hangStatus.appendHandOrder(symbol, order)
 	}
 }
