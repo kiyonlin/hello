@@ -414,45 +414,44 @@ var ProcessRefresh = func(market, symbol string) {
 			}
 		}
 	} else {
-		go refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze, tick)
+		go refreshOrders.refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze, tick)
 	}
 }
 
-func refreshHang(market, symbol, accountType string,
+func (refreshOrders *RefreshOrders) refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, leftFroze, rightFree, rightFroze float64, tick *model.BidAsk) {
+	refreshOrders.lock.Lock()
+	refreshOrders.lock.Unlock()
 	if hangRate == 0.0 {
 		return
 	}
 	rightFree = rightFree / tick.Asks[0].Price
 	rightFroze = rightFroze / tick.Asks[0].Price
-	balance := leftFree + leftFroze + rightFree + rightFroze
 	needRefresh := false
-	if rightFroze+leftFroze < balance*model.AppConfig.AmountRate {
-		hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
-		if leftFree*hangRate*tick.Asks[0].Price > 5 && hangAsk == nil && tick.Asks[0].Amount > amountLimit {
-			hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				accountType, tick.Asks[11].Price, leftFree*hangRate)
-			if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
-				hangAsk.Function = model.FunctionHang
-				model.AppDB.Save(hangAsk)
-			} else {
-				needRefresh = true
-			}
+	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
+	if leftFree*hangRate*tick.Asks[0].Price > 5 && hangAsk == nil && tick.Asks[0].Amount > amountLimit {
+		hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
+			accountType, tick.Asks[11].Price, leftFree*hangRate)
+		if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
+			hangAsk.Function = model.FunctionHang
+			model.AppDB.Save(hangAsk)
+		} else {
+			needRefresh = true
 		}
-		if rightFree*hangRate*tick.Asks[0].Price > 5 && hangBid == nil && tick.Bids[0].Amount > amountLimit {
-			hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				accountType, tick.Bids[11].Price, rightFree*hangRate)
-			if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
-				hangBid.Function = model.FunctionHang
-				model.AppDB.Save(hangBid)
-			} else {
-				needRefresh = true
-			}
+	}
+	if rightFree*hangRate*tick.Asks[0].Price > 5 && hangBid == nil && tick.Bids[0].Amount > amountLimit {
+		hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+			accountType, tick.Bids[11].Price, rightFree*hangRate)
+		if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
+			hangBid.Function = model.FunctionHang
+			model.AppDB.Save(hangBid)
+		} else {
+			needRefresh = true
 		}
-		refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
-		if needRefresh {
-			api.RefreshAccount(market)
-		}
+	}
+	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
+	if needRefresh {
+		api.RefreshAccount(market)
 	}
 }
 
