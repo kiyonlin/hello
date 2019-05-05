@@ -421,7 +421,7 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 	needRefresh := false
 	if rightFroze+leftFroze < (leftFree+leftFroze+rightFree+rightFroze)*model.AppConfig.AmountRate {
 		hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
-		if leftFree*hangRate*tick.Asks[0].Price > 5 && hangAsk == nil {
+		if leftFree*hangRate*tick.Asks[0].Price > 5 && hangAsk == nil && tick.Asks[0].Amount > 1 {
 			hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
 				tick.Asks[11].Price, leftFree*hangRate)
 			if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
@@ -431,7 +431,7 @@ func refreshHang(market, symbol, accountType string, leftFree, leftFroze, rightF
 				needRefresh = true
 			}
 		}
-		if rightFree*hangRate*tick.Asks[0].Price > 5 && hangBid == nil {
+		if rightFree*hangRate*tick.Asks[0].Price > 5 && hangBid == nil && tick.Bids[0].Amount > 1 {
 			hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
 				tick.Bids[11].Price, rightFree*hangRate)
 			if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
