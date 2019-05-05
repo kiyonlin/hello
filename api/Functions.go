@@ -17,13 +17,13 @@ func GetPriceDecimal(market, symbol string) int {
 	case model.Fcoin:
 		//{"status":3022,"msg":"limit price decimal: 5"}
 		switch symbol {
-		case `btc_usdt`, `bch_usdt`, `btc_pax`:
+		case `btc_usdt`, `bch_usdt`, `btc_pax`, `dash_usdt`:
 			return 1
 		case `eth_usdt`, `ltc_usdt`, `zec_usdt`, `bsv_usdt`:
 			return 2
-		case `eos_usdt`:
+		case `eos_usdt`, `etc_usdt`:
 			return 3
-		case `ft_usdt`, `xrp_usdt`, `etc_usdt`, `iota_usdt`, `ltc_eth`, `xlm_usdt`:
+		case `ft_usdt`, `xrp_usdt`, `iota_usdt`, `ltc_eth`, `xlm_usdt`:
 			return 4
 		case `eth_btc`, `eos_eth`, `ltc_btc`, `bch_btc`, `etc_eth`, `zec_btc`:
 			return 5
