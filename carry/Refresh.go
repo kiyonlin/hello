@@ -74,10 +74,13 @@ func (refreshOrders *RefreshOrders) CheckLastChancePrice(market, symbol string, 
 	if refreshOrders.lastChancePrice == nil || refreshOrders.lastChancePrice[market] == nil {
 		return false
 	}
-	if math.Abs(refreshOrders.lastChancePrice[market][symbol]-price) < priceDistance {
-		util.Info(fmt.Sprintf(`[jump 1] %s %s %f`, market, symbol, price))
+	if refreshOrders.lastChancePrice[market][symbol] > 0 {
 		return true
 	}
+	//if math.Abs(refreshOrders.lastChancePrice[market][symbol]-price) < priceDistance {
+	//	util.Info(fmt.Sprintf(`[jump 1] %s %s %f`, market, symbol, price))
+	//	return true
+	//}
 	return false
 }
 
