@@ -394,8 +394,7 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		if refreshAble {
 			if cancelRefreshHang(market, symbol) {
-				time.Sleep(time.Second * 2)
-				api.RefreshAccount(market)
+				LastRefreshTime[market] = util.GetNowUnixMillion()
 				return
 			}
 			doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
@@ -430,6 +429,7 @@ func refreshHang(market, symbol, accountType string,
 		if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
 			hangAsk.Function = model.FunctionHang
 			model.AppDB.Save(hangAsk)
+			LastRefreshTime[market] = util.GetNowUnixMillion()
 		} else {
 			needRefresh = true
 		}
@@ -440,13 +440,14 @@ func refreshHang(market, symbol, accountType string,
 		if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
 			hangBid.Function = model.FunctionHang
 			model.AppDB.Save(hangBid)
+			LastRefreshTime[market] = util.GetNowUnixMillion()
 		} else {
 			needRefresh = true
 		}
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needRefresh {
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 1)
 		api.RefreshAccount(market)
 	}
 }
@@ -483,8 +484,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needCancel {
 		util.Notice(fmt.Sprintf(`[hang] %s %s need cancel`, market, symbol))
-		time.Sleep(time.Second)
-		api.RefreshAccount(market)
+		LastRefreshTime[market] = util.GetNowUnixMillion()
 	}
 }
 
