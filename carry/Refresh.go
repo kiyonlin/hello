@@ -426,7 +426,7 @@ func refreshHang(market, symbol, accountType string,
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangAsk == nil && askAll > amountLimit && binancePrice <= tick.Asks[9].Price {
 		hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-			accountType, tick.Asks[11].Price, leftFree*hangRate)
+			accountType, tick.Asks[9].Price, leftFree*hangRate)
 		if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
 			hangAsk.Function = model.FunctionHang
 			model.AppDB.Save(hangAsk)
@@ -436,7 +436,7 @@ func refreshHang(market, symbol, accountType string,
 	}
 	if hangBid == nil && bidAll > amountLimit && binancePrice >= tick.Bids[9].Price {
 		hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			accountType, tick.Bids[11].Price, rightFree*hangRate)
+			accountType, tick.Bids[9].Price, rightFree*hangRate)
 		if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
 			hangBid.Function = model.FunctionHang
 			model.AppDB.Save(hangBid)
