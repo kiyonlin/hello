@@ -31,6 +31,16 @@ func (hangStatus *HangStatus) setHanging(symbol string, value bool) (current boo
 	}
 }
 
+func (hangStatus *HangStatus) setHangOrders(symbol string, orders []*model.Order) {
+	if hangStatus.hangOrders == nil {
+		hangStatus.hangOrders = make(map[string][]*model.Order)
+	}
+	if hangStatus.hangOrders[symbol] == nil {
+		hangStatus.hangOrders[symbol] = make([]*model.Order, 0)
+	}
+	hangStatus.hangOrders[symbol] = orders
+}
+
 func (hangStatus *HangStatus) getHangOrders(symbol string) (hanging []*model.Order) {
 	hangStatus.lock.Lock()
 	defer hangStatus.lock.Unlock()
@@ -104,10 +114,11 @@ func hang(market, symbol, accountType string, tick *model.BidAsk) {
 
 func validHang(market, symbol string, tick *model.BidAsk) (needCancel bool) {
 	needCancel = false
+	newHangOrders := make([]*model.Order, 0)
 	for _, value := range hangStatus.getHangOrders(symbol) {
 		if value != nil && value.OrderSide == model.OrderSideBuy {
 			if value.Price > tick.Bids[14].Price && value.Price < tick.Bids[1].Price {
-				hangStatus.appendHandOrder(symbol, value)
+				newHangOrders = append(newHangOrders, value)
 			} else {
 				needCancel = true
 				go api.MustCancel(market, symbol, value.OrderId, true)
@@ -115,13 +126,14 @@ func validHang(market, symbol string, tick *model.BidAsk) (needCancel bool) {
 		}
 		if value != nil && value.OrderSide == model.OrderSideSell {
 			if value.Price < tick.Asks[14].Price && value.Price > tick.Asks[1].Price {
-				hangStatus.appendHandOrder(symbol, value)
+				newHangOrders = append(newHangOrders, value)
 			} else {
 				needCancel = true
 				go api.MustCancel(market, symbol, value.OrderId, true)
 			}
 		}
 	}
+	hangStatus.setHangOrders(symbol, newHangOrders)
 	return needCancel
 }
 
