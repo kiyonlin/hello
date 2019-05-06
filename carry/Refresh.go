@@ -446,6 +446,7 @@ func refreshHang(market, symbol, accountType string,
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needRefresh {
+		time.Sleep(time.Second)
 		api.RefreshAccount(market)
 	}
 }
@@ -482,6 +483,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needCancel {
 		util.Notice(fmt.Sprintf(`[hang] %s %s need cancel`, market, symbol))
+		time.Sleep(time.Second)
 		api.RefreshAccount(market)
 	}
 }
