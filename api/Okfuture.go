@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var subscribeHandlerOKFuture = func(subscribes []interface{}, subType string) error {
@@ -122,7 +121,7 @@ func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan s
 		sort.Sort(sort.Reverse(bidAsks.Bids))
 		if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
 			for _, handler := range model.GetFunctions(model.OKFUTURE, symbol) {
-				handler(model.OKFUTURE, symbol)
+				go handler(model.OKFUTURE, symbol)
 			}
 		}
 	}
@@ -192,27 +191,27 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 	return orderId, errCode
 }
 
-func QueryPendingOrderAmount(symbol string) (orderAmount int, err error) {
-	postData := url.Values{}
-	postData.Set(`symbol`, getSymbol(symbol))
-	postData.Set(`contract_type`, getContractType(symbol))
-	postData.Set(`order_id`, `-1`)
-	postData.Set(`status`, `1`)
-	postData.Set(`current_page`, `1`)
-	postData.Set(`page_length`, `50`)
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do",
-		&postData, 100)
-	orderJson, err := util.NewJSON(responseBody)
-	if err != nil {
-		return 0, err
-	}
-	orderJson = orderJson.Get(`orders`)
-	if orderJson != nil {
-		orders, _ := orderJson.Array()
-		return len(orders), nil
-	}
-	return 0, nil
-}
+//func QueryPendingOrderAmount(symbol string) (orderAmount int, err error) {
+//	postData := url.Values{}
+//	postData.Set(`symbol`, getSymbol(symbol))
+//	postData.Set(`contract_type`, getContractType(symbol))
+//	postData.Set(`order_id`, `-1`)
+//	postData.Set(`status`, `1`)
+//	postData.Set(`current_page`, `1`)
+//	postData.Set(`page_length`, `50`)
+//	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do",
+//		&postData, 100)
+//	orderJson, err := util.NewJSON(responseBody)
+//	if err != nil {
+//		return 0, err
+//	}
+//	orderJson = orderJson.Get(`orders`)
+//	if orderJson != nil {
+//		orders, _ := orderJson.Array()
+//		return len(orders), nil
+//	}
+//	return 0, nil
+//}
 
 //status: 订单状态(0等待成交 1部分成交 2全部成交 -1撤单 4撤单处理中 5撤单中)
 func queryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
@@ -290,47 +289,47 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 	return nil
 }
 
-func GetAllHoldings(currency string) (allHoldings float64, err error) {
-	index := strings.Index(currency, `_`)
-	if index > 0 {
-		currency = currency[0:index]
-	}
-	futureSymbols := []string{currency + `_this_week`, currency + `_next_week`, currency + `_quarter`}
-	for _, value := range futureSymbols {
-		futureAccount, positionErr := GetPositionOkfuture(model.OKFUTURE, value)
-		if futureAccount == nil || positionErr != nil {
-			return 0, errors.New(`account or position nil`)
-		}
-		allHoldings += futureAccount.OpenedShort
-		time.Sleep(time.Millisecond * 500)
-	}
-	return allHoldings, nil
-}
+//func GetAllHoldings(currency string) (allHoldings float64, err error) {
+//	index := strings.Index(currency, `_`)
+//	if index > 0 {
+//		currency = currency[0:index]
+//	}
+//	futureSymbols := []string{currency + `_this_week`, currency + `_next_week`, currency + `_quarter`}
+//	for _, value := range futureSymbols {
+//		futureAccount, positionErr := GetPositionOkfuture(model.OKFUTURE, value)
+//		if futureAccount == nil || positionErr != nil {
+//			return 0, errors.New(`account or position nil`)
+//		}
+//		allHoldings += futureAccount.OpenedShort
+//		time.Sleep(time.Millisecond * 500)
+//	}
+//	return allHoldings, nil
+//}
 
-func GetPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error) {
-	postData := url.Values{}
-	postData.Set(`symbol`, getSymbol(symbol))
-	postData.Set(`contract_type`, getContractType(symbol))
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
-		"/future_position.do", &postData, 200)
-	orderJson, err := util.NewJSON(responseBody)
-	if err != nil {
-		return nil, err
-	}
-	result, _ := orderJson.Get(`result`).Bool()
-	if !result {
-		return nil, errors.New(`result false`)
-	}
-	holdings, _ := orderJson.Get(`holding`).Array()
-	futureAccount = &model.FutureAccount{Market: market, Symbol: symbol, OpenedShort: 0, OpenedLong: 0}
-	if len(holdings) > 0 {
-		value := holdings[0].(map[string]interface{})
-		openLong, _ := value[`buy_available`].(json.Number).Float64()
-		openShort, _ := value[`sell_available`].(json.Number).Float64()
-		futureAccount = &model.FutureAccount{Market: market, Symbol: symbol, OpenedLong: openLong, OpenedShort: openShort}
-	}
-	return futureAccount, nil
-}
+//func GetPositionOkfuture(market, symbol string) (futureAccount *model.FutureAccount, err error) {
+//	postData := url.Values{}
+//	postData.Set(`symbol`, getSymbol(symbol))
+//	postData.Set(`contract_type`, getContractType(symbol))
+//	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
+//		"/future_position.do", &postData, 200)
+//	orderJson, err := util.NewJSON(responseBody)
+//	if err != nil {
+//		return nil, err
+//	}
+//	result, _ := orderJson.Get(`result`).Bool()
+//	if !result {
+//		return nil, errors.New(`result false`)
+//	}
+//	holdings, _ := orderJson.Get(`holding`).Array()
+//	futureAccount = &model.FutureAccount{Market: market, Symbol: symbol, OpenedShort: 0, OpenedLong: 0}
+//	if len(holdings) > 0 {
+//		value := holdings[0].(map[string]interface{})
+//		openLong, _ := value[`buy_available`].(json.Number).Float64()
+//		openShort, _ := value[`sell_available`].(json.Number).Float64()
+//		futureAccount = &model.FutureAccount{Market: market, Symbol: symbol, OpenedLong: openLong, OpenedShort: openShort}
+//	}
+//	return futureAccount, nil
+//}
 
 func GetKLineOkexFuture(symbol, timeSlot string, size int64) []*model.KLinePoint {
 	postData := url.Values{}

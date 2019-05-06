@@ -88,7 +88,7 @@ func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan stru
 				if markets.SetBidAsk(symbol, model.Huobi, &bidAsk) {
 					for _, handler := range model.GetFunctions(model.Huobi, symbol) {
 						if handler != nil {
-							handler(model.Huobi, symbol)
+							go handler(model.Huobi, symbol)
 						}
 					}
 				}
@@ -222,8 +222,10 @@ func CancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 			msg, _ = orderJson.Get(`err-msg`).String()
 			return false, errCode, msg
 		}
+	} else {
+		return false, err.Error(), err.Error()
 	}
-	return false, err.Error(), err.Error()
+	return false, ``, ``
 }
 
 func queryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status string) {

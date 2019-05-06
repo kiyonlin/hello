@@ -10,7 +10,6 @@ import (
 	"hello/model"
 	"hello/util"
 	"io"
-	"math"
 	"net/url"
 	"sort"
 	"strconv"
@@ -85,7 +84,7 @@ func WsDepthServeOkex(markets *model.Markets, errHandler ErrHandler) (chan struc
 					bidAsk.Ts = message.Data.Timestamp
 					if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
 						for _, handler := range model.GetFunctions(model.OKEX, symbol) {
-							handler(model.OKEX, symbol)
+							go handler(model.OKEX, symbol)
 						}
 					}
 				}
@@ -250,48 +249,48 @@ func getAccountOkex(accounts *model.Accounts) {
 	}
 }
 
-func MustFundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
-	for i := 0.0; i < 100; i++ {
-		transfer, errCode := FundTransferOkex(symbol, amount, from, to)
-		if transfer {
-			return transfer, errCode
-		}
-		time.Sleep(time.Second * 3)
-		util.Notice(fmt.Sprintf(fmt.Sprintf(`[fail when must transfer]%s %s->%s %f %v`,
-			symbol, from, to, amount, transfer)))
-		amount = amount * (1.0 - i*i*0.01)
-	}
-	return false, `>100tries`
-}
+//func MustFundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
+//	for i := 0.0; i < 100; i++ {
+//		transfer, errCode := FundTransferOkex(symbol, amount, from, to)
+//		if transfer {
+//			return transfer, errCode
+//		}
+//		time.Sleep(time.Second * 3)
+//		util.Notice(fmt.Sprintf(fmt.Sprintf(`[fail when must transfer]%s %s->%s %f %v`,
+//			symbol, from, to, amount, transfer)))
+//		amount = amount * (1.0 - i*i*0.01)
+//	}
+//	return false, `>100tries`
+//}
 
 // from 转出账户(1：币币账户 3：合约账户 6：我的钱包)
 // to 转入账户(1：币币账户 3：合约账户 6：我的钱包)
-func FundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
-	if amount <= 0 {
-		return false, `0 transfer amount`
-	}
-	decimal := GetAmountDecimal(model.OKEX, symbol)
-	amount = math.Floor(amount*math.Pow(10, float64(decimal))) / math.Pow(10, float64(decimal))
-	strAmount := strconv.FormatFloat(amount, 'f', -1, 64)
-	postData := url.Values{}
-	index := strings.Index(symbol, `_`)
-	if index > 0 {
-		postData.Set(`symbol`, symbol[0:index]+`_usd`)
-	}
-	postData.Set(`amount`, strAmount)
-	postData.Set(`from`, from)
-	postData.Set(`to`, to)
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/funds_transfer.do",
-		&postData, 200)
-	resultJson, err := util.NewJSON(responseBody)
-	if err == nil {
-		result, _ = resultJson.Get(`result`).Bool()
-		code, _ := resultJson.Get(`error_code`).Float64()
-		errCode = strconv.FormatFloat(code, 'f', -1, 64)
-		return result, errCode
-	}
-	return false, err.Error()
-}
+//func FundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {
+//	if amount <= 0 {
+//		return false, `0 transfer amount`
+//	}
+//	decimal := GetAmountDecimal(model.OKEX, symbol)
+//	amount = math.Floor(amount*math.Pow(10, float64(decimal))) / math.Pow(10, float64(decimal))
+//	strAmount := strconv.FormatFloat(amount, 'f', -1, 64)
+//	postData := url.Values{}
+//	index := strings.Index(symbol, `_`)
+//	if index > 0 {
+//		postData.Set(`symbol`, symbol[0:index]+`_usd`)
+//	}
+//	postData.Set(`amount`, strAmount)
+//	postData.Set(`from`, from)
+//	postData.Set(`to`, to)
+//	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKEX]+"/funds_transfer.do",
+//		&postData, 200)
+//	resultJson, err := util.NewJSON(responseBody)
+//	if err == nil {
+//		result, _ = resultJson.Get(`result`).Bool()
+//		code, _ := resultJson.Get(`error_code`).Float64()
+//		errCode = strconv.FormatFloat(code, 'f', -1, 64)
+//		return result, errCode
+//	}
+//	return false, err.Error()
+//}
 
 //getBuyPriceOkex
 func _(symbol string) (buy float64, err error) {

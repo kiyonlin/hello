@@ -62,7 +62,7 @@ func WsDepthServeCoinbig(markets *model.Markets, errHandler ErrHandler) (chan st
 				bidAsk.Ts = int(ts)
 				if markets.SetBidAsk(symbol, model.Coinbig, &bidAsk) {
 					for _, handler := range model.GetFunctions(model.Coinbig, symbol) {
-						handler(model.Coinbig, symbol)
+						go handler(model.Coinbig, symbol)
 					}
 				}
 			}

@@ -72,7 +72,7 @@ func WsDepthServeCoinpark(markets *model.Markets, errHandler ErrHandler) (chan s
 				sort.Sort(sort.Reverse(bidAsk.Bids))
 				if markets.SetBidAsk(symbol, model.Coinpark, &bidAsk) {
 					for _, handler := range model.GetFunctions(model.Coinpark, symbol) {
-						handler(model.Coinpark, symbol)
+						go handler(model.Coinpark, symbol)
 					}
 				}
 			}
@@ -201,10 +201,10 @@ func queryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status s
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	util.Notice(string(responseBody))
-	results, err := orderJson.Get("result").Array()
 	if orderJson == nil {
 		return
 	}
+	results, err := orderJson.Get("result").Array()
 	if err == nil && len(results) > 0 {
 		resultData := results[0].(map[string]interface{})[`result`]
 		if resultData != nil {
@@ -251,5 +251,8 @@ func CancelOrderCoinpark(orderId string) (result bool, code, msg string) {
 			return false, code, msg
 		}
 	}
-	return false, err.Error(), err.Error()
+	if err != nil {
+		return false, err.Error(), err.Error()
+	}
+	return false, ``, ``
 }

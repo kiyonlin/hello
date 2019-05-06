@@ -67,7 +67,7 @@ func WsDepthServeBinance(markets *model.Markets, errHandler ErrHandler) (chan st
 			if markets.SetBidAsk(symbol, model.Binance, &bidAsk) {
 				for _, handler := range model.GetFunctions(model.Binance, symbol) {
 					if handler != nil {
-						handler(model.Binance, symbol)
+						go handler(model.Binance, symbol)
 					}
 				}
 			}
