@@ -326,12 +326,9 @@ func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refresh
 	if refreshOrders.refreshing[market] == nil {
 		refreshOrders.refreshing[market] = make(map[string]bool)
 	}
-	if refreshOrders.refreshing[market][symbol] {
-		return true
-	} else {
-		refreshOrders.refreshing[market][symbol] = refreshing
-		return false
-	}
+	current = refreshOrders.refreshing[market][symbol]
+	refreshOrders.refreshing[market][symbol] = refreshing
+	return current
 }
 
 func (refreshOrders *RefreshOrders) setFcoinHanging(symbol string, hanging bool) (current bool) {

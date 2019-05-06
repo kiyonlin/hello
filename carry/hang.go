@@ -23,12 +23,9 @@ func (hangStatus *HangStatus) setHanging(symbol string, value bool) (current boo
 	if hangStatus.hanging == nil {
 		hangStatus.hanging = make(map[string]bool)
 	}
-	if hangStatus.hanging[symbol] {
-		return true
-	} else {
-		hangStatus.hanging[symbol] = value
-		return false
-	}
+	current = hangStatus.hanging[symbol]
+	hangStatus.hanging[symbol] = current
+	return current
 }
 
 func (hangStatus *HangStatus) setHangOrders(symbol string, orders []*model.Order) {
