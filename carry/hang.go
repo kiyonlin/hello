@@ -143,6 +143,7 @@ func placeHangOrder(orderSide, market, symbol, accountType string, price, amount
 	if amount*price < 6 {
 		return
 	}
+	util.Notice(fmt.Sprintf(`[hang %s %s]price: %f amount: %f`, symbol, orderSide, price, amount))
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
 		accountType, price, amount)
 	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
