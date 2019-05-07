@@ -13,7 +13,7 @@ carrydistance: 0.001
 binanceorderdis: 0.0013
 predealdis: 0.0013
 between: 20
-handle: 0
+handle: 1
 handlerefresh: 1
 handlegrid: 1
 handlemaker: 1

@@ -50,7 +50,7 @@ func (refreshOrders *RefreshOrders) getInFresh(symbol string) (in bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
 	if refreshOrders.inFresh == nil {
-		return false
+		return true
 	}
 	return refreshOrders.inFresh[symbol]
 }
