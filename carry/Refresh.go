@@ -16,7 +16,7 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 var syncRefresh = make(chan interface{}, 20)
 var LastRefreshTime = make(map[string]int64) // market - int64
-var refreshOrders = &RefreshOrders{}
+var refreshOrders = &RefreshOrders{inFresh: make(map[string]bool)}
 var canceling = false
 
 type RefreshOrders struct {
@@ -32,6 +32,25 @@ type RefreshOrders struct {
 	lastChancePrice  map[string]map[string]float64         // market - symbol - chance price
 	lastRefreshPrice map[string]map[string]float64         // market - symbol - refresh price
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
+	inFresh          map[string]bool                       // symbol - bool
+}
+
+func (refreshOrders *RefreshOrders) setInFresh(symbol string, in bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.inFresh == nil {
+		refreshOrders.inFresh = make(map[string]bool)
+	}
+	refreshOrders.inFresh[symbol] = in
+}
+
+func (refreshOrders *RefreshOrders) getInFresh(symbol string) (in bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.inFresh == nil {
+		return false
+	}
+	return refreshOrders.inFresh[symbol]
 }
 
 func (refreshOrders *RefreshOrders) setRefreshHang(symbol string, hangBid, hangAsk *model.Order) {
@@ -414,11 +433,12 @@ var ProcessRefresh = func(market, symbol string) {
 			if !refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit) {
 				time.Sleep(time.Second * 2)
 			}
-		} else {
+		} else if !refreshOrders.getInFresh(symbol) {
 			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 				binancePrice, tick)
 		}
 	} else {
+		refreshOrders.setInFresh(symbol, false)
 		refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 			binancePrice, tick)
 	}
@@ -504,6 +524,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 }
 
 func cancelRefreshHang(market, symbol string) (needCancel bool) {
+	refreshOrders.setInFresh(symbol, true)
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		go api.MustCancel(market, symbol, hangBid.OrderId, true)
