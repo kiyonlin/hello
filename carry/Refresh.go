@@ -449,7 +449,7 @@ func refreshHang(market, symbol, accountType string,
 			accountType, tick.Asks[9].Price, leftFree*hangRate)
 		if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
 			hangAsk.Function = model.FunctionHang
-			model.AppDB.Save(hangAsk)
+			model.AppDB.Save(&hangAsk)
 			LastRefreshTime[market] = util.GetNowUnixMillion()
 		} else {
 			needRefresh = true
@@ -460,7 +460,7 @@ func refreshHang(market, symbol, accountType string,
 			accountType, tick.Bids[9].Price, rightFree*hangRate)
 		if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
 			hangBid.Function = model.FunctionHang
-			model.AppDB.Save(hangBid)
+			model.AppDB.Save(&hangBid)
 			LastRefreshTime[market] = util.GetNowUnixMillion()
 		} else {
 			needRefresh = true
@@ -659,5 +659,5 @@ func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amo
 	//util.Notice(fmt.Sprintf(`[before send]%s %s %f %f`, orderSide, symbol, price, amount))
 	syncRefresh <- struct{}{}
 	//util.Notice(fmt.Sprintf(`[after send]%s %s %f %f`, orderSide, symbol, price, amount))
-	model.AppDB.Save(order)
+	model.AppDB.Save(&order)
 }

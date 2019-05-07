@@ -148,7 +148,7 @@ func placeHangOrder(orderSide, market, symbol, accountType string, price, amount
 		accountType, price, amount)
 	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
 		order.Function = model.FunctionHang
-		model.AppDB.Save(order)
+		model.AppDB.Save(&order)
 		hangStatus.setOrder(symbol, orderSide, index, order)
 	}
 }

@@ -149,7 +149,7 @@ var ProcessMake = func(market, symbol string) {
 			addMaker(market, order)
 		}
 		if order.OrderId != `` {
-			model.AppDB.Save(order)
+			model.AppDB.Save(&order)
 		}
 	}
 }

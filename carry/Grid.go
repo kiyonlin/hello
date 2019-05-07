@@ -129,7 +129,7 @@ func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
 	grid.sellOrder = nil
 	grid.buyOrder = nil
 	if order.OrderId != `` {
-		model.AppDB.Save(order)
+		model.AppDB.Save(&order)
 		api.RefreshAccount(market)
 	}
 }
