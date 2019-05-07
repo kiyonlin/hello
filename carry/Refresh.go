@@ -402,12 +402,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if haveAmount {
 		if index > refreshOrders.amountIndex {
 			refreshOrders.amountIndex = index
-			symbols := model.GetMarketSymbols(market)
-			for key := range symbols {
-				CancelRefreshHang(market, key)
-			}
-			time.Sleep(time.Second * 2)
-			api.RefreshAccount(market)
+			refreshAccount(market)
 		}
 		amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
 		priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
@@ -476,12 +471,7 @@ func refreshHang(market, symbol, accountType string,
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needRefresh {
-		symbols := model.GetMarketSymbols(market)
-		for key := range symbols {
-			CancelRefreshHang(market, key)
-		}
-		time.Sleep(time.Second * 2)
-		api.RefreshAccount(market)
+		refreshAccount(market)
 	}
 }
 
@@ -649,13 +639,21 @@ func receiveRefresh(market, symbol string, price, priceDistance, amount, amountL
 				}
 				time.Sleep(time.Second)
 				if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
-					time.Sleep(time.Second * 1)
-					api.RefreshAccount(market)
+					refreshAccount(market)
 				}
 			}
 			break
 		}
 	}
+}
+
+func refreshAccount(market string) {
+	symbols := model.GetMarketSymbols(market)
+	for key := range symbols {
+		CancelRefreshHang(market, key)
+	}
+	time.Sleep(time.Second * 2)
+	api.RefreshAccount(market)
 }
 
 func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amount float64) {
