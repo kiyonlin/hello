@@ -331,6 +331,24 @@ func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refresh
 	return current
 }
 
+func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool) {
+	if refreshOrders.fcoinHang == nil {
+		return make(map[string]bool)
+	}
+	currencies = make(map[string]bool)
+	for key := range refreshOrders.fcoinHang {
+		bid, ask := refreshOrders.getRefreshHang(key)
+		if bid != nil || ask != nil {
+			coins := strings.Split(key, `_`)
+			if len(coins) >= 2 {
+				currencies[coins[0]] = true
+				currencies[coins[1]] = true
+			}
+		}
+	}
+	return currencies
+}
+
 var ProcessRefresh = func(market, symbol string) {
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	binanceResult, binancePrice := getBinanceInfo(symbol)
@@ -366,7 +384,7 @@ var ProcessRefresh = func(market, symbol string) {
 		now := util.GetNowUnixMillion()
 		if now-LastRefreshTime[market] > 15000 {
 			util.Notice(`15 seconds past, refresh and return ` + market + symbol)
-			api.RefreshAccount(market)
+			api.RefreshExclusive(market, refreshOrders.getCurrencies())
 			LastRefreshTime[market] = now
 			return
 		}
@@ -402,6 +420,9 @@ var ProcessRefresh = func(market, symbol string) {
 			if !refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit) {
 				time.Sleep(time.Second * 2)
 			}
+		} else {
+			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
+				binancePrice, tick)
 		}
 	} else {
 		refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
@@ -448,7 +469,7 @@ func refreshHang(market, symbol, accountType string,
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needRefresh {
 		time.Sleep(time.Second * 1)
-		api.RefreshAccount(market)
+		api.RefreshExclusive(market, refreshOrders.getCurrencies())
 	}
 }
 
@@ -619,7 +640,7 @@ func receiveRefresh(market, symbol string, price, priceDistance, amount, amountL
 				time.Sleep(time.Second)
 				if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
 					time.Sleep(time.Second * 1)
-					api.RefreshAccount(market)
+					api.RefreshExclusive(market, refreshOrders.getCurrencies())
 				}
 			}
 			break

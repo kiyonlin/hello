@@ -171,6 +171,26 @@ func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 //	return order
 //}
 
+func RefreshExclusive(market string, coins map[string]bool) {
+	switch market {
+	case model.Fcoin:
+		accounts := getLeverAccountFcoin()
+		for key, value := range accounts {
+			for coin, account := range value {
+				if coins[coin] == false {
+					model.AppAccounts.SetAccount(key, coin, account)
+				}
+			}
+		}
+		currencies, fcoinAccounts := getAccountFcoin()
+		for i := 0; i < len(currencies); i++ {
+			if coins[currencies[i]] == false {
+				model.AppAccounts.SetAccount(model.Fcoin, currencies[i], fcoinAccounts[i])
+			}
+		}
+	}
+}
+
 func RefreshAccount(market string) {
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
@@ -194,9 +214,16 @@ func RefreshAccount(market string) {
 		//	}
 		//}
 	case model.Fcoin:
-		getLeverAccountFcoin(model.AppAccounts)
-		time.Sleep(time.Millisecond * 15)
-		getAccountFcoin(model.AppAccounts)
+		accounts := getLeverAccountFcoin()
+		for key, value := range accounts {
+			for coin, account := range value {
+				model.AppAccounts.SetAccount(key, coin, account)
+			}
+		}
+		currencies, fcoinAccounts := getAccountFcoin()
+		for i := 0; i < len(currencies); i++ {
+			model.AppAccounts.SetAccount(model.Fcoin, currencies[i], fcoinAccounts[i])
+		}
 	case model.Coinpark:
 		getAccountCoinpark(model.AppAccounts)
 	case model.Coinbig:

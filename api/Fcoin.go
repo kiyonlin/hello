@@ -277,9 +277,10 @@ func queryOrderFcoin(symbol, orderId string) (order *model.Order) {
 	return nil
 }
 
-func getLeverAccountFcoin(accounts *model.Accounts) {
+func getLeverAccountFcoin() (accounts map[string]map[string]*model.Account) {
 	responseBody := SignedRequestFcoin(`GET`, `/broker/leveraged_accounts`, nil)
 	balanceJson, err := util.NewJSON(responseBody)
+	accounts = make(map[string]map[string]*model.Account)
 	if err == nil {
 		status, _ := balanceJson.Get(`status`).String()
 		if status == `ok` {
@@ -297,21 +298,26 @@ func getLeverAccountFcoin(accounts *model.Accounts) {
 					market := fmt.Sprintf(`%s_%s_%s`, model.Fcoin, model.AccountTypeLever, symbol)
 					accountBase := &model.Account{Market: market, Currency: base, Free: freeBase, Frozen: frozenBase}
 					accountQuote := &model.Account{Market: market, Currency: quote, Free: freeQuote, Frozen: frozenQuote}
-					accounts.SetAccount(market, base, accountBase)
-					accounts.SetAccount(market, quote, accountQuote)
+					coinAccount := make(map[string]*model.Account)
+					coinAccount[base] = accountBase
+					coinAccount[quote] = accountQuote
+					accounts[market] = coinAccount
 				}
 			}
 		}
 	}
+	return accounts
 }
 
-func getAccountFcoin(accounts *model.Accounts) {
+func getAccountFcoin() (currency []string, account []*model.Account) {
 	responseBody := SignedRequestFcoin(`GET`, `/accounts/balance`, nil)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ := balanceJson.Get("status").Int()
 		if status == 0 {
 			currencies, _ := balanceJson.Get("data").Array()
+			coins := make([]string, 0)
+			accounts := make([]*model.Account, 0)
 			for _, value := range currencies {
 				asset := value.(map[string]interface{})
 				free, _ := strconv.ParseFloat(asset["available"].(string), 64)
@@ -320,11 +326,14 @@ func getAccountFcoin(accounts *model.Accounts) {
 					continue
 				}
 				currency := strings.ToLower(asset["currency"].(string))
-				account := &model.Account{Market: model.Fcoin, Currency: currency, Free: free, Frozen: frozen}
-				accounts.SetAccount(model.Fcoin, currency, account)
+				coins = append(coins, currency)
+				accounts = append(accounts,
+					&model.Account{Market: model.Fcoin, Currency: currency, Free: free, Frozen: frozen})
 			}
+			return coins, accounts
 		}
 	}
+	return nil, nil
 }
 
 func getBuyPriceFcoin(symbol string) (buy float64, err error) {
