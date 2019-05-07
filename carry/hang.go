@@ -121,21 +121,27 @@ func validHang(market, symbol string, tick *model.BidAsk) {
 	ask15 := hangStatus.getOrder(symbol, model.OrderSideSell, 15)
 	if bid1 != nil && math.Abs(bid1.Price-tick.Bids[0].Price) >= priceDistance {
 		go api.MustCancel(market, symbol, bid1.OrderId, true)
+		hangStatus.setOrder(symbol, bid1.OrderSide, 1, nil)
 	}
 	if bid5 != nil && math.Abs(bid5.Price-tick.Bids[4].Price) >= priceDistance {
 		go api.MustCancel(market, symbol, bid5.OrderId, true)
+		hangStatus.setOrder(symbol, bid5.OrderSide, 5, nil)
 	}
 	if bid15 != nil && math.Abs(bid15.Price-tick.Bids[14].Price) >= priceDistance {
 		go api.MustCancel(market, symbol, bid15.OrderId, true)
+		hangStatus.setOrder(symbol, bid15.OrderSide, 15, nil)
 	}
 	if ask1 != nil && math.Abs(ask1.Price-tick.Asks[0].Price) >= priceDistance {
 		go api.MustCancel(market, symbol, ask1.OrderId, true)
+		hangStatus.setOrder(symbol, ask1.OrderSide, 1, nil)
 	}
 	if ask5 != nil && math.Abs(ask5.Price-tick.Asks[4].Price) >= priceDistance {
 		go api.MustCancel(market, symbol, ask5.OrderId, true)
+		hangStatus.setOrder(symbol, ask5.OrderSide, 5, nil)
 	}
 	if ask15 != nil && math.Abs(ask15.Price-tick.Asks[14].Price) >= priceDistance {
 		go api.MustCancel(market, symbol, ask15.OrderId, true)
+		hangStatus.setOrder(symbol, ask15.OrderSide, 15, nil)
 	}
 }
 
