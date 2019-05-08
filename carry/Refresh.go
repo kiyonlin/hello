@@ -486,6 +486,7 @@ func refreshHang(market, symbol, accountType string,
 			hangAsk.Function = model.FunctionHang
 			model.AppDB.Save(&hangAsk)
 		} else if hangAsk != nil && hangAsk.ErrCode == `1016` {
+			hangAsk = nil
 			coin = coins[0]
 			needRefresh = true
 		}
@@ -497,6 +498,7 @@ func refreshHang(market, symbol, accountType string,
 			hangBid.Function = model.FunctionHang
 			model.AppDB.Save(&hangBid)
 		} else if hangBid != nil && hangBid.ErrCode == `1016` {
+			hangBid = nil
 			coin = coins[1]
 			needRefresh = true
 		}
