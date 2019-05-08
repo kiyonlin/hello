@@ -63,11 +63,11 @@ var CancelAllOrders = func() {
 
 func RefreshAccounts() {
 	for true {
-		if model.AppConfig.Handle == `1` {
-			model.AppConfig.Handle = `0`
-			time.Sleep(time.Second * 5)
-			model.AppConfig.Handle = `1`
-		}
+		//if model.AppConfig.Handle == `1` {
+		//	model.AppConfig.Handle = `0`
+		//	time.Sleep(time.Second * 5)
+		//	model.AppConfig.Handle = `1`
+		//}
 		markets := model.GetMarkets()
 		timestamp := util.GetNow()
 		for _, value := range markets {
