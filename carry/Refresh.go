@@ -19,11 +19,11 @@ var syncRefresh = make(chan interface{}, 20)
 //var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var canceling = false
-var handLock sync.Mutex
 
 type RefreshOrders struct {
 	lock             sync.Mutex
 	refreshing       bool
+	handling         bool
 	samePriceCount   map[string]map[string]int             // market - symbol - continue same price count
 	samePriceTime    map[string]map[string]*time.Time      // market - symbol - first time new order price
 	bidOrders        map[string]map[string][]*model.Order  // market - symbol - orders
@@ -345,6 +345,14 @@ func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refresh
 	return current
 }
 
+func (refreshOrders *RefreshOrders) setHandling(market, symbol string, handling bool) (current bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	current = refreshOrders.handling
+	refreshOrders.handling = current
+	return current
+}
+
 func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool) {
 	if refreshOrders.fcoinHang == nil {
 		return make(map[string]bool)
@@ -446,8 +454,10 @@ var ProcessRefresh = func(market, symbol string) {
 
 func refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
-	handLock.Lock()
-	defer handLock.Unlock()
+	if refreshOrders.setHandling(market, symbol, true) {
+		return
+	}
+	defer refreshOrders.setHandling(market, symbol, false)
 	if hangRate == 0.0 {
 		return
 	}
@@ -532,8 +542,10 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 }
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
-	handLock.Lock()
-	defer handLock.Unlock()
+	if refreshOrders.setHandling(market, symbol, true) {
+		return
+	}
+	defer refreshOrders.setHandling(market, symbol, false)
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		api.MustCancel(market, symbol, hangBid.OrderId, true)
