@@ -17,7 +17,7 @@ import (
 var syncRefresh = make(chan interface{}, 20)
 
 //var LastRefreshTime = make(map[string]int64) // market - int64
-var refreshOrders = &RefreshOrders{inFresh: make(map[string]bool)}
+var refreshOrders = &RefreshOrders{inHang: make(map[string]bool)}
 var canceling = false
 
 type RefreshOrders struct {
@@ -33,26 +33,26 @@ type RefreshOrders struct {
 	lastChancePrice  map[string]map[string]float64         // market - symbol - chance price
 	lastRefreshPrice map[string]map[string]float64         // market - symbol - refresh price
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
-	inFresh          map[string]bool                       // symbol - bool
+	inHang           map[string]bool                       // symbol - bool
 	amountIndex      int
 }
 
-func (refreshOrders *RefreshOrders) setInFresh(symbol string, in bool) {
+func (refreshOrders *RefreshOrders) setInHang(symbol string, in bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
-	if refreshOrders.inFresh == nil {
-		refreshOrders.inFresh = make(map[string]bool)
+	if refreshOrders.inHang == nil {
+		refreshOrders.inHang = make(map[string]bool)
 	}
-	refreshOrders.inFresh[symbol] = in
+	refreshOrders.inHang[symbol] = in
 }
 
-func (refreshOrders *RefreshOrders) getInFresh(symbol string) (in bool) {
+func (refreshOrders *RefreshOrders) getInHang(symbol string) (in bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
-	if refreshOrders.inFresh == nil {
-		refreshOrders.inFresh[symbol] = true
+	if refreshOrders.inHang == nil {
+		return false
 	}
-	return refreshOrders.inFresh[symbol]
+	return refreshOrders.inHang[symbol]
 }
 
 func (refreshOrders *RefreshOrders) setRefreshHang(symbol string, hangBid, hangAsk *model.Order) {
@@ -419,18 +419,18 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		if refreshAble {
 			if CancelRefreshHang(market, symbol) {
-				refreshOrders.setInFresh(symbol, true)
+				refreshOrders.setInHang(symbol, false)
 				return
 			}
 			doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
 				0.9*priceDistance, amount, tick)
-		} else if !refreshOrders.getInFresh(symbol) {
+		} else if refreshOrders.getInHang(symbol) {
 			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 				binancePrice, tick)
 		}
 	} else {
-		if refreshOrders.getInFresh(symbol) {
-			refreshOrders.setInFresh(symbol, false)
+		if refreshOrders.getInHang(symbol) {
+			refreshOrders.setInHang(symbol, true)
 			time.Sleep(time.Second)
 			return
 		} else {
