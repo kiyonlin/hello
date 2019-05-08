@@ -179,7 +179,7 @@ func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
 			}
 		}
 	}
-	return true
+	return false
 }
 
 func (markets *Markets) RequireDealChanReset(market string, subscribe string) bool {

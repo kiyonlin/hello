@@ -146,9 +146,6 @@ func validHang(market, symbol string, tick *model.BidAsk) {
 }
 
 func placeHangOrder(orderSide, market, symbol, accountType string, price, amount float64, index int) {
-	if amount*price < 6 {
-		return
-	}
 	util.Notice(fmt.Sprintf(`[hang %s %s]price: %f amount: %f`, symbol, orderSide, price, amount))
 	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
 		accountType, price, amount)

@@ -42,6 +42,7 @@ func AccountHandlerServe() {
 var CancelAllOrders = func() {
 	previousHandle := model.AppConfig.Handle
 	model.AppConfig.Handle = `0`
+	time.Sleep(time.Second)
 	markets := model.GetMarkets()
 	for _, market := range markets {
 		symbols := model.GetMarketSymbols(market)
@@ -209,6 +210,7 @@ func MaintainMarketChan() {
 					model.AppMarkets.PutDepthChan(market, index, createMarketDepthServer(model.AppMarkets, market))
 					util.SocketInfo(market + " create new depth channel " + symbol)
 				} else if model.AppMarkets.RequireDepthChanReset(market, symbol) {
+					CancelRefreshHang(market, symbol)
 					model.AppMarkets.PutDepthChan(market, index, nil)
 					channel <- struct{}{}
 					close(channel)

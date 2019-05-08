@@ -182,6 +182,7 @@ func RefreshCoinAccount(setMarket, symbol, setCoin, accountType string) {
 				if market == setMarket {
 					for coin, account := range value {
 						if coin == setCoin {
+							util.Notice(fmt.Sprintf(`[update single coin]%s %s %s`, setMarket, symbol, setCoin))
 							model.AppAccounts.SetAccount(setMarket, coin, account)
 						}
 					}
@@ -191,6 +192,7 @@ func RefreshCoinAccount(setMarket, symbol, setCoin, accountType string) {
 			currencies, fcoinAccounts := getAccountFcoin()
 			for i := 0; i < len(currencies); i++ {
 				if currencies[i] == setCoin {
+					util.Notice(fmt.Sprintf(`[update single coin]%s %s %s`, setMarket, symbol, setCoin))
 					model.AppAccounts.SetAccount(setMarket, currencies[i], fcoinAccounts[i])
 				}
 			}
