@@ -436,6 +436,9 @@ var ProcessRefresh = func(market, symbol string) {
 						binancePrice, tick)
 				}
 			}
+		} else {
+			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
+				binancePrice, tick)
 		}
 	}
 }
