@@ -20,8 +20,6 @@ type HangStatus struct {
 }
 
 func (hangStatus *HangStatus) setHanging(symbol string, value bool) (current bool) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
 	if hangStatus.hanging == nil {
 		hangStatus.hanging = make(map[string]bool)
 	}

@@ -17,7 +17,7 @@ import (
 var syncRefresh = make(chan interface{}, 20)
 
 //var LastRefreshTime = make(map[string]int64) // market - int64
-var refreshOrders = &RefreshOrders{}
+var refreshOrders = &RefreshOrders{canceling: make(map[string]bool)}
 var canceling = false
 
 type RefreshOrders struct {
@@ -35,6 +35,7 @@ type RefreshOrders struct {
 	lastRefreshPrice map[string]map[string]float64         // market - symbol - refresh price
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
 	inRefresh        map[string]bool                       // symbol - bool
+	canceling        map[string]bool                       // symbol - bool
 	amountIndex      int
 }
 
@@ -339,16 +340,12 @@ func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, b
 }
 
 func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refreshing bool) (current bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
 	current = refreshOrders.refreshing
 	refreshOrders.refreshing = refreshing
 	return current
 }
 
 func (refreshOrders *RefreshOrders) setHandling(market, symbol string, handling bool) (current bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
 	current = refreshOrders.handling
 	refreshOrders.handling = current
 	return current
@@ -512,6 +509,10 @@ func refreshHang(market, symbol, accountType string,
 }
 
 func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, tick *model.BidAsk) {
+	if refreshOrders.canceling[symbol] {
+		return
+	}
+	refreshOrders.canceling[symbol] = true
 	needCancel := false
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
@@ -544,6 +545,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 	if needCancel {
 		util.Notice(fmt.Sprintf(`[hang] %s %s need cancel`, market, symbol))
 	}
+	refreshOrders.canceling[symbol] = false
 }
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
