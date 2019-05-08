@@ -41,6 +41,7 @@ type RefreshOrders struct {
 func (refreshOrders *RefreshOrders) setInRefresh(symbol string, in bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
+	util.Notice(fmt.Sprintf(`[-->enter %v]%s`, in, symbol))
 	if refreshOrders.inRefresh == nil {
 		refreshOrders.inRefresh = make(map[string]bool)
 	}
@@ -460,7 +461,6 @@ func refreshHang(market, symbol, accountType string,
 		return
 	}
 	defer refreshOrders.setHandling(market, symbol, false)
-	util.Notice(fmt.Sprintf(`[-----hang---]%s %s`, market, symbol))
 	if hangRate == 0.0 {
 		return
 	}
