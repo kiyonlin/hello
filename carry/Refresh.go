@@ -433,18 +433,20 @@ var ProcessRefresh = func(market, symbol string) {
 				refreshOrders.setInRefresh(symbol, true)
 				CancelRefreshHang(market, symbol)
 			} else {
-				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
+				refreshOrders.refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 					binancePrice, tick)
 			}
 		} else {
-			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
+			refreshOrders.refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 				binancePrice, tick)
 		}
 	}
 }
 
-func refreshHang(market, symbol, accountType string,
+func (refreshOrders *RefreshOrders) refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
 	if hangRate == 0.0 {
 		return
 	}
