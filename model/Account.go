@@ -50,12 +50,6 @@ func (accounts *Accounts) GetAccount(marketName string, currency string) *Accoun
 	return accounts.Data[marketName][currency]
 }
 
-func (accounts *Accounts) GetAccounts(marketName string) map[string]*Account {
-	accounts.Lock.Lock()
-	defer accounts.Lock.Unlock()
-	return accounts.Data[marketName]
-}
-
 func (accounts *Accounts) SetAccount(marketName string, currency string, account *Account) {
 	accounts.Lock.Lock()
 	defer accounts.Lock.Unlock()

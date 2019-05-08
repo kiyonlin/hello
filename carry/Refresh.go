@@ -17,7 +17,7 @@ import (
 var syncRefresh = make(chan interface{}, 20)
 
 //var LastRefreshTime = make(map[string]int64) // market - int64
-var refreshOrders = &RefreshOrders{inHang: make(map[string]bool)}
+var refreshOrders = &RefreshOrders{}
 var canceling = false
 
 type RefreshOrders struct {
@@ -33,26 +33,26 @@ type RefreshOrders struct {
 	lastChancePrice  map[string]map[string]float64         // market - symbol - chance price
 	lastRefreshPrice map[string]map[string]float64         // market - symbol - refresh price
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
-	inHang           map[string]bool                       // symbol - bool
+	inRefresh        map[string]bool                       // symbol - bool
 	amountIndex      int
 }
 
-func (refreshOrders *RefreshOrders) setInHang(symbol string, in bool) {
+func (refreshOrders *RefreshOrders) setInRefresh(symbol string, in bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
-	if refreshOrders.inHang == nil {
-		refreshOrders.inHang = make(map[string]bool)
+	if refreshOrders.inRefresh == nil {
+		refreshOrders.inRefresh = make(map[string]bool)
 	}
-	refreshOrders.inHang[symbol] = in
+	refreshOrders.inRefresh[symbol] = in
 }
 
-func (refreshOrders *RefreshOrders) getInHang(symbol string) (in bool) {
+func (refreshOrders *RefreshOrders) getInRefresh(symbol string) (in bool) {
 	refreshOrders.lock.Lock()
 	defer refreshOrders.lock.Unlock()
-	if refreshOrders.inHang == nil {
+	if refreshOrders.inRefresh == nil {
 		return false
 	}
-	return refreshOrders.inHang[symbol]
+	return refreshOrders.inRefresh[symbol]
 }
 
 func (refreshOrders *RefreshOrders) setRefreshHang(symbol string, hangBid, hangAsk *model.Order) {
@@ -364,7 +364,15 @@ func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool)
 
 var ProcessRefresh = func(market, symbol string) {
 	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	binanceResult, binancePrice := getBinanceInfo(symbol)
+	if model.AppMarkets.BidAsks[symbol] == nil {
+		return
+	}
+	tick := model.AppMarkets.BidAsks[symbol][market]
+	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 {
+		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
+		return
+	}
+	binanceResult, binancePrice := getBinanceInfo(market, symbol)
 	if delay > 200 || !binanceResult {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
@@ -381,14 +389,6 @@ var ProcessRefresh = func(market, symbol string) {
 		hangRate, _ = strconv.ParseFloat(parameters[0], 64)
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
-	if model.AppMarkets.BidAsks[symbol] == nil {
-		return
-	}
-	tick := model.AppMarkets.BidAsks[symbol][market]
-	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 {
-		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		return
-	}
 	go validRefreshHang(market, symbol, amountLimit, binancePrice, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` ||
 		refreshOrders.setRefreshing(market, symbol, true) {
@@ -399,43 +399,43 @@ var ProcessRefresh = func(market, symbol string) {
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
-	if haveAmount {
-		if index > refreshOrders.amountIndex {
-			refreshOrders.amountIndex = index
-			refreshAccount(market)
-		}
-		amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
-		priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-		if canceling {
-			util.Notice(`[refreshing waiting for canceling]`)
-			return
-		}
-		refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
-		if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
-			refreshOrders.SetLastChancePrice(market, symbol, 0)
-			refreshAble = false
-		} else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, 0.9*priceDistance) {
-			refreshAble = false
-		}
-		if refreshAble {
-			if CancelRefreshHang(market, symbol) {
-				refreshOrders.setInHang(symbol, false)
-				return
+	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	if canceling {
+		util.Notice(`[refreshing waiting for canceling]`)
+		return
+	}
+	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
+	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
+		refreshOrders.SetLastChancePrice(market, symbol, 0)
+		refreshAble = false
+	} else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, 0.9*priceDistance) {
+		refreshAble = false
+	}
+	if refreshOrders.getInRefresh(symbol) {
+		if haveAmount {
+			if refreshAble {
+				doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
+					0.9*priceDistance, amount, tick)
 			}
-			doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
-				0.9*priceDistance, amount, tick)
-		} else if refreshOrders.getInHang(symbol) {
-			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
-				binancePrice, tick)
+		} else {
+			refreshOrders.setInRefresh(symbol, false)
+			time.Sleep(time.Second)
 		}
 	} else {
-		if refreshOrders.getInHang(symbol) {
-			refreshOrders.setInHang(symbol, true)
-			time.Sleep(time.Second)
-			return
-		} else {
-			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
-				binancePrice, tick)
+		if haveAmount {
+			if index > refreshOrders.amountIndex {
+				refreshOrders.amountIndex = index
+				refreshAccount(market)
+			} else {
+				if refreshAble {
+					refreshOrders.setInRefresh(symbol, true)
+					CancelRefreshHang(market, symbol)
+				} else {
+					refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
+						binancePrice, tick)
+				}
+			}
 		}
 	}
 }
@@ -453,6 +453,12 @@ func refreshHang(market, symbol, accountType string,
 	}
 	rightFree = rightFree / tick.Asks[0].Price
 	needRefresh := false
+	coins := strings.Split(symbol, `_`)
+	if len(coins) != 2 {
+		util.Notice(fmt.Sprintf(`[wrong symbol]%s`, symbol))
+		return
+	}
+	coin := ``
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangAsk == nil && askAll > amountLimit && binancePrice*0.9997 <= tick.Asks[9].Price {
 		hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
@@ -461,6 +467,7 @@ func refreshHang(market, symbol, accountType string,
 			hangAsk.Function = model.FunctionHang
 			model.AppDB.Save(&hangAsk)
 		} else if hangAsk != nil && hangAsk.ErrCode == `1016` {
+			coin = coins[0]
 			needRefresh = true
 		}
 	}
@@ -471,12 +478,15 @@ func refreshHang(market, symbol, accountType string,
 			hangBid.Function = model.FunctionHang
 			model.AppDB.Save(&hangBid)
 		} else if hangBid != nil && hangBid.ErrCode == `1016` {
+			coin = coins[1]
 			needRefresh = true
 		}
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needRefresh {
-		refreshAccount(market)
+		CancelRefreshHang(market, symbol)
+		time.Sleep(time.Second * 2)
+		api.RefreshCoinAccount(market, symbol, coin, accountType)
 	}
 }
 
@@ -591,7 +601,27 @@ func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount
 	return false, ``, ``, 0
 }
 
-func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
+func getBinanceInfo(market, symbol string) (result bool, binancePrice float64) {
+	if market == model.Fcoin && symbol == `btc_pax` {
+		if model.AppMarkets.BidAsks[`btc_usdt`] == nil || model.AppMarkets.BidAsks[`pax_usdt`] == nil {
+			return false, 0
+		}
+		tickBtcUsdt := model.AppMarkets.BidAsks[`btc_usdt`][model.Fcoin]
+		tickPaxUsdt := model.AppMarkets.BidAsks[`pax_usdt`][model.Fcoin]
+		if tickBtcUsdt != nil && tickBtcUsdt.Bids != nil && tickBtcUsdt.Asks != nil && len(tickBtcUsdt.Bids) > 0 &&
+			len(tickBtcUsdt.Asks) > 0 && tickPaxUsdt != nil && tickPaxUsdt.Bids != nil && tickPaxUsdt.Asks != nil &&
+			len(tickPaxUsdt.Bids) > 0 && len(tickPaxUsdt.Asks) > 0 {
+			pricePaxUsdt := (tickPaxUsdt.Asks[0].Price + tickPaxUsdt.Bids[0].Price) / 2
+			priceBtcUsdt := (tickBtcUsdt.Asks[0].Price + tickBtcUsdt.Bids[0].Price) / 2
+			if pricePaxUsdt == 0 {
+				return false, 0
+			} else {
+				return true, priceBtcUsdt / pricePaxUsdt
+			}
+		} else {
+			return false, 0
+		}
+	}
 	binanceBidAsks := model.AppMarkets.BidAsks[symbol][model.Binance]
 	if binanceBidAsks == nil || binanceBidAsks.Bids == nil || binanceBidAsks.Asks == nil ||
 		binanceBidAsks.Bids.Len() == 0 || binanceBidAsks.Asks.Len() == 0 {
@@ -607,7 +637,7 @@ func getBinanceInfo(symbol string) (result bool, binancePrice float64) {
 
 func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, orderReverse string,
 	price, priceDistance, amount float64, tick *model.BidAsk) {
-	go receiveRefresh(market, symbol, price, priceDistance, amount, setting.AmountLimit)
+	go receiveRefresh(market, symbol, accountType, price, priceDistance, amount, setting.AmountLimit)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
 	if setting.RefreshSameTime == 1 {
@@ -624,7 +654,7 @@ func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, o
 	}
 }
 
-func receiveRefresh(market, symbol string, price, priceDistance, amount, amountLimit float64) {
+func receiveRefresh(market, symbol, accountType string, price, priceDistance, amount, amountLimit float64) {
 	for true {
 		//util.Notice(fmt.Sprintf(`[before receive]%s %s %f %f`, market, symbol, price, amount))
 		_ = <-syncRefresh
@@ -646,8 +676,16 @@ func receiveRefresh(market, symbol string, price, priceDistance, amount, amountL
 					api.MustCancel(refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
 				}
 				time.Sleep(time.Second)
-				if refreshLastAsk.ErrCode == `1016` || refreshLastBid.ErrCode == `1016` {
-					refreshAccount(market)
+				coins := strings.Split(symbol, `_`)
+				coin := ``
+				if refreshLastAsk.ErrCode == `1016` {
+					coin = coins[0]
+				}
+				if refreshLastBid.ErrCode == `1016` {
+					coin = coins[1]
+				}
+				if coin != `` {
+					api.RefreshCoinAccount(market, symbol, coin, accountType)
 				}
 			}
 			break

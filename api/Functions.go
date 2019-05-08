@@ -171,7 +171,35 @@ func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 //	return order
 //}
 
-func RefreshExclusive(market string, coins map[string]bool) {
+func RefreshCoinAccount(setMarket, symbol, setCoin, accountType string) {
+	switch setMarket {
+	case model.Fcoin:
+		if accountType == model.AccountTypeLever {
+			setMarket = fmt.Sprintf(`%s_%s_%s`, setMarket, model.AccountTypeLever,
+				strings.Replace(symbol, `_`, ``, 1))
+			accounts := getLeverAccountFcoin()
+			for market, value := range accounts {
+				if market == setMarket {
+					for coin, account := range value {
+						if coin == setCoin {
+							model.AppAccounts.SetAccount(setMarket, coin, account)
+						}
+					}
+				}
+			}
+		} else {
+			currencies, fcoinAccounts := getAccountFcoin()
+			for i := 0; i < len(currencies); i++ {
+				if currencies[i] == setCoin {
+					model.AppAccounts.SetAccount(setMarket, currencies[i], fcoinAccounts[i])
+				}
+			}
+		}
+	}
+}
+
+//RefreshExclusive
+func _(market string, coins map[string]bool) {
 	switch market {
 	case model.Fcoin:
 		accounts := getLeverAccountFcoin()
