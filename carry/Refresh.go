@@ -426,7 +426,7 @@ var ProcessRefresh = func(market, symbol string) {
 		if haveAmount {
 			if index > refreshOrders.amountIndex {
 				refreshOrders.amountIndex = index
-				refreshAccount(market)
+				cancelAndRefresh(market)
 			} else {
 				if refreshAble {
 					refreshOrders.setInRefresh(symbol, true)
@@ -696,7 +696,7 @@ func receiveRefresh(market, symbol, accountType string, price, priceDistance, am
 	}
 }
 
-func refreshAccount(market string) {
+func cancelAndRefresh(market string) {
 	symbols := model.GetMarketSymbols(market)
 	for key := range symbols {
 		CancelRefreshHang(market, key)
