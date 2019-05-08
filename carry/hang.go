@@ -66,6 +66,7 @@ var ProcessHang = func(market, symbol string) {
 	}
 	go validHang(market, symbol, tick)
 	if hangStatus.setHanging(symbol, true) || model.AppConfig.Handle != `1` {
+		defer hangStatus.setHanging(symbol, false)
 		return
 	}
 	defer hangStatus.setHanging(symbol, false)

@@ -401,6 +401,7 @@ var ProcessRefresh = func(market, symbol string) {
 	go validRefreshHang(market, symbol, amountLimit, binancePrice, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` ||
 		refreshOrders.setRefreshing(market, symbol, true) {
+		defer refreshOrders.setRefreshing(market, symbol, false)
 		return
 	}
 	defer refreshOrders.setRefreshing(market, symbol, false)
@@ -455,9 +456,11 @@ var ProcessRefresh = func(market, symbol string) {
 func refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
 	if refreshOrders.setHandling(market, symbol, true) {
+		defer refreshOrders.setHandling(market, symbol, false)
 		return
 	}
 	defer refreshOrders.setHandling(market, symbol, false)
+	util.Notice(fmt.Sprintf(`[-----hang---]%s %s`, market, symbol))
 	if hangRate == 0.0 {
 		return
 	}
@@ -542,7 +545,9 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 }
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
+	util.Notice(fmt.Sprintf(`[-----cancel hang---]%s %s`, market, symbol))
 	if refreshOrders.setHandling(market, symbol, true) {
+		defer refreshOrders.setHandling(market, symbol, false)
 		return
 	}
 	defer refreshOrders.setHandling(market, symbol, false)
