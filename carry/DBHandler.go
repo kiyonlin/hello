@@ -61,33 +61,33 @@ var CancelAllOrders = func() {
 	model.AppConfig.Handle = previousHandle
 }
 
-func RefreshAccounts() {
-	for true {
-		//if model.AppConfig.Handle == `1` {
-		//	model.AppConfig.Handle = `0`
-		//	time.Sleep(time.Second * 5)
-		//	model.AppConfig.Handle = `1`
-		//}
-		markets := model.GetMarkets()
-		timestamp := util.GetNow()
-		for _, value := range markets {
-			api.RefreshAccount(value)
-			if model.AppAccounts.Data[value] == nil {
-				continue
-			}
-			//accounts.MarketTotal[marketName] = 0
-			symbols := model.GetMarketSymbols(value)
-			for key, account := range model.AppAccounts.Data[value] {
-				if symbols[key+"_usdt"] || key == `usdt` {
-					account.PriceInUsdt, _ = api.GetPrice(key + "_usdt")
-					account.Timestamp = timestamp
-				}
-			}
-			model.AccountChannel <- model.AppAccounts.Data[value]
-		}
-		time.Sleep(time.Hour)
-	}
-}
+//func RefreshAccounts() {
+//	for true {
+//		if model.AppConfig.Handle == `1` {
+//			model.AppConfig.Handle = `0`
+//			time.Sleep(time.Second * 5)
+//			model.AppConfig.Handle = `1`
+//		}
+//		markets := model.GetMarkets()
+//		timestamp := util.GetNow()
+//		for _, value := range markets {
+//			api.RefreshAccount(value)
+//			if model.AppAccounts.Data[value] == nil {
+//				continue
+//			}
+//			//accounts.MarketTotal[marketName] = 0
+//			symbols := model.GetMarketSymbols(value)
+//			for key, account := range model.AppAccounts.Data[value] {
+//				if symbols[key+"_usdt"] || key == `usdt` {
+//					account.PriceInUsdt, _ = api.GetPrice(key + "_usdt")
+//					account.Timestamp = timestamp
+//				}
+//			}
+//			model.AccountChannel <- model.AppAccounts.Data[value]
+//		}
+//		time.Sleep(time.Hour)
+//	}
+//}
 
 var feeIndex int
 
@@ -245,7 +245,7 @@ func Maintain() {
 	model.LoadSettings()
 	go CancelOldMakers()
 	go AccountHandlerServe()
-	go RefreshAccounts()
+	//go RefreshAccounts()
 	go MaintainTransFee()
 	go util.StartMidNightTimer(CancelAllOrders)
 	for true {
