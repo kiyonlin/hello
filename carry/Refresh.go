@@ -432,7 +432,7 @@ var ProcessRefresh = func(market, symbol string) {
 		if haveAmount {
 			if refreshAble {
 				refreshOrders.setInRefresh(symbol, true)
-				cancelRefreshHang(market, symbol)
+				CancelRefreshHang(market, symbol)
 			} else {
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 					binancePrice, tick)
@@ -490,7 +490,7 @@ func refreshHang(market, symbol, accountType string,
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needRefresh {
-		cancelRefreshHang(market, symbol)
+		CancelRefreshHang(market, symbol)
 		time.Sleep(time.Second * 2)
 		api.RefreshCoinAccount(market, symbol, coin, accountType)
 	}
@@ -531,7 +531,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 	}
 }
 
-func cancelRefreshHang(market, symbol string) (needCancel bool) {
+func CancelRefreshHang(market, symbol string) (needCancel bool) {
 	handLock.Lock()
 	defer handLock.Unlock()
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
@@ -704,7 +704,7 @@ func receiveRefresh(market, symbol, accountType string, price, priceDistance, am
 func CancelAndRefresh(market string) {
 	symbols := model.GetMarketSymbols(market)
 	for key := range symbols {
-		cancelRefreshHang(market, key)
+		CancelRefreshHang(market, key)
 	}
 	time.Sleep(time.Second * 2)
 	api.RefreshAccount(market)
