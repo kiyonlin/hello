@@ -443,6 +443,10 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 }
 
+func ControllerClear(market, symbol string) {
+	refreshOrders.CancelRefreshHang(market, symbol)
+}
+
 func (refreshOrders *RefreshOrders) refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
 	refreshOrders.lock.Lock()
