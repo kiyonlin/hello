@@ -19,6 +19,7 @@ var syncRefresh = make(chan interface{}, 20)
 //var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
 var canceling = false
+var handLock sync.Mutex
 
 type RefreshOrders struct {
 	lock             sync.Mutex
@@ -431,26 +432,22 @@ var ProcessRefresh = func(market, symbol string) {
 		if haveAmount {
 			if refreshAble {
 				refreshOrders.setInRefresh(symbol, true)
-				refreshOrders.CancelRefreshHang(market, symbol)
+				cancelRefreshHang(market, symbol)
 			} else {
-				refreshOrders.refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
+				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 					binancePrice, tick)
 			}
 		} else {
-			refreshOrders.refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
+			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 				binancePrice, tick)
 		}
 	}
 }
 
-func ControllerClear(market, symbol string) {
-	refreshOrders.CancelRefreshHang(market, symbol)
-}
-
-func (refreshOrders *RefreshOrders) refreshHang(market, symbol, accountType string,
+func refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+	handLock.Lock()
+	defer handLock.Unlock()
 	if hangRate == 0.0 {
 		return
 	}
@@ -493,7 +490,7 @@ func (refreshOrders *RefreshOrders) refreshHang(market, symbol, accountType stri
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
 	if needRefresh {
-		refreshOrders.CancelRefreshHang(market, symbol)
+		cancelRefreshHang(market, symbol)
 		time.Sleep(time.Second * 2)
 		api.RefreshCoinAccount(market, symbol, coin, accountType)
 	}
@@ -534,9 +531,9 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 	}
 }
 
-func (refreshOrders *RefreshOrders) CancelRefreshHang(market, symbol string) (needCancel bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
+func cancelRefreshHang(market, symbol string) (needCancel bool) {
+	handLock.Lock()
+	defer handLock.Unlock()
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		api.MustCancel(market, symbol, hangBid.OrderId, true)
@@ -707,7 +704,7 @@ func receiveRefresh(market, symbol, accountType string, price, priceDistance, am
 func CancelAndRefresh(market string) {
 	symbols := model.GetMarketSymbols(market)
 	for key := range symbols {
-		refreshOrders.CancelRefreshHang(market, key)
+		cancelRefreshHang(market, key)
 	}
 	time.Sleep(time.Second * 2)
 	api.RefreshAccount(market)
