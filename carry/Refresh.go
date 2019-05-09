@@ -383,7 +383,6 @@ var ProcessRefresh = func(market, symbol string) {
 	go validRefreshHang(market, symbol, amountLimit, binancePrice, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` ||
 		refreshOrders.setRefreshing(market, symbol, true) {
-		defer refreshOrders.setRefreshing(market, symbol, false)
 		return
 	}
 	defer refreshOrders.setRefreshing(market, symbol, false)
@@ -396,7 +395,6 @@ var ProcessRefresh = func(market, symbol string) {
 		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
 		CancelAndRefresh(market)
-		time.Sleep(time.Second * 2)
 		model.AppConfig.Handle = `1`
 		return
 	}
@@ -412,6 +410,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if refreshOrders.getWaiting(symbol) {
 		time.Sleep(time.Second)
 		refreshOrders.setWaiting(symbol, false)
+		return
 	}
 	if refreshOrders.getInRefresh(symbol) {
 		if haveAmount {
@@ -530,7 +529,6 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
 	util.Notice(fmt.Sprintf(`[-----cancel hang---]%s %s`, market, symbol))
 	if refreshOrders.setHandling(market, symbol, true) {
-		defer refreshOrders.setHandling(market, symbol, false)
 		return
 	}
 	defer refreshOrders.setHandling(market, symbol, false)

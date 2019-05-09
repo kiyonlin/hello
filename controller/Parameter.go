@@ -353,11 +353,7 @@ func SetParameters(c *gin.Context) {
 		if handle == `0` {
 			markets := model.GetMarkets()
 			for _, value := range markets {
-				symbols := model.GetMarketSymbols(value)
-				for key := range symbols {
-					//carry.ControllerClear(value, key)
-					carry.CancelRefreshHang(value, key)
-				}
+				carry.CancelAndRefresh(value)
 			}
 		}
 	}
