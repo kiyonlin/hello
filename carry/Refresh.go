@@ -17,7 +17,7 @@ import (
 var syncRefresh = make(chan interface{}, 20)
 
 //var LastRefreshTime = make(map[string]int64) // market - int64
-var refreshOrders = &RefreshOrders{canceling: make(map[string]bool)}
+var refreshOrders = &RefreshOrders{}
 var canceling = false
 
 type RefreshOrders struct {
@@ -35,7 +35,6 @@ type RefreshOrders struct {
 	lastRefreshPrice map[string]map[string]float64         // market - symbol - refresh price
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
 	inRefresh        map[string]bool                       // symbol - bool
-	canceling        map[string]bool                       // symbol - bool
 	amountIndex      int
 }
 
@@ -56,6 +55,22 @@ func (refreshOrders *RefreshOrders) getInRefresh(symbol string) (in bool) {
 		return false
 	}
 	return refreshOrders.inRefresh[symbol]
+}
+
+func (refreshOrders *RefreshOrders) removeRefreshHang(symbol string, hangBid, hangAsk *model.Order) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.fcoinHang == nil || refreshOrders.fcoinHang[symbol] == nil {
+		return
+	}
+	if hangBid != nil && refreshOrders.fcoinHang[symbol][0] != nil &&
+		refreshOrders.fcoinHang[symbol][0].OrderId == hangBid.OrderId {
+		refreshOrders.fcoinHang[symbol][0] = nil
+	}
+	if hangAsk != nil && refreshOrders.fcoinHang[symbol][1] != nil &&
+		refreshOrders.fcoinHang[symbol][1].OrderId == hangAsk.OrderId {
+		refreshOrders.fcoinHang[symbol][1] = nil
+	}
 }
 
 func (refreshOrders *RefreshOrders) setRefreshHang(symbol string, hangBid, hangAsk *model.Order) {
@@ -509,11 +524,6 @@ func refreshHang(market, symbol, accountType string,
 }
 
 func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, tick *model.BidAsk) {
-	if refreshOrders.canceling[symbol] {
-		return
-	}
-	refreshOrders.canceling[symbol] = true
-	needCancel := false
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		bidAll := 0.0
@@ -523,9 +533,8 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 		if hangBid.Price < tick.Bids[14].Price || bidAll < amountLimit || hangBid.Price > 1.0003*binancePrice {
 			util.Notice(fmt.Sprintf(`[cancelhangbid]%s %f <bid15:%f bidall:%f < amount:%f price %f > binance %f`,
 				symbol, hangBid.Price, tick.Bids[14].Price, bidAll, amountLimit, hangBid.Price, binancePrice))
-			needCancel = true
-			api.MustCancel(market, symbol, hangBid.OrderId, true)
-			hangBid = nil
+			go api.MustCancel(market, symbol, hangBid.OrderId, true)
+			refreshOrders.removeRefreshHang(symbol, hangBid, nil)
 		}
 	}
 	if hangAsk != nil {
@@ -536,16 +545,10 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 		if hangAsk.Price > tick.Asks[14].Price || askAll < amountLimit || hangAsk.Price < 0.9997*binancePrice {
 			util.Notice(fmt.Sprintf(`[cancelhangask]%s %f >ask15:%f askall:%f < amount:%f price %f < binance %f`,
 				symbol, hangAsk.Price, tick.Asks[14].Price, askAll, amountLimit, hangAsk.Price, binancePrice))
-			needCancel = true
-			api.MustCancel(market, symbol, hangAsk.OrderId, true)
-			hangAsk = nil
+			go api.MustCancel(market, symbol, hangAsk.OrderId, true)
+			refreshOrders.removeRefreshHang(symbol, nil, hangAsk)
 		}
 	}
-	refreshOrders.setRefreshHang(symbol, hangBid, hangAsk)
-	if needCancel {
-		util.Notice(fmt.Sprintf(`[hang] %s %s need cancel`, market, symbol))
-	}
-	refreshOrders.canceling[symbol] = false
 }
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
