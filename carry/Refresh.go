@@ -191,7 +191,7 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	defer refreshOrders.lock.Unlock()
 	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
 		refreshOrders.amountLimit[market][symbol] == nil {
-		return true, -1
+		return true, 0
 	}
 	now := util.GetNow()
 	amountIndex = int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
