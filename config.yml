@@ -10,7 +10,7 @@ maxusdt: 1500
 inchina: 0
 mail: haoweizh@qq.com
 carrydistance: 0.001
-binanceorderdis: 0.0013
+binanceorderdis: 0.0008
 predealdis: 0.0013
 between: 20
 handle: 1
@@ -18,8 +18,8 @@ handlerefresh: 1
 handlegrid: 1
 handlemaker: 1
 waitrefreshrandom: 4000
-dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=simon password=Boluo160820 sslmode=disable
-#dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=dk password=Boluo160820 sslmode=disable
+#dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=simon password=Boluo160820 sslmode=disable
+dbconnection: host=mydb.cjshu27azhfb.ap-northeast-1.rds.amazonaws.com port=5432 user=dbuser dbname=dk password=Boluo160820 sslmode=disable
 env: simon
 bnbmin: 20 #价值20usd的bnb
 bnbbuy: 20 #价值20usd的bnb

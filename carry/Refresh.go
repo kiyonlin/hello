@@ -425,6 +425,7 @@ var ProcessRefresh = func(market, symbol string) {
 	} else {
 		if haveAmount {
 			if refreshAble {
+				util.Notice(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
 				refreshOrders.setInRefresh(symbol, true)
 				CancelRefreshHang(market, symbol)
 				time.Sleep(time.Second)
@@ -547,7 +548,7 @@ func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount
 	result bool, orderSide, reverseSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	tick := model.AppMarkets.BidAsks[symbol][market]
-	if math.Abs(tick.Bids[0].Price-tick.Asks[0].Price) > priceDistance*1.1 && symbol != `btc_pax` {
+	if tick.Asks[0].Price-tick.Bids[0].Price > priceDistance*1.1 && symbol != `btc_pax` {
 		return false, "", "", 0
 	}
 	if tick.Bids[0].Price > binancePrice*(1+setting.BinanceDisMin) &&
