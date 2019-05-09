@@ -443,7 +443,6 @@ var ProcessRefresh = func(market, symbol string) {
 func refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
 	if refreshOrders.setHandling(market, symbol, true) {
-		defer refreshOrders.setHandling(market, symbol, false)
 		return
 	}
 	defer refreshOrders.setHandling(market, symbol, false)
