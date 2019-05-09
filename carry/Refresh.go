@@ -390,6 +390,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
+	util.Notice(fmt.Sprintf(`[index]%d %d`, index, refreshOrders.amountIndex))
 	if index > refreshOrders.amountIndex {
 		util.Notice(fmt.Sprintf(`[before 10min canceling]`))
 		model.AppConfig.Handle = `0`
