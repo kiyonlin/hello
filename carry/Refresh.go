@@ -398,6 +398,7 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
+	util.Notice(fmt.Sprintf(`amount %f left %f right %f`, amount, leftFree, rightFree/tick.Asks[0].Price))
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
