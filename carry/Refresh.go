@@ -390,7 +390,6 @@ var ProcessRefresh = func(market, symbol string) {
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
-	util.Notice(fmt.Sprintf(`[index]%d %d`, index, refreshOrders.amountIndex))
 	if index > refreshOrders.amountIndex {
 		util.Notice(fmt.Sprintf(`[before 10min canceling]`))
 		model.AppConfig.Handle = `0`
@@ -416,16 +415,20 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	if refreshOrders.getInRefresh(symbol) {
+		util.Notice(fmt.Sprintf(`[in refreshing %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
 				doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
 					0.9*priceDistance, amount, tick)
+			} else {
+				util.Notice(fmt.Sprintf(`[in refreshing not refreshable %s]`, symbol))
 			}
 		} else {
 			refreshOrders.setInRefresh(symbol, false)
 			time.Sleep(time.Second)
 		}
 	} else {
+		util.Notice(fmt.Sprintf(`[in hang %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
 				util.Notice(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
@@ -433,10 +436,12 @@ var ProcessRefresh = func(market, symbol string) {
 				CancelRefreshHang(market, symbol)
 				time.Sleep(time.Second)
 			} else {
+				util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 					binancePrice, tick)
 			}
 		} else {
+			util.Notice(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
 			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 				binancePrice, tick)
 		}
