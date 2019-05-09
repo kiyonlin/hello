@@ -53,13 +53,12 @@ func (refreshOrders *RefreshOrders) getWaiting(symbol string) (out bool) {
 	if refreshOrders.waiting == nil {
 		return false
 	}
-	return refreshOrders.inRefresh[symbol]
+	return refreshOrders.waiting[symbol]
 }
 
 func (refreshOrders *RefreshOrders) setInRefresh(symbol string, in bool) {
 	defer refreshOrders.lock.Unlock()
 	refreshOrders.lock.Lock()
-	util.Notice(fmt.Sprintf(`[-->enter %v]%s`, in, symbol))
 	if refreshOrders.inRefresh == nil {
 		refreshOrders.inRefresh = make(map[string]bool)
 	}
@@ -409,6 +408,7 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshAble = false
 	}
 	if refreshOrders.getWaiting(symbol) {
+		util.Notice(fmt.Sprintf(`[waiting]%s true`))
 		time.Sleep(time.Second)
 		refreshOrders.setWaiting(symbol, false)
 		return
@@ -561,7 +561,7 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 
 func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
-	util.Notice(fmt.Sprintf(`[predeal]%s %f %f`, symbol, otherPrice, orderSide))
+	util.Notice(fmt.Sprintf(`[predeal]%s %f %f`, symbol, otherPrice, orderPrice))
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	tick := model.AppMarkets.BidAsks[symbol][market]
 	if tick.Asks[0].Price-tick.Bids[0].Price > priceDistance*1.1 && symbol != `btc_pax` {
