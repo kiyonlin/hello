@@ -504,6 +504,7 @@ func refreshHang(market, symbol, accountType string,
 }
 
 func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, tick *model.BidAsk) {
+	util.Notice(fmt.Sprintf(`begin valid %s`, symbol))
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		bidAll := 0.0
@@ -531,6 +532,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 			refreshOrders.setWaiting(symbol, true)
 		}
 	}
+	util.Notice(fmt.Sprintf(`end valid %s`, symbol))
 }
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
