@@ -377,11 +377,10 @@ var ProcessRefresh = func(market, symbol string) {
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
 	go validRefreshHang(market, symbol, amountLimit, binancePrice, tick)
+	defer refreshOrders.setRefreshing(false)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshOrders.refreshing {
 		return
 	}
-	refreshOrders.setRefreshing(true)
-	defer refreshOrders.setRefreshing(false)
 	haveAmount, index := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
 	if index == 0 {
 		refreshOrders.amountIndex = 0
