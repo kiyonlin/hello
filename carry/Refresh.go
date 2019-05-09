@@ -359,7 +359,7 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	binanceResult, binancePrice := getBinanceInfo(market, symbol)
+	binanceResult, otherPrice := getOtherPrice(market, symbol, model.Huobi)
 	if delay > 200 || !binanceResult {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
@@ -376,7 +376,7 @@ var ProcessRefresh = func(market, symbol string) {
 		hangRate, _ = strconv.ParseFloat(parameters[0], 64)
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
-	go validRefreshHang(market, symbol, amountLimit, binancePrice, tick)
+	go validRefreshHang(market, symbol, amountLimit, otherPrice, tick)
 	defer refreshOrders.setRefreshing(false)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshOrders.refreshing {
 		util.Notice(fmt.Sprintf(`[status]%s %s %v`,
@@ -400,7 +400,7 @@ var ProcessRefresh = func(market, symbol string) {
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
 	util.Notice(fmt.Sprintf(`amount %f left %f right %f`, amount, leftFree, rightFree/tick.Asks[0].Price))
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
+	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
 		refreshAble = false
@@ -437,18 +437,18 @@ var ProcessRefresh = func(market, symbol string) {
 			} else {
 				util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
-					binancePrice, tick)
+					otherPrice, tick)
 			}
 		} else {
 			util.Notice(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
 			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
-				binancePrice, tick)
+				otherPrice, tick)
 		}
 	}
 }
 
 func refreshHang(market, symbol, accountType string,
-	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
+	hangRate, amountLimit, leftFree, rightFree, otherPrice float64, tick *model.BidAsk) {
 	defer refreshOrders.setHanging(false)
 	util.Notice(fmt.Sprintf(`[refreshhang]%s`, symbol))
 	if refreshOrders.hanging {
@@ -472,7 +472,7 @@ func refreshHang(market, symbol, accountType string,
 	}
 	coin := ``
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
-	if hangAsk == nil && askAll > amountLimit && binancePrice*0.9997 <= tick.Asks[9].Price {
+	if hangAsk == nil && askAll > amountLimit && otherPrice*0.9997 <= tick.Asks[9].Price {
 		hangAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[9].Price, leftFree*hangRate)
 		if hangAsk != nil && hangAsk.OrderId != `` && hangAsk.Status != model.CarryStatusFail {
@@ -484,7 +484,7 @@ func refreshHang(market, symbol, accountType string,
 			needRefresh = true
 		}
 	}
-	if hangBid == nil && bidAll > amountLimit && binancePrice*1.0003 >= tick.Bids[9].Price {
+	if hangBid == nil && bidAll > amountLimit && otherPrice*1.0003 >= tick.Bids[9].Price {
 		hangBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Bids[9].Price, rightFree*hangRate)
 		if hangBid != nil && hangBid.OrderId != `` && hangBid.Status != model.CarryStatusFail {
@@ -505,7 +505,7 @@ func refreshHang(market, symbol, accountType string,
 	util.Notice(fmt.Sprintf(`[refreshhang done]%s`, symbol))
 }
 
-func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, tick *model.BidAsk) {
+func validRefreshHang(market, symbol string, amountLimit, otherPrice float64, tick *model.BidAsk) {
 	util.Notice(fmt.Sprintf(`begin valid %s`, symbol))
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
@@ -513,9 +513,9 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 		for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price > hangBid.Price; i++ {
 			bidAll += tick.Bids[i].Amount
 		}
-		if hangBid.Price < tick.Bids[14].Price || bidAll < amountLimit || hangBid.Price > 1.0003*binancePrice {
-			util.Notice(fmt.Sprintf(`[cancelhangbid]%s %f <bid15:%f bidall:%f < amount:%f price %f > binance %f`,
-				symbol, hangBid.Price, tick.Bids[14].Price, bidAll, amountLimit, hangBid.Price, binancePrice))
+		if hangBid.Price < tick.Bids[14].Price || bidAll < amountLimit || hangBid.Price > 1.0003*otherPrice {
+			util.Notice(fmt.Sprintf(`[cancelhangbid]%s %f <bid15:%f bidall:%f < amount:%f price %f > otherPrice %f`,
+				symbol, hangBid.Price, tick.Bids[14].Price, bidAll, amountLimit, hangBid.Price, otherPrice))
 			go api.MustCancel(market, symbol, hangBid.OrderId, true)
 			refreshOrders.removeRefreshHang(symbol, hangBid, nil)
 			refreshOrders.setWaiting(symbol, true)
@@ -526,9 +526,9 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 		for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price < hangAsk.Price; i++ {
 			askAll += tick.Asks[i].Amount
 		}
-		if hangAsk.Price > tick.Asks[14].Price || askAll < amountLimit || hangAsk.Price < 0.9997*binancePrice {
+		if hangAsk.Price > tick.Asks[14].Price || askAll < amountLimit || hangAsk.Price < 0.9997*otherPrice {
 			util.Notice(fmt.Sprintf(`[cancelhangask]%s %f >ask15:%f askall:%f < amount:%f price %f < binance %f`,
-				symbol, hangAsk.Price, tick.Asks[14].Price, askAll, amountLimit, hangAsk.Price, binancePrice))
+				symbol, hangAsk.Price, tick.Asks[14].Price, askAll, amountLimit, hangAsk.Price, otherPrice))
 			go api.MustCancel(market, symbol, hangAsk.OrderId, true)
 			refreshOrders.removeRefreshHang(symbol, nil, hangAsk)
 			refreshOrders.setWaiting(symbol, true)
@@ -558,16 +558,16 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 	return hangBid != nil || hangAsk != nil
 }
 
-func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount float64) (
+func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	tick := model.AppMarkets.BidAsks[symbol][market]
 	if tick.Asks[0].Price-tick.Bids[0].Price > priceDistance*1.1 && symbol != `btc_pax` {
 		return false, "", "", 0
 	}
-	if tick.Bids[0].Price > binancePrice*(1+setting.BinanceDisMin) &&
-		tick.Bids[0].Price < binancePrice*(1+setting.BinanceDisMax) {
-		if tick.Bids[0].Price <= binancePrice*(1+model.AppConfig.BinanceOrderDis) {
+	if tick.Bids[0].Price > otherPrice*(1+setting.BinanceDisMin) &&
+		tick.Bids[0].Price < otherPrice*(1+setting.BinanceDisMax) {
+		if tick.Bids[0].Price <= otherPrice*(1+model.AppConfig.BinanceOrderDis) {
 			if tick.Bids[0].Amount < amount*setting.RefreshLimit &&
 				tick.Bids[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Asks[0].Amount > 2*tick.Bids[0].Amount &&
@@ -592,9 +592,9 @@ func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount
 			}
 		}
 	}
-	if tick.Asks[0].Price > binancePrice*(1-setting.BinanceDisMax) &&
-		tick.Asks[0].Price < binancePrice*(1-setting.BinanceDisMin) {
-		if tick.Asks[0].Price >= binancePrice*(1-model.AppConfig.BinanceOrderDis) {
+	if tick.Asks[0].Price > otherPrice*(1-setting.BinanceDisMax) &&
+		tick.Asks[0].Price < otherPrice*(1-setting.BinanceDisMin) {
+		if tick.Asks[0].Price >= otherPrice*(1-model.AppConfig.BinanceOrderDis) {
 			if tick.Asks[0].Amount < amount*setting.RefreshLimit &&
 				tick.Asks[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Bids[0].Amount > 2*tick.Asks[0].Amount &&
@@ -622,7 +622,7 @@ func preDeal(setting *model.Setting, market, symbol string, binancePrice, amount
 	return false, ``, ``, 0
 }
 
-func getBinanceInfo(market, symbol string) (result bool, binancePrice float64) {
+func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice float64) {
 	if market == model.Fcoin && symbol == `btc_pax` {
 		if model.AppMarkets.BidAsks[`btc_usdt`] == nil || model.AppMarkets.BidAsks[`pax_usdt`] == nil {
 			return false, 0
@@ -643,14 +643,14 @@ func getBinanceInfo(market, symbol string) (result bool, binancePrice float64) {
 			return false, 0
 		}
 	}
-	binanceBidAsks := model.AppMarkets.BidAsks[symbol][model.Binance]
+	binanceBidAsks := model.AppMarkets.BidAsks[symbol][otherMarket]
 	if binanceBidAsks == nil || binanceBidAsks.Bids == nil || binanceBidAsks.Asks == nil ||
 		binanceBidAsks.Bids.Len() == 0 || binanceBidAsks.Asks.Len() == 0 {
 		return false, 0
 	}
 	delay := util.GetNowUnixMillion() - int64(binanceBidAsks.Ts)
 	if delay > 5000 {
-		util.Notice(fmt.Sprintf(`[binance %s]delay %d`, symbol, delay))
+		util.Notice(fmt.Sprintf(`[%s %s]delay %d`, otherMarket, symbol, delay))
 		return false, 0
 	}
 	return true, (binanceBidAsks.Bids[0].Price + binanceBidAsks.Asks[0].Price) / 2

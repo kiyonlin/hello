@@ -67,7 +67,8 @@ func LoadSettings() {
 	AppSettings = []Setting{}
 	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
 	marketSymbolSetting = make(map[string]map[string]map[string]*Setting)
-	binanceSettings := make(map[string]*Setting)
+	//binanceSettings := make(map[string]*Setting)
+	huobiSettings := make(map[string]*Setting)
 	fcoinSettings := make(map[string]*Setting)
 	handlers = make(map[string]map[string]map[string]CarryHandler)
 	for i := range AppSettings {
@@ -82,7 +83,8 @@ func LoadSettings() {
 		}
 		marketSymbolSetting[function][market][symbol] = &AppSettings[i]
 		if AppSettings[i].Function == FunctionRefresh {
-			binanceSettings[symbol] = &Setting{Market: Binance, Symbol: AppSettings[i].Symbol}
+			//binanceSettings[symbol] = &Setting{Market: Binance, Symbol: AppSettings[i].Symbol}
+			huobiSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
 			if AppSettings[i].Symbol == `btc_pax` {
 				fcoinSettings[`btc_usdt`] = &Setting{Market: Fcoin, Symbol: `btc_usdt`}
 				fcoinSettings[`pax_usdt`] = &Setting{Market: Fcoin, Symbol: `pax_usdt`}
@@ -96,7 +98,7 @@ func LoadSettings() {
 		}
 		handlers[market][symbol][function] = HandlerMap[function]
 	}
-	for _, setting := range binanceSettings {
+	for _, setting := range huobiSettings {
 		AppSettings = append(AppSettings, *setting)
 	}
 	for _, setting := range fcoinSettings {
