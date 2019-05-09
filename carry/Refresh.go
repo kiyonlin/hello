@@ -360,6 +360,7 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	binanceResult, otherPrice := getOtherPrice(market, symbol, model.Huobi)
+	util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
 	if delay > 200 || !binanceResult {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
@@ -560,6 +561,7 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 
 func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
+	util.Notice(fmt.Sprintf(`[predeal]%s %f %f`, symbol, otherPrice, orderSide))
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	tick := model.AppMarkets.BidAsks[symbol][market]
 	if tick.Asks[0].Price-tick.Bids[0].Price > priceDistance*1.1 && symbol != `btc_pax` {
