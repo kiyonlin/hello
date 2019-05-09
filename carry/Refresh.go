@@ -536,11 +536,11 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
 	util.Notice(fmt.Sprintf(`[-----cancel hang---]%s %s`, market, symbol))
+	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if refreshOrders.setHandling(market, symbol, true) {
 		return
 	}
 	defer refreshOrders.setHandling(market, symbol, false)
-	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		api.MustCancel(market, symbol, hangBid.OrderId, true)
 	}
@@ -548,6 +548,7 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 		api.MustCancel(market, symbol, hangAsk.OrderId, true)
 	}
 	refreshOrders.setRefreshHang(symbol, nil, nil)
+	util.Notice(fmt.Sprintf(`[-----cancel hang done---]%s %s`, market, symbol))
 	return hangBid != nil || hangAsk != nil
 }
 
