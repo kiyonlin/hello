@@ -18,7 +18,6 @@ var syncRefresh = make(chan interface{}, 20)
 
 //var LastRefreshTime = make(map[string]int64) // market - int64
 var refreshOrders = &RefreshOrders{}
-var canceling = false
 
 type RefreshOrders struct {
 	lock             sync.Mutex
@@ -35,7 +34,26 @@ type RefreshOrders struct {
 	lastRefreshPrice map[string]map[string]float64         // market - symbol - refresh price
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
 	inRefresh        map[string]bool                       // symbol - bool
+	waiting          map[string]bool                       // symbol - wait
 	amountIndex      int
+}
+
+func (refreshOrders *RefreshOrders) setWaiting(symbol string, in bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.waiting == nil {
+		refreshOrders.waiting = make(map[string]bool)
+	}
+	refreshOrders.waiting[symbol] = in
+}
+
+func (refreshOrders *RefreshOrders) getWaiting(symbol string) (out bool) {
+	refreshOrders.lock.Lock()
+	defer refreshOrders.lock.Unlock()
+	if refreshOrders.waiting == nil {
+		return false
+	}
+	return refreshOrders.inRefresh[symbol]
 }
 
 func (refreshOrders *RefreshOrders) setInRefresh(symbol string, in bool) {
@@ -305,55 +323,6 @@ func (refreshOrders *RefreshOrders) AddRefreshOrders(market, symbol, orderSide s
 	}
 }
 
-func (refreshOrders *RefreshOrders) CancelRefreshOrders(market, symbol string, bidPrice, askPrice float64, process bool) {
-	refreshOrders.lock.Lock()
-	defer refreshOrders.lock.Unlock()
-	canceling = true
-	if refreshOrders.askOrders == nil {
-		refreshOrders.askOrders = make(map[string]map[string][]*model.Order)
-	}
-	if refreshOrders.askOrders[market] == nil {
-		refreshOrders.askOrders[market] = make(map[string][]*model.Order)
-	}
-	if refreshOrders.askOrders[market][symbol] == nil {
-		refreshOrders.askOrders[market][symbol] = make([]*model.Order, 0)
-	}
-	if refreshOrders.bidOrders == nil {
-		refreshOrders.bidOrders = make(map[string]map[string][]*model.Order)
-	}
-	if refreshOrders.bidOrders[market] == nil {
-		refreshOrders.bidOrders[market] = make(map[string][]*model.Order)
-	}
-	if refreshOrders.bidOrders[market][symbol] == nil {
-		refreshOrders.bidOrders[market][symbol] = make([]*model.Order, 0)
-	}
-	bidOrders := make([]*model.Order, 0)
-	askOrders := make([]*model.Order, 0)
-	d, _ := time.ParseDuration("-3601s")
-	timeLine := util.GetNow().Add(d)
-	for _, value := range refreshOrders.bidOrders[market][symbol] {
-		if value.Price < bidPrice && value.OrderTime.Before(timeLine) && process { // 大于等于卖一的买单已经成交，无需取消
-			util.Notice(fmt.Sprintf(`[try cancel]bid %f < %f`, value.Price, bidPrice))
-			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
-			time.Sleep(time.Millisecond * 100)
-		} else if value.Price < askPrice && value.Status == model.CarryStatusWorking {
-			bidOrders = append(bidOrders, value)
-		}
-	}
-	for _, value := range refreshOrders.askOrders[market][symbol] {
-		if value.Price > askPrice && value.OrderTime.Before(timeLine) && process { // 小于等于买一的卖单已经成交，无需取消
-			util.Notice(fmt.Sprintf(`[try cancel]ask %f > %f`, value.Price, askPrice))
-			api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
-			time.Sleep(time.Millisecond * 100)
-		} else if value.Price > bidPrice && value.Status == model.CarryStatusWorking {
-			askOrders = append(askOrders, value)
-		}
-	}
-	refreshOrders.bidOrders[market][symbol] = bidOrders
-	refreshOrders.askOrders[market][symbol] = askOrders
-	canceling = false
-}
-
 func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refreshing bool) (current bool) {
 	current = refreshOrders.refreshing
 	refreshOrders.refreshing = refreshing
@@ -423,22 +392,26 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshOrders.amountIndex = 0
 	}
 	if index > refreshOrders.amountIndex {
+		model.AppConfig.Handle = `0`
+		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
 		CancelAndRefresh(market)
+		time.Sleep(time.Second * 2)
+		model.AppConfig.Handle = `1`
 		return
 	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	if canceling {
-		util.Notice(`[refreshing waiting for canceling]`)
-		return
-	}
 	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, binancePrice, amount)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
 		refreshAble = false
 	} else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, 0.9*priceDistance) {
 		refreshAble = false
+	}
+	if refreshOrders.getWaiting(symbol) {
+		time.Sleep(time.Second)
+		refreshOrders.setWaiting(symbol, false)
 	}
 	if refreshOrders.getInRefresh(symbol) {
 		if haveAmount {
@@ -455,6 +428,7 @@ var ProcessRefresh = func(market, symbol string) {
 			if refreshAble {
 				refreshOrders.setInRefresh(symbol, true)
 				CancelRefreshHang(market, symbol)
+				time.Sleep(time.Second)
 			} else {
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 					binancePrice, tick)
@@ -535,6 +509,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 				symbol, hangBid.Price, tick.Bids[14].Price, bidAll, amountLimit, hangBid.Price, binancePrice))
 			go api.MustCancel(market, symbol, hangBid.OrderId, true)
 			refreshOrders.removeRefreshHang(symbol, hangBid, nil)
+			refreshOrders.setWaiting(symbol, true)
 		}
 	}
 	if hangAsk != nil {
@@ -547,6 +522,7 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 				symbol, hangAsk.Price, tick.Asks[14].Price, askAll, amountLimit, hangAsk.Price, binancePrice))
 			go api.MustCancel(market, symbol, hangAsk.OrderId, true)
 			refreshOrders.removeRefreshHang(symbol, nil, hangAsk)
+			refreshOrders.setWaiting(symbol, true)
 		}
 	}
 }
