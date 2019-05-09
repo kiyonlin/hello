@@ -2,7 +2,7 @@ port: 80
 amountrate: 0.95
 makeramountrate: 0.1
 orderwait: 3000
-delay: 30000 #按照毫秒计算时间差
+delay: 3000 #按照毫秒计算时间差
 channelslot: 10000 #按照毫秒计算的检查时间间隔
 channels: 1
 minusdt: 15

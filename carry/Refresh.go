@@ -349,7 +349,6 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
-	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
 	if model.AppMarkets.BidAsks[symbol] == nil {
 		return
 	}
@@ -358,10 +357,15 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	binanceResult, otherPrice := getOtherPrice(market, symbol, model.Huobi)
-	util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
-	if delay > 200 || !binanceResult {
+	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	if delay > 200 {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+		return
+	}
+	result, otherPrice := getOtherPrice(market, symbol, model.Huobi)
+	if !result || otherPrice == 0 {
+		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
+		CancelAndRefresh(market)
 		return
 	}
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
@@ -408,40 +412,39 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshAble = false
 	}
 	if refreshOrders.getWaiting(symbol) {
-		util.Notice(fmt.Sprintf(`[waiting]%s true`))
 		time.Sleep(time.Second)
 		refreshOrders.setWaiting(symbol, false)
 		return
 	}
 	if refreshOrders.getInRefresh(symbol) {
-		util.Notice(fmt.Sprintf(`[in refreshing %s]`, symbol))
+		//util.Notice(fmt.Sprintf(`[in refreshing %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
 				doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
 					0.9*priceDistance, amount, tick)
 			} else {
-				util.Notice(fmt.Sprintf(`[in refreshing not refreshable %s]`, symbol))
+				//util.Notice(fmt.Sprintf(`[in refreshing not refreshable %s]`, symbol))
 			}
 		} else {
 			refreshOrders.setInRefresh(symbol, false)
 			time.Sleep(time.Second)
 		}
 	} else {
-		util.Notice(fmt.Sprintf(`[in hang %s]`, symbol))
+		//util.Notice(fmt.Sprintf(`[in hang %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
-				util.Notice(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
+				//util.Notice(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
 				refreshOrders.setInRefresh(symbol, true)
 				CancelRefreshHang(market, symbol)
 				time.Sleep(time.Second)
-				util.Notice(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
+				//util.Notice(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
 			} else {
-				util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
+				//util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 					otherPrice, tick)
 			}
 		} else {
-			util.Notice(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
+			//util.Notice(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
 			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
 				otherPrice, tick)
 		}
@@ -451,7 +454,7 @@ var ProcessRefresh = func(market, symbol string) {
 func refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, otherPrice float64, tick *model.BidAsk) {
 	defer refreshOrders.setHanging(false)
-	util.Notice(fmt.Sprintf(`[refreshhang]%s`, symbol))
+	//util.Notice(fmt.Sprintf(`[refreshhang]%s`, symbol))
 	if refreshOrders.hanging {
 		return
 	}
@@ -503,7 +506,7 @@ func refreshHang(market, symbol, accountType string,
 		time.Sleep(time.Second * 2)
 		api.RefreshCoinAccount(market, symbol, coin, accountType)
 	}
-	util.Notice(fmt.Sprintf(`[refreshhang done]%s`, symbol))
+	//util.Notice(fmt.Sprintf(`[refreshhang done]%s`, symbol))
 }
 
 func validRefreshHang(market, symbol string, amountLimit, otherPrice float64, tick *model.BidAsk) {
