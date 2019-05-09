@@ -323,23 +323,23 @@ func (refreshOrders *RefreshOrders) AddRefreshOrders(market, symbol, orderSide s
 	}
 }
 
-func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool) {
-	if refreshOrders.fcoinHang == nil {
-		return make(map[string]bool)
-	}
-	currencies = make(map[string]bool)
-	for key := range refreshOrders.fcoinHang {
-		bid, ask := refreshOrders.getRefreshHang(key)
-		if bid != nil || ask != nil {
-			coins := strings.Split(key, `_`)
-			if len(coins) >= 2 {
-				currencies[coins[0]] = true
-				currencies[coins[1]] = true
-			}
-		}
-	}
-	return currencies
-}
+//func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool) {
+//	if refreshOrders.fcoinHang == nil {
+//		return make(map[string]bool)
+//	}
+//	currencies = make(map[string]bool)
+//	for key := range refreshOrders.fcoinHang {
+//		bid, ask := refreshOrders.getRefreshHang(key)
+//		if bid != nil || ask != nil {
+//			coins := strings.Split(key, `_`)
+//			if len(coins) >= 2 {
+//				currencies[coins[0]] = true
+//				currencies[coins[1]] = true
+//			}
+//		}
+//	}
+//	return currencies
+//}
 
 func (refreshOrders *RefreshOrders) setRefreshing(in bool) {
 	refreshOrders.refreshing = in
@@ -539,11 +539,14 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 	//	return
 	//}
 	//defer refreshOrders.setHanging(false)
+	msg := `[-----cancel hang done---]`
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
+		msg += `hangbid:` + hangBid.OrderId + `;`
 		api.MustCancel(market, symbol, hangBid.OrderId, true)
 	}
 	if hangAsk != nil {
+		msg += `hangask:` + hangAsk.OrderId + `;`
 		api.MustCancel(market, symbol, hangAsk.OrderId, true)
 	}
 	refreshOrders.setRefreshHang(symbol, nil, nil)
