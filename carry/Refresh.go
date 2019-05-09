@@ -391,11 +391,13 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshOrders.amountIndex = 0
 	}
 	if index > refreshOrders.amountIndex {
+		util.Notice(fmt.Sprintf(`[before 10min canceling]`))
 		model.AppConfig.Handle = `0`
 		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
 		CancelAndRefresh(market)
 		model.AppConfig.Handle = `1`
+		util.Notice(fmt.Sprintf(`[after 10min canceling]`))
 		return
 	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
