@@ -435,6 +435,7 @@ var ProcessRefresh = func(market, symbol string) {
 				refreshOrders.setInRefresh(symbol, true)
 				CancelRefreshHang(market, symbol)
 				time.Sleep(time.Second)
+				util.Notice(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
 			} else {
 				util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, leftFree, rightFree,
