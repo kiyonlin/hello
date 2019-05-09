@@ -22,7 +22,7 @@ var refreshOrders = &RefreshOrders{}
 type RefreshOrders struct {
 	lock             sync.Mutex
 	refreshing       bool
-	handling         bool
+	hanging          bool
 	samePriceCount   map[string]map[string]int             // market - symbol - continue same price count
 	samePriceTime    map[string]map[string]*time.Time      // market - symbol - first time new order price
 	bidOrders        map[string]map[string][]*model.Order  // market - symbol - orders
@@ -323,18 +323,6 @@ func (refreshOrders *RefreshOrders) AddRefreshOrders(market, symbol, orderSide s
 	}
 }
 
-func (refreshOrders *RefreshOrders) setRefreshing(market, symbol string, refreshing bool) (current bool) {
-	current = refreshOrders.refreshing
-	refreshOrders.refreshing = refreshing
-	return current
-}
-
-func (refreshOrders *RefreshOrders) setHandling(market, symbol string, handling bool) (current bool) {
-	current = refreshOrders.handling
-	refreshOrders.handling = current
-	return current
-}
-
 func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool) {
 	if refreshOrders.fcoinHang == nil {
 		return make(map[string]bool)
@@ -351,6 +339,14 @@ func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool)
 		}
 	}
 	return currencies
+}
+
+func (refreshOrders *RefreshOrders) setRefreshing(in bool) {
+	refreshOrders.refreshing = in
+}
+
+func (refreshOrders *RefreshOrders) setHanging(in bool) {
+	refreshOrders.hanging = in
 }
 
 var ProcessRefresh = func(market, symbol string) {
@@ -381,11 +377,11 @@ var ProcessRefresh = func(market, symbol string) {
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
 	go validRefreshHang(market, symbol, amountLimit, binancePrice, tick)
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` ||
-		refreshOrders.setRefreshing(market, symbol, true) {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshOrders.refreshing {
 		return
 	}
-	defer refreshOrders.setRefreshing(market, symbol, false)
+	refreshOrders.setRefreshing(true)
+	defer refreshOrders.setRefreshing(false)
 	haveAmount, index := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
 	if index == 0 {
 		refreshOrders.amountIndex = 0
@@ -451,10 +447,10 @@ var ProcessRefresh = func(market, symbol string) {
 
 func refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, binancePrice float64, tick *model.BidAsk) {
-	if refreshOrders.setHandling(market, symbol, true) {
+	if refreshOrders.hanging {
 		return
 	}
-	defer refreshOrders.setHandling(market, symbol, false)
+	defer refreshOrders.setHanging(false)
 	if hangRate == 0.0 {
 		return
 	}
@@ -537,11 +533,11 @@ func validRefreshHang(market, symbol string, amountLimit, binancePrice float64, 
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
 	util.Notice(fmt.Sprintf(`[-----cancel hang---]%s %s`, market, symbol))
+	//if refreshOrders.hanging {
+	//	return
+	//}
+	//defer refreshOrders.setHanging(false)
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
-	if refreshOrders.setHandling(market, symbol, true) {
-		return
-	}
-	defer refreshOrders.setHandling(market, symbol, false)
 	if hangBid != nil {
 		api.MustCancel(market, symbol, hangBid.OrderId, true)
 	}
