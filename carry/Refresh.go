@@ -366,7 +366,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
-	if err != nil {
+	if err != nil || (leftFree == 0 && rightFree == 0) {
 		return
 	}
 	hangRate := 0.0
