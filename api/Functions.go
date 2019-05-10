@@ -172,6 +172,7 @@ func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 //}
 
 func RefreshCoinAccount(setMarket, symbol, setCoin, accountType string) {
+	util.Notice(fmt.Sprintf(`[RefreshCoinAccount]%s %s %s %s`, setMarket, symbol, setCoin, accountType))
 	switch setMarket {
 	case model.Fcoin:
 		if accountType == model.AccountTypeLever {
@@ -222,6 +223,7 @@ func _(market string, coins map[string]bool) {
 }
 
 func RefreshAccount(market string) {
+	util.Notice(`refresh all accounts in market ` + market)
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:

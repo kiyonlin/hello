@@ -673,6 +673,7 @@ func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice 
 
 func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, orderReverse string,
 	price, priceDistance, amount float64, tick *model.BidAsk) {
+	util.Notice(fmt.Sprintf(`[doRefresh]%s %s %s %f %f`, symbol, accountType, orderSide, price, amount))
 	go receiveRefresh(market, symbol, accountType, price, priceDistance, amount, setting.AmountLimit)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
@@ -734,6 +735,7 @@ func CancelAndRefresh(market string) {
 	symbols := model.GetMarketSymbols(market)
 	for key := range symbols {
 		CancelRefreshHang(market, key)
+		refreshOrders.setRefreshHang(key, nil, nil)
 	}
 	time.Sleep(time.Second * 2)
 	api.RefreshAccount(market)
