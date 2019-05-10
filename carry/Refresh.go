@@ -35,7 +35,29 @@ type RefreshOrders struct {
 	fcoinHang        map[string][]*model.Order             // symbol - refresh hang order 0:bid 1:ask
 	inRefresh        map[string]bool                       // symbol - bool
 	waiting          map[string]bool                       // symbol - wait
+	needReset        map[string]map[string]string          // symbol - accountType - coin
 	amountIndex      int
+}
+
+func (refreshOrders *RefreshOrders) getNeedReset(symbol, accountType string) (coin string) {
+	defer refreshOrders.lock.Unlock()
+	refreshOrders.lock.Lock()
+	if refreshOrders.needReset == nil || refreshOrders.needReset[symbol] == nil {
+		return ``
+	}
+	return refreshOrders.needReset[symbol][accountType]
+}
+
+func (refreshOrders *RefreshOrders) setNeedReset(symbol, accountType, coin string) {
+	defer refreshOrders.lock.Unlock()
+	refreshOrders.lock.Lock()
+	if refreshOrders.needReset == nil {
+		refreshOrders.needReset = make(map[string]map[string]string)
+	}
+	if refreshOrders.needReset[symbol] == nil {
+		refreshOrders.needReset[symbol] = make(map[string]string)
+	}
+	refreshOrders.needReset[symbol][accountType] = coin
 }
 
 func (refreshOrders *RefreshOrders) setWaiting(symbol string, in bool) {
@@ -322,24 +344,6 @@ func (refreshOrders *RefreshOrders) AddRefreshOrders(market, symbol, orderSide s
 	}
 }
 
-//func (refreshOrders *RefreshOrders) getCurrencies() (currencies map[string]bool) {
-//	if refreshOrders.fcoinHang == nil {
-//		return make(map[string]bool)
-//	}
-//	currencies = make(map[string]bool)
-//	for key := range refreshOrders.fcoinHang {
-//		bid, ask := refreshOrders.getRefreshHang(key)
-//		if bid != nil || ask != nil {
-//			coins := strings.Split(key, `_`)
-//			if len(coins) >= 2 {
-//				currencies[coins[0]] = true
-//				currencies[coins[1]] = true
-//			}
-//		}
-//	}
-//	return currencies
-//}
-
 func (refreshOrders *RefreshOrders) setRefreshing(in bool) {
 	refreshOrders.refreshing = in
 }
@@ -388,6 +392,14 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	refreshOrders.setRefreshing(true)
 	defer refreshOrders.setRefreshing(false)
+	resetCoin := refreshOrders.getNeedReset(symbol, setting.AccountType)
+	if resetCoin != `` {
+		time.Sleep(time.Second)
+		util.Notice(fmt.Sprintf(`[reset balance]%s %s %s %s`, market, symbol, resetCoin, setting.AccountType))
+		api.RefreshCoinAccount(market, symbol, resetCoin, setting.AccountType)
+		refreshOrders.setNeedReset(symbol, setting.AccountType, ``)
+		return
+	}
 	haveAmount, index := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
 	if index == 0 {
 		refreshOrders.amountIndex = 0
@@ -683,8 +695,8 @@ func receiveRefresh(market, symbol, accountType string, price, priceDistance, am
 		//util.Notice(fmt.Sprintf(`[before receive]%s %s %f %f`, market, symbol, price, amount))
 		_ = <-syncRefresh
 		//util.Notice(fmt.Sprintf(`[after receive]%s %s %f %f`, market, symbol, price, amount))
-		refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
-		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
+		refreshLastBid := refreshOrders.GetLastOrder(market, symbol, model.OrderSideBuy)
+		refreshLastAsk := refreshOrders.GetLastOrder(market, symbol, model.OrderSideSell)
 		if refreshLastBid != nil && refreshLastAsk != nil {
 			if refreshLastBid.Status == model.CarryStatusWorking &&
 				refreshLastAsk.Status == model.CarryStatusWorking {
@@ -702,7 +714,6 @@ func receiveRefresh(market, symbol, accountType string, price, priceDistance, am
 				if refreshLastBid.Status == model.CarryStatusFail || refreshLastAsk.Status == model.CarryStatusFail {
 					refreshOrders.setWaiting(symbol, true)
 				}
-				time.Sleep(time.Second)
 				coins := strings.Split(symbol, `_`)
 				coin := ``
 				if refreshLastAsk.ErrCode == `1016` {
@@ -711,9 +722,7 @@ func receiveRefresh(market, symbol, accountType string, price, priceDistance, am
 				if refreshLastBid.ErrCode == `1016` {
 					coin = coins[1]
 				}
-				if coin != `` {
-					api.RefreshCoinAccount(market, symbol, coin, accountType)
-				}
+				refreshOrders.setNeedReset(symbol, accountType, coin)
 			}
 			break
 		}
