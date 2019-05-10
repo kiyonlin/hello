@@ -330,7 +330,7 @@ func SetParameters(c *gin.Context) {
 	handleMaker := c.Query(`handlemaker`)
 	handleRefresh := c.Query(`handlerefresh`)
 	handleGrid := c.Query(`handlegrid`)
-	if handle == `1` || handleMaker == `1` || handleRefresh == `1` || handleGrid == `1` {
+	if len(handle) > 0 || handleMaker == `1` || handleRefresh == `1` || handleGrid == `1` {
 		pw := c.Query(`pw`)
 		if code == `` {
 			c.String(http.StatusOK, `请先获取验证码`)
