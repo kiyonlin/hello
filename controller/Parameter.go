@@ -35,21 +35,21 @@ func ParameterServe() {
 }
 
 func setSymbol(c *gin.Context) {
-	pw := c.Query(`pw`)
-	if code == `` {
-		c.String(http.StatusOK, `请先获取验证码`)
-		return
-	}
-	if pw != code {
-		c.String(http.StatusOK, `验证码错误`)
-		return
-	}
-	waitTime := (util.GetNowUnixMillion() - codeGenTime) / 1000
-	if waitTime > 300 {
-		c.String(http.StatusOK, fmt.Sprintf(`验证码有效时间300秒，已超%d - %d > 300000`,
-			util.GetNowUnixMillion(), codeGenTime))
-		return
-	}
+	//pw := c.Query(`pw`)
+	//if code == `` {
+	//	c.String(http.StatusOK, `请先获取验证码`)
+	//	return
+	//}
+	//if pw != code {
+	//	c.String(http.StatusOK, `验证码错误`)
+	//	return
+	//}
+	//waitTime := (util.GetNowUnixMillion() - codeGenTime) / 1000
+	//if waitTime > 300 {
+	//	c.String(http.StatusOK, fmt.Sprintf(`验证码有效时间300秒，已超%d - %d > 300000`,
+	//		util.GetNowUnixMillion(), codeGenTime))
+	//	return
+	//}
 	code = ``
 	market := c.Query(`market`)
 	symbol := c.Query(`symbol`)
@@ -110,8 +110,9 @@ func setSymbol(c *gin.Context) {
 			market, symbol, function).Updates(map[string]interface{}{`refresh_limit`: refreshLimit})
 	}
 	if refreshSameTime != `` {
+		value, _ := strconv.ParseFloat(refreshSameTime, 64)
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-			market, symbol, function).Updates(map[string]interface{}{`refresh_same_time`: refreshSameTime})
+			market, symbol, function).UpdateColumn("refresh_same_time", value)
 	}
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, amount_limit, refresh_same_time, valid`).Rows()
@@ -119,7 +120,7 @@ func setSymbol(c *gin.Context) {
 	for rows.Next() {
 		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &refreshSameTime, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %f %d %v \n", market, symbol, function, parameter, amountLimit,
+		msg += fmt.Sprintf("%s %s %s %s %f %s %v \n", market, symbol, function, parameter, amountLimit,
 			refreshSameTime, valid)
 	}
 	model.LoadSettings()

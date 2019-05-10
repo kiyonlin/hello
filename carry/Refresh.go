@@ -411,6 +411,7 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshOrders.amountIndex = index
 		CancelAndRefresh(market)
 		model.AppConfig.Handle = `1`
+		refreshOrders.setRefreshHang(symbol, nil, nil)
 		util.Notice(fmt.Sprintf(`[after 10min canceling]`))
 		return
 	}
