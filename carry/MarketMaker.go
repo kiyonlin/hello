@@ -29,7 +29,7 @@ func CancelOldMakers() {
 		for _, market := range markets {
 			for _, value := range makers[market] {
 				if value.OrderTime.Before(timeLine) {
-					api.MustCancel(market, value.Symbol, value.OrderId, true)
+					api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
 				} else {
 					array = append(array, value)
 				}
