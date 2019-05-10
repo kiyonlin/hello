@@ -381,12 +381,13 @@ var ProcessRefresh = func(market, symbol string) {
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
 	go validRefreshHang(symbol, amountLimit, otherPrice, tick)
-	defer refreshOrders.setRefreshing(false)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshOrders.refreshing {
 		util.Notice(fmt.Sprintf(`[status]%s %s %v`,
 			model.AppConfig.Handle, model.AppConfig.HandleRefresh, refreshOrders.refreshing))
 		return
 	}
+	refreshOrders.setRefreshing(true)
+	defer refreshOrders.setRefreshing(false)
 	haveAmount, index := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
 	if index == 0 {
 		refreshOrders.amountIndex = 0
@@ -454,11 +455,12 @@ var ProcessRefresh = func(market, symbol string) {
 
 func refreshHang(market, symbol, accountType string,
 	hangRate, amountLimit, leftFree, rightFree, otherPrice float64, tick *model.BidAsk) {
-	defer refreshOrders.setHanging(false)
 	util.Info(fmt.Sprintf(`[refreshhang]%s`, symbol))
 	if refreshOrders.hanging {
 		return
 	}
+	defer refreshOrders.setHanging(false)
+	refreshOrders.setHanging(true)
 	if hangRate == 0.0 {
 		return
 	}
@@ -518,8 +520,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice float64, tick *mode
 			bidAll += tick.Bids[i].Amount
 		}
 		if hangBid.Price < tick.Bids[14].Price || bidAll < amountLimit || hangBid.Price > 1.0005*otherPrice {
-			util.Notice(fmt.Sprintf(`[cancelhangbid]%s %f <bid15:%f bidall:%f < amount:%f price %f > otherPrice %f`,
-				symbol, hangBid.Price, tick.Bids[14].Price, bidAll, amountLimit, hangBid.Price, otherPrice))
+			util.Notice(fmt.Sprintf(`[cancelhangbid]%s %s`, symbol, hangBid.OrderId))
 			go api.MustCancel(hangBid.Market, symbol, hangBid.OrderId, true)
 			refreshOrders.removeRefreshHang(symbol, hangBid, nil)
 			refreshOrders.setWaiting(symbol, true)
@@ -531,8 +532,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice float64, tick *mode
 			askAll += tick.Asks[i].Amount
 		}
 		if hangAsk.Price > tick.Asks[14].Price || askAll < amountLimit || hangAsk.Price < 0.9995*otherPrice {
-			util.Notice(fmt.Sprintf(`[cancelhangask]%s %f >ask15:%f askall:%f < amount:%f price %f < binance %f`,
-				symbol, hangAsk.Price, tick.Asks[14].Price, askAll, amountLimit, hangAsk.Price, otherPrice))
+			util.Notice(fmt.Sprintf(`[cancelhangask]%s %s`, symbol, hangAsk.OrderId))
 			go api.MustCancel(hangAsk.Market, symbol, hangAsk.OrderId, true)
 			refreshOrders.removeRefreshHang(symbol, nil, hangAsk)
 			refreshOrders.setWaiting(symbol, true)
