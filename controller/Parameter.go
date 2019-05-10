@@ -104,15 +104,15 @@ func setSymbol(c *gin.Context) {
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{`refresh_limit_low`: refreshLimitLow})
 	}
-	if refreshLimitStr != `` {
-		refreshLimit, _ := strconv.ParseFloat(refreshLimitStr, 64)
-		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-			market, symbol, function).Updates(map[string]interface{}{`refresh_limit`: refreshLimit})
-	}
 	if refreshSameTime != `` {
 		value, _ := strconv.ParseFloat(refreshSameTime, 64)
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).UpdateColumn("refresh_same_time", value)
+	}
+	if refreshLimitStr != `` {
+		refreshLimit, _ := strconv.ParseFloat(refreshLimitStr, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`refresh_limit`: refreshLimit})
 	}
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, amount_limit, refresh_same_time, valid`).Rows()

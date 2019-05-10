@@ -678,17 +678,27 @@ func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, o
 	go receiveRefresh(market, symbol, accountType, price, priceDistance, amount, setting.AmountLimit)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideSell, nil)
 	refreshOrders.SetLastOrder(market, symbol, model.OrderSideBuy, nil)
+	bidAmount := amount
+	askAmount := amount
+	if tick.Asks[0].Price-price > priceDistance {
+		bidAmount = 0.9999 * amount
+	}
+	if price-tick.Bids[0].Price > priceDistance {
+		askAmount = 0.9999 * amount
+	}
 	if setting.RefreshSameTime == 1 {
-		bidAmount := amount
-		if math.Abs(tick.Bids[0].Price-price) < priceDistance {
-			bidAmount = 0.9999 * amount
-		}
 		go placeRefreshOrder(model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
-		go placeRefreshOrder(model.OrderSideSell, market, symbol, accountType, price, amount)
+		go placeRefreshOrder(model.OrderSideSell, market, symbol, accountType, price, askAmount)
 	} else {
-		placeRefreshOrder(orderSide, market, symbol, accountType, price, amount*0.9999)
-		time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
-		placeRefreshOrder(orderReverse, market, symbol, accountType, price, amount)
+		if orderSide == model.OrderSideBuy && orderReverse == model.OrderSideSell {
+			placeRefreshOrder(model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
+			time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
+			placeRefreshOrder(model.OrderSideSell, market, symbol, accountType, price, askAmount)
+		} else if orderSide == model.OrderSideSell && orderReverse == model.OrderSideBuy {
+			placeRefreshOrder(model.OrderSideSell, market, symbol, accountType, price, askAmount)
+			time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
+			placeRefreshOrder(model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
+		}
 	}
 }
 
