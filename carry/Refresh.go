@@ -555,7 +555,7 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 		msg += `hangask:` + hangAsk.OrderId + `;`
 		api.MustCancel(hangAsk.Market, symbol, hangAsk.OrderId, true)
 	}
-	refreshOrders.setRefreshHang(symbol, nil, nil)
+	//refreshOrders.setRefreshHang(symbol, nil, nil)
 	util.Notice(fmt.Sprintf(`[-----cancel hang done---]%s %s`, market, symbol))
 	return hangBid != nil || hangAsk != nil
 }
