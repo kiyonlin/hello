@@ -408,9 +408,10 @@ var ProcessRefresh = func(market, symbol string) {
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
 		refreshAble = false
-	} else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, 0.9*priceDistance) {
-		refreshAble = false
 	}
+	//else if refreshOrders.CheckLastRefreshPrice(market, symbol, orderPrice, 0.9*priceDistance) {
+	//	refreshAble = false
+	//}
 	if refreshOrders.getWaiting(symbol) {
 		time.Sleep(time.Second)
 		refreshOrders.setWaiting(symbol, false)
