@@ -157,7 +157,7 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`partial_canceled`: CarryStatusSuccess, //部分成交已撤销
 		`filled`:           CarryStatusSuccess, //完全成交
 		`canceled`:         CarryStatusFail,    //已撤销
-		`pending_cancel`:   CarryStatusFail,    //撤销已提交
+		`pending_cancel`:   CarryStatusWorking, //撤销已提交
 	},
 	Coinpark: {
 		`1`: CarryStatusWorking, //待成交

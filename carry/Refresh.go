@@ -672,7 +672,7 @@ func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice 
 		return false, 0
 	}
 	delay := util.GetNowUnixMillion() - int64(binanceBidAsks.Ts)
-	if delay > 5000 {
+	if delay > 3000 {
 		util.Notice(fmt.Sprintf(`[%s %s]delay %d`, otherMarket, symbol, delay))
 		return false, 0
 	}
