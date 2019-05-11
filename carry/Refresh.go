@@ -354,27 +354,20 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 
 var ProcessRefresh = func(market, symbol string) {
 	if model.AppMarkets.BidAsks[symbol] == nil {
+		CancelRefreshHang(market, symbol)
 		return
 	}
 	tick := model.AppMarkets.BidAsks[symbol][market]
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		return
-	}
-	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
-	if delay > 200 {
-		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+		CancelRefreshHang(market, symbol)
 		return
 	}
 	result, otherPrice := getOtherPrice(market, symbol, model.Huobi)
-	if !result || otherPrice == 0 {
-		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
-		CancelAndRefresh(market)
-		return
-	}
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil || (leftFree == 0 && rightFree == 0) {
+		CancelRefreshHang(market, symbol)
 		return
 	}
 	hangRate := 0.0
@@ -385,13 +378,31 @@ var ProcessRefresh = func(market, symbol string) {
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
 	go validRefreshHang(symbol, amountLimit, otherPrice, tick)
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || refreshOrders.refreshing {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` {
 		util.Notice(fmt.Sprintf(`[status]%s %s %v`,
 			model.AppConfig.Handle, model.AppConfig.HandleRefresh, refreshOrders.refreshing))
+		CancelRefreshHang(market, symbol)
+		return
+	}
+	if refreshOrders.refreshing {
 		return
 	}
 	refreshOrders.setRefreshing(true)
 	defer refreshOrders.setRefreshing(false)
+	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	if delay > 3000 {
+		util.Notice(fmt.Sprintf(`[delay long, cancel hang], %s %s`, market, symbol))
+		CancelRefreshHang(market, symbol)
+	}
+	if delay > 200 {
+		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+		return
+	}
+	if !result || otherPrice == 0 {
+		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
+		CancelRefreshHang(market, symbol)
+		return
+	}
 	resetCoin := refreshOrders.getNeedReset(symbol, setting.AccountType)
 	if resetCoin != `` {
 		time.Sleep(time.Second)
@@ -746,17 +757,6 @@ func receiveRefresh(market, symbol, accountType string, price, priceDistance, am
 			break
 		}
 	}
-}
-
-func CancelAndRefresh(market string) {
-	util.Notice(fmt.Sprintf(`[cancelAndRefresh]`))
-	symbols := model.GetMarketSymbols(market)
-	for key := range symbols {
-		CancelRefreshHang(market, key)
-		refreshOrders.setRefreshHang(key, nil, nil)
-	}
-	time.Sleep(time.Second * 2)
-	api.RefreshAccount(market)
 }
 
 func placeRefreshOrder(orderSide, market, symbol, accountType string, price, amount float64) {
