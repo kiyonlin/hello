@@ -30,6 +30,17 @@ func Test_chan(t *testing.T) {
 
 }
 
+func Test_loadOrders(t *testing.T) {
+	model.NewConfig()
+	_ = configor.Load(model.AppConfig, "./config.yml")
+	orders := api.QueryOrders(model.Fcoin, `btc_usdt`, `working`,
+		``, ``)
+	for key, value := range orders {
+		util.Notice(fmt.Sprintf(`,%s,%f,%f,%s,%s,%s`,
+			key, value.DealAmount, value.DealPrice, value.ErrCode, value.Symbol, value.OrderTime.String()))
+	}
+}
+
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	err := configor.Load(model.AppConfig, "./config.yml")

@@ -124,7 +124,7 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 	Binance: {
 		"NEW":              CarryStatusWorking,
 		"PARTIALLY_FILLED": CarryStatusWorking,
-		"PENDING_CANCEL":   CarryStatusSuccess,
+		"PENDING_CANCEL":   CarryStatusWorking,
 		"FILLED":           CarryStatusSuccess,
 		"CANCELED":         CarryStatusFail,
 		"REJECTED":         CarryStatusFail,

@@ -105,12 +105,12 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 	return result, errCode, msg
 }
 
-func QueryOrders(market, symbol, states string) (orders map[string]*model.Order) {
+func QueryOrders(market, symbol, states, before, end string) (orders map[string]*model.Order) {
 	switch market {
 	case model.Fcoin:
 		orders := make(map[string]*model.Order)
-		normal := queryOrdersFcoin(symbol, states, ``)
-		lever := queryOrdersFcoin(symbol, states, model.AccountTypeLever)
+		normal := queryOrdersFcoin(symbol, states, ``, before, end)
+		lever := queryOrdersFcoin(symbol, states, model.AccountTypeLever, before, end)
 		for key, value := range normal {
 			orders[key] = value
 		}

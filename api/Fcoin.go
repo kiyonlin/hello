@@ -238,17 +238,23 @@ func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Or
 	}
 }
 
-func queryOrdersFcoin(symbol, states, accountType string) (orders map[string]*model.Order) {
+func queryOrdersFcoin(symbol, states, accountType, before, end string) (orders map[string]*model.Order) {
 	states, _ = model.GetOrderStatusRevert(model.Fcoin, states)
+	states = strings.Replace(states, `pending_cancel,`, ``, 1)
+	states = strings.Replace(states, `pending_cancel`, ``, 1)
 	body := make(map[string]interface{})
 	body[`symbol`] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	body[`states`] = states
 	body[`limit`] = `100`
+	if before != `` {
+		body[`before`] = before
+	}
+	if end != `` {
+		body[`end`] = end
+	}
 	if accountType == model.AccountTypeLever {
 		body[`account_type`] = `margin`
 	}
-	//body[`before`] = `2019-01-01 00:00:00`
-	//body[`after`] = `2018-01-01 00:00:00`
 	responseBody := SignedRequestFcoin(`GET`, `/orders`, body)
 	//fmt.Println(string(responseBody))
 	orderJson, err := util.NewJSON([]byte(responseBody))
