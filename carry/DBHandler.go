@@ -48,10 +48,10 @@ var CancelAllOrders = func() {
 		symbols := model.GetMarketSymbols(market)
 		for symbol := range symbols {
 			util.Notice(fmt.Sprintf(`[cancel old orders] %s %s`, market, symbol))
-			orders := api.QueryOrders(market, symbol, model.CarryStatusWorking, ``, ``)
-			for orderId := range orders {
-				if orderId != `` {
-					result, errCode, msg := api.CancelOrder(market, symbol, orderId)
+			orders := api.QueryOrders(market, symbol, model.CarryStatusWorking, 0, 0)
+			for _, order := range orders {
+				if order != nil && order.OrderId != `` {
+					result, errCode, msg := api.CancelOrder(market, symbol, order.OrderId)
 					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
 					time.Sleep(time.Millisecond * 100)
 				}

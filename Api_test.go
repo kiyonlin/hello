@@ -33,12 +33,14 @@ func Test_chan(t *testing.T) {
 func Test_loadOrders(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	orders := api.QueryOrders(model.Fcoin, `btc_usdt`, `working`,
-		``, ``)
-	for key, value := range orders {
-		util.Notice(fmt.Sprintf(`,%s,%f,%f,%s,%s,%s`,
-			key, value.DealAmount, value.DealPrice, value.ErrCode, value.Symbol, value.OrderTime.String()))
-	}
+	api.QueryOrderDealsFcoin(`3BgqYy6o70gMlDiCgH0JJEEynoJPqYnz5SZSq-No0EhA2-D4pKe6BB0RqdfJ0fXTDCfKUfhBVHyAFphKAWwylA==`)
+	//orders := api.QueryOrders(model.Fcoin, `btc_usdt`, `success`,
+	//	1557529200, 1557504000)
+	//for _, value := range orders {
+	//	util.Notice(fmt.Sprintf(`,symbol:%s,%s,%s,%s,%s,%f,%f,%f,%f`,
+	//		value.Symbol, value.OrderTime.String(), value.Function, value.OrderSide, value.Status,
+	//		value.DealAmount, value.DealPrice, value.Fee, value.FeeIncome))
+	//}
 }
 
 func Test_RefreshAccount(t *testing.T) {

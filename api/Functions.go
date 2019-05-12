@@ -68,7 +68,7 @@ func GetAmountDecimal(market, symbol string) int {
 }
 
 func MustCancel(market, symbol, orderId string, mustCancel bool) {
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 5; i++ {
 		result, errCode, _ := CancelOrder(market, symbol, orderId)
 		time.Sleep(time.Second)
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
@@ -105,19 +105,15 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 	return result, errCode, msg
 }
 
-func QueryOrders(market, symbol, states, before, end string) (orders map[string]*model.Order) {
+func QueryOrders(market, symbol, states string, before, after int64) (orders []*model.Order) {
 	switch market {
 	case model.Fcoin:
-		orders := make(map[string]*model.Order)
-		normal := queryOrdersFcoin(symbol, states, ``, before, end)
-		lever := queryOrdersFcoin(symbol, states, model.AccountTypeLever, before, end)
-		for key, value := range normal {
-			orders[key] = value
+		normal := queryOrdersFcoin(symbol, states, ``, before, after)
+		lever := queryOrdersFcoin(symbol, states, model.AccountTypeLever, before, after)
+		for _, value := range normal {
+			lever = append(lever, value)
 		}
-		for key, value := range lever {
-			orders[key] = value
-		}
-		return orders
+		return lever
 	default:
 		util.Notice(market + ` not supported`)
 	}

@@ -238,7 +238,7 @@ func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Or
 	}
 }
 
-func queryOrdersFcoin(symbol, states, accountType, before, end string) (orders map[string]*model.Order) {
+func queryOrdersFcoin(symbol, states, accountType string, before, after int64) (orders []*model.Order) {
 	states, _ = model.GetOrderStatusRevert(model.Fcoin, states)
 	states = strings.Replace(states, `pending_cancel,`, ``, 1)
 	states = strings.Replace(states, `pending_cancel`, ``, 1)
@@ -246,29 +246,56 @@ func queryOrdersFcoin(symbol, states, accountType, before, end string) (orders m
 	body[`symbol`] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	body[`states`] = states
 	body[`limit`] = `100`
-	if before != `` {
-		body[`before`] = before
+	if before > 0 {
+		body[`before`] = strconv.FormatInt(before, 10)
 	}
-	if end != `` {
-		body[`end`] = end
+	if after > 0 {
+		util.Notice(fmt.Sprintf(`after %d`, after))
 	}
 	if accountType == model.AccountTypeLever {
 		body[`account_type`] = `margin`
 	}
-	responseBody := SignedRequestFcoin(`GET`, `/orders`, body)
-	//fmt.Println(string(responseBody))
-	orderJson, err := util.NewJSON([]byte(responseBody))
-	if err == nil {
-		jsonOrders, _ := orderJson.Get(`data`).Array()
-		orders := make(map[string]*model.Order)
-		for _, order := range jsonOrders {
-			orderMap := order.(map[string]interface{})
-			orders[orderMap[`id`].(string)] = parseOrder(symbol, orderMap)
-
+	orders = make([]*model.Order, 0)
+	for true {
+		line := int64(0)
+		responseBody := SignedRequestFcoin(`GET`, `/orders`, body)
+		fmt.Println(string(responseBody))
+		orderJson, err := util.NewJSON([]byte(responseBody))
+		if err == nil {
+			jsonOrders, _ := orderJson.Get(`data`).Array()
+			for _, order := range jsonOrders {
+				orderMap := order.(map[string]interface{})
+				order := parseOrder(symbol, orderMap)
+				if line < order.OrderTime.Unix() {
+					line = order.OrderTime.Unix()
+				}
+				fmt.Println(order.OrderTime.Unix())
+				if order.OrderTime.Unix() > before {
+					break
+				}
+				orders = append(orders, order)
+			}
+			if len(jsonOrders) == 0 {
+				break
+			}
 		}
-		return orders
+		body[`after`] = strconv.FormatInt(line, 10)
+		time.Sleep(time.Second)
 	}
-	return nil
+	return orders
+}
+
+func QueryOrderDealsFcoin(orderId string) {
+	postData := make(map[string]interface{})
+	//postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	responseBody := SignedRequestFcoin(`GET`, `/orders/`+orderId+`/match-results`, postData)
+	fmt.Println(string(responseBody))
+	//orderJson, err := util.NewJSON([]byte(responseBody))
+	//if err == nil {
+	//	orderMap, _ := orderJson.Get(`data`).Map()
+	//	return parseOrder(symbol, orderMap)
+	//}
+	//return nil
 }
 
 func queryOrderFcoin(symbol, orderId string) (order *model.Order) {
