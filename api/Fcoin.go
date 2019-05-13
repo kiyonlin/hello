@@ -238,7 +238,9 @@ func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Or
 	}
 }
 
+//测试发现，只有after参数管用， before无效，可以作为内部逻辑控制条件
 func queryOrdersFcoin(symbol, states, accountType string, before, after int64) (orders []*model.Order) {
+	util.Info(fmt.Sprintf(`cancel parameters %d %d`, before, after))
 	states, _ = model.GetOrderStatusRevert(model.Fcoin, states)
 	states = strings.Replace(states, `pending_cancel,`, ``, 1)
 	states = strings.Replace(states, `pending_cancel`, ``, 1)
@@ -246,56 +248,39 @@ func queryOrdersFcoin(symbol, states, accountType string, before, after int64) (
 	body[`symbol`] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	body[`states`] = states
 	body[`limit`] = `100`
-	if before > 0 {
-		body[`before`] = strconv.FormatInt(before, 10)
-	}
-	if after > 0 {
-		util.Notice(fmt.Sprintf(`after %d`, after))
-	}
+	//if after > 0 {
+	//	body[`after`] = strconv.FormatInt(after, 10)
+	//}
 	if accountType == model.AccountTypeLever {
 		body[`account_type`] = `margin`
 	}
 	orders = make([]*model.Order, 0)
-	for true {
-		line := int64(0)
-		responseBody := SignedRequestFcoin(`GET`, `/orders`, body)
-		fmt.Println(string(responseBody))
-		orderJson, err := util.NewJSON([]byte(responseBody))
-		if err == nil {
-			jsonOrders, _ := orderJson.Get(`data`).Array()
-			for _, order := range jsonOrders {
-				orderMap := order.(map[string]interface{})
-				order := parseOrder(symbol, orderMap)
-				if line < order.OrderTime.Unix() {
-					line = order.OrderTime.Unix()
-				}
-				fmt.Println(order.OrderTime.Unix())
-				if order.OrderTime.Unix() > before {
-					break
-				}
-				orders = append(orders, order)
-			}
-			if len(jsonOrders) == 0 {
-				break
-			}
+	//runNext := true
+	//for runNext {
+	//	line := int64(0)
+	responseBody := SignedRequestFcoin(`GET`, `/orders`, body)
+	orderJson, err := util.NewJSON([]byte(responseBody))
+	if err == nil {
+		jsonOrders, _ := orderJson.Get(`data`).Array()
+		for _, order := range jsonOrders {
+			orderMap := order.(map[string]interface{})
+			order := parseOrder(symbol, orderMap)
+			//if line < order.OrderTime.Unix() {
+			//	line = order.OrderTime.Unix()
+			//}
+			//if line > before {
+			//	runNext = false
+			//}
+			//fmt.Println(order.OrderTime.Unix())
+			orders = append(orders, order)
 		}
-		body[`after`] = strconv.FormatInt(line, 10)
-		time.Sleep(time.Second)
+		//if len(jsonOrders) == 0 {
+		//	break
+		//}
 	}
+	//body[`after`] = strconv.FormatInt(line, 10)
+	//time.Sleep(time.Second)
 	return orders
-}
-
-func QueryOrderDealsFcoin(orderId string) {
-	postData := make(map[string]interface{})
-	//postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody := SignedRequestFcoin(`GET`, `/orders/`+orderId+`/match-results`, postData)
-	fmt.Println(string(responseBody))
-	//orderJson, err := util.NewJSON([]byte(responseBody))
-	//if err == nil {
-	//	orderMap, _ := orderJson.Get(`data`).Map()
-	//	return parseOrder(symbol, orderMap)
-	//}
-	//return nil
 }
 
 func queryOrderFcoin(symbol, orderId string) (order *model.Order) {

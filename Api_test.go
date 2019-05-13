@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jinzhu/configor"
+	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
 	"hello/model"
@@ -33,7 +34,26 @@ func Test_chan(t *testing.T) {
 func Test_loadOrders(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	api.QueryOrderDealsFcoin(`3BgqYy6o70gMlDiCgH0JJEEynoJPqYnz5SZSq-No0EhA2-D4pKe6BB0RqdfJ0fXTDCfKUfhBVHyAFphKAWwylA==`)
+	var err error
+	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+
+	d, _ := time.ParseDuration("-24h")
+	timeLine := util.GetNow().Add(d)
+	before := util.GetNow().Unix()
+	after := timeLine.Unix()
+	orders := api.QueryOrders(model.Fcoin, `eos_usdt`, model.CarryStatusWorking, before, after)
+	for _, order := range orders {
+		if order != nil && order.OrderId != `` {
+			//result, errCode, msg := api.CancelOrder(market, symbol, order.OrderId)
+			util.Notice(fmt.Sprintf(`[cancel old]%v %s %f`, true, order.OrderId, order.Price))
+			time.Sleep(time.Millisecond * 100)
+		}
+	}
+	//api.QueryOrderDealsFcoin(`3BgqYy6o70gMlDiCgH0JJEEynoJPqYnz5SZSq-No0EhA2-D4pKe6BB0RqdfJ0fXTDCfKUfhBVHyAFphKAWwylA==`)
 	//orders := api.QueryOrders(model.Fcoin, `btc_usdt`, `success`,
 	//	1557529200, 1557504000)
 	//for _, value := range orders {
