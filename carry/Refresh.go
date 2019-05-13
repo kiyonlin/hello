@@ -377,7 +377,8 @@ var ProcessRefresh = func(market, symbol string) {
 		hangRate, _ = strconv.ParseFloat(parameters[0], 64)
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
-	go validRefreshHang(symbol, amountLimit, otherPrice, tick)
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	go validRefreshHang(symbol, amountLimit, otherPrice, priceDistance, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` {
 		util.Notice(fmt.Sprintf(`[status]%s %s %v`,
 			model.AppConfig.Handle, model.AppConfig.HandleRefresh, refreshOrders.refreshing))
@@ -435,7 +436,6 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
 	util.Notice(fmt.Sprintf(`amount %f left %f right %f`, amount, leftFree, rightFree/tick.Asks[0].Price))
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
@@ -543,11 +543,11 @@ func refreshHang(market, symbol, accountType string,
 	util.Info(fmt.Sprintf(`[refreshhang done]%s`, symbol))
 }
 
-func validRefreshHang(symbol string, amountLimit, otherPrice float64, tick *model.BidAsk) {
+func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance float64, tick *model.BidAsk) {
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
 		bidAll := 0.0
-		for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price > hangBid.Price; i++ {
+		for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price-0.1*priceDistance > hangBid.Price; i++ {
 			bidAll += tick.Bids[i].Amount
 		}
 		if hangBid.Price < tick.Bids[14].Price || bidAll < amountLimit || hangBid.Price > 1.0005*otherPrice {
@@ -560,7 +560,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice float64, tick *mode
 	}
 	if hangAsk != nil {
 		askAll := 0.0
-		for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price < hangAsk.Price; i++ {
+		for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price+0.1*priceDistance < hangAsk.Price; i++ {
 			askAll += tick.Asks[i].Amount
 		}
 		if hangAsk.Price > tick.Asks[14].Price || askAll < amountLimit || hangAsk.Price < 0.9995*otherPrice {
@@ -590,7 +590,7 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 		api.MustCancel(hangAsk.Market, symbol, hangAsk.OrderId, true)
 	}
 	//refreshOrders.setRefreshHang(symbol, nil, nil)
-	util.Notice(fmt.Sprintf(`[-----cancel hang done---]%s %s`, market, symbol))
+	util.Notice(fmt.Sprintf(`%s[-----cancel hang done---]%s %s`, msg, market, symbol))
 	return hangBid != nil || hangAsk != nil
 }
 

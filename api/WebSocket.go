@@ -62,12 +62,12 @@ func chanHandler(market string, stopC chan struct{}, errHandler ErrHandler, msgH
 	for true {
 		select {
 		case <-stopC:
-			util.SocketInfo("get stop struct, return")
+			util.Notice("get stop struct, return")
 			return
 		default:
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				util.SocketInfo("can not read from websocket: " + err.Error())
+				util.Notice("can not read from websocket: " + err.Error())
 				return
 			}
 			//util.SocketInfo(string(message))
