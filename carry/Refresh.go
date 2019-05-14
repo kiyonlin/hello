@@ -625,6 +625,11 @@ func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount f
 					orderPrice = tick.Bids[0].Price
 				}
 				return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
+			} else if tick.Bids[0].Amount < amount*setting.RefreshLimit &&
+				tick.Bids[0].Amount > amount*setting.RefreshLimitLow &&
+				tick.Asks[0].Amount > 2*tick.Bids[0].Amount &&
+				tick.Asks[0].Amount < model.AppConfig.PreDealDis*tick.Bids[0].Amount {
+				return true, model.OrderSideBuy, model.OrderSideSell, tick.Bids[0].Price
 			}
 		}
 	}
@@ -652,6 +657,11 @@ func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount f
 					orderPrice = tick.Asks[0].Price
 				}
 				return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
+			} else if tick.Asks[0].Amount < amount*setting.RefreshLimit &&
+				tick.Asks[0].Amount > amount*setting.RefreshLimitLow &&
+				tick.Bids[0].Amount > 2*tick.Asks[0].Amount &&
+				tick.Bids[0].Amount < model.AppConfig.PreDealDis*tick.Asks[0].Amount {
+				return true, model.OrderSideSell, model.OrderSideBuy, tick.Asks[0].Price
 			}
 		}
 	}
