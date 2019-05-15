@@ -17,24 +17,55 @@ var WSErrHandler = func(err error) {
 	util.SocketInfo(`get error ` + err.Error())
 }
 
-//func CheckPastRefresh() {
-//	d, _ := time.ParseDuration("-10m")
-//	for true {
-//		now := util.GetNow()
-//		minute := now.Minute()
-//		if minute == 0 {
-//			begin := now.Add(d)
-//			begin = time.Date(begin.Year(), begin.Month(), begin.Day(), begin.Hour(), begin.Minute(), 0, 0,
-//				begin.Location())
-//			end := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0,
-//				now.Location())
-//			rows, _ := model.AppDB.Table("orders").Select(`sum(deal_price*deal_amount)`).
-//				Where(`order_time > ? and order_time < ?`, begin, end).
-//				Order(`timestamp desc`).Rows()
-//		}
-//		time.Sleep(time.Minute)
-//	}
-//}
+func CheckPastRefresh() {
+	d, _ := time.ParseDuration("-10m")
+	for true {
+		now := util.GetNow()
+		begin := now.Add(d)
+		begin = time.Date(begin.Year(), begin.Month(), begin.Day(), begin.Hour(), begin.Minute(), 0, 0,
+			begin.Location())
+		end := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0,
+			now.Location())
+		minute := now.Minute()
+		if minute == 0 {
+			markets := model.GetMarkets()
+			for _, market := range markets {
+				symbols := model.GetMarketSymbols(market)
+				for symbol := range symbols {
+					beginStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d CST`,
+						begin.Year(), begin.Month(), begin.Day(), begin.Hour(), begin.Minute(), begin.Second())
+					endStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d CST`,
+						end.Year(), end.Month(), end.Day(), end.Hour(), end.Minute(), end.Second())
+					rows, err := model.AppDB.Table(`orders`).Select(`sum(price*amount)`).
+						Where(`market=? and symbol=? and function=? and order_time>? and order_time<?`,
+							market, symbol, model.FunctionRefresh, beginStr, endStr).Rows()
+					if err == nil {
+						if rows.Next() {
+							var amount float64
+							_ = rows.Scan(&amount)
+							setting := model.GetSetting(model.FunctionRefresh, market, symbol)
+							if setting != nil {
+								if setting.AmountLimit > amount {
+									err := util.SendMail(model.AppConfig.Mail, `[warning]refresh不足`,
+										fmt.Sprintf(`[%s~%s]%s %s amount:%f < limit%f`,
+											beginStr, endStr, market, symbol, amount, setting.AmountLimit))
+									if err != nil {
+										util.SocketInfo(fmt.Sprintf(`%s %s发送失败`, market, symbol))
+									}
+								} else {
+									util.SocketInfo(fmt.Sprintf(`[refresh enough] %f > limit %f`,
+										amount, setting.AmountLimit))
+								}
+							}
+						}
+					}
+				}
+			}
+			time.Sleep(time.Minute)
+		}
+		time.Sleep(time.Second * 5)
+	}
+}
 
 func AccountHandlerServe() {
 	for true {
@@ -59,8 +90,7 @@ func AccountHandlerServe() {
 }
 
 var CancelAllOrders = func() {
-	previousHandle := model.AppConfig.Handle
-	model.AppConfig.Handle = `0`
+	model.AppPause = true
 	time.Sleep(time.Second)
 	markets := model.GetMarkets()
 	for _, market := range markets {
@@ -78,7 +108,7 @@ var CancelAllOrders = func() {
 		}
 	}
 	model.LoadSettings()
-	model.AppConfig.Handle = previousHandle
+	model.AppPause = false
 }
 
 //func RefreshAccounts() {
@@ -235,8 +265,7 @@ func MaintainMarketChan() {
 				}
 			}
 			if needRest {
-				previous := model.AppConfig.Handle
-				model.AppConfig.Handle = `0`
+				model.AppPause = true
 				model.AppMarkets.PutDepthChan(market, 0, nil)
 				for symbol := range symbols {
 					go CancelRefreshHang(market, symbol)
@@ -247,7 +276,7 @@ func MaintainMarketChan() {
 				for symbol := range symbols {
 					go CancelRefreshHang(market, symbol)
 				}
-				model.AppConfig.Handle = previous
+				model.AppPause = false
 				util.Notice(market + " reset depth channel ")
 			}
 		}

@@ -77,7 +77,7 @@ func getBalance(market, symbol, accountType string) (left, right, leftFroze, rig
 }
 
 var ProcessMake = func(market, symbol string) {
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleMaker != `1` || marketMaking {
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleMaker != `1` || marketMaking || model.AppPause {
 		return
 	}
 	setMarketMaking(true)

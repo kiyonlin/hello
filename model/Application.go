@@ -60,6 +60,7 @@ var AppConfig *Config
 var AppMarkets = NewMarkets()
 var AppAccounts = NewAccounts()
 var HuobiAccountId = ""
+var AppPause = false
 
 //var CarryChannel = make(chan Carry, 50)
 //var InnerCarryChannel = make(chan Carry, 50)

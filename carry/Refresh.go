@@ -379,9 +379,9 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	go validRefreshHang(symbol, amountLimit, otherPrice, priceDistance, tick)
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` {
-		util.Notice(fmt.Sprintf(`[status]%s %s %v`,
-			model.AppConfig.Handle, model.AppConfig.HandleRefresh, refreshOrders.refreshing))
+	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || model.AppPause {
+		util.Notice(fmt.Sprintf(`[status]%s %s %v is pause:%v`,
+			model.AppConfig.Handle, model.AppConfig.HandleRefresh, refreshOrders.refreshing, model.AppPause))
 		CancelRefreshHang(market, symbol)
 		return
 	}
@@ -418,7 +418,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	if index > refreshOrders.amountIndex {
 		util.Notice(fmt.Sprintf(`[before 10min canceling]`))
-		model.AppConfig.Handle = `0`
+		model.AppPause = true
 		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
 		symbols := model.GetMarketSymbols(market)
@@ -430,7 +430,7 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
-		model.AppConfig.Handle = `1`
+		model.AppPause = false
 		util.Notice(fmt.Sprintf(`[after 10min canceling]`))
 		return
 	}

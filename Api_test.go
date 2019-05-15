@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
+	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"sort"
@@ -40,7 +41,10 @@ func Test_loadOrders(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-
+	go carry.CheckPastRefresh()
+	for true {
+		time.Sleep(time.Minute)
+	}
 	d, _ := time.ParseDuration("-24h")
 	timeLine := util.GetNow().Add(d)
 	before := util.GetNow().Unix()
