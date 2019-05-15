@@ -711,10 +711,10 @@ func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, o
 	bidAmount := amount
 	askAmount := amount
 	if tick.Asks[0].Price-price > priceDistance {
-		bidAmount = 0.9999 * amount
+		bidAmount = 0.9998 * amount
 	}
 	if price-tick.Bids[0].Price > priceDistance {
-		askAmount = 0.9999 * amount
+		askAmount = 0.9998 * amount
 	}
 	if setting.RefreshSameTime == 1 {
 		go placeRefreshOrder(model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
