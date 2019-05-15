@@ -27,7 +27,7 @@ func CheckPastRefresh() {
 		end := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0,
 			now.Location())
 		minute := now.Minute()
-		if minute == 0 {
+		if minute%10 == 0 {
 			markets := model.GetMarkets()
 			for _, market := range markets {
 				symbols := model.GetMarketSymbols(market)
