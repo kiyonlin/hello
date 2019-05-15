@@ -27,14 +27,15 @@ func CheckPastRefresh() {
 		end := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0,
 			now.Location())
 		minute := now.Minute()
+		minute = 0
 		if minute == 0 {
 			markets := model.GetMarkets()
 			for _, market := range markets {
 				symbols := model.GetMarketSymbols(market)
 				for symbol := range symbols {
-					beginStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d CST`,
+					beginStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d`,
 						begin.Year(), begin.Month(), begin.Day(), begin.Hour(), begin.Minute(), begin.Second())
-					endStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d CST`,
+					endStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d`,
 						end.Year(), end.Month(), end.Day(), end.Hour(), end.Minute(), end.Second())
 					rows, err := model.AppDB.Table(`orders`).Select(`sum(price*amount)`).
 						Where(`market=? and symbol=? and function=? and order_time>? and order_time<?`,
