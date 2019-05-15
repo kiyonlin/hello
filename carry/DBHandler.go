@@ -62,6 +62,9 @@ func CheckPastRefresh() {
 					} else {
 						util.SocketInfo(`can not get amount from db ` + err.Error())
 					}
+					if rows != nil {
+						rows.Close()
+					}
 				}
 			}
 			time.Sleep(time.Minute)

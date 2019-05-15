@@ -116,6 +116,7 @@ func setSymbol(c *gin.Context) {
 	}
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, amount_limit, refresh_same_time, valid`).Rows()
+	defer rows.Close()
 	msg := ``
 	for rows.Next() {
 		valid := false
@@ -272,6 +273,7 @@ func GetParameters(c *gin.Context) {
 			"refreshlimit:%s refreshsametime:%d %v \n", market, symbol, function, parameter, amountLimit,
 			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, refreshSameTime, valid)
 	}
+	rows.Close()
 	msg += model.AppConfig.ToString()
 	var orders model.Order
 	rows, _ = model.AppDB.Model(&orders).Select(`date(order_time), symbol, order_side,count(*),
@@ -297,6 +299,7 @@ func GetParameters(c *gin.Context) {
 		msg += fmt.Sprintf("%s %s %s %s pay: %f earn: %f amount:%f rate(万分之):%f\n",
 			date, symbol, side, count, fee, feeIncome, inAll, rate)
 	}
+	rows.Close()
 	d, _ := time.ParseDuration(`-1h`)
 	lastHour := util.GetNow().Add(d)
 	strTime := fmt.Sprintf(`%d-%d-%d %d:%d:%d`, lastHour.Year(), lastHour.Month(), lastHour.Day(),
@@ -317,7 +320,7 @@ func GetParameters(c *gin.Context) {
 			feeIncome = feeIncome * price
 		}
 	}
-
+	rows.Close()
 	c.String(http.StatusOK, msg)
 }
 
