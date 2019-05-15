@@ -36,6 +36,7 @@ func CheckPastRefresh() {
 						begin.Year(), begin.Month(), begin.Day(), begin.Hour(), begin.Minute(), begin.Second())
 					endStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d`,
 						end.Year(), end.Month(), end.Day(), end.Hour(), end.Minute(), end.Second())
+					util.SocketInfo(fmt.Sprintf(`to check amount %s ~ %s`, beginStr, endStr))
 					rows, err := model.AppDB.Table(`orders`).Select(`sum(price*amount)`).
 						Where(`market=? and symbol=? and function=? and order_time>? and order_time<?`,
 							market, symbol, model.FunctionRefresh, beginStr, endStr).Rows()
@@ -58,6 +59,8 @@ func CheckPastRefresh() {
 								}
 							}
 						}
+					} else {
+						util.SocketInfo(`can not get amount from db ` + err.Error())
 					}
 				}
 			}
