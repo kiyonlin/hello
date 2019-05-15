@@ -305,6 +305,7 @@ func Maintain() {
 	model.LoadSettings()
 	go CancelOldMakers()
 	go AccountHandlerServe()
+	go CheckPastRefresh()
 	//go RefreshAccounts()
 	go MaintainTransFee()
 	go util.StartMidNightTimer(CancelAllOrders)
