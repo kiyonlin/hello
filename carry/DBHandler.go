@@ -47,7 +47,8 @@ func CheckPastRefresh() {
 							setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 							if setting != nil {
 								if setting.AmountLimit > amount {
-									err := util.SendMail(model.AppConfig.Mail, `[refresh]`+symbol,
+									err := util.SendMail(model.AppConfig.Mail,
+										fmt.Sprintf(`[refresh]%s %f`, symbol, amount),
 										fmt.Sprintf(`[%s~%s]%s %s amount:%f < limit%f`,
 											beginStr, endStr, market, symbol, amount, setting.AmountLimit))
 									if err != nil {
