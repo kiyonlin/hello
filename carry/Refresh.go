@@ -383,6 +383,10 @@ var ProcessRefresh = func(market, symbol string) {
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 	}
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
+		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
+		CancelRefreshHang(market, symbol)
+	}
 	go validRefreshHang(symbol, amountLimit, otherPrice, priceDistance, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s %s %v is pause:%v`,

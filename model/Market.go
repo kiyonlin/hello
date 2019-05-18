@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"hello/carry"
 	"hello/util"
 	"strconv"
 	"strings"
@@ -168,10 +167,6 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 	if bidAsk.Bids[0].Price > bidAsk.Asks[0].Price {
 		util.Info(fmt.Sprintf(`[fatal error]%s %s bid %f > ask %f amount %f %f`,
 			symbol, marketName, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount))
-	}
-	if util.GetNowUnixMillion()-int64(bidAsk.Ts) > 1000 {
-		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), bidAsk.Ts))
-		carry.CancelRefreshHang(marketName, symbol)
 	}
 	if markets.bidAsks[symbol][marketName] == nil || markets.bidAsks[symbol][marketName].Ts < bidAsk.Ts {
 		markets.bidAsks[symbol][marketName] = bidAsk
