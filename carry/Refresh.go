@@ -572,23 +572,15 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 }
 
 func CancelRefreshHang(market, symbol string) (needCancel bool) {
-	util.Notice(fmt.Sprintf(`[-----cancel hang---]%s %s`, market, symbol))
-	//if refreshOrders.hanging {
-	//	return
-	//}
-	//defer refreshOrders.setHanging(false)
-	msg := `[-----cancel hang done---]`
 	hangBid, hangAsk := refreshOrders.getRefreshHang(symbol)
 	if hangBid != nil {
-		msg += `hangbid:` + hangBid.OrderId + `;`
+		util.Notice(fmt.Sprintf(`[---cancel hang bid---]%s %s bid %s`, market, symbol, hangBid.OrderId))
 		api.MustCancel(hangBid.Market, symbol, hangBid.OrderId, true)
 	}
 	if hangAsk != nil {
-		msg += `hangask:` + hangAsk.OrderId + `;`
+		util.Notice(fmt.Sprintf(`[---cancel hang ask---]%s %s bid %s`, market, symbol, hangAsk.OrderId))
 		api.MustCancel(hangAsk.Market, symbol, hangAsk.OrderId, true)
 	}
-	//refreshOrders.setRefreshHang(symbol, nil, nil)
-	util.Notice(fmt.Sprintf(`%s[-----cancel hang done---]%s %s`, msg, market, symbol))
 	return hangBid != nil || hangAsk != nil
 }
 

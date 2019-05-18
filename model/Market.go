@@ -174,7 +174,7 @@ func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
 	if bidAsks != nil {
 		bidAsk := bidAsks[market]
 		if bidAsk != nil {
-			if math.Abs(float64(util.GetNowUnixMillion()-int64(bidAsk.Ts))) < AppConfig.Delay {
+			if float64(util.GetNowUnixMillion()-int64(bidAsk.Ts)) > AppConfig.Delay {
 				return false
 			}
 		}
