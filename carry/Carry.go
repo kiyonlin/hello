@@ -52,8 +52,12 @@ var ProcessCarry = func(market, symbol string) {
 	setCarrying(true)
 	defer setCarrying(false)
 	setting := model.GetSetting(model.FunctionCarry, market, symbol)
-	if setting == nil || model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][market] == nil ||
-		setting.FunctionParameter == `` {
+	if setting == nil || setting.FunctionParameter == `` {
+		return
+	}
+	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	targetResult, targetTick := model.AppMarkets.GetBidAsk(symbol, setting.FunctionParameter)
+	if !result || !targetResult || targetTick == nil {
 		return
 	}
 	targetOrder := targetCarries.get(market, setting.FunctionParameter, symbol)
@@ -73,9 +77,7 @@ var ProcessCarry = func(market, symbol string) {
 		var targetOrderSide string
 		var targetPrice, targetAmount float64
 		now := util.GetNowUnixMillion()
-		tick := model.AppMarkets.BidAsks[symbol][market]
-		targetTick := model.AppMarkets.BidAsks[symbol][setting.FunctionParameter]
-		if targetTick == nil || now-int64(targetTick.Ts) > 1000 || now-int64(tick.Ts) > 1000 {
+		if now-int64(targetTick.Ts) > 1000 || now-int64(tick.Ts) > 1000 {
 			util.Notice(fmt.Sprintf(`[dealy too long]%d - %d`, now-int64(targetTick.Ts), now-int64(tick.Ts)))
 			return
 		}

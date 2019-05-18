@@ -40,7 +40,7 @@ type Rule struct {
 
 type Markets struct {
 	lock      sync.Mutex
-	BidAsks   map[string]map[string]*BidAsk // symbol - market - bidAsk
+	bidAsks   map[string]map[string]*BidAsk // symbol - market - bidAsk
 	BigDeals  map[string]map[string]*Deal   // symbol - market - Deal
 	wsDepth   map[string][]chan struct{}    // market - []depth channel
 	isWriting map[string]bool               // market - writing
@@ -48,7 +48,7 @@ type Markets struct {
 }
 
 func NewMarkets() *Markets {
-	return &Markets{BidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{})}
+	return &Markets{bidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{})}
 }
 
 func (markets *Markets) GetIsWriting(market string) bool {
@@ -127,14 +127,39 @@ func (markets *Markets) SetBigDeal(symbol, market string, deal *Deal) bool {
 	return false
 }
 
+func (markets *Markets) GetPrice(symbol string) (result bool, price float64) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	for _, bidAsks := range AppMarkets.bidAsks[symbol] {
+		if bidAsks != nil && bidAsks.Bids != nil {
+			return true, bidAsks.Bids[0].Price
+		}
+	}
+	return false, 0
+}
+
+func (markets *Markets) GetBidAsk(symbol, market string) (result bool, bidAsk *BidAsk) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.bidAsks == nil || markets.bidAsks[symbol] == nil || markets.bidAsks[symbol][market] == nil ||
+		markets.bidAsks[symbol][market].Asks == nil || markets.bidAsks[symbol][market].Bids == nil ||
+		markets.bidAsks[symbol][market].Asks.Len() == 0 || markets.bidAsks[symbol][market].Bids.Len() == 0 {
+		return false, nil
+	}
+	return true, markets.bidAsks[symbol][market]
+}
+
 func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if len(symbol) > 7 && symbol[0:7] == `bchabc_` {
 		symbol = `bch_` + symbol[7:]
 	}
-	if markets.BidAsks[symbol] == nil {
-		markets.BidAsks[symbol] = map[string]*BidAsk{}
+	if markets.bidAsks == nil {
+		markets.bidAsks = map[string]map[string]*BidAsk{}
+	}
+	if markets.bidAsks[symbol] == nil {
+		markets.bidAsks[symbol] = map[string]*BidAsk{}
 	}
 	if bidAsk == nil || bidAsk.Bids == nil || bidAsk.Asks == nil || bidAsk.Bids.Len() == 0 || bidAsk.Asks.Len() == 0 {
 		return false
@@ -143,8 +168,8 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 		util.Info(fmt.Sprintf(`[fatal error]%s %s bid %f > ask %f amount %f %f`,
 			symbol, marketName, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount))
 	}
-	if markets.BidAsks[symbol][marketName] == nil || markets.BidAsks[symbol][marketName].Ts < bidAsk.Ts {
-		markets.BidAsks[symbol][marketName] = bidAsk
+	if markets.bidAsks[symbol][marketName] == nil || markets.bidAsks[symbol][marketName].Ts < bidAsk.Ts {
+		markets.bidAsks[symbol][marketName] = bidAsk
 		return true
 	}
 	return false
@@ -169,28 +194,20 @@ func (markets *Markets) PutDepthChan(marketName string, index int, channel chan 
 }
 
 func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
-	bidAsks := markets.BidAsks[symbol]
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	bidAsks := markets.bidAsks[symbol]
 	if bidAsks != nil {
 		bidAsk := bidAsks[market]
 		if bidAsk != nil {
 			if float64(util.GetNowUnixMillion()-int64(bidAsk.Ts)) < AppConfig.Delay {
 				return false
+			} else {
+				util.SocketInfo(fmt.Sprintf(`[%d - %d = socket delay %d`,
+					util.GetNowUnixMillion(), int64(bidAsk.Ts), util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 			}
 		}
 	}
-	return true
-}
-
-func (markets *Markets) RequireDealChanReset(market string, subscribe string) bool {
-	symbol := GetSymbol(market, subscribe)
-	deals := markets.BigDeals[symbol]
-	if deals != nil {
-		deal := deals[market]
-		if deal != nil {
-			if float64(util.GetNowUnixMillion()-int64(deal.Ts)) < AppConfig.Delay {
-				return false
-			}
-		}
-	}
+	util.Notice(fmt.Sprintf(`[socket need reset] %s %s`, market, symbol))
 	return true
 }

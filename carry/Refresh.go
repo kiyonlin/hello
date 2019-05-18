@@ -353,11 +353,11 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
-	if model.AppMarkets.BidAsks[symbol] == nil {
+	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	if !result {
 		CancelRefreshHang(market, symbol)
 		return
 	}
-	tick := model.AppMarkets.BidAsks[symbol][market]
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		CancelRefreshHang(market, symbol)
@@ -395,7 +395,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	refreshOrders.setRefreshing(true)
 	defer refreshOrders.setRefreshing(false)
-	delay := util.GetNowUnixMillion() - int64(model.AppMarkets.BidAsks[symbol][market].Ts)
+	delay := util.GetNowUnixMillion() - int64(tick.Ts)
 	if delay > 3000 {
 		util.Notice(fmt.Sprintf(`[delay long, cancel hang], %s %s`, market, symbol))
 		CancelRefreshHang(market, symbol)
@@ -434,7 +434,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
 	util.Notice(fmt.Sprintf(`amount %f left %f right %f`, amount, leftFree, rightFree/tick.Asks[0].Price))
-	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount)
+	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount, tick)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
 		refreshAble = false
@@ -584,10 +584,9 @@ func CancelRefreshHang(market, symbol string) (needCancel bool) {
 	return hangBid != nil || hangAsk != nil
 }
 
-func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64) (
+func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64, tick *model.BidAsk) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	tick := model.AppMarkets.BidAsks[symbol][market]
 	if tick.Asks[0].Price-tick.Bids[0].Price > priceDistance*1.1 && symbol != `btc_pax` {
 		return false, "", "", 0
 	}
@@ -660,14 +659,9 @@ func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount f
 
 func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice float64) {
 	if market == model.Fcoin && symbol == `btc_pax` {
-		if model.AppMarkets.BidAsks[`btc_usdt`] == nil || model.AppMarkets.BidAsks[`pax_usdt`] == nil {
-			return false, 0
-		}
-		tickBtcUsdt := model.AppMarkets.BidAsks[`btc_usdt`][model.Fcoin]
-		tickPaxUsdt := model.AppMarkets.BidAsks[`pax_usdt`][model.Fcoin]
-		if tickBtcUsdt != nil && tickBtcUsdt.Bids != nil && tickBtcUsdt.Asks != nil && len(tickBtcUsdt.Bids) > 0 &&
-			len(tickBtcUsdt.Asks) > 0 && tickPaxUsdt != nil && tickPaxUsdt.Bids != nil && tickPaxUsdt.Asks != nil &&
-			len(tickPaxUsdt.Bids) > 0 && len(tickPaxUsdt.Asks) > 0 {
+		btcUsdtResult, tickBtcUsdt := model.AppMarkets.GetBidAsk(`btc_usdt`, model.Fcoin)
+		paxUsdtResult, tickPaxUsdt := model.AppMarkets.GetBidAsk(`pax_usdt`, model.Fcoin)
+		if btcUsdtResult && paxUsdtResult {
 			pricePaxUsdt := (tickPaxUsdt.Asks[0].Price + tickPaxUsdt.Bids[0].Price) / 2
 			priceBtcUsdt := (tickBtcUsdt.Asks[0].Price + tickBtcUsdt.Bids[0].Price) / 2
 			if pricePaxUsdt == 0 {
@@ -679,17 +673,16 @@ func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice 
 			return false, 0
 		}
 	}
-	binanceBidAsks := model.AppMarkets.BidAsks[symbol][otherMarket]
-	if binanceBidAsks == nil || binanceBidAsks.Bids == nil || binanceBidAsks.Asks == nil ||
-		binanceBidAsks.Bids.Len() == 0 || binanceBidAsks.Asks.Len() == 0 {
+	otherResult, otherTick := model.AppMarkets.GetBidAsk(symbol, otherMarket)
+	if !otherResult {
 		return false, 0
 	}
-	delay := util.GetNowUnixMillion() - int64(binanceBidAsks.Ts)
+	delay := util.GetNowUnixMillion() - int64(otherTick.Ts)
 	if delay > 9000 {
 		util.Notice(fmt.Sprintf(`[%s %s]delay %d`, otherMarket, symbol, delay))
 		return false, 0
 	}
-	return true, (binanceBidAsks.Bids[0].Price + binanceBidAsks.Asks[0].Price) / 2
+	return true, (otherTick.Bids[0].Price + otherTick.Asks[0].Price) / 2
 }
 
 func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, orderReverse string,

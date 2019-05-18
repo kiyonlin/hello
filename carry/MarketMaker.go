@@ -90,13 +90,11 @@ var ProcessMake = func(market, symbol string) {
 	}
 	amount, err := strconv.ParseFloat(params[1], 64)
 	deal := model.AppMarkets.GetBigDeal(symbol, market)
-	if model.AppMarkets.BidAsks[symbol] == nil || model.AppMarkets.BidAsks[symbol][market] == nil ||
-		len(model.AppMarkets.BidAsks[symbol][market].Bids) == 0 ||
-		len(model.AppMarkets.BidAsks[symbol][market].Asks) == 0 || deal == nil {
+	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	if !result || deal == nil {
 		util.Notice(`nil bid-ask price for ` + symbol)
 		return
 	}
-	tick := model.AppMarkets.BidAsks[symbol][market]
 	dealDelay := util.GetNowUnixMillion() - int64(deal.Ts)
 	depthDelay := util.GetNowUnixMillion() - int64(tick.Ts)
 	if dealDelay > 1000 || depthDelay > 2000 {

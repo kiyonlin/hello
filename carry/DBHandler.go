@@ -264,6 +264,7 @@ func MaintainMarketChan() {
 			for symbol := range symbols {
 				if model.AppMarkets.RequireDepthChanReset(market, symbol) {
 					needRest = true
+					break
 				}
 			}
 			if needRest {

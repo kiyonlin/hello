@@ -273,12 +273,11 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
 	valid := false
-	if model.AppMarkets.BidAsks != nil && model.AppMarkets.BidAsks[symbol] != nil &&
-		model.AppMarkets.BidAsks[symbol][market] != nil {
-		bidAsk := model.AppMarkets.BidAsks[symbol][market]
-		if len(bidAsk.Bids) > 0 && orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.998 {
+	result, bidAsk := model.AppMarkets.GetBidAsk(symbol, market)
+	if result {
+		if orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.998 {
 			valid = true
-		} else if len(bidAsk.Asks) > 0 && orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.002 {
+		} else if orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.002 {
 			valid = true
 		}
 	}
@@ -354,10 +353,9 @@ func GetPrice(symbol string) (buy float64, err error) {
 		return 1, nil
 	}
 	symbol = strings.TrimSpace(strings.ToLower(symbol))
-	for _, bidAsks := range model.AppMarkets.BidAsks[symbol] {
-		if bidAsks != nil && bidAsks.Bids != nil {
-			return bidAsks.Bids[0].Price, nil
-		}
+	result, price := model.AppMarkets.GetPrice(symbol)
+	if result {
+		return price, nil
 	}
 	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
 		return model.CurrencyPrice[symbol], nil
