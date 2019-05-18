@@ -203,8 +203,9 @@ func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
 			if float64(util.GetNowUnixMillion()-int64(bidAsk.Ts)) < AppConfig.Delay {
 				return false
 			} else {
-				util.SocketInfo(fmt.Sprintf(`[%d - %d = socket delay %d`,
+				util.SocketInfo(fmt.Sprintf(`%s %s [%d - %d = socket delay %d`, market, symbol,
 					util.GetNowUnixMillion(), int64(bidAsk.Ts), util.GetNowUnixMillion()-int64(bidAsk.Ts)))
+				return true
 			}
 		}
 	}

@@ -84,10 +84,11 @@ func LoadSettings() {
 		marketSymbolSetting[function][market][symbol] = &AppSettings[i]
 		if AppSettings[i].Function == FunctionRefresh {
 			//binanceSettings[symbol] = &Setting{Market: Binance, Symbol: AppSettings[i].Symbol}
-			huobiSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
 			if AppSettings[i].Symbol == `btc_pax` {
 				fcoinSettings[`btc_usdt`] = &Setting{Market: Fcoin, Symbol: `btc_usdt`}
 				fcoinSettings[`pax_usdt`] = &Setting{Market: Fcoin, Symbol: `pax_usdt`}
+			} else {
+				huobiSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
 			}
 		}
 		if handlers[market] == nil {
