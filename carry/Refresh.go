@@ -364,6 +364,11 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	result, otherPrice := getOtherPrice(market, symbol, model.Huobi)
+	if !result || otherPrice == 0 {
+		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
+		CancelRefreshHang(market, symbol)
+		return
+	}
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil || (leftFree == 0 && rightFree == 0) {
@@ -399,11 +404,6 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	if !result || otherPrice == 0 {
-		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
-		CancelRefreshHang(market, symbol)
-		return
-	}
 	resetCoin := refreshOrders.getNeedReset(symbol, setting.AccountType)
 	if resetCoin != `` {
 		time.Sleep(time.Second)
@@ -418,7 +418,6 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	if index > refreshOrders.amountIndex {
 		util.Notice(fmt.Sprintf(`[before 10min canceling]`))
-		model.AppPause = true
 		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
 		symbols := model.GetMarketSymbols(market)
@@ -430,7 +429,6 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
-		model.AppPause = false
 		util.Notice(fmt.Sprintf(`[after 10min canceling]`))
 		return
 	}
@@ -695,7 +693,7 @@ func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice 
 		return false, 0
 	}
 	delay := util.GetNowUnixMillion() - int64(binanceBidAsks.Ts)
-	if delay > 3000 {
+	if delay > 9000 {
 		util.Notice(fmt.Sprintf(`[%s %s]delay %d`, otherMarket, symbol, delay))
 		return false, 0
 	}

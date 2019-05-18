@@ -172,11 +172,7 @@ func MaintainTransFee() {
 				value.DealAmount = order.DealAmount
 				value.Status = order.Status
 				model.AppDB.Save(&value)
-				if model.AppConfig.Handle == `1` {
-					time.Sleep(time.Second)
-				} else {
-					time.Sleep(time.Millisecond * 120)
-				}
+				time.Sleep(time.Second)
 			}
 		}
 		feeIndex = 0
@@ -279,9 +275,6 @@ func MaintainMarketChan() {
 				channel <- struct{}{}
 				close(channel)
 				model.AppMarkets.PutDepthChan(market, 0, createMarketDepthServer(model.AppMarkets, market))
-				for symbol := range symbols {
-					go CancelRefreshHang(market, symbol)
-				}
 				model.AppPause = false
 				util.Notice(market + " reset depth channel ")
 			}
