@@ -208,6 +208,6 @@ func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
 			}
 		}
 	}
-	util.Notice(fmt.Sprintf(`[socket need reset] %s %s`, market, symbol))
+	util.SocketInfo(fmt.Sprintf(`[socket need reset] %s %s`, market, symbol))
 	return true
 }
