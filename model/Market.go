@@ -193,22 +193,17 @@ func (markets *Markets) PutDepthChan(marketName string, index int, channel chan 
 	markets.wsDepth[marketName][index] = channel
 }
 
-func (markets *Markets) RequireDepthChanReset(market, symbol string) bool {
+func (markets *Markets) RequireDepthChanReset(market string) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	bidAsks := markets.bidAsks[symbol]
-	if bidAsks != nil {
-		bidAsk := bidAsks[market]
-		if bidAsk != nil {
-			if float64(util.GetNowUnixMillion()-int64(bidAsk.Ts)) < AppConfig.Delay {
-				return false
-			} else {
-				util.SocketInfo(fmt.Sprintf(`%s %s [%d - %d = socket delay %d`, market, symbol,
-					util.GetNowUnixMillion(), int64(bidAsk.Ts), util.GetNowUnixMillion()-int64(bidAsk.Ts)))
-				return true
-			}
+	needReset := true
+	for _, value := range markets.bidAsks {
+		if value[market] != nil && float64(util.GetNowUnixMillion()-int64(value[market].Ts)) < AppConfig.Delay {
+			needReset = false
 		}
 	}
-	util.SocketInfo(fmt.Sprintf(`[socket need reset] %s %s`, market, symbol))
-	return true
+	if needReset {
+		util.SocketInfo(fmt.Sprintf(`socket need reset %v`, needReset))
+	}
+	return needReset
 }

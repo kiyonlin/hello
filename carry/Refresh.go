@@ -366,7 +366,7 @@ var ProcessRefresh = func(market, symbol string) {
 	result, otherPrice := getOtherPrice(market, symbol, model.Huobi)
 	if !result || otherPrice == 0 {
 		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
-		CancelRefreshHang(market, symbol)
+		//CancelRefreshHang(market, symbol)
 		return
 	}
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
@@ -396,11 +396,15 @@ var ProcessRefresh = func(market, symbol string) {
 	refreshOrders.setRefreshing(true)
 	defer refreshOrders.setRefreshing(false)
 	delay := util.GetNowUnixMillion() - int64(tick.Ts)
-	if delay > 3000 {
-		util.Notice(fmt.Sprintf(`[delay long, cancel hang], %s %s`, market, symbol))
-		CancelRefreshHang(market, symbol)
-	}
-	if delay > 200 {
+	//checkDelay := model.AppConfig.Delay
+	//if strings.Contains(symbol, `pax`) {
+	//	checkDelay = 20 * checkDelay
+	//}
+	//if float64(delay) > checkDelay {
+	//	util.Notice(fmt.Sprintf(`[delay long, cancel hang], %s %s`, market, symbol))
+	//	CancelRefreshHang(market, symbol)
+	//}
+	if delay > 500 {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}

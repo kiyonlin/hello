@@ -259,17 +259,10 @@ func MaintainMarketChan() {
 			model.AppMarkets.PutDepthChan(market, 0, createMarketDepthServer(model.AppMarkets, market))
 			util.Notice(market + " create new depth channel ")
 		} else {
-			symbols := model.GetMarketSymbols(market)
-			needRest := false
-			for symbol := range symbols {
-				if model.AppMarkets.RequireDepthChanReset(market, symbol) {
-					needRest = true
-					break
-				}
-			}
-			if needRest {
+			if model.AppMarkets.RequireDepthChanReset(market) {
 				model.AppPause = true
 				model.AppMarkets.PutDepthChan(market, 0, nil)
+				symbols := model.GetMarketSymbols(market)
 				for symbol := range symbols {
 					go CancelRefreshHang(market, symbol)
 				}
