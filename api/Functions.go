@@ -68,9 +68,9 @@ func GetAmountDecimal(market, symbol string) int {
 }
 
 func MustCancel(market, symbol, orderId string, mustCancel bool) {
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		result, errCode, _ := CancelOrder(market, symbol, orderId)
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 500)
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
 		if result || !mustCancel { //3008:"submit cancel invalid order state
 			break
