@@ -74,7 +74,7 @@ func Test_RefreshAccount(t *testing.T) {
 		return
 	}
 	order := api.QueryOrderById(model.Fcoin, `ltc_usdt`,
-		`1Gq88wTYuruXgIuo0PCzgWTX0e_hsBWotiVeP9crkGJtsiAV4q6TarQr-FIwjaSr58rNIdY0Xirmt6Ob0YFYDA==`)
+		`pfWOAwuurFQMpmUfWmWd3rRCckHf0uGK_b6xI5tYuYPJArdNgsTMekQw7ppjspj7`)
 	fmt.Println(fmt.Sprintf(`%f %f %s`, order.Amount, order.DealAmount, order.Status))
 	//_ = api.GetAccountOkfuture(model.AppAccounts)
 	//for i := 0; i < 50; i++ {
