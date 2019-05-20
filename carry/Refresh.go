@@ -741,7 +741,7 @@ func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, o
 	}
 	if setting.RefreshSameTime == 1 {
 		go placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
-		go placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
+		placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
 	} else {
 		if orderSide == model.OrderSideBuy && orderReverse == model.OrderSideSell {
 			placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
