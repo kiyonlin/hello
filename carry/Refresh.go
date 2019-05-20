@@ -160,7 +160,7 @@ func (refreshOrders *RefreshOrders) getRefreshHang(symbol string) (hangBid1, han
 		refreshOrders.fcoinHang = make(map[string][]*model.Order)
 	}
 	if refreshOrders.fcoinHang[symbol] == nil {
-		refreshOrders.fcoinHang[symbol] = make([]*model.Order, 2)
+		refreshOrders.fcoinHang[symbol] = make([]*model.Order, 4)
 	}
 	return refreshOrders.fcoinHang[symbol][0], refreshOrders.fcoinHang[symbol][1], refreshOrders.fcoinHang[symbol][2],
 		refreshOrders.fcoinHang[symbol][3]
