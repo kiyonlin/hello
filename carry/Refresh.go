@@ -500,6 +500,7 @@ func refreshHang(market, symbol, accountType string,
 	coin := ``
 	hangBid1, hangAsk1, hangBid2, hangAsk2 := refreshOrders.getRefreshHang(symbol)
 	if hangBid1 == nil && bidAll > amountLimit && otherPrice*1.0005 >= tick.Bids[9].Price && hangRate1 > 0 {
+		util.Notice(fmt.Sprintf(`try hang bid1 %s`, symbol))
 		hangBid1 = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Bids[9].Price, rightFree*hangRate1)
 		if hangBid1 != nil && hangBid1.OrderId != `` && hangBid1.Status != model.CarryStatusFail {
@@ -512,6 +513,7 @@ func refreshHang(market, symbol, accountType string,
 		}
 	}
 	if hangAsk1 == nil && askAll > amountLimit && otherPrice*0.9995 <= tick.Asks[9].Price && hangRate1 > 0 {
+		util.Notice(fmt.Sprintf(`try hang ask1 %s`, symbol))
 		hangAsk1 = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[9].Price, leftFree*hangRate1)
 		if hangAsk1 != nil && hangAsk1.OrderId != `` && hangAsk1.Status != model.CarryStatusFail {
@@ -524,6 +526,7 @@ func refreshHang(market, symbol, accountType string,
 		}
 	}
 	if hangBid2 == nil && hangRate2 > 0 {
+		util.Notice(fmt.Sprintf(`try hang bid2 %s`, symbol))
 		hangBid2 = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``, accountType,
 			tick.Bids[0].Price*0.98, rightFree*hangRate2)
 		if hangBid2 != nil && hangBid2.OrderId != `` && hangBid2.Status != model.CarryStatusFail {
@@ -534,8 +537,14 @@ func refreshHang(market, symbol, accountType string,
 			coin = coins[1]
 			needRefresh = true
 		}
+	} else {
+		util.Notice(fmt.Sprintf(`[hang rate2]%f`, hangRate2))
+		if hangBid2 != nil {
+			util.Notice(fmt.Sprintf(`hang bid2 alive %s`, hangBid2.OrderId))
+		}
 	}
 	if hangAsk2 == nil && hangRate2 > 0 {
+		util.Notice(fmt.Sprintf(`try hang ask2 %s`, symbol))
 		hangAsk2 = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``, accountType,
 			tick.Asks[0].Price*1.02, leftFree*hangRate2)
 		if hangAsk2 != nil && hangAsk2.OrderId != `` && hangAsk2.Status != model.CarryStatusFail {
@@ -545,6 +554,11 @@ func refreshHang(market, symbol, accountType string,
 			hangAsk2 = nil
 			coin = coins[0]
 			needRefresh = true
+		}
+	} else {
+		util.Notice(fmt.Sprintf(`[hang rate2]%f`, hangRate2))
+		if hangAsk2 != nil {
+			util.Notice(fmt.Sprintf(`hang ask2 alive %s`, hangAsk2.OrderId))
 		}
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid1, hangAsk1, hangBid2, hangAsk2)
@@ -599,7 +613,6 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 		go api.MustCancel(hangAsk2.Market, symbol, hangAsk2.OrderId, true)
 		refreshOrders.removeRefreshHang(symbol, nil, nil, nil, hangAsk2)
 		refreshOrders.setWaiting(symbol, true)
-
 	}
 }
 
