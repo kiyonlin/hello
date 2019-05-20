@@ -538,9 +538,8 @@ func refreshHang(market, symbol, accountType string,
 			needRefresh = true
 		}
 	} else {
-		util.Notice(fmt.Sprintf(`[hang rate2]%f`, hangRate2))
 		if hangBid2 != nil {
-			util.Notice(fmt.Sprintf(`hang bid2 alive %s`, hangBid2.OrderId))
+			util.Notice(fmt.Sprintf(`hang bid2 alive %s %s`, hangBid2.Symbol, hangBid2.OrderId))
 		}
 	}
 	if hangAsk2 == nil && hangRate2 > 0 {
@@ -556,9 +555,8 @@ func refreshHang(market, symbol, accountType string,
 			needRefresh = true
 		}
 	} else {
-		util.Notice(fmt.Sprintf(`[hang rate2]%f`, hangRate2))
 		if hangAsk2 != nil {
-			util.Notice(fmt.Sprintf(`hang ask2 alive %s`, hangAsk2.OrderId))
+			util.Notice(fmt.Sprintf(`hang ask2 alive %s %s`, hangAsk2.Symbol, hangAsk2.OrderId))
 		}
 	}
 	refreshOrders.setRefreshHang(symbol, hangBid1, hangAsk1, hangBid2, hangAsk2)
