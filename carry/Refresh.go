@@ -359,7 +359,7 @@ var ProcessRefresh = func(market, symbol string) {
 		hangRate, _ = strconv.ParseFloat(parameters[0], 64)
 		amountLimit, _ = strconv.ParseFloat(parameters[1], 64)
 		farRate, _ = strconv.ParseFloat(parameters[2], 64)
-		for i := 3; i < len(parameters)-1; i++ {
+		for i := 3; i < len(parameters)-2; i++ {
 			place, _ := strconv.ParseFloat(parameters[i], 64)
 			farPlaces = append(farPlaces, place)
 		}
