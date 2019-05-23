@@ -460,12 +460,12 @@ var ProcessRefresh = func(market, symbol string) {
 				util.Info(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
 			} else {
 				util.Info(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
-				refreshHang(market, symbol, setting.AccountType, hangRate, farRate, finalPlace, amountLimit,
+				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, farRate, finalPlace,
 					leftFree, rightFree, otherPrice, farPlaces, tick)
 			}
 		} else {
 			util.Info(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
-			refreshHang(market, symbol, setting.AccountType, hangRate, farRate, finalPlace, amountLimit,
+			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, farRate, finalPlace,
 				leftFree, rightFree, otherPrice, farPlaces, tick)
 		}
 	}
