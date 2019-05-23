@@ -557,6 +557,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 				farBid.RefreshType = RefreshTypeFar
 				refreshOrders.addRefreshHang(symbol, farBid)
 				model.AppDB.Save(&farBid)
+				farBidNum++
 			} else if farBid != nil && farBid.ErrCode == `1016` {
 				coin = coins[1]
 				needRefresh = true
@@ -570,6 +571,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 				farAsk.RefreshType = RefreshTypeFar
 				refreshOrders.addRefreshHang(symbol, farAsk)
 				model.AppDB.Save(&farAsk)
+				farAskNum++
 			} else if farAsk != nil && farAsk.ErrCode == `1016` {
 				coin = coins[0]
 				needRefresh = true
