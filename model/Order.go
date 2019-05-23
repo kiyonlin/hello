@@ -3,23 +3,24 @@ package model
 import "time"
 
 type Order struct {
-	OrderId    string
-	Symbol     string
-	Market     string
-	Function   string
-	OrderType  string
-	OrderSide  string
-	ErrCode    string
-	Status     string
-	AmountType string
-	Price      float64
-	DealPrice  float64
-	Amount     float64
-	DealAmount float64
-	Fee        float64
-	FeeIncome  float64
-	OrderTime  time.Time
-	ID         uint `gorm:"primary_key"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	Amount      float64
+	AmountType  string
+	DealAmount  float64
+	DealPrice   float64
+	ErrCode     string
+	Fee         float64
+	FeeIncome   float64
+	Function    string
+	Market      string
+	OrderId     string
+	OrderSide   string
+	OrderTime   time.Time
+	OrderType   string
+	Price       float64
+	RefreshType string // 1: near refresh 2: far refresh
+	Status      string
+	Symbol      string
+	ID          uint `gorm:"primary_key"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
