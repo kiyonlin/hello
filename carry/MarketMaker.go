@@ -52,6 +52,20 @@ func addMaker(market string, order *model.Order) {
 	}
 }
 
+func discountBalance(market, symbol, accountType, coin string, discountRate float64) {
+	leverMarket := market
+	if accountType == model.AccountTypeLever {
+		leverMarket = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever,
+			strings.Replace(symbol, `_`, ``, 1))
+	}
+	account := model.AppAccounts.GetAccount(leverMarket, coin)
+	if account != nil {
+		util.Notice(fmt.Sprintf(`discount account %s %s %f`, market, coin, discountRate))
+		account.Free = account.Free * discountRate
+		model.AppAccounts.SetAccount(leverMarket, coin, account)
+	}
+}
+
 func getBalance(market, symbol, accountType string) (left, right, leftFroze, rightFroze float64, err error) {
 	leverMarket := market
 	if accountType == model.AccountTypeLever {

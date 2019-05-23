@@ -515,24 +515,28 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 	}
 	if sequenceBid == nil && bidAll > amountLimit && otherPrice*1.0005 >= tick.Bids[9].Price && hangRate > 0 {
 		util.Notice(fmt.Sprintf(`try hang bid1 %s`, symbol))
-		sequenceBid = api.MustPlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+		sequenceBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Bids[9].Price, rightFree*hangRate)
 		if sequenceBid != nil && sequenceBid.OrderId != `` && sequenceBid.Status != model.CarryStatusFail {
 			sequenceBid.Function = model.FunctionHang
 			sequenceBid.RefreshType = RefreshTypeSequence
 			refreshOrders.addRefreshHang(symbol, sequenceBid)
 			model.AppDB.Save(&sequenceBid)
+		} else if sequenceBid != nil && sequenceBid.ErrCode == `1016` {
+			discountBalance(market, symbol, accountType, coins[1], 0.8)
 		}
 	}
 	if sequenceAsk == nil && askAll > amountLimit && otherPrice*0.9995 <= tick.Asks[9].Price && hangRate > 0 {
 		util.Notice(fmt.Sprintf(`try hang ask1 %s`, symbol))
-		sequenceAsk = api.MustPlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
+		sequenceAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[9].Price, leftFree*hangRate)
 		if sequenceAsk != nil && sequenceAsk.OrderId != `` && sequenceAsk.Status != model.CarryStatusFail {
 			sequenceAsk.Function = model.FunctionHang
 			sequenceAsk.RefreshType = RefreshTypeSequence
 			refreshOrders.addRefreshHang(symbol, sequenceAsk)
 			model.AppDB.Save(&sequenceAsk)
+		} else if sequenceAsk != nil && sequenceAsk.ErrCode == `1016` {
+			discountBalance(market, symbol, accountType, coins[0], 0.8)
 		}
 	}
 	bidAmount := rightFree * farRate / float64(len(farPlaces))
@@ -540,7 +544,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 	if farBidNum == 0 && farAskNum == 0 && len(farPlaces) > 0 && farRate > 0 {
 		for _, place := range farPlaces {
 			util.Notice(fmt.Sprintf(`try hang far bid %s %f`, symbol, place))
-			farBid := api.MustPlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+			farBid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 				accountType, tick.Bids[0].Price*(1-place), bidAmount)
 			if farBid != nil && farBid.OrderId != `` && farBid.Status != model.CarryStatusFail {
 				farBid.Function = model.FunctionHang
@@ -548,9 +552,12 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 				refreshOrders.addRefreshHang(symbol, farBid)
 				model.AppDB.Save(&farBid)
 				farBidNum++
+			} else if farBid != nil && farBid.ErrCode == `1016` {
+				discountBalance(market, symbol, accountType, coins[1], 0.8)
+				break
 			}
 			util.Notice(fmt.Sprintf(`try hang far ask %s %f`, symbol, place))
-			farAsk := api.MustPlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
+			farAsk := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 				accountType, tick.Asks[0].Price*(1+place), askAmount)
 			if farAsk != nil && farAsk.OrderId != `` && farAsk.Status != model.CarryStatusFail {
 				farAsk.Function = model.FunctionHang
@@ -558,29 +565,36 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 				refreshOrders.addRefreshHang(symbol, farAsk)
 				model.AppDB.Save(&farAsk)
 				farAskNum++
+			} else if farAsk != nil && farAsk.ErrCode == `1016` {
+				discountBalance(market, symbol, accountType, coins[0], 0.8)
+				break
 			}
 		}
 	}
 	if farBidNum < len(farPlaces) && finalPlace > 0 {
 		util.Notice(fmt.Sprintf(`place bid final %s %f`, symbol, finalPlace))
-		farBid := api.MustPlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+		farBid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Bids[0].Price*(1-finalPlace), bidAmount)
 		if farBid != nil && farBid.OrderId != `` && farBid.Status != model.CarryStatusFail {
 			farBid.Function = model.FunctionHang
 			farBid.RefreshType = RefreshTypeFar
 			refreshOrders.addRefreshHang(symbol, farBid)
 			model.AppDB.Save(&farBid)
+		} else if farBid != nil && farBid.ErrCode == `1016` {
+			discountBalance(market, symbol, accountType, coins[1], 0.8)
 		}
 	}
 	if farAskNum < len(farPlaces) && finalPlace > 0 {
 		util.Notice(fmt.Sprintf(`place ask final %s %f`, symbol, finalPlace))
-		farAsk := api.MustPlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
+		farAsk := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[0].Price*(1+finalPlace), askAmount)
 		if farAsk != nil && farAsk.OrderId != `` && farAsk.Status != model.CarryStatusFail {
 			farAsk.Function = model.FunctionHang
 			farAsk.RefreshType = RefreshTypeFar
 			refreshOrders.addRefreshHang(symbol, farAsk)
 			model.AppDB.Save(&farAsk)
+		} else if farAsk != nil && farAsk.ErrCode == `1016` {
+			discountBalance(market, symbol, accountType, coins[0], 0.8)
 		}
 	}
 	//if needRefresh {
@@ -831,10 +845,10 @@ func receiveRefresh(orders *RefreshBidAsk, market, symbol, accountType string,
 }
 
 func placeRefreshOrder(orders *RefreshBidAsk, orderSide, market, symbol, accountType string, price, amount float64) {
-	order := api.MustPlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
+	order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 	if order.Status == model.CarryStatusFail && order.ErrCode == `1002` {
 		time.Sleep(time.Millisecond * 500)
-		order = api.MustPlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
+		order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 	}
 	order.Function = model.FunctionRefresh
 	if orderSide == model.OrderSideBuy {
@@ -843,4 +857,14 @@ func placeRefreshOrder(orders *RefreshBidAsk, orderSide, market, symbol, account
 		orders.set(nil, order)
 	}
 	model.AppDB.Save(&order)
+	if order != nil && order.ErrCode == `1016` {
+		coins := strings.Split(symbol, `_`)
+		if len(coins) == 2 {
+			if orderSide == model.OrderSideBuy {
+				discountBalance(market, symbol, accountType, coins[1], 0.8)
+			} else if orderSide == model.OrderSideSell {
+				discountBalance(market, symbol, accountType, coins[0], 0.8)
+			}
+		}
+	}
 }

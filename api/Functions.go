@@ -261,22 +261,6 @@ func RefreshAccount(market string) {
 	}
 }
 
-func MustPlaceOrder(orderSide, orderType, market, symbol, amountType, accountType string, price,
-	amount float64) (order *model.Order) {
-	needPlace := true
-	for i := 0; i <= 9 && needPlace; i++ {
-		order = PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType, price,
-			amount*float64(1-float64(i)*0.1))
-		needPlace = false
-		if order != nil && order.ErrCode == `1016` {
-			needPlace = true
-			util.Notice(fmt.Sprintf(`must place %s %s for %d times, return 1016 `, symbol, orderSide, i))
-		}
-		time.Sleep(time.Millisecond * 100)
-	}
-	return order
-}
-
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
