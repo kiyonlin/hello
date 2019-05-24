@@ -46,18 +46,19 @@ func CheckPastRefresh() {
 							_ = rows.Scan(&amount)
 							setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 							if setting != nil {
+								util.SocketInfo(fmt.Sprintf(`check amount %s %s %f %f`, market, symbol,
+									amount, setting.AmountLimit))
 								if setting.AmountLimit > amount {
 									body := fmt.Sprintf(`[%s~%s]%s %s amount:%f < limit%f`,
 										beginStr, endStr, market, symbol, amount, setting.AmountLimit)
 									err := util.SendMail(model.AppConfig.Mail,
 										fmt.Sprintf(`[refresh]%s %f`, symbol, amount), body)
-									util.Notice(body)
 									if err != nil {
 										util.SocketInfo(fmt.Sprintf(`%s %s发送失败`, market, symbol))
 									}
 								} else {
-									util.SocketInfo(fmt.Sprintf(`[refresh enough] %f > limit %f`,
-										amount, setting.AmountLimit))
+									util.SocketInfo(fmt.Sprintf(`[refresh enough]%s %s %f > limit %f`,
+										market, symbol, amount, setting.AmountLimit))
 								}
 							}
 						}
