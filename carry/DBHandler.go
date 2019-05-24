@@ -51,6 +51,7 @@ func CheckPastRefresh() {
 										beginStr, endStr, market, symbol, amount, setting.AmountLimit)
 									err := util.SendMail(model.AppConfig.Mail,
 										fmt.Sprintf(`[refresh]%s %f`, symbol, amount), body)
+									util.Notice(body)
 									if err != nil {
 										util.SocketInfo(fmt.Sprintf(`%s %s发送失败`, market, symbol))
 									}
