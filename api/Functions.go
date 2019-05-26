@@ -68,15 +68,27 @@ func GetAmountDecimal(market, symbol string) int {
 }
 
 func MustCancel(market, symbol, orderId string, mustCancel bool) {
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 7; i++ {
 		result, errCode, _ := CancelOrder(market, symbol, orderId)
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
-		if result || !mustCancel { //3008:"submit cancel invalid order state
+		if result || !mustCancel || errCode == `0` {
 			break
-		} else if errCode == `429` || errCode == `4003` {
-			util.Notice(`调用次数繁忙`)
 		}
-		time.Sleep(time.Second)
+		if errCode == `3008` && i >= 3 {
+			break
+		}
+		//if result || !mustCancel { //3008:"submit cancel invalid order state
+		//	break
+		//} else if errCode == `429` || errCode == `4003` {
+		//	util.Notice(`调用次数繁忙`)
+		//}
+		if i < 2 {
+			time.Sleep(time.Second)
+		} else if i >= 2 && i < 5 {
+			time.Sleep(time.Second * 3)
+		} else if i == 5 {
+			time.Sleep(time.Second * 10)
+		}
 	}
 }
 
