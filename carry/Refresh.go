@@ -16,6 +16,7 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 const RefreshTypeSequence = `sequence`
 const RefreshTypeFar = `far`
+const SequencePlace = 11 // 0~14
 
 var refreshOrders = &RefreshOrders{}
 
@@ -479,7 +480,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 	refreshOrders.setHanging(true)
 	bidAll := tick.Bids[0].Amount
 	askAll := tick.Asks[0].Amount
-	for i := 1; i <= 8; i++ {
+	for i := 1; i < SequencePlace; i++ {
 		bidAll += tick.Bids[i].Amount
 		askAll += tick.Asks[i].Amount
 	}
@@ -513,10 +514,11 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 			}
 		}
 	}
-	if sequenceBid == nil && bidAll > amountLimit && otherPrice*1.0005 >= tick.Bids[9].Price && hangRate > 0 {
+	if sequenceBid == nil && bidAll > amountLimit &&
+		otherPrice*1.0005 >= tick.Bids[SequencePlace].Price && hangRate > 0 {
 		util.Notice(fmt.Sprintf(`try hang bid1 %s`, symbol))
 		sequenceBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			accountType, tick.Bids[9].Price, rightFree*hangRate)
+			accountType, tick.Bids[SequencePlace].Price, rightFree*hangRate)
 		if sequenceBid != nil && sequenceBid.OrderId != `` && sequenceBid.Status != model.CarryStatusFail {
 			sequenceBid.Function = model.FunctionHang
 			sequenceBid.RefreshType = RefreshTypeSequence
@@ -526,10 +528,11 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 			discountBalance(market, symbol, accountType, coins[1], 0.8)
 		}
 	}
-	if sequenceAsk == nil && askAll > amountLimit && otherPrice*0.9995 <= tick.Asks[9].Price && hangRate > 0 {
+	if sequenceAsk == nil && askAll > amountLimit &&
+		otherPrice*0.9995 <= tick.Asks[SequencePlace].Price && hangRate > 0 {
 		util.Notice(fmt.Sprintf(`try hang ask1 %s`, symbol))
 		sequenceAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-			accountType, tick.Asks[9].Price, leftFree*hangRate)
+			accountType, tick.Asks[SequencePlace].Price, leftFree*hangRate)
 		if sequenceAsk != nil && sequenceAsk.OrderId != `` && sequenceAsk.Status != model.CarryStatusFail {
 			sequenceAsk.Function = model.FunctionHang
 			sequenceAsk.RefreshType = RefreshTypeSequence
