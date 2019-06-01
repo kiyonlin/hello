@@ -621,7 +621,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price-0.1*priceDistance > order.Price; i++ {
 					bidAll += tick.Bids[i].Amount
 				}
-				if order.Price > tick.Bids[4].Price+0.1*priceDistance ||
+				if order.Price > tick.Bids[7].Price+0.1*priceDistance ||
 					order.Price < tick.Bids[14].Price-0.1*priceDistance ||
 					bidAll < amountLimit || order.Price > 1.0005*otherPrice {
 					util.Notice(fmt.Sprintf(`cancel sequence bid %s %s %f`,
@@ -636,7 +636,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price+0.1*priceDistance < order.Price; i++ {
 					askAll += tick.Asks[i].Amount
 				}
-				if order.Price < tick.Asks[4].Price-0.1*priceDistance ||
+				if order.Price < tick.Asks[7].Price-0.1*priceDistance ||
 					order.Price > tick.Asks[14].Price+0.1*priceDistance ||
 					askAll < amountLimit || order.Price < 0.9995*otherPrice {
 					util.Notice(fmt.Sprintf(`cancel sequence ask %s %s %f`,
