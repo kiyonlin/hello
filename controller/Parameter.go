@@ -31,7 +31,13 @@ func ParameterServe() {
 	router.GET(`/pw`, GetCode)
 	router.GET("/balance", GetBalance)
 	router.GET(`/symbol`, setSymbol)
+	router.GET(`/test`, test)
 	_ = router.Run(":" + model.AppConfig.Port)
+}
+
+func test(c *gin.Context) {
+	util.SocketInfo(fmt.Sprintf(`get test request %d`, util.GetNowUnixMillion()))
+	c.String(http.StatusOK, `thank you ray`)
 }
 
 func setSymbol(c *gin.Context) {
