@@ -440,7 +440,7 @@ var ProcessRefresh = func(market, symbol string) {
 		if haveAmount {
 			if refreshAble {
 				doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
-					0.9*priceDistance, amount, tick)
+					0.9*priceDistance, amount)
 			} else {
 				util.Info(fmt.Sprintf(`[in refreshing not refreshable %s]`, symbol))
 			}
@@ -779,31 +779,22 @@ func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice 
 }
 
 func doRefresh(setting *model.Setting, market, symbol, accountType, orderSide, orderReverse string,
-	price, priceDistance, amount float64, tick *model.BidAsk) {
+	price, priceDistance, amount float64) {
 	util.Notice(fmt.Sprintf(`[doRefresh]%s %s %s %f %f`, symbol, accountType, orderSide, price, amount))
-	//orders := make([]*model.Order, 2)
 	orders := &RefreshBidAsk{}
 	go receiveRefresh(orders, market, symbol, accountType, price, priceDistance, amount, setting.AmountLimit)
-	bidAmount := amount
-	askAmount := amount
-	if tick.Asks[0].Price-price > priceDistance {
-		bidAmount = 0.9998 * amount
-	}
-	if price-tick.Bids[0].Price > priceDistance {
-		askAmount = 0.9998 * amount
-	}
 	if setting.RefreshSameTime == 1 {
-		go placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
-		placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
+		go placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, amount)
+		placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, amount)
 	} else {
 		if orderSide == model.OrderSideBuy && orderReverse == model.OrderSideSell {
-			placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
+			placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, amount)
 			time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
-			placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
+			placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, amount)
 		} else if orderSide == model.OrderSideSell && orderReverse == model.OrderSideBuy {
-			placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
+			placeRefreshOrder(orders, model.OrderSideSell, market, symbol, accountType, price, amount)
 			time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
-			placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
+			placeRefreshOrder(orders, model.OrderSideBuy, market, symbol, accountType, price, amount)
 		}
 	}
 	time.Sleep(time.Second)
