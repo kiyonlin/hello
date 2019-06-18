@@ -110,6 +110,8 @@ func SendMail(toAddress, subject, body string) (err error) {
 	if err != nil {
 		return err
 	}
-	c.Quit()
+	_ = c.Quit()
+	SocketInfo(fmt.Sprintf(`%s to %s %s %s`,
+		from.String(), to.String(), subject, message))
 	return err
 }
