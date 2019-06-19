@@ -16,7 +16,7 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 const RefreshTypeSequence = `sequence`
 const RefreshTypeFar = `far`
-const SequencePlace = 11 // 0~14
+const SequencePlace = 12 // position:[0~14]
 
 var refreshOrders = &RefreshOrders{}
 
@@ -339,13 +339,16 @@ var ProcessRefresh = func(market, symbol string) {
 		CancelRefreshHang(market, symbol, ``)
 		return
 	}
-	result, otherPrice := getOtherPrice(market, symbol, model.Huobi)
+	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
+	result, otherPrice := true, (tick.Bids[0].Price+tick.Asks[0].Price)/2
+	if setting.BinanceDisMin > -0.9 && setting.BinanceDisMax < 0.9 {
+		result, otherPrice = getOtherPrice(market, symbol, model.Huobi)
+	}
 	if !result || otherPrice == 0 {
 		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
 		//CancelRefreshHang(market, symbol)
 		return
 	}
-	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
 	if err != nil || (leftFree == 0 && rightFree == 0) {
 		util.Notice(fmt.Sprintf(`balance not good %s %s`, market, symbol))
@@ -621,7 +624,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price-0.1*priceDistance > order.Price; i++ {
 					bidAll += tick.Bids[i].Amount
 				}
-				if order.Price > tick.Bids[7].Price+0.1*priceDistance ||
+				if order.Price > tick.Bids[9].Price+0.1*priceDistance ||
 					order.Price < tick.Bids[14].Price-0.1*priceDistance ||
 					bidAll < amountLimit || order.Price > 1.0005*otherPrice {
 					util.Notice(fmt.Sprintf(`cancel sequence bid %s %s %f`,
@@ -636,7 +639,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				for i := 0; i < tick.Asks.Len() && tick.Asks[i].Price+0.1*priceDistance < order.Price; i++ {
 					askAll += tick.Asks[i].Amount
 				}
-				if order.Price < tick.Asks[7].Price-0.1*priceDistance ||
+				if order.Price < tick.Asks[9].Price-0.1*priceDistance ||
 					order.Price > tick.Asks[14].Price+0.1*priceDistance ||
 					askAll < amountLimit || order.Price < 0.9995*otherPrice {
 					util.Notice(fmt.Sprintf(`cancel sequence ask %s %s %f`,
