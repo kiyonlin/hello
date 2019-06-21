@@ -278,6 +278,7 @@ func RefreshAccount(market string) {
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType string, price,
 	amount float64) (order *model.Order) {
+	util.Notice(fmt.Sprintf(`%s %s %s before order %d`, orderSide, market, symbol, util.GetNowUnixMillion()))
 	if amount == 0 {
 		util.Notice(`can not place order with amount 0`)
 		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
@@ -346,6 +347,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	} else {
 		status = model.CarryStatusWorking
 	}
+	util.Notice(fmt.Sprintf(`%s %s %s return order %d`, orderSide, market, symbol, util.GetNowUnixMillion()))
 	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
 		AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
 		Status: status, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
