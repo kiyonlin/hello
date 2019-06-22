@@ -328,14 +328,16 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 }
 
 var ProcessRefresh = func(market, symbol string) {
-	util.Notice(fmt.Sprintf(`%s %s...start at %d`, market, symbol, util.GetNowUnixMillion()))
+	start := util.GetNowUnixMillion()
+	util.Notice(fmt.Sprintf(`%s %s...start at %d`, market, symbol, start))
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		CancelRefreshHang(market, symbol, ``)
 		return
 	}
-	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 {
+	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
+		start-int64(tick.Ts) > 500 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		CancelRefreshHang(market, symbol, ``)
 		return
