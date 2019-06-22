@@ -169,8 +169,8 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 			symbol, marketName, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount))
 	}
 	if markets.bidAsks[symbol][marketName] == nil || markets.bidAsks[symbol][marketName].Ts < bidAsk.Ts {
-		util.SocketInfo(fmt.Sprintf(`...%s %s socket delay %d`,
-			symbol, marketName, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
+		//util.SocketInfo(fmt.Sprintf(`...%s %s socket delay %d`,
+		//	symbol, marketName, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 		markets.bidAsks[symbol][marketName] = bidAsk
 		return true
 	}
