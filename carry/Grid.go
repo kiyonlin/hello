@@ -8,7 +8,6 @@ import (
 	"math"
 	"strings"
 	"sync"
-	"time"
 )
 
 var marketSymbolGrid = make(map[string]map[string]*grid)
@@ -170,5 +169,5 @@ var ProcessGrid = func(market, symbol string) {
 		handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
 	}
 	//CancelOldGridOrders()
-	time.Sleep(time.Microsecond * 100)
+	//time.Sleep(time.Microsecond * 100)
 }

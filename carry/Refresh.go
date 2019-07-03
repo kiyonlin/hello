@@ -329,7 +329,6 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 
 var ProcessRefresh = func(market, symbol string) {
 	start := util.GetNowUnixMillion()
-	util.Notice(fmt.Sprintf(`%s %s...start at %d`, market, symbol, start))
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
