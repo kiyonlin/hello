@@ -525,7 +525,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 		}
 	}
 	if sequenceBid == nil && bidAll > amountLimit &&
-		otherPrice*1.0005 >= tick.Bids[SequencePlace].Price && hangRate > 0 {
+		otherPrice*1.0005 >= tick.Bids[SequencePlace].Price && rightFree*hangRate > 0 {
 		util.Notice(fmt.Sprintf(`try hang bid1 %s`, symbol))
 		sequenceBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Bids[SequencePlace].Price, rightFree*hangRate)
@@ -539,7 +539,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 		}
 	}
 	if sequenceAsk == nil && askAll > amountLimit &&
-		otherPrice*0.9995 <= tick.Asks[SequencePlace].Price && hangRate > 0 {
+		otherPrice*0.9995 <= tick.Asks[SequencePlace].Price && leftFree*hangRate > 0 {
 		util.Notice(fmt.Sprintf(`try hang ask1 %s`, symbol))
 		sequenceAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[SequencePlace].Price, leftFree*hangRate)
@@ -584,8 +584,8 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 			}
 		}
 	}
-	if farBidNum < len(farPlaces) && finalPlace > 0 {
-		util.Notice(fmt.Sprintf(`place bid final %s %f`, symbol, finalPlace))
+	if farBidNum < len(farPlaces) && finalPlace > 0 && bidAmount > 0 {
+		util.Notice(fmt.Sprintf(`place bid final %s %f %f`, symbol, finalPlace, bidAmount))
 		farBid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Bids[0].Price*(1-finalPlace), bidAmount)
 		if farBid != nil && farBid.OrderId != `` && farBid.Status != model.CarryStatusFail {
@@ -598,7 +598,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 		}
 	}
 	if farAskNum < len(farPlaces) && finalPlace > 0 {
-		util.Notice(fmt.Sprintf(`place ask final %s %f`, symbol, finalPlace))
+		util.Notice(fmt.Sprintf(`place ask final %s %f %f`, symbol, finalPlace, askAmount))
 		farAsk := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[0].Price*(1+finalPlace), askAmount)
 		if farAsk != nil && farAsk.OrderId != `` && farAsk.Status != model.CarryStatusFail {

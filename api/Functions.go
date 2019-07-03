@@ -281,7 +281,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	start := util.GetNowUnixMillion()
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d`,
 		orderSide, market, symbol, start))
-	if amount == 0 {
+	if amount < 0.0001 {
 		util.Notice(`can not place order with amount 0`)
 		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
 			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
