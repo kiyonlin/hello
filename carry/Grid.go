@@ -87,19 +87,19 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) (result bool) 
 	}
 	grid.buyOrder = nil
 	grid.sellOrder = nil
-	go placeGridOrder(model.OrderSideSell, market, symbol, priceSell, amountSell)
-	go placeGridOrder(model.OrderSideBuy, market, symbol, priceBuy, amountBuy)
+	go placeGridOrder(model.OrderSideSell, market, symbol, setting.AccountType, priceSell, amountSell)
+	go placeGridOrder(model.OrderSideBuy, market, symbol, setting.AccountType, priceBuy, amountBuy)
 	return true
 }
 
-func placeGridOrder(orderSide, market, symbol string, price, amount float64) {
+func placeGridOrder(orderSide, market, symbol, accountType string, price, amount float64) {
 	if price <= 0 {
 		return
 	}
 	order := &model.Order{OrderSide: orderSide, OrderType: model.OrderTypeLimit, Market: market, Symbol: symbol,
 		AmountType: ``, Price: price, Amount: amount, OrderId: ``, ErrCode: ``,
 		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price}
-	order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, ``, price, amount)
+	order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 	order.Function = model.FunctionGrid
 	grid := getGrid(order.Market, order.Symbol)
 	if order.OrderSide == model.OrderSideBuy {
