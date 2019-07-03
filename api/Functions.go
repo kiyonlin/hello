@@ -23,7 +23,7 @@ func GetPriceDecimal(market, symbol string) int {
 			return 2
 		case `eos_usdt`, `etc_usdt`:
 			return 3
-		case `ft_usdt`, `xrp_usdt`, `iota_usdt`, `ltc_eth`, `xlm_usdt`:
+		case `ft_usdt`, `xrp_usdt`, `iota_usdt`, `ltc_eth`, `xlm_usdt`, `fmex_usdt`:
 			return 4
 		case `eth_btc`, `eos_eth`, `ltc_btc`, `bch_btc`, `etc_eth`, `zec_btc`, `trx_usdt`:
 			return 5
@@ -57,7 +57,7 @@ func GetAmountDecimal(market, symbol string) int {
 		switch symbol {
 		case `xrp_btc`, `xrp_eth`, `iota_btc`, `iota_eth`:
 			return 0
-		case `eos_btc`, `xrp_usdt`, `eos_eth`, `iota_usdt`, `ft_usdt`, `ft_btc`, `ft_eth`, `trx_usdt`:
+		case `eos_btc`, `xrp_usdt`, `eos_eth`, `iota_usdt`, `ft_usdt`, `ft_btc`, `ft_eth`, `trx_usdt`, `fmex_usdt`:
 			return 2
 		case `btc_usdt`, `btc_pax`, `eos_usdt`, `eth_btc`, `eth_usdt`, `ltc_usdt`, `ltc_btc`, `ltc_eth`,
 			`etc_usdt`, `etc_btc`, `etc_eth`, `bch_btc`, `bch_usdt`, `bsv_usdt`, `zec_usdt`, `xlm_usdt`:
