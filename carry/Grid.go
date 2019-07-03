@@ -58,11 +58,6 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) (result bool) 
 	if grid.lastPrice == 0 {
 		grid.lastPrice = (bidAsk.Bids[0].Price + bidAsk.Asks[0].Price) / 2
 	}
-	if model.AppAccounts.Data[market][coins[0]] == nil || model.AppAccounts.Data[market][coins[1]] == nil {
-		api.RefreshAccount(market)
-		util.Notice(fmt.Sprintf(`nil account data for %s`, symbol))
-		return false
-	}
 	usdtSymbol := coins[0] + `_usdt`
 	result, tick := model.AppMarkets.GetBidAsk(usdtSymbol, market)
 	if !result {
@@ -83,6 +78,12 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) (result bool) 
 	if usdtSymbol == symbol {
 		amountBuy = setting.GridAmount / priceBuy
 		amountSell = setting.GridAmount / priceSell
+	}
+	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
+	if err != nil || (leftFree < amountSell && rightFree < setting.GridAmount) {
+		util.Notice(fmt.Sprintf(`balance not enough %s %s %f %f %f %f`,
+			market, symbol, leftFree, rightFree, amountSell, setting.GridAmount))
+		return false
 	}
 	grid.buyOrder = nil
 	grid.sellOrder = nil
@@ -166,12 +167,10 @@ var ProcessGrid = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(` sell id %s at price %f < %f`, grid.sellOrder.OrderId, grid.sellOrder.Price,
 			tick.Asks[0].Price))
 		handleOrderDeal(grid, grid.sellOrder, market, model.OrderSideSell)
-		api.MustCancel(market, symbol, grid.buyOrder.OrderId, true)
 	} else if grid.buyOrder != nil && grid.buyOrder.Price > tick.Bids[0].Price {
 		util.Notice(fmt.Sprintf(`buy id %s at price %f < %f`, grid.buyOrder.OrderId, grid.buyOrder.Price,
 			tick.Bids[0].Price))
 		handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
-		api.MustCancel(market, symbol, grid.sellOrder.OrderId, true)
 	}
 	time.Sleep(time.Microsecond * 100)
 }

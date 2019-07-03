@@ -341,6 +341,7 @@ var ProcessRefresh = func(market, symbol string) {
 		CancelRefreshHang(market, symbol, ``)
 		return
 	}
+	gridSetting := model.GetSetting(model.FunctionGrid, market, symbol)
 	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
 	result, otherPrice := true, (tick.Bids[0].Price+tick.Asks[0].Price)/2
 	if setting.BinanceDisMin > -0.9 && setting.BinanceDisMax < 0.9 {
@@ -352,7 +353,11 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
-	if err != nil || (leftFree == 0 && rightFree == 0) {
+	if gridSetting != nil {
+		leftFree = leftFree - gridSetting.GridAmount/tick.Bids[0].Price
+		rightFree = rightFree - gridSetting.GridAmount
+	}
+	if err != nil || (leftFree <= 0 && rightFree <= 0) {
 		util.Notice(fmt.Sprintf(`balance not good %s %s`, market, symbol))
 		CancelRefreshHang(market, symbol, ``)
 		return
