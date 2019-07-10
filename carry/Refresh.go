@@ -233,7 +233,7 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	defer refreshOrders.lock.Unlock()
 	refreshOrders.lock.Lock()
 	now := util.GetNow()
-	amountIndex = int((now.Hour()*3600 + now.Minute()*60 + now.Second() - 5) / model.RefreshTimeSlot)
+	amountIndex = int((now.Hour()*3600 + now.Minute()*60 + now.Second() - 5) / model.AppConfig.RefreshTimeSlot)
 	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
 		refreshOrders.amountLimit[market][symbol] == nil {
 		return true, amountIndex
@@ -261,7 +261,7 @@ func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amou
 		refreshOrders.amountLimit[market][symbol] = make(map[int]float64)
 	}
 	now := util.GetNow()
-	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.RefreshTimeSlot)
+	slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.AppConfig.RefreshTimeSlot)
 	refreshOrders.amountLimit[market][symbol][slotNum] += amount
 	util.Notice(fmt.Sprintf(`[+limit amount]%s %s %d %f`, market, symbol, slotNum, amount))
 }

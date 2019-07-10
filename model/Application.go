@@ -52,7 +52,6 @@ const FunctionRefresh = `refresh`
 //const FunRefreshMiddle = `refresh_parameter_middle`
 //const FunRefreshSide = `refresh_parameter_side`
 //const FunRefreshSeparate = `refresh_parameter_separate`
-const RefreshTimeSlot = 600 // fcoin refresh time slot in seconds (10 min)
 
 var AppDB *gorm.DB
 var AppSettings []Setting
@@ -74,6 +73,7 @@ type Config struct {
 	DBConnection    string
 	Channels        int
 	InChina         int // 1 in china, otherwise outter china
+	RefreshTimeSlot int
 	Between         int64
 	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
 	ChannelSlot     float64
