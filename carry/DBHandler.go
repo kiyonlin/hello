@@ -18,7 +18,8 @@ var WSErrHandler = func(err error) {
 }
 
 func CheckPastRefresh() {
-	d, _ := time.ParseDuration("-10m")
+	start := fmt.Sprintf(`-%ds`, model.AppConfig.RefreshTimeSlot)
+	d, _ := time.ParseDuration(start)
 	for true {
 		now := util.GetNow()
 		begin := now.Add(d)
