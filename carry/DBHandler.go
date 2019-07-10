@@ -11,6 +11,7 @@ import (
 )
 
 var accountServing = false
+var lastAmountIndex = 0
 
 var WSErrHandler = func(err error) {
 	print(err)
@@ -27,8 +28,9 @@ func CheckPastRefresh() {
 			begin.Location())
 		end := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0,
 			now.Location())
-		minute := now.Minute()
-		if minute%10 == 0 {
+		slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.AppConfig.RefreshTimeSlot)
+		if lastAmountIndex != slotNum {
+			lastAmountIndex = slotNum
 			markets := model.GetMarkets()
 			for _, market := range markets {
 				symbols := model.GetMarketSymbols(market)
@@ -71,9 +73,9 @@ func CheckPastRefresh() {
 					}
 				}
 			}
-			time.Sleep(time.Minute)
+			time.Sleep(time.Second * 10)
 		}
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 10)
 	}
 }
 
