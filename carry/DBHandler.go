@@ -73,9 +73,8 @@ func CheckPastRefresh() {
 					}
 				}
 			}
-			time.Sleep(time.Second * 10)
 		}
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Minute * 10)
 	}
 }
 
