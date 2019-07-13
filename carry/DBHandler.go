@@ -74,7 +74,7 @@ func CheckPastRefresh() {
 				}
 			}
 		}
-		time.Sleep(time.Minute * 10)
+		time.Sleep(time.Minute * 9)
 	}
 }
 
@@ -161,8 +161,7 @@ func MaintainTransFee() {
 		var orders []model.Order
 		for true {
 			model.AppDB.Limit(100).Offset(feeIndex).Where(
-				`fee=? and fee_income=? and date(order_time)>? and status=?`,
-				0, 0, lastDays2, model.CarryStatusWorking).Find(&orders)
+				`deal_amount<amount and date(order_time)>?`, lastDays2).Find(&orders)
 			if len(orders) == 0 {
 				break
 			}
