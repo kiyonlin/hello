@@ -161,7 +161,8 @@ func MaintainTransFee() {
 		var orders []model.Order
 		for true {
 			model.AppDB.Limit(100).Offset(feeIndex).Where(
-				`deal_amount<amount and date(order_time)>?`, lastDays2).Find(&orders)
+				`deal_amount<amount and date(order_time)>? and status=?`,
+				lastDays2, model.CarryStatusWorking).Find(&orders)
 			if len(orders) == 0 {
 				break
 			}
