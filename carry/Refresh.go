@@ -494,7 +494,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 		bidAll += tick.Bids[i].Amount
 		askAll += tick.Asks[i].Amount
 	}
-	rightFree = rightFree / tick.Asks[0].Price
+	//rightFree = rightFree / tick.Asks[0].Price
 	coins := strings.Split(symbol, `_`)
 	if len(coins) != 2 {
 		util.Notice(fmt.Sprintf(`[wrong symbol]%s`, symbol))
@@ -558,7 +558,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 		for _, place := range farPlaces {
 			util.Notice(fmt.Sprintf(`try hang far bid %s %f`, symbol, place))
 			farBid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				accountType, tick.Bids[0].Price*(1-place), bidAmount)
+				accountType, tick.Bids[0].Price*(1-place), bidAmount/tick.Bids[0].Price*(1-place))
 			if farBid != nil && farBid.OrderId != `` && farBid.Status != model.CarryStatusFail {
 				farBid.Function = model.FunctionHang
 				farBid.RefreshType = RefreshTypeFar
@@ -587,7 +587,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 	if farBidNum < len(farPlaces) && finalPlace > 0 && bidAmount > 0 {
 		util.Notice(fmt.Sprintf(`place bid final %s %f %f`, symbol, finalPlace, bidAmount))
 		farBid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			accountType, tick.Bids[0].Price*(1-finalPlace), bidAmount)
+			accountType, tick.Bids[0].Price*(1-finalPlace), bidAmount/tick.Bids[0].Price*(1-finalPlace))
 		if farBid != nil && farBid.OrderId != `` && farBid.Status != model.CarryStatusFail {
 			farBid.Function = model.FunctionHang
 			farBid.RefreshType = RefreshTypeFar
