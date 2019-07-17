@@ -581,6 +581,9 @@ func hangSequence(market, symbol, accountType string, leftFree, rightFree, other
 func hangGrid(market, symbol, accountType string, setting *model.Setting, tick *model.BidAsk) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	for i := 1; i < 10; i++ {
+		if i%2 == 0 {
+			continue
+		}
 		bid := refreshOrders.getGridHang(symbol, model.OrderSideBuy, tick.Bids[i].Price, priceDistance)
 		if bid == nil {
 			bid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
