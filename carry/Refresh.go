@@ -693,8 +693,8 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 		hangGrid(market, symbol, accountType, setting, tick)
 	} else {
 		hangSequence(market, symbol, accountType, leftFree, rightFree, otherPrice, hangRate, amountLimit, coins, tick)
-		hangFar(market, symbol, accountType, farRate, finalPlace, leftFree, rightFree, coins, farPlaces, tick)
 	}
+	hangFar(market, symbol, accountType, farRate, finalPlace, leftFree, rightFree, coins, farPlaces, tick)
 }
 
 func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance float64, tick *model.BidAsk) {
