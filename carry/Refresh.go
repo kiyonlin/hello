@@ -378,13 +378,13 @@ var ProcessRefresh = func(market, symbol string) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		CancelRefreshHang(symbol, ``)
+		CancelRefreshHang(symbol, RefreshTypeGrid)
 		return
 	}
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
 		start-int64(tick.Ts) > 500 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		CancelRefreshHang(symbol, ``)
+		CancelRefreshHang(symbol, RefreshTypeGrid)
 		return
 	}
 	gridSetting := model.GetSetting(model.FunctionGrid, market, symbol)
@@ -405,7 +405,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	if err != nil || (leftFree <= 0 && rightFree <= 0) {
 		util.Notice(fmt.Sprintf(`balance not good %s %s`, market, symbol))
-		CancelRefreshHang(symbol, ``)
+		CancelRefreshHang(symbol, RefreshTypeGrid)
 		return
 	}
 	hangRate := 0.0
@@ -427,7 +427,7 @@ var ProcessRefresh = func(market, symbol string) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
 		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
-		CancelRefreshHang(symbol, RefreshTypeFar)
+		CancelRefreshHang(symbol, RefreshTypeFar+RefreshTypeGrid)
 	}
 	go validRefreshHang(symbol, amountLimit, otherPrice, priceDistance, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || model.AppPause {
@@ -472,7 +472,7 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshOrders.amountIndex = index
 		symbols := model.GetMarketSymbols(market)
 		for key := range symbols {
-			CancelRefreshHang(key, ``)
+			CancelRefreshHang(key, RefreshTypeGrid)
 			refreshOrders.setInRefresh(key, false)
 		}
 		time.Sleep(time.Second * 2)
@@ -510,7 +510,7 @@ var ProcessRefresh = func(market, symbol string) {
 			if refreshAble {
 				util.Info(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
 				refreshOrders.setInRefresh(symbol, true)
-				CancelRefreshHang(symbol, ``)
+				CancelRefreshHang(symbol, RefreshTypeGrid)
 				time.Sleep(time.Second)
 				util.Info(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
 			} else {
@@ -710,7 +710,8 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				refreshOrders.removeRefreshHang(symbol, order, true)
 				refreshOrders.setWaiting(symbol, true)
 			}
-			if (order.OrderSide == model.OrderSideBuy && order.Price > tick.Bids[0].Price) || (order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price) {
+			if (order.OrderSide == model.OrderSideBuy && order.Price > tick.Bids[0].Price) ||
+				(order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price) {
 				refreshOrders.removeRefreshHang(symbol, order, false)
 			}
 		case RefreshTypeSequence:
@@ -754,7 +755,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 func CancelRefreshHang(symbol, keep string) {
 	orders := refreshOrders.getRefreshHang(symbol)
 	for _, order := range orders {
-		if order != nil && order.OrderId != `` && order.RefreshType != keep {
+		if order != nil && order.OrderId != `` && !strings.Contains(keep, order.RefreshType) {
 			refreshOrders.removeRefreshHang(symbol, order, true)
 			time.Sleep(time.Millisecond * 50)
 		}

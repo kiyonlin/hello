@@ -269,7 +269,7 @@ func MaintainMarketChan() {
 				model.AppMarkets.PutDepthChan(market, 0, nil)
 				symbols := model.GetMarketSymbols(market)
 				for symbol := range symbols {
-					go CancelRefreshHang(symbol, ``)
+					go CancelRefreshHang(symbol, RefreshTypeGrid)
 				}
 				channel <- struct{}{}
 				close(channel)
