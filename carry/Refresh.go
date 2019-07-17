@@ -692,10 +692,12 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 		util.Notice(fmt.Sprintf(`[wrong symbol]%s`, symbol))
 		return
 	}
-	if setting.GridAmount > 0 {
-		hangGrid(market, symbol, accountType, setting, tick)
-	} else {
-		hangSequence(market, symbol, accountType, leftFree, rightFree, otherPrice, hangRate, amountLimit, coins, tick)
+	if model.AppConfig.Stable {
+		if setting.GridAmount > 0 {
+			hangGrid(market, symbol, accountType, setting, tick)
+		} else {
+			hangSequence(market, symbol, accountType, leftFree, rightFree, otherPrice, hangRate, amountLimit, coins, tick)
+		}
 	}
 	hangFar(market, symbol, accountType, farRate, finalPlace, leftFree, rightFree, coins, farPlaces, tick)
 }

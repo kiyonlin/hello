@@ -78,8 +78,9 @@ type Config struct {
 	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
 	ChannelSlot     float64
 	Delay           float64
-	MinUsdt         float64            // 折合usdt最小下单金额
-	MaxUsdt         float64            // 折合usdt最大下单金额
+	MinUsdt         float64 // 折合usdt最小下单金额
+	MaxUsdt         float64 // 折合usdt最大下单金额
+	Stable          bool
 	WSUrls          map[string]string  // marketName - ws url
 	RestUrls        map[string]string  // marketName - rest url
 	MarketCost      map[string]float64 // marketName - order cost
