@@ -16,6 +16,7 @@ import (
 // coinpark://4003 调用次数繁忙 //2085 最小下单数量限制 //2027 可用余额不足
 const RefreshTypeSequence = `sequence`
 const RefreshTypeFar = `far`
+const RefreshTypeGrid = `refresh_grid`
 const SequencePlace = 12 // position:[0~14]
 
 var refreshOrders = &RefreshOrders{}
@@ -118,7 +119,26 @@ func (refreshOrders *RefreshOrders) getInRefresh(symbol string) (in bool) {
 	return refreshOrders.inRefresh[symbol]
 }
 
-func (refreshOrders *RefreshOrders) removeRefreshHang(symbol string, order *model.Order) {
+func (refreshOrders *RefreshOrders) getGridHang(symbol, orderSide string, price, priceDistance float64) (
+	order *model.Order) {
+	defer refreshOrders.lock.Unlock()
+	refreshOrders.lock.Lock()
+	if refreshOrders.fcoinHang == nil || refreshOrders.fcoinHang[symbol] == nil {
+		return nil
+	}
+	for i := 0; i < len(refreshOrders.fcoinHang[symbol]); i++ {
+		if refreshOrders.fcoinHang[symbol][i] == nil || refreshOrders.fcoinHang[symbol][i].OrderId == `` {
+			continue
+		}
+		if refreshOrders.fcoinHang[symbol][i].OrderSide == orderSide &&
+			math.Abs(refreshOrders.fcoinHang[symbol][i].Price-price) < 0.1*priceDistance {
+			return refreshOrders.fcoinHang[symbol][i]
+		}
+	}
+	return nil
+}
+
+func (refreshOrders *RefreshOrders) removeRefreshHang(symbol string, order *model.Order, needCancel bool) {
 	defer refreshOrders.lock.Unlock()
 	refreshOrders.lock.Lock()
 	if refreshOrders.fcoinHang == nil || refreshOrders.fcoinHang[symbol] == nil {
@@ -134,6 +154,11 @@ func (refreshOrders *RefreshOrders) removeRefreshHang(symbol string, order *mode
 		}
 	}
 	refreshOrders.fcoinHang[symbol] = orders
+	util.Notice(fmt.Sprintf(`remove refresh hang %s %s %s %s price %f`,
+		symbol, order.OrderSide, order.RefreshType, order.OrderId, order.Price))
+	if needCancel {
+		api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
+	}
 }
 
 func (refreshOrders *RefreshOrders) addRefreshHang(symbol string, hang *model.Order) {
@@ -155,6 +180,27 @@ func (refreshOrders *RefreshOrders) getRefreshHang(symbol string) (orders []*mod
 		refreshOrders.fcoinHang = make(map[string][]*model.Order)
 	}
 	return refreshOrders.fcoinHang[symbol]
+}
+
+func (refreshOrders *RefreshOrders) getFarHangNum(symbol string) (farBidNum, farAskNum int) {
+	defer refreshOrders.lock.Unlock()
+	refreshOrders.lock.Lock()
+	if refreshOrders.fcoinHang == nil {
+		refreshOrders.fcoinHang = make(map[string][]*model.Order)
+	}
+	for _, order := range refreshOrders.fcoinHang[symbol] {
+		if order != nil && order.OrderId != `` {
+			if order.RefreshType == RefreshTypeFar {
+				if order.OrderSide == model.OrderSideBuy {
+					farBidNum++
+				}
+				if order.OrderSide == model.OrderSideSell {
+					farAskNum++
+				}
+			}
+		}
+	}
+	return farBidNum, farAskNum
 }
 
 func (refreshOrders *RefreshOrders) SetLastChancePrice(market, symbol string, price float64) {
@@ -332,13 +378,13 @@ var ProcessRefresh = func(market, symbol string) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		CancelRefreshHang(market, symbol, ``)
+		CancelRefreshHang(symbol, ``)
 		return
 	}
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
 		start-int64(tick.Ts) > 500 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		CancelRefreshHang(market, symbol, ``)
+		CancelRefreshHang(symbol, ``)
 		return
 	}
 	gridSetting := model.GetSetting(model.FunctionGrid, market, symbol)
@@ -359,7 +405,7 @@ var ProcessRefresh = func(market, symbol string) {
 	}
 	if err != nil || (leftFree <= 0 && rightFree <= 0) {
 		util.Notice(fmt.Sprintf(`balance not good %s %s`, market, symbol))
-		CancelRefreshHang(market, symbol, ``)
+		CancelRefreshHang(symbol, ``)
 		return
 	}
 	hangRate := 0.0
@@ -381,13 +427,13 @@ var ProcessRefresh = func(market, symbol string) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
 		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
-		CancelRefreshHang(market, symbol, RefreshTypeFar)
+		CancelRefreshHang(symbol, RefreshTypeFar)
 	}
 	go validRefreshHang(symbol, amountLimit, otherPrice, priceDistance, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s %s %v is pause:%v`,
 			model.AppConfig.Handle, model.AppConfig.HandleRefresh, refreshOrders.refreshing, model.AppPause))
-		CancelRefreshHang(market, symbol, ``)
+		CancelRefreshHang(symbol, ``)
 		return
 	}
 	if refreshOrders.refreshing {
@@ -426,7 +472,7 @@ var ProcessRefresh = func(market, symbol string) {
 		refreshOrders.amountIndex = index
 		symbols := model.GetMarketSymbols(market)
 		for key := range symbols {
-			CancelRefreshHang(market, key, ``)
+			CancelRefreshHang(key, ``)
 			refreshOrders.setInRefresh(key, false)
 		}
 		time.Sleep(time.Second * 2)
@@ -464,46 +510,32 @@ var ProcessRefresh = func(market, symbol string) {
 			if refreshAble {
 				util.Info(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
 				refreshOrders.setInRefresh(symbol, true)
-				CancelRefreshHang(market, symbol, ``)
+				CancelRefreshHang(symbol, ``)
 				time.Sleep(time.Second)
 				util.Info(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
 			} else {
 				util.Info(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, farRate, finalPlace,
-					leftFree, rightFree, otherPrice, farPlaces, tick)
+					leftFree, rightFree, otherPrice, farPlaces, setting, tick)
 			}
 		} else {
 			util.Info(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
 			refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, farRate, finalPlace,
-				leftFree, rightFree, otherPrice, farPlaces, tick)
+				leftFree, rightFree, otherPrice, farPlaces, setting, tick)
 		}
 	}
 }
 
-func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farRate, finalPlace,
-	leftFree, rightFree, otherPrice float64, farPlaces []float64, tick *model.BidAsk) {
-	util.Info(fmt.Sprintf(`[refreshhang]%s`, symbol))
-	if refreshOrders.hanging {
-		return
-	}
-	defer refreshOrders.setHanging(false)
-	refreshOrders.setHanging(true)
+func hangSequence(market, symbol, accountType string, leftFree, rightFree, otherPrice, hangRate,
+	amountLimit float64, coins []string, tick *model.BidAsk) {
 	bidAll := tick.Bids[0].Amount
 	askAll := tick.Asks[0].Amount
 	for i := 1; i < SequencePlace; i++ {
 		bidAll += tick.Bids[i].Amount
 		askAll += tick.Asks[i].Amount
 	}
-	//rightFree = rightFree / tick.Asks[0].Price
-	coins := strings.Split(symbol, `_`)
-	if len(coins) != 2 {
-		util.Notice(fmt.Sprintf(`[wrong symbol]%s`, symbol))
-		return
-	}
-	orders := refreshOrders.getRefreshHang(symbol)
 	var sequenceBid, sequenceAsk *model.Order
-	farBidNum := 0
-	farAskNum := 0
+	orders := refreshOrders.getRefreshHang(symbol)
 	for _, order := range orders {
 		if order != nil && order.OrderId != `` {
 			if order.RefreshType == RefreshTypeSequence {
@@ -512,14 +544,6 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 				}
 				if order.OrderSide == model.OrderSideSell {
 					sequenceAsk = order
-				}
-			}
-			if order.RefreshType == RefreshTypeFar {
-				if order.OrderSide == model.OrderSideBuy {
-					farBidNum++
-				}
-				if order.OrderSide == model.OrderSideSell {
-					farAskNum++
 				}
 			}
 		}
@@ -552,8 +576,42 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 			discountBalance(market, symbol, accountType, coins[0], 0.8)
 		}
 	}
+}
+
+func hangGrid(market, symbol, accountType string, setting *model.Setting, tick *model.BidAsk) {
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	for i := 1; i < 10; i++ {
+		bid := refreshOrders.getGridHang(symbol, model.OrderSideBuy, tick.Bids[i].Price, priceDistance)
+		if bid == nil {
+			bid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+				accountType, tick.Bids[i].Price, setting.GridAmount)
+			if bid != nil && bid.OrderId != `` && bid.Status != model.CarryStatusFail {
+				bid.Function = model.FunctionHang
+				bid.RefreshType = RefreshTypeGrid
+				refreshOrders.addRefreshHang(symbol, bid)
+				model.AppDB.Save(&bid)
+			}
+		}
+		ask := refreshOrders.getGridHang(symbol, model.OrderSideSell, tick.Asks[i].Price, priceDistance)
+		if ask == nil {
+			ask = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
+				accountType, tick.Asks[i].Price, setting.GridAmount)
+			if ask != nil && ask.OrderId != `` && ask.Status != model.CarryStatusFail {
+				ask.Function = model.FunctionHang
+				ask.RefreshType = RefreshTypeGrid
+				refreshOrders.addRefreshHang(symbol, ask)
+				model.AppDB.Save(&ask)
+			}
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
+}
+
+func hangFar(market, symbol, accountType string, farRate, finalPlace,
+	leftFree, rightFree float64, coins []string, farPlaces []float64, tick *model.BidAsk) {
 	bidAmount := rightFree * farRate / float64(len(farPlaces))
 	askAmount := leftFree * farRate / float64(len(farPlaces))
+	farBidNum, farAskNum := refreshOrders.getFarHangNum(symbol)
 	if farBidNum == 0 && farAskNum == 0 && len(farPlaces) > 0 && farRate > 0 {
 		for _, place := range farPlaces {
 			farBidPrice := tick.Bids[0].Price * (1 - place)
@@ -616,13 +674,27 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 			discountBalance(market, symbol, accountType, coins[0], 0.8)
 		}
 	}
-	//if needRefresh {
-	//	util.Notice(fmt.Sprintf(`balance insufficient %s refresh %s`, symbol, coin))
-	//	CancelRefreshHang(market, symbol, ``)
-	//	time.Sleep(time.Second * 2)
-	//	api.RefreshCoinAccount(market, symbol, coin, accountType)
-	//}
-	//util.Info(fmt.Sprintf(`[refreshhang done]%s`, symbol))
+}
+
+func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farRate, finalPlace,
+	leftFree, rightFree, otherPrice float64, farPlaces []float64, setting *model.Setting, tick *model.BidAsk) {
+	util.Info(fmt.Sprintf(`[refreshhang]%s`, symbol))
+	if refreshOrders.hanging {
+		return
+	}
+	defer refreshOrders.setHanging(false)
+	refreshOrders.setHanging(true)
+	coins := strings.Split(symbol, `_`)
+	if len(coins) != 2 {
+		util.Notice(fmt.Sprintf(`[wrong symbol]%s`, symbol))
+		return
+	}
+	if setting.GridAmount > 0 {
+		hangGrid(market, symbol, accountType, setting, tick)
+	} else {
+		hangSequence(market, symbol, accountType, leftFree, rightFree, otherPrice, hangRate, amountLimit, coins, tick)
+		hangFar(market, symbol, accountType, farRate, finalPlace, leftFree, rightFree, coins, farPlaces, tick)
+	}
 }
 
 func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance float64, tick *model.BidAsk) {
@@ -631,7 +703,17 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 		if order == nil || order.OrderId == `` {
 			continue
 		}
-		if order.RefreshType == RefreshTypeSequence {
+		switch order.RefreshType {
+		case RefreshTypeGrid:
+			if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[14].Price) ||
+				(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[14].Price) {
+				refreshOrders.removeRefreshHang(symbol, order, true)
+				refreshOrders.setWaiting(symbol, true)
+			}
+			if (order.OrderSide == model.OrderSideBuy && order.Price > tick.Bids[0].Price) || (order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price) {
+				refreshOrders.removeRefreshHang(symbol, order, false)
+			}
+		case RefreshTypeSequence:
 			if order.OrderSide == model.OrderSideBuy {
 				bidAll := 0.0
 				for i := 0; i < tick.Bids.Len() && tick.Bids[i].Price-0.1*priceDistance > order.Price; i++ {
@@ -640,10 +722,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				if order.Price > tick.Bids[9].Price+0.1*priceDistance ||
 					order.Price < tick.Bids[14].Price-0.1*priceDistance ||
 					bidAll < amountLimit || order.Price > 1.0005*otherPrice {
-					util.Notice(fmt.Sprintf(`cancel sequence bid %s %s %f`,
-						symbol, order.OrderId, order.Price))
-					go api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
-					refreshOrders.removeRefreshHang(symbol, order)
+					refreshOrders.removeRefreshHang(symbol, order, true)
 					refreshOrders.setWaiting(symbol, true)
 				}
 			}
@@ -655,40 +734,29 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				if order.Price < tick.Asks[9].Price-0.1*priceDistance ||
 					order.Price > tick.Asks[14].Price+0.1*priceDistance ||
 					askAll < amountLimit || order.Price < 0.9995*otherPrice {
-					util.Notice(fmt.Sprintf(`cancel sequence ask %s %s %f`,
-						symbol, order.OrderId, order.Price))
-					go api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
-					refreshOrders.removeRefreshHang(symbol, order)
+					refreshOrders.removeRefreshHang(symbol, order, true)
 					refreshOrders.setWaiting(symbol, true)
 				}
 			}
-		}
-		if order.RefreshType == RefreshTypeFar {
+		case RefreshTypeFar:
 			if order.OrderSide == model.OrderSideBuy && order.Price > tick.Bids[0].Price*0.99 {
-				util.Notice(fmt.Sprintf(`cancel far bid %s %s %f`, symbol, order.OrderId, order.Price))
-				api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
-				refreshOrders.removeRefreshHang(symbol, order)
+				refreshOrders.removeRefreshHang(symbol, order, true)
 				refreshOrders.setWaiting(symbol, true)
 			}
 			if order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price*1.01 {
-				util.Notice(fmt.Sprintf(`cancel far ask %s %s %f`, symbol, order.OrderId, order.Price))
-				api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
-				refreshOrders.removeRefreshHang(symbol, order)
+				refreshOrders.removeRefreshHang(symbol, order, true)
 				refreshOrders.setWaiting(symbol, true)
 			}
 		}
 	}
 }
 
-func CancelRefreshHang(market, symbol, keep string) {
+func CancelRefreshHang(symbol, keep string) {
 	orders := refreshOrders.getRefreshHang(symbol)
 	for _, order := range orders {
 		if order != nil && order.OrderId != `` && order.RefreshType != keep {
-			util.Notice(fmt.Sprintf(`cancel hang and remove %s %s %s %s`,
-				market, symbol, order.OrderSide, order.OrderId))
-			api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
+			refreshOrders.removeRefreshHang(symbol, order, true)
 			time.Sleep(time.Millisecond * 50)
-			refreshOrders.removeRefreshHang(symbol, order)
 		}
 	}
 }
