@@ -749,7 +749,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				refreshOrders.removeRefreshHang(symbol, order, true)
 				refreshOrders.setWaiting(symbol, true)
 			}
-			if order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price*1.015 {
+			if order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price*1.005 {
 				refreshOrders.removeRefreshHang(symbol, order, true)
 				refreshOrders.setWaiting(symbol, true)
 			}
