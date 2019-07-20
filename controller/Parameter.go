@@ -276,8 +276,9 @@ func GetParameters(c *gin.Context) {
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &binanceDisMin, &binanceDisMax,
 			&refreshLimitLow, &refreshLimit, &refreshSameTime, &valid)
 		msg += fmt.Sprintf("%s %s %s %s %s binancedismin:%s binancedismax:%s refreshlimitlow:%s "+
-			"refreshlimit:%s refreshsametime:%d %v \n", market, symbol, function, parameter, amountLimit,
-			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, refreshSameTime, valid)
+			"refreshlimit:%s refreshsametime:%d %v stable:%v\n", market, symbol, function, parameter, amountLimit,
+			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, refreshSameTime, valid,
+			model.AppConfig.Stable)
 	}
 	rows.Close()
 	msg += model.AppConfig.ToString()
@@ -305,27 +306,6 @@ func GetParameters(c *gin.Context) {
 		msg += fmt.Sprintf("%s %s %s %s pay: %f earn: %f amount:%f rate(万分之):%f price:%f\n",
 			date, symbol, side, count, fee, feeIncome, inAll, rate, price)
 	}
-	rows.Close()
-	//d, _ := time.ParseDuration(`-1h`)
-	//lastHour := util.GetNow().Add(d)
-	//strTime := fmt.Sprintf(`%d-%d-%d %d:%d:%d`, lastHour.Year(), lastHour.Month(), lastHour.Day(),
-	//	lastHour.Hour(), lastHour.Minute(), lastHour.Second())
-	//rows, _ = model.AppDB.Model(&orders).Select(`symbol, order_side,round(sum(fee),4),
-	//		round(sum(fee_income),4),round(sum(price*deal_amount)/sum(deal_amount),4),
-	//		round(sum(price*deal_amount),0)`).
-	//	Where(`deal_amount>? and status != ? and order_time>?`, 0, `fail`, strTime).
-	//	Group(`order_side, symbol`).Rows()
-	//for rows.Next() {
-	//	var symbol, side string
-	//	var fee, feeIncome, price, inAll float64
-	//	_ = rows.Scan(&symbol, &side, &fee, &feeIncome, &price, &inAll)
-	//	if side == model.OrderSideBuy {
-	//		fee = fee * price
-	//	}
-	//	if side == model.OrderSideSell {
-	//		feeIncome = feeIncome * price
-	//	}
-	//}
 	rows.Close()
 	c.String(http.StatusOK, msg)
 }

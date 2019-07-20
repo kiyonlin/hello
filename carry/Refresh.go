@@ -745,11 +745,11 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 				}
 			}
 		case RefreshTypeFar:
-			if order.OrderSide == model.OrderSideBuy && order.Price > tick.Bids[0].Price*0.99 {
+			if order.OrderSide == model.OrderSideBuy && order.Price > tick.Bids[0].Price*0.995 {
 				refreshOrders.removeRefreshHang(symbol, order, true)
 				refreshOrders.setWaiting(symbol, true)
 			}
-			if order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price*1.01 {
+			if order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price*1.015 {
 				refreshOrders.removeRefreshHang(symbol, order, true)
 				refreshOrders.setWaiting(symbol, true)
 			}
