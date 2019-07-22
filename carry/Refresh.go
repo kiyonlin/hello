@@ -144,21 +144,22 @@ func (refreshOrders *RefreshOrders) removeRefreshHang(symbol string, order *mode
 	if refreshOrders.fcoinHang == nil || refreshOrders.fcoinHang[symbol] == nil {
 		return
 	}
+	util.Notice(fmt.Sprintf(`remove refresh hang %s %s %s %s price %f`,
+		symbol, order.OrderSide, order.RefreshType, order.OrderId, order.Price))
 	orders := make([]*model.Order, 0)
 	for i := 0; i < len(refreshOrders.fcoinHang[symbol]); i++ {
 		if refreshOrders.fcoinHang[symbol][i] == nil || refreshOrders.fcoinHang[symbol][i].OrderId == `` {
 			continue
 		}
-		if refreshOrders.fcoinHang[symbol][i].OrderId != order.OrderId {
+		if refreshOrders.fcoinHang[symbol][i].OrderId == order.OrderId {
+			if needCancel {
+				api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
+			}
+		} else {
 			orders = append(orders, refreshOrders.fcoinHang[symbol][i])
 		}
 	}
 	refreshOrders.fcoinHang[symbol] = orders
-	util.Notice(fmt.Sprintf(`remove refresh hang %s %s %s %s price %f`,
-		symbol, order.OrderSide, order.RefreshType, order.OrderId, order.Price))
-	if needCancel {
-		api.MustCancel(order.Market, order.Symbol, order.OrderId, true)
-	}
 }
 
 func (refreshOrders *RefreshOrders) addRefreshHang(symbol string, hang *model.Order) {
@@ -289,8 +290,10 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	if refreshOrders.amountLimit[market][symbol][amountIndex] < amountLimit {
 		return true, amountIndex
 	}
-	util.Notice(fmt.Sprintf(`[limit full]%s %s %d %f`, market, symbol, amountIndex,
-		refreshOrders.amountLimit[market][symbol][amountIndex]))
+	if amountLimit > 0 {
+		util.Notice(fmt.Sprintf(`[limit full]%s %s %d %f`, market, symbol, amountIndex,
+			refreshOrders.amountLimit[market][symbol][amountIndex]))
+	}
 	return false, amountIndex
 }
 
@@ -704,6 +707,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 
 func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance float64, tick *model.BidAsk) {
 	orders := refreshOrders.getRefreshHang(symbol)
+	util.Notice(`[valid hang] ` + symbol)
 	for _, order := range orders {
 		if order == nil || order.OrderId == `` {
 			continue
@@ -759,6 +763,7 @@ func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance floa
 
 func CancelRefreshHang(symbol, keep string) {
 	orders := refreshOrders.getRefreshHang(symbol)
+	util.Notice(`[cancel orders] all hang but ` + symbol + ` ` + keep)
 	for _, order := range orders {
 		if order != nil && order.OrderId != `` && !strings.Contains(keep, order.RefreshType) {
 			refreshOrders.removeRefreshHang(symbol, order, true)
