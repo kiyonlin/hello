@@ -431,6 +431,7 @@ var ProcessRefresh = func(market, symbol string) {
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
 		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
 		CancelRefreshHang(symbol, RefreshTypeFar+RefreshTypeGrid)
+		return
 	}
 	go validRefreshHang(symbol, amountLimit, otherPrice, priceDistance, tick)
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || model.AppPause {
@@ -469,8 +470,9 @@ var ProcessRefresh = func(market, symbol string) {
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
+	util.Notice(fmt.Sprintf(`index %d -> %d`, index, refreshOrders.amountIndex))
 	if index > refreshOrders.amountIndex {
-		util.Notice(fmt.Sprintf(`[before 10min canceling]`))
+		util.Notice(`[before 10min canceling]`)
 		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
 		symbols := model.GetMarketSymbols(market)
@@ -480,7 +482,7 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(market)
-		util.Notice(fmt.Sprintf(`[after 10min canceling]`))
+		util.Notice(`[after 10min canceling]`)
 		return
 	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
