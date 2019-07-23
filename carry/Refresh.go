@@ -709,7 +709,7 @@ func refreshHang(market, symbol, accountType string, hangRate, amountLimit, farR
 
 func validRefreshHang(symbol string, amountLimit, otherPrice, priceDistance float64, tick *model.BidAsk) {
 	orders := refreshOrders.getRefreshHang(symbol)
-	util.Notice(`[valid hang] ` + symbol)
+	//util.Notice(`[valid hang] ` + symbol)
 	for _, order := range orders {
 		if order == nil || order.OrderId == `` {
 			continue
