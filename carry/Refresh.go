@@ -381,13 +381,13 @@ var ProcessRefresh = func(market, symbol string) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		CancelRefreshHang(symbol, RefreshTypeGrid)
+		CancelRefreshHang(symbol, RefreshTypeGrid+RefreshTypeFar)
 		return
 	}
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
 		start-int64(tick.Ts) > 500 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
-		CancelRefreshHang(symbol, RefreshTypeGrid)
+		CancelRefreshHang(symbol, RefreshTypeGrid+RefreshTypeFar)
 		return
 	}
 	gridSetting := model.GetSetting(model.FunctionGrid, market, symbol)
