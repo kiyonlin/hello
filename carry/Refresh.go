@@ -280,7 +280,7 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	defer refreshOrders.lock.Unlock()
 	refreshOrders.lock.Lock()
 	now := util.GetNow()
-	amountIndex = int((now.Hour()*3600 + now.Minute()*60 + now.Second() - 5) / model.AppConfig.RefreshTimeSlot)
+	amountIndex = int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.AppConfig.RefreshTimeSlot)
 	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
 		refreshOrders.amountLimit[market][symbol] == nil {
 		return true, amountIndex
@@ -470,21 +470,6 @@ var ProcessRefresh = func(market, symbol string) {
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
-	util.Notice(fmt.Sprintf(`index %d -> %d`, index, refreshOrders.amountIndex))
-	if index > refreshOrders.amountIndex {
-		util.Notice(`[before 10min canceling]`)
-		time.Sleep(time.Second * 2)
-		refreshOrders.amountIndex = index
-		symbols := model.GetMarketSymbols(market)
-		for key := range symbols {
-			CancelRefreshHang(key, RefreshTypeGrid)
-			refreshOrders.setInRefresh(key, false)
-		}
-		time.Sleep(time.Second * 2)
-		api.RefreshAccount(market)
-		util.Notice(`[after 10min canceling]`)
-		return
-	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
 	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount, tick)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
@@ -500,6 +485,20 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`[in refreshing %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
+				if index > refreshOrders.amountIndex {
+					util.Notice(fmt.Sprintf(`[before canceling] index %d -> %d`, index, refreshOrders.amountIndex))
+					time.Sleep(time.Second * 2)
+					refreshOrders.amountIndex = index
+					symbols := model.GetMarketSymbols(market)
+					for key := range symbols {
+						CancelRefreshHang(key, RefreshTypeGrid)
+						refreshOrders.setInRefresh(key, false)
+					}
+					time.Sleep(time.Second * 2)
+					api.RefreshAccount(market)
+					util.Notice(`[after canceling]`)
+					return
+				}
 				doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
 					0.9*priceDistance, amount, tick)
 			} else {
