@@ -485,6 +485,21 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`[in refreshing %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
+				util.Notice(fmt.Sprintf(`index %d -> %d`, index, refreshOrders.amountIndex))
+				if index > refreshOrders.amountIndex {
+					util.Notice(`[before 10min canceling]`)
+					time.Sleep(time.Second * 2)
+					refreshOrders.amountIndex = index
+					symbols := model.GetMarketSymbols(market)
+					for key := range symbols {
+						CancelRefreshHang(key, RefreshTypeGrid)
+						refreshOrders.setInRefresh(key, false)
+					}
+					time.Sleep(time.Second * 2)
+					api.RefreshAccount(market)
+					util.Notice(`[after 10min canceling]`)
+					return
+				}
 				doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
 					0.9*priceDistance, amount, tick)
 			} else {
@@ -498,28 +513,13 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`[in hang %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
-				time.Sleep(time.Second * 2)
-				util.Info(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
+				util.Notice(fmt.Sprintf(`[-->refreshable]%s %s`, market, symbol))
 				refreshOrders.setInRefresh(symbol, true)
-				util.Notice(fmt.Sprintf(`index %d -> %d`, index, refreshOrders.amountIndex))
-				if index > refreshOrders.amountIndex {
-					util.Notice(`[before 10min canceling]`)
-					refreshOrders.amountIndex = index
-					symbols := model.GetMarketSymbols(market)
-					for key := range symbols {
-						CancelRefreshHang(key, RefreshTypeGrid)
-						refreshOrders.setInRefresh(key, false)
-					}
-					time.Sleep(time.Second * 2)
-					api.RefreshAccount(market)
-					util.Notice(`[after 10min canceling]`)
-					return
-				} else {
-					CancelRefreshHang(symbol, RefreshTypeGrid)
-				}
-				util.Info(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
+				//CancelRefreshHang(symbol, RefreshTypeGrid)
+				//time.Sleep(time.Second)
+				util.Notice(fmt.Sprintf(`[-->set done refreshable]%s %s`, market, symbol))
 			} else {
-				util.Info(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
+				util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
 				refreshHang(market, symbol, setting.AccountType, hangRate, amountLimit, farRate, finalPlace,
 					leftFree, rightFree, otherPrice, farPlaces, setting, tick)
 			}
