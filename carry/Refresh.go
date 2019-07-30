@@ -470,6 +470,14 @@ var ProcessRefresh = func(market, symbol string) {
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
+	if index > refreshOrders.amountIndex {
+		util.Notice(fmt.Sprintf(`[before refresh account] index %d -> %d`, index, refreshOrders.amountIndex))
+		time.Sleep(time.Second * 2)
+		refreshOrders.amountIndex = index
+		api.RefreshAccount(market)
+		util.Notice(`[after refresh account]`)
+		return
+	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
 	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount, tick)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
@@ -485,20 +493,6 @@ var ProcessRefresh = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`[in refreshing %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
-				if index > refreshOrders.amountIndex {
-					util.Notice(fmt.Sprintf(`[before canceling] index %d -> %d`, index, refreshOrders.amountIndex))
-					time.Sleep(time.Second * 2)
-					refreshOrders.amountIndex = index
-					symbols := model.GetMarketSymbols(market)
-					for key := range symbols {
-						CancelRefreshHang(key, RefreshTypeGrid)
-						refreshOrders.setInRefresh(key, false)
-					}
-					time.Sleep(time.Second * 2)
-					api.RefreshAccount(market)
-					util.Notice(`[after canceling]`)
-					return
-				}
 				doRefresh(setting, market, symbol, setting.AccountType, orderSide, orderReverse, orderPrice,
 					0.9*priceDistance, amount, tick)
 			} else {
