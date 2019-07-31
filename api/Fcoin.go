@@ -50,7 +50,7 @@ var subscribeHandlerFcoin = func(subscribes []interface{}, subType string) error
 
 func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte) {
-		util.Info(string(event))
+		//util.Info(string(event))
 		responseJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)

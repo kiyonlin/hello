@@ -385,8 +385,12 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
-		start-int64(tick.Ts) > 500 {
-		util.Notice(fmt.Sprintf(`[tick not good time]%s %s`, market, symbol))
+		int(start)-tick.Ts > 500 {
+		timeDis := 0
+		if tick != nil {
+			timeDis = int(start) - tick.Ts
+		}
+		util.Notice(fmt.Sprintf(`[tick not good time]%s %s %d`, market, symbol, timeDis))
 		CancelRefreshHang(symbol, RefreshTypeGrid+RefreshTypeFar)
 		return
 	}
