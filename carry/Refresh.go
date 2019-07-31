@@ -380,13 +380,13 @@ var ProcessRefresh = func(market, symbol string) {
 	start := util.GetNowUnixMillion()
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {
-		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
+		util.Notice(fmt.Sprintf(`[tick not good result]%s %s`, market, symbol))
 		CancelRefreshHang(symbol, RefreshTypeGrid+RefreshTypeFar)
 		return
 	}
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
 		start-int64(tick.Ts) > 500 {
-		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
+		util.Notice(fmt.Sprintf(`[tick not good time]%s %s`, market, symbol))
 		CancelRefreshHang(symbol, RefreshTypeGrid+RefreshTypeFar)
 		return
 	}
@@ -470,8 +470,8 @@ var ProcessRefresh = func(market, symbol string) {
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
-	util.Notice(fmt.Sprintf(`index %d -> %d`, index, refreshOrders.amountIndex))
 	if index > refreshOrders.amountIndex {
+		util.Notice(fmt.Sprintf(`index %d -> %d`, index, refreshOrders.amountIndex))
 		util.Notice(`[before 10min canceling]`)
 		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
