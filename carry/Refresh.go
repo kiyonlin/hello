@@ -281,9 +281,14 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	refreshOrders.lock.Lock()
 	now := util.GetNow()
 	amountIndex = int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.AppConfig.RefreshTimeSlot)
-	if refreshOrders.amountLimit == nil || refreshOrders.amountLimit[market] == nil ||
-		refreshOrders.amountLimit[market][symbol] == nil {
-		return true, amountIndex
+	if refreshOrders.amountLimit == nil {
+		refreshOrders.amountLimit = make(map[string]map[string]map[int]float64)
+	}
+	if refreshOrders.amountLimit[market] == nil {
+		refreshOrders.amountLimit[market] = make(map[string]map[int]float64)
+	}
+	if refreshOrders.amountLimit[market][symbol] == nil {
+		refreshOrders.amountLimit[market][symbol] = make(map[int]float64)
 	}
 	refreshOrders.amountLimit[market][symbol][amountIndex+1] = 0
 	refreshOrders.amountLimit[market][symbol][amountIndex-1] = 0
@@ -658,9 +663,9 @@ func hangFar(market, symbol, accountType string, farRate, finalPlace,
 			}
 		}
 	}
-	if farBidNum < len(farPlaces) && finalPlace > 0 && bidAmount > 0 {
+	if farBidNum < len(farPlaces) && finalPlace > 0 && bidAmount > 0 && len(farPlaces) > 0 {
 		farBidPrice := tick.Bids[0].Price * (1 - finalPlace)
-		farBidAmount := bidAmount / farBidPrice
+		farBidAmount := bidAmount * float64(len(farPlaces)-farBidNum) / float64(len(farPlaces)) / farBidPrice
 		util.Notice(fmt.Sprintf(`place bid final %s %f price %f amount %f`,
 			symbol, finalPlace, farBidPrice, farBidAmount))
 		farBid := api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
@@ -674,10 +679,13 @@ func hangFar(market, symbol, accountType string, farRate, finalPlace,
 			discountBalance(market, symbol, accountType, coins[1], 0.8)
 		}
 	}
-	if farAskNum < len(farPlaces) && finalPlace > 0 {
-		util.Notice(fmt.Sprintf(`place ask final %s %f %f`, symbol, finalPlace, askAmount))
+	if farAskNum < len(farPlaces) && finalPlace > 0 && len(farPlaces) > 0 {
+		farAskPrice := tick.Asks[0].Price * (1 + finalPlace)
+		farAskAmount := askAmount * float64(len(farPlaces)-farAskNum) / float64(len(farPlaces)) / farAskPrice
+		util.Notice(fmt.Sprintf(`place ask final %s %f price %f amount %f`,
+			symbol, finalPlace, farAskPrice, askAmount))
 		farAsk := api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-			accountType, tick.Asks[0].Price*(1+finalPlace), askAmount)
+			accountType, farAskPrice, farAskAmount)
 		if farAsk != nil && farAsk.OrderId != `` && farAsk.Status != model.CarryStatusFail {
 			farAsk.Function = model.FunctionHang
 			farAsk.RefreshType = RefreshTypeFar
