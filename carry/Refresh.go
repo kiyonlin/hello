@@ -557,11 +557,12 @@ func hangSequence(market, symbol, accountType string, leftFree, rightFree, other
 			}
 		}
 	}
+	rightFreeAmount := rightFree * hangRate / tick.Bids[SequencePlace].Price
 	if sequenceBid == nil && bidAll > amountLimit &&
-		otherPrice*1.0005 >= tick.Bids[SequencePlace].Price && rightFree*hangRate > 0 {
-		util.Notice(fmt.Sprintf(`try hang bid1 %s`, symbol))
+		otherPrice*1.0005 >= tick.Bids[SequencePlace].Price && rightFreeAmount > 0 {
+		util.Notice(fmt.Sprintf(`try hang bid sequence %s amount %f`, symbol, rightFreeAmount))
 		sequenceBid = api.PlaceOrder(model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			accountType, tick.Bids[SequencePlace].Price, rightFree*hangRate)
+			accountType, tick.Bids[SequencePlace].Price, rightFreeAmount)
 		if sequenceBid != nil && sequenceBid.OrderId != `` && sequenceBid.Status != model.CarryStatusFail {
 			sequenceBid.Function = model.FunctionHang
 			sequenceBid.RefreshType = RefreshTypeSequence
@@ -573,7 +574,7 @@ func hangSequence(market, symbol, accountType string, leftFree, rightFree, other
 	}
 	if sequenceAsk == nil && askAll > amountLimit &&
 		otherPrice*0.9995 <= tick.Asks[SequencePlace].Price && leftFree*hangRate > 0 {
-		util.Notice(fmt.Sprintf(`try hang ask1 %s`, symbol))
+		util.Notice(fmt.Sprintf(`try hang ask sequence %s amount %f`, symbol, leftFree*hangRate))
 		sequenceAsk = api.PlaceOrder(model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[SequencePlace].Price, leftFree*hangRate)
 		if sequenceAsk != nil && sequenceAsk.OrderId != `` && sequenceAsk.Status != model.CarryStatusFail {
