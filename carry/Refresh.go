@@ -490,8 +490,8 @@ var ProcessRefresh = func(market, symbol string) {
 			//CancelRefreshHang(key, RefreshTypeGrid)
 			refreshOrders.setInRefresh(key, false)
 		}
-		//time.Sleep(time.Second * 2)
-		//api.RefreshAccount(market)
+		time.Sleep(time.Second * 2)
+		api.RefreshAccount(market)
 		util.Notice(`[after 10min canceling]`)
 		return
 	}
@@ -520,7 +520,7 @@ var ProcessRefresh = func(market, symbol string) {
 			time.Sleep(time.Second)
 		}
 	} else {
-		util.Info(fmt.Sprintf(`[in hang %s]`, symbol))
+		//util.Info(fmt.Sprintf(`[in hang %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
 				//if index > refreshOrders.amountIndex {
