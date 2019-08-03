@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// 下单返回1016 资金不足// 下单返回1002 系统繁忙// 返回426 调用次数太频繁
+// 下单返回1016 资金不足// 下单返回1002 系统繁忙// 返回426 调用次数太频繁 // less than the min limit order amount
 //{"status":3033,"msg":"market order is disabled for symbol bsvusdt"}
 //{"status":1002,"msg":"system busy"}
 var lastDepthPingFcoin = util.GetNowUnixMillion()

@@ -74,6 +74,7 @@ type Config struct {
 	Channels        int
 	InChina         int // 1 in china, otherwise outter china
 	RefreshTimeSlot int
+	SequencePlace   int // position:[0~14]
 	Between         int64
 	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
 	ChannelSlot     float64
