@@ -67,9 +67,9 @@ func GetAmountDecimal(market, symbol string) int {
 	return 4
 }
 
-func MustCancel(market, symbol, orderId string, mustCancel bool) {
+func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) {
 	for i := 0; i < 7; i++ {
-		result, errCode, _ := CancelOrder(market, symbol, orderId)
+		result, errCode, _ := CancelOrder(key, secret, market, symbol, orderId)
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
 		if result || !mustCancel || errCode == `0` {
 			break
@@ -92,7 +92,7 @@ func MustCancel(market, symbol, orderId string, mustCancel bool) {
 	}
 }
 
-func CancelOrder(market string, symbol string, orderId string) (result bool, errCode, msg string) {
+func CancelOrder(key, secret, market string, symbol string, orderId string) (result bool, errCode, msg string) {
 	errCode = `market-not-supported ` + market
 	msg = `market not supported ` + market
 	switch market {
@@ -105,11 +105,9 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 	case model.Binance:
 		result, errCode, msg = CancelOrderBinance(symbol, orderId)
 	case model.Fcoin:
-		result, errCode, msg = CancelOrderFcoin(orderId)
+		result, errCode, msg = CancelOrderFcoin(key, secret, orderId)
 	case model.Coinpark:
 		result, errCode, msg = CancelOrderCoinpark(orderId)
-	case model.Coinbig:
-		result, errCode, msg = CancelOrderCoinbig(orderId)
 	case model.Bitmex:
 		result, errCode, msg = CancelOrderBitmex(orderId)
 	}
@@ -117,11 +115,11 @@ func CancelOrder(market string, symbol string, orderId string) (result bool, err
 	return result, errCode, msg
 }
 
-func QueryOrders(market, symbol, states string, before, after int64) (orders []*model.Order) {
+func QueryOrders(key, secret, market, symbol, states string, before, after int64) (orders []*model.Order) {
 	switch market {
 	case model.Fcoin:
-		normal := queryOrdersFcoin(symbol, states, ``, before, after)
-		lever := queryOrdersFcoin(symbol, states, model.AccountTypeLever, before, after)
+		normal := queryOrdersFcoin(key, secret, symbol, states, ``, before, after)
+		lever := queryOrdersFcoin(key, secret, symbol, states, model.AccountTypeLever, before, after)
 		for _, value := range normal {
 			lever = append(lever, value)
 		}
@@ -132,7 +130,7 @@ func QueryOrders(market, symbol, states string, before, after int64) (orders []*
 	return nil
 }
 
-func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
+func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.Order) {
 	var dealAmount, dealPrice float64
 	var status string
 	switch market {
@@ -145,11 +143,9 @@ func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 	case model.Binance:
 		dealAmount, dealPrice, status = queryOrderBinance(symbol, orderId)
 	case model.Fcoin:
-		return queryOrderFcoin(symbol, orderId)
+		return queryOrderFcoin(key, secret, symbol, orderId)
 	case model.Coinpark:
 		dealAmount, dealPrice, status = queryOrderCoinpark(orderId)
-	case model.Coinbig:
-		dealAmount, status = queryOrderCoinbig(orderId)
 	case model.Bitmex:
 		dealAmount, dealPrice, status = queryOrderBitmex(orderId)
 	}
@@ -179,14 +175,14 @@ func QueryOrderById(market, symbol, orderId string) (order *model.Order) {
 //	return order
 //}
 
-func RefreshCoinAccount(setMarket, symbol, setCoin, accountType string) {
+func RefreshCoinAccount(key, secret, setMarket, symbol, setCoin, accountType string) {
 	util.Notice(fmt.Sprintf(`[RefreshCoinAccount]%s %s %s %s`, setMarket, symbol, setCoin, accountType))
 	switch setMarket {
 	case model.Fcoin:
 		if accountType == model.AccountTypeLever {
 			setMarket = fmt.Sprintf(`%s_%s_%s`, setMarket, model.AccountTypeLever,
 				strings.Replace(symbol, `_`, ``, 1))
-			accounts := getLeverAccountFcoin()
+			accounts := getLeverAccountFcoin(key, secret)
 			for market, value := range accounts {
 				if market == setMarket {
 					for coin, account := range value {
@@ -198,7 +194,7 @@ func RefreshCoinAccount(setMarket, symbol, setCoin, accountType string) {
 				}
 			}
 		} else {
-			currencies, fcoinAccounts := getAccountFcoin()
+			currencies, fcoinAccounts := getAccountFcoin(key, secret)
 			for i := 0; i < len(currencies); i++ {
 				if currencies[i] == setCoin {
 					util.Notice(fmt.Sprintf(`[update single coin]%s %s %s`, setMarket, symbol, setCoin))
@@ -210,10 +206,10 @@ func RefreshCoinAccount(setMarket, symbol, setCoin, accountType string) {
 }
 
 //RefreshExclusive
-func _(market string, coins map[string]bool) {
+func _(key, secret, market string, coins map[string]bool) {
 	switch market {
 	case model.Fcoin:
-		accounts := getLeverAccountFcoin()
+		accounts := getLeverAccountFcoin(key, secret)
 		for key, value := range accounts {
 			for coin, account := range value {
 				if coins[coin] == false {
@@ -221,7 +217,7 @@ func _(market string, coins map[string]bool) {
 				}
 			}
 		}
-		currencies, fcoinAccounts := getAccountFcoin()
+		currencies, fcoinAccounts := getAccountFcoin(key, secret)
 		for i := 0; i < len(currencies); i++ {
 			if coins[currencies[i]] == false {
 				model.AppAccounts.SetAccount(model.Fcoin, currencies[i], fcoinAccounts[i])
@@ -230,7 +226,7 @@ func _(market string, coins map[string]bool) {
 	}
 }
 
-func RefreshAccount(market string) {
+func RefreshAccount(key, secret, market string) {
 	util.Notice(`refresh all accounts in market ` + market)
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
@@ -254,20 +250,18 @@ func RefreshAccount(market string) {
 		//	}
 		//}
 	case model.Fcoin:
-		accounts := getLeverAccountFcoin()
+		accounts := getLeverAccountFcoin(key, secret)
 		for key, value := range accounts {
 			for coin, account := range value {
 				model.AppAccounts.SetAccount(key, coin, account)
 			}
 		}
-		currencies, fcoinAccounts := getAccountFcoin()
+		currencies, fcoinAccounts := getAccountFcoin(key, secret)
 		for i := 0; i < len(currencies); i++ {
 			model.AppAccounts.SetAccount(model.Fcoin, currencies[i], fcoinAccounts[i])
 		}
 	case model.Coinpark:
 		getAccountCoinpark(model.AppAccounts)
-	case model.Coinbig:
-		getAccountCoinbig(model.AppAccounts)
 	case model.Bitmex:
 		getAccountBitmex(model.AppAccounts)
 	}
@@ -276,7 +270,7 @@ func RefreshAccount(market string) {
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType string, price,
+func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType string, price,
 	amount float64) (order *model.Order) {
 	start := util.GetNowUnixMillion()
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d`,
@@ -329,7 +323,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 	case model.Binance:
 		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
-		orderId, errCode = placeOrderFcoin(orderSide, orderType, symbol, accountType, strPrice, strAmount)
+		orderId, errCode = placeOrderFcoin(key, secret, orderSide, orderType, symbol, accountType, strPrice, strAmount)
 		if orderId == `1002` {
 			time.Sleep(time.Millisecond * 200)
 		}
@@ -339,8 +333,6 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 			util.Notice(`【发现4003错误】sleep 3 minutes`)
 			time.Sleep(time.Minute * 3)
 		}
-	case model.Coinbig:
-		orderId, errCode = placeOrderCoinbig(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Bitmex:
 		orderId, errCode = placeOrderBitmex(orderSide, orderType, symbol, strPrice, strAmount)
 	}
@@ -357,7 +349,7 @@ func PlaceOrder(orderSide, orderType, market, symbol, amountType, accountType st
 		Status: status, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 }
 
-func GetPrice(symbol string) (buy float64, err error) {
+func GetPrice(key, secret, symbol string) (buy float64, err error) {
 	if model.AppConfig == nil {
 		model.NewConfig()
 	}
@@ -383,14 +375,14 @@ func GetPrice(symbol string) (buy float64, err error) {
 		return getBuyPriceCoinpark(symbol)
 	}
 	if strs[0] == `FT` || strs[1] == `FT` || model.AppConfig.InChina == 1 {
-		return getBuyPriceFcoin(symbol)
+		return getBuyPriceFcoin(key, secret, symbol)
 	}
-	return getBuyPriceFcoin(symbol)
+	return getBuyPriceFcoin(key, secret, symbol)
 }
 
 //CheckOrderValue
-func _(currency string, amount float64) (result bool) {
-	currencyPrice, _ := GetPrice(currency + `_usdt`)
+func _(key, secret, currency string, amount float64) (result bool) {
+	currencyPrice, _ := GetPrice(key, secret, currency+`_usdt`)
 	if currencyPrice*amount < model.AppConfig.MinUsdt {
 		util.Notice(fmt.Sprintf(`%s下单数量%f不足%f usdt`, currency, amount, model.AppConfig.MinUsdt))
 		return false

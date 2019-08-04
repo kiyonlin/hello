@@ -62,13 +62,13 @@ var ProcessCarry = func(market, symbol string) {
 	}
 	targetOrder := targetCarries.get(market, setting.FunctionParameter, symbol)
 	if targetOrder != nil {
-		queryOrder := api.QueryOrderById(setting.FunctionParameter, symbol, targetOrder.OrderId)
+		queryOrder := api.QueryOrderById(``, ``, setting.FunctionParameter, symbol, targetOrder.OrderId)
 		orderSide := model.OrderSideSell
 		if targetOrder.OrderSide == model.OrderSideSell {
 			orderSide = model.OrderSideBuy
 		}
 		amount := queryOrder.DealAmount - targetOrder.DealAmount
-		order := api.PlaceOrder(orderSide, model.OrderTypeMarket, market, symbol, ``,
+		order := api.PlaceOrder(``, ``, orderSide, model.OrderTypeMarket, market, symbol, ``,
 			setting.AccountType, targetOrder.Price, amount)
 		if order.Status == model.CarryStatusWorking && order.OrderId != `` {
 			targetCarries.set(market, setting.FunctionParameter, symbol, order)
@@ -93,7 +93,7 @@ var ProcessCarry = func(market, symbol string) {
 		if targetOrderSide == `` {
 			return
 		}
-		order := api.PlaceOrder(targetOrderSide, model.OrderTypeLimit, setting.FunctionParameter, symbol,
+		order := api.PlaceOrder(``, ``, targetOrderSide, model.OrderTypeLimit, setting.FunctionParameter, symbol,
 			``, ``, targetPrice, targetAmount)
 		if order.Status == model.CarryStatusWorking && order.OrderId != `` {
 			targetCarries.set(market, setting.FunctionParameter, symbol, order)

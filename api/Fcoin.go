@@ -123,16 +123,15 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 		model.GetWSSubscribes(model.Fcoin, model.SubscribeDepth), subscribeHandlerFcoin, wsHandler, errHandler)
 }
 
-func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte {
-	//fcoinLock.Lock()
-	//defer fcoinLock.Unlock()
+func SignedRequestFcoin(key, secret, method, path string, body map[string]interface{}) []byte {
+	if key == `` {
+		key = model.AppConfig.FcoinKey
+	}
+	if secret == `` {
+		secret = model.AppConfig.FcoinSecret
+	}
 	uri := model.AppConfig.RestUrls[model.Fcoin] + path
 	current := util.GetNow()
-	//if current.UnixNano()-fcoinLastApiAccessTime.UnixNano() < 100000000 {
-	//	time.Sleep(time.Millisecond * 100)
-	//	util.SocketInfo(fmt.Sprintf(`[api break]sleep %d m-seconds after last access %s`, 100, path))
-	//}
-	//fcoinLastApiAccessTime = current
 	currentTime := strconv.FormatInt(current.UnixNano(), 10)[0:13]
 	if method == `GET` && len(body) > 0 {
 		uri += `?` + util.ComposeParams(body)
@@ -142,10 +141,10 @@ func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte
 		toBeBase += util.ComposeParams(body)
 	}
 	based := base64.StdEncoding.EncodeToString([]byte(toBeBase))
-	hash := hmac.New(sha1.New, []byte(model.AppConfig.FcoinSecret))
+	hash := hmac.New(sha1.New, []byte(secret))
 	hash.Write([]byte(based))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-	headers := map[string]string{`FC-ACCESS-KEY`: model.AppConfig.FcoinKey,
+	headers := map[string]string{`FC-ACCESS-KEY`: key,
 		`FC-ACCESS-SIGNATURE`: sign, `FC-ACCESS-TIMESTAMP`: currentTime, "Content-Type": "application/json"}
 	var responseBody []byte
 	if body == nil {
@@ -159,7 +158,7 @@ func SignedRequestFcoin(method, path string, body map[string]interface{}) []byte
 // side: buy sell
 // type: limit market
 // fcoin中amount在市价买单中指的是右侧的钱
-func placeOrderFcoin(orderSide, orderType, symbol, accountType, price, amount string) (orderId, errCode string) {
+func placeOrderFcoin(key, secret, orderSide, orderType, symbol, accountType, price, amount string) (orderId, errCode string) {
 	postData := make(map[string]interface{})
 	if orderType == model.OrderTypeLimit {
 		postData["price"] = price
@@ -181,7 +180,7 @@ func placeOrderFcoin(orderSide, orderType, symbol, accountType, price, amount st
 	if accountType == model.AccountTypeLever {
 		postData[`account_type`] = `margin`
 	}
-	responseBody := SignedRequestFcoin("POST", "/orders", postData)
+	responseBody := SignedRequestFcoin(key, secret, "POST", "/orders", postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderId, _ := orderJson.Get("data").String()
@@ -193,8 +192,8 @@ func placeOrderFcoin(orderSide, orderType, symbol, accountType, price, amount st
 	return ``, err.Error()
 }
 
-func CancelOrderFcoin(orderId string) (result bool, errCode, msg string) {
-	responseBody := SignedRequestFcoin(`POST`, `/orders/`+orderId+`/submit-cancel`, nil)
+func CancelOrderFcoin(key, secret, orderId string) (result bool, errCode, msg string) {
+	responseBody := SignedRequestFcoin(key, secret, `POST`, `/orders/`+orderId+`/submit-cancel`, nil)
 	responseJson, err := util.NewJSON([]byte(responseBody))
 	status := -1
 	if err == nil {
@@ -239,7 +238,7 @@ func parseOrder(symbol string, orderMap map[string]interface{}) (order *model.Or
 }
 
 //测试发现，只有after参数管用， before无效，可以作为内部逻辑控制条件
-func queryOrdersFcoin(symbol, states, accountType string, before, after int64) (orders []*model.Order) {
+func queryOrdersFcoin(key, secret, symbol, states, accountType string, before, after int64) (orders []*model.Order) {
 	util.Info(fmt.Sprintf(`cancel parameters %d %d`, before, after))
 	states, _ = model.GetOrderStatusRevert(model.Fcoin, states)
 	states = strings.Replace(states, `pending_cancel,`, ``, 1)
@@ -258,7 +257,7 @@ func queryOrdersFcoin(symbol, states, accountType string, before, after int64) (
 	//runNext := true
 	//for runNext {
 	//	line := int64(0)
-	responseBody := SignedRequestFcoin(`GET`, `/orders`, body)
+	responseBody := SignedRequestFcoin(key, secret, `GET`, `/orders`, body)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		jsonOrders, _ := orderJson.Get(`data`).Array()
@@ -283,10 +282,10 @@ func queryOrdersFcoin(symbol, states, accountType string, before, after int64) (
 	return orders
 }
 
-func queryOrderFcoin(symbol, orderId string) (order *model.Order) {
+func queryOrderFcoin(key, secret, symbol, orderId string) (order *model.Order) {
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody := SignedRequestFcoin(`GET`, `/orders/`+orderId, postData)
+	responseBody := SignedRequestFcoin(key, secret, `GET`, `/orders/`+orderId, postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderMap, _ := orderJson.Get(`data`).Map()
@@ -295,8 +294,8 @@ func queryOrderFcoin(symbol, orderId string) (order *model.Order) {
 	return nil
 }
 
-func getLeverAccountFcoin() (accounts map[string]map[string]*model.Account) {
-	responseBody := SignedRequestFcoin(`GET`, `/broker/leveraged_accounts`, nil)
+func getLeverAccountFcoin(key, secret string) (accounts map[string]map[string]*model.Account) {
+	responseBody := SignedRequestFcoin(key, secret, `GET`, `/broker/leveraged_accounts`, nil)
 	balanceJson, err := util.NewJSON(responseBody)
 	accounts = make(map[string]map[string]*model.Account)
 	if err == nil {
@@ -327,8 +326,8 @@ func getLeverAccountFcoin() (accounts map[string]map[string]*model.Account) {
 	return accounts
 }
 
-func getAccountFcoin() (currency []string, account []*model.Account) {
-	responseBody := SignedRequestFcoin(`GET`, `/accounts/balance`, nil)
+func getAccountFcoin(key, secret string) (currency []string, account []*model.Account) {
+	responseBody := SignedRequestFcoin(key, secret, `GET`, `/accounts/balance`, nil)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ := balanceJson.Get("status").Int()
@@ -354,10 +353,10 @@ func getAccountFcoin() (currency []string, account []*model.Account) {
 	return nil, nil
 }
 
-func getBuyPriceFcoin(symbol string) (buy float64, err error) {
+func getBuyPriceFcoin(key, secret, symbol string) (buy float64, err error) {
 	model.CurrencyPrice[symbol] = 0
 	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
-	responseBody := SignedRequestFcoin(`GET`, `/market/ticker/`+requestSymbol, nil)
+	responseBody := SignedRequestFcoin(key, secret, `GET`, `/market/ticker/`+requestSymbol, nil)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		orderJson = orderJson.Get(`data`)

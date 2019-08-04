@@ -108,10 +108,10 @@ var CancelAllOrders = func() {
 		symbols := model.GetMarketSymbols(market)
 		for symbol := range symbols {
 			util.Notice(fmt.Sprintf(`[cancel old orders] %s %s`, market, symbol))
-			orders := api.QueryOrders(market, symbol, model.CarryStatusWorking, 0, 0)
+			orders := api.QueryOrders(key, secret, market, symbol, model.CarryStatusWorking, 0, 0)
 			for _, order := range orders {
 				if order != nil && order.OrderId != `` {
-					result, errCode, msg := api.CancelOrder(market, symbol, order.OrderId)
+					result, errCode, msg := api.CancelOrder(key, secret, market, symbol, order.OrderId)
 					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
 					time.Sleep(time.Millisecond * 100)
 				}
@@ -152,7 +152,7 @@ var CancelAllOrders = func() {
 
 var feeIndex int
 
-func MaintainTransFee() {
+func MaintainTransFee(key, secret string) {
 	for true {
 		d, _ := time.ParseDuration("-48h")
 		lastDays2 := util.GetNow().Add(d)
@@ -168,7 +168,7 @@ func MaintainTransFee() {
 			}
 			feeIndex += len(orders)
 			for _, value := range orders {
-				order := api.QueryOrderById(value.Market, value.Symbol, value.OrderId)
+				order := api.QueryOrderById(key, secret, value.Market, value.Symbol, value.OrderId)
 				if order == nil {
 					continue
 				}
@@ -240,8 +240,6 @@ func createMarketDepthServer(markets *model.Markets, market string) chan struct{
 		channel, err = api.WsDepthServeFcoin(markets, WSErrHandler)
 	case model.Coinpark:
 		channel, err = api.WsDepthServeCoinpark(markets, WSErrHandler)
-	case model.Coinbig:
-		channel, err = api.WsDepthServeCoinbig(markets, WSErrHandler)
 	case model.Bitmex:
 		channel, err = api.WsDepthServeBitmex(WSErrHandler)
 	}
@@ -269,7 +267,7 @@ func MaintainMarketChan() {
 				model.AppMarkets.PutDepthChan(market, 0, nil)
 				symbols := model.GetMarketSymbols(market)
 				for symbol := range symbols {
-					go CancelRefreshHang(symbol, RefreshTypeGrid)
+					go CancelRefreshHang(key, secret, symbol, RefreshTypeGrid)
 				}
 				channel <- struct{}{}
 				close(channel)
@@ -301,11 +299,11 @@ func Maintain() {
 	model.AppDB.AutoMigrate(&model.Setting{})
 	model.AppDB.AutoMigrate(&model.Order{})
 	model.LoadSettings()
-	go CancelOldMakers()
+	go CancelOldMakers(``, ``)
 	go AccountHandlerServe()
 	go CheckPastRefresh()
 	//go RefreshAccounts()
-	go MaintainTransFee()
+	go MaintainTransFee(key, secret)
 	go util.StartMidNightTimer(CancelAllOrders)
 	for true {
 		go MaintainMarketChan()

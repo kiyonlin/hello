@@ -47,7 +47,7 @@ func getGrid(market, symbol string) (gridType *grid) {
 	return marketSymbolGrid[market][symbol]
 }
 
-func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) (result bool) {
+func placeGridOrders(key, secret, market, symbol string, bidAsk *model.BidAsk) (result bool) {
 	coins := strings.Split(symbol, `_`)
 	if len(coins) != 2 {
 		util.Notice(`symbol format not supported ` + symbol)
@@ -79,7 +79,7 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) (result bool) 
 		amountBuy = setting.GridAmount / priceBuy
 		amountSell = setting.GridAmount / priceSell
 	}
-	leftFree, rightFree, _, _, err := getBalance(market, symbol, setting.AccountType)
+	leftFree, rightFree, _, _, err := getBalance(key, secret, market, symbol, setting.AccountType)
 	if err != nil || (leftFree < amountSell && rightFree < setting.GridAmount) {
 		util.Notice(fmt.Sprintf(`balance not enough %s %s %f %f %f %f`,
 			market, symbol, leftFree, rightFree, amountSell, setting.GridAmount))
@@ -87,19 +87,19 @@ func placeGridOrders(market, symbol string, bidAsk *model.BidAsk) (result bool) 
 	}
 	grid.buyOrder = nil
 	grid.sellOrder = nil
-	go placeGridOrder(model.OrderSideSell, market, symbol, setting.AccountType, priceSell, amountSell)
-	go placeGridOrder(model.OrderSideBuy, market, symbol, setting.AccountType, priceBuy, amountBuy)
+	go placeGridOrder(key, secret, model.OrderSideSell, market, symbol, setting.AccountType, priceSell, amountSell)
+	go placeGridOrder(key, secret, model.OrderSideBuy, market, symbol, setting.AccountType, priceBuy, amountBuy)
 	return true
 }
 
-func placeGridOrder(orderSide, market, symbol, accountType string, price, amount float64) {
+func placeGridOrder(key, secret, orderSide, market, symbol, accountType string, price, amount float64) {
 	if price <= 0 {
 		return
 	}
 	order := &model.Order{OrderSide: orderSide, OrderType: model.OrderTypeLimit, Market: market, Symbol: symbol,
 		AmountType: ``, Price: price, Amount: amount, OrderId: ``, ErrCode: ``,
 		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price}
-	order = api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
+	order = api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
 	order.Function = model.FunctionGrid
 	grid := getGrid(order.Market, order.Symbol)
 	if order.OrderSide == model.OrderSideBuy {
@@ -111,7 +111,7 @@ func placeGridOrder(orderSide, market, symbol, accountType string, price, amount
 	snycGrid <- struct{}{}
 }
 
-func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
+func handleOrderDeal(key, secret string, grid *grid, order *model.Order, market, orderSide string) {
 	if grid.lastSide == orderSide {
 		grid.sameSide++
 		if grid.sameSide > 15 {
@@ -134,7 +134,7 @@ func handleOrderDeal(grid *grid, order *model.Order, market, orderSide string) {
 	grid.buyOrder = nil
 	if order.OrderId != `` {
 		model.AppDB.Save(&order)
-		api.RefreshAccount(market)
+		api.RefreshAccount(key, secret, market)
 	}
 }
 
@@ -155,7 +155,7 @@ var ProcessGrid = func(market, symbol string) {
 		return
 	}
 	if grid.sellOrder == nil || grid.buyOrder == nil {
-		if placeGridOrders(market, symbol, tick) {
+		if placeGridOrders(``, ``, market, symbol, tick) {
 			for true {
 				<-snycGrid
 				if grid.sellOrder != nil && grid.buyOrder != nil {
@@ -166,11 +166,11 @@ var ProcessGrid = func(market, symbol string) {
 	} else if grid.sellOrder != nil && grid.sellOrder.Price < tick.Asks[0].Price {
 		util.Notice(fmt.Sprintf(` sell id %s at price %f < %f`, grid.sellOrder.OrderId, grid.sellOrder.Price,
 			tick.Asks[0].Price))
-		handleOrderDeal(grid, grid.sellOrder, market, model.OrderSideSell)
+		handleOrderDeal(``, ``, grid, grid.sellOrder, market, model.OrderSideSell)
 	} else if grid.buyOrder != nil && grid.buyOrder.Price > tick.Bids[0].Price {
 		util.Notice(fmt.Sprintf(`buy id %s at price %f < %f`, grid.buyOrder.OrderId, grid.buyOrder.Price,
 			tick.Bids[0].Price))
-		handleOrderDeal(grid, grid.buyOrder, market, model.OrderSideBuy)
+		handleOrderDeal(``, ``, grid, grid.buyOrder, market, model.OrderSideBuy)
 	}
 	time.Sleep(time.Microsecond * 100)
 }

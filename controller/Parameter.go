@@ -192,7 +192,7 @@ func renderOrder() {
 		orders[dateStr][symbol][orderSide][0] = count
 		currencies := strings.Split(symbol, `_`)
 		if len(currencies) > 0 {
-			priceUsdt, _ := api.GetPrice(currencies[1] + `_usdt`)
+			priceUsdt, _ := api.GetPrice(``, ``, currencies[1]+`_usdt`)
 			amount = math.Round(priceUsdt * amount)
 			price = math.Round(priceUsdt*price*1000) / 1000
 		}

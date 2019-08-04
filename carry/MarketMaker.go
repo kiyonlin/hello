@@ -15,12 +15,14 @@ import (
 var marketMaking bool
 var makers = make(map[string][]*model.Order) // market - order array
 var makersLock sync.Mutex
+var key = ``
+var secret = ``
 
 func setMarketMaking(making bool) {
 	marketMaking = making
 }
 
-func CancelOldMakers() {
+func CancelOldMakers(key, secret string) {
 	for true {
 		markets := model.GetFunctionMarkets(model.FunctionMaker)
 		d, _ := time.ParseDuration("-3s")
@@ -29,7 +31,7 @@ func CancelOldMakers() {
 		for _, market := range markets {
 			for _, value := range makers[market] {
 				if value.OrderTime.Before(timeLine) {
-					api.MustCancel(value.Market, value.Symbol, value.OrderId, true)
+					api.MustCancel(key, secret, value.Market, value.Symbol, value.OrderId, true)
 				} else {
 					array = append(array, value)
 				}
@@ -66,7 +68,7 @@ func discountBalance(market, symbol, accountType, coin string, discountRate floa
 	}
 }
 
-func getBalance(market, symbol, accountType string) (left, right, leftFroze, rightFroze float64, err error) {
+func getBalance(key, secret, market, symbol, accountType string) (left, right, leftFroze, rightFroze float64, err error) {
 	leverMarket := market
 	if accountType == model.AccountTypeLever {
 		leverMarket = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever,
@@ -77,14 +79,14 @@ func getBalance(market, symbol, accountType string) (left, right, leftFroze, rig
 	if leftAccount == nil {
 		util.Notice(`nil account ` + market + coins[0])
 		//time.Sleep(time.Second * 2)
-		api.RefreshAccount(market)
+		api.RefreshAccount(key, secret, market)
 		return 0, 0, 0, 0, errors.New(`no left balance`)
 	}
 	rightAccount := model.AppAccounts.GetAccount(leverMarket, coins[1])
 	if rightAccount == nil {
 		util.Notice(`nil account ` + market + coins[1])
 		//time.Sleep(time.Second * 2)
-		api.RefreshAccount(market)
+		api.RefreshAccount(key, secret, market)
 		return 0, 0, 0, 0, errors.New(`no right balance`)
 	}
 	return leftAccount.Free, rightAccount.Free, leftAccount.Frozen, rightAccount.Frozen, nil
@@ -115,7 +117,7 @@ var ProcessMake = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[delay too long] depth:%d deal:%d`, depthDelay, dealDelay))
 		return
 	}
-	left, right, _, _, err := getBalance(market, symbol, setting.AccountType)
+	left, right, _, _, err := getBalance(key, secret, market, symbol, setting.AccountType)
 	if err != nil {
 		return
 	}
@@ -152,11 +154,11 @@ var ProcessMake = func(market, symbol string) {
 		orderSide = ``
 	}
 	if orderSide != `` {
-		order := api.PlaceOrder(orderSide, model.OrderTypeLimit, market, symbol, ``,
+		order := api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``,
 			setting.AccountType, deal.Price, amount)
 		order.Function = model.FunctionMaker
 		time.Sleep(time.Millisecond * 500)
-		api.RefreshAccount(market)
+		api.RefreshAccount(key, secret, market)
 		if order.Status == model.CarryStatusWorking {
 			addMaker(market, order)
 		}
