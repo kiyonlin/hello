@@ -564,54 +564,56 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 			break
 		}
 	}
-	if bidStart < 8 {
-		bidStart = 8
-	}
-	if askStart < 8 {
-		askStart = 8
-	}
 	orders := refreshOrders.getRefreshHang(symbol)
 	if bidStart < 11 && otherPrice*1.0005 >= tick.Bids[bidStart].Price {
 		amount := rightFree * hangRate / float64(11-bidStart) / tick.Bids[bidStart].Price
 		for i := bidStart; i < 11 && amount*tick.Bids[bidStart].Price > 10; i++ {
+			alreadyExist := false
 			for _, value := range orders {
 				if math.Abs(value.Price-tick.Bids[i].Price) < 0.1*priceDistance &&
 					value.OrderSide == model.OrderSideBuy {
-					continue
+					alreadyExist = true
+					break
 				}
 			}
-			util.Notice(fmt.Sprintf(`try hang sequence bid %s amount %f ---pos:%d`, symbol, amount, i))
-			sequenceBid := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
-				``, accountType, tick.Bids[i].Price, amount)
-			if sequenceBid != nil && sequenceBid.OrderId != `` && sequenceBid.Status != model.CarryStatusFail {
-				sequenceBid.Function = model.FunctionHang
-				sequenceBid.RefreshType = RefreshTypeSequence
-				refreshOrders.addRefreshHang(symbol, sequenceBid)
-				model.AppDB.Save(&sequenceBid)
-			} else if sequenceBid != nil && sequenceBid.ErrCode == `1016` {
-				discountBalance(market, symbol, accountType, coins[1], 0.8)
+			if !alreadyExist {
+				util.Notice(fmt.Sprintf(`try hang sequence bid %s amount %f ---pos:%d`, symbol, amount, i))
+				sequenceBid := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
+					``, accountType, tick.Bids[i].Price, amount)
+				if sequenceBid != nil && sequenceBid.OrderId != `` && sequenceBid.Status != model.CarryStatusFail {
+					sequenceBid.Function = model.FunctionHang
+					sequenceBid.RefreshType = RefreshTypeSequence
+					refreshOrders.addRefreshHang(symbol, sequenceBid)
+					model.AppDB.Save(&sequenceBid)
+				} else if sequenceBid != nil && sequenceBid.ErrCode == `1016` {
+					discountBalance(market, symbol, accountType, coins[1], 0.8)
+				}
 			}
 		}
 	}
 	if askStart < 11 && otherPrice*0.9995 <= tick.Asks[askStart].Price {
 		amount := leftFree * hangRate / float64(11-askStart)
 		for i := askStart; i < 11 && amount*tick.Asks[askStart].Price > 10; i++ {
+			alreadyExist := false
 			for _, value := range orders {
 				if math.Abs(value.Price-tick.Asks[i].Price) < 0.1*priceDistance &&
 					value.OrderSide == model.OrderSideSell {
-					continue
+					alreadyExist = true
+					break
 				}
 			}
-			util.Notice(fmt.Sprintf(`try hang sequence ask %s amount %f ---pos:%d`, symbol, amount, i))
-			sequenceAsk := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-				``, accountType, tick.Asks[i].Price, amount)
-			if sequenceAsk != nil && sequenceAsk.OrderId != `` && sequenceAsk.Status != model.CarryStatusFail {
-				sequenceAsk.Function = model.FunctionHang
-				sequenceAsk.RefreshType = RefreshTypeSequence
-				refreshOrders.addRefreshHang(symbol, sequenceAsk)
-				model.AppDB.Save(&sequenceAsk)
-			} else if sequenceAsk != nil && sequenceAsk.ErrCode == `1016` {
-				discountBalance(market, symbol, accountType, coins[0], 0.8)
+			if !alreadyExist {
+				util.Notice(fmt.Sprintf(`try hang sequence ask %s amount %f ---pos:%d`, symbol, amount, i))
+				sequenceAsk := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
+					``, accountType, tick.Asks[i].Price, amount)
+				if sequenceAsk != nil && sequenceAsk.OrderId != `` && sequenceAsk.Status != model.CarryStatusFail {
+					sequenceAsk.Function = model.FunctionHang
+					sequenceAsk.RefreshType = RefreshTypeSequence
+					refreshOrders.addRefreshHang(symbol, sequenceAsk)
+					model.AppDB.Save(&sequenceAsk)
+				} else if sequenceAsk != nil && sequenceAsk.ErrCode == `1016` {
+					discountBalance(market, symbol, accountType, coins[0], 0.8)
+				}
 			}
 		}
 	}
