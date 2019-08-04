@@ -483,11 +483,11 @@ var ProcessRefresh = func(market, symbol string) {
 	if index > refreshOrders.amountIndex {
 		util.Notice(fmt.Sprintf(`index %d -> %d`, index, refreshOrders.amountIndex))
 		util.Notice(`[before 10min canceling]`)
-		//time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
 		symbols := model.GetMarketSymbols(market)
 		for key := range symbols {
-			//CancelRefreshHang(key, RefreshTypeGrid)
+			CancelRefreshHang(``, ``, key, RefreshTypeGrid)
 			refreshOrders.setInRefresh(key, true)
 		}
 		time.Sleep(time.Second * 2)
