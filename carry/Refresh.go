@@ -550,16 +550,18 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 	askAll := tick.Asks[0].Amount
 	bidStart := 0
 	askStart := 0
-	for i := 1; i < 11; i++ {
+	for i := 1; i <= 11; i++ {
+		bidAll += tick.Bids[i].Amount
 		if bidAll > amountLimit {
 			bidStart = i
-		} else {
-			bidAll += tick.Bids[i].Amount
+			break
 		}
+	}
+	for i := 1; i <= 11; i++ {
+		askAll += tick.Asks[i].Amount
 		if askAll > amountLimit {
 			askStart = i
-		} else {
-			askAll += tick.Asks[i].Amount
+			break
 		}
 	}
 	orders := refreshOrders.getRefreshHang(symbol)
