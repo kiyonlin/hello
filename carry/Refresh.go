@@ -488,7 +488,7 @@ var ProcessRefresh = func(market, symbol string) {
 		symbols := model.GetMarketSymbols(market)
 		for key := range symbols {
 			//CancelRefreshHang(key, RefreshTypeGrid)
-			refreshOrders.setInRefresh(key, false)
+			refreshOrders.setInRefresh(key, true)
 		}
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(key, secret, market)
