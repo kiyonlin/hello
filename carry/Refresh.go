@@ -590,7 +590,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 		for i := askStart; i < 11 && amount > 0; i++ {
 			for _, value := range orders {
 				if math.Abs(value.Price-tick.Asks[i].Price) < 0.1*priceDistance &&
-					value.OrderSide == model.OrderSideBuy {
+					value.OrderSide == model.OrderSideSell {
 					continue
 				}
 			}
