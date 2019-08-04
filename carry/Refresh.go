@@ -526,18 +526,19 @@ var ProcessRefresh = func(market, symbol string) {
 				//if index > refreshOrders.amountIndex {
 				//	//api.RefreshAccount(market)
 				//}
-				util.Notice(fmt.Sprintf(`in hang refreshable %s %s`, market, symbol))
+				util.Notice(fmt.Sprintf(`in hang refreshable %s %s %f %f`, market, symbol, leftFree, rightFree))
 				refreshOrders.setInRefresh(symbol, true)
 				CancelRefreshHang(key, secret, symbol, RefreshTypeGrid)
 				time.Sleep(time.Second)
 				util.Notice(fmt.Sprintf(`set done refreshable %s %s`, market, symbol))
 			} else {
-				util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
+				util.Notice(fmt.Sprintf(`in hang not refreshable %s left %f right %f`,
+					symbol, leftFree, rightFree))
 				refreshHang(key, secret, market, symbol, setting.AccountType, hangRate, amountLimit, farRate,
 					finalPlace, leftFree, rightFree, otherPrice, priceDistance, farPlaces, setting, tick)
 			}
 		} else {
-			util.Notice(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
+			util.Notice(fmt.Sprintf(`in hang not have amount %s`, symbol))
 			refreshHang(key, secret, market, symbol, setting.AccountType, hangRate, amountLimit, farRate, finalPlace,
 				leftFree, rightFree, otherPrice, priceDistance, farPlaces, setting, tick)
 		}
