@@ -534,18 +534,18 @@ var ProcessRefresh = func(market, symbol string) {
 			} else {
 				util.Notice(fmt.Sprintf(`[in hang not refreshable %s]`, symbol))
 				refreshHang(key, secret, market, symbol, setting.AccountType, hangRate, amountLimit, farRate,
-					finalPlace, leftFree, rightFree, otherPrice, farPlaces, setting, tick)
+					finalPlace, leftFree, rightFree, otherPrice, priceDistance, farPlaces, setting, tick)
 			}
 		} else {
 			util.Notice(fmt.Sprintf(`[in hang not have amount %s]`, symbol))
 			refreshHang(key, secret, market, symbol, setting.AccountType, hangRate, amountLimit, farRate, finalPlace,
-				leftFree, rightFree, otherPrice, farPlaces, setting, tick)
+				leftFree, rightFree, otherPrice, priceDistance, farPlaces, setting, tick)
 		}
 	}
 }
 
 func hangSequence(key, secret, market, symbol, accountType string, leftFree, rightFree, otherPrice, hangRate,
-	amountLimit float64, coins []string, tick *model.BidAsk) {
+	amountLimit, priceDistance float64, coins []string, tick *model.BidAsk) {
 	bidAll := tick.Bids[0].Amount
 	askAll := tick.Asks[0].Amount
 	bidStart := 0
@@ -562,9 +562,16 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 			askAll += tick.Asks[i].Amount
 		}
 	}
+	orders := refreshOrders.getRefreshHang(symbol)
 	if bidStart < 11 && otherPrice*1.0005 >= tick.Bids[bidStart].Price {
 		amount := rightFree * hangRate / float64(11-bidStart) / tick.Bids[bidStart].Price
 		for i := bidStart; i < 11 && amount > 0; i++ {
+			for _, value := range orders {
+				if math.Abs(value.Price-tick.Bids[i].Price) < 0.1*priceDistance &&
+					value.OrderSide == model.OrderSideBuy {
+					continue
+				}
+			}
 			util.Notice(fmt.Sprintf(`try hang sequence bid %s amount %f pos:%d`, symbol, amount, i))
 			sequenceBid := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
 				``, accountType, tick.Bids[i].Price, amount)
@@ -581,6 +588,12 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 	if askStart < 11 && otherPrice*0.9995 <= tick.Asks[askStart].Price {
 		amount := leftFree * hangRate / float64(11-askStart) / tick.Asks[askStart].Price
 		for i := askStart; i < 11 && amount > 0; i++ {
+			for _, value := range orders {
+				if math.Abs(value.Price-tick.Asks[i].Price) < 0.1*priceDistance &&
+					value.OrderSide == model.OrderSideBuy {
+					continue
+				}
+			}
 			util.Notice(fmt.Sprintf(`try hang sequence ask %s amount %f pos:%d`, symbol, amount, i))
 			sequenceAsk := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
 				``, accountType, tick.Asks[i].Price, amount)
@@ -701,7 +714,7 @@ func hangFar(key, secret, market, symbol, accountType string, farRate, finalPlac
 }
 
 func refreshHang(key, secret, market, symbol, accountType string, hangRate, amountLimit, farRate, finalPlace,
-	leftFree, rightFree, otherPrice float64, farPlaces []float64, setting *model.Setting, tick *model.BidAsk) {
+	leftFree, rightFree, otherPrice, priceDistance float64, farPlaces []float64, setting *model.Setting, tick *model.BidAsk) {
 	util.Info(fmt.Sprintf(`[refreshhang]%s`, symbol))
 	if refreshOrders.hanging {
 		return
@@ -718,7 +731,7 @@ func refreshHang(key, secret, market, symbol, accountType string, hangRate, amou
 			hangGrid(key, secret, market, symbol, accountType, setting, tick)
 		} else {
 			hangSequence(key, secret, market, symbol, accountType, leftFree, rightFree, otherPrice, hangRate,
-				amountLimit, coins, tick)
+				amountLimit, priceDistance, coins, tick)
 		}
 	}
 	hangFar(key, secret, market, symbol, accountType, farRate, finalPlace, leftFree, rightFree, coins, farPlaces, tick)
