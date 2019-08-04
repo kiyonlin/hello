@@ -588,7 +588,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 		}
 	}
 	if askStart < 11 && otherPrice*0.9995 <= tick.Asks[askStart].Price {
-		amount := leftFree * hangRate / float64(11-askStart) / tick.Asks[askStart].Price
+		amount := leftFree * hangRate / float64(11-askStart)
 		for i := askStart; i < 11 && amount > 0; i++ {
 			for _, value := range orders {
 				if math.Abs(value.Price-tick.Asks[i].Price) < 0.1*priceDistance &&
