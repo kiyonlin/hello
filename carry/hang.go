@@ -78,7 +78,7 @@ func hang(market, symbol string, tick *model.BidAsk) {
 	secret := hangStatus.secrets[key]
 	util.Notice(fmt.Sprintf(`[hang %s %s]price: %f amount: %f`, key, symbol, tick.Bids[4].Price, 10))
 	order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-		model.AccountTypeLever, tick.Bids[4].Price, 10)
+		``, tick.Bids[4].Price, 10)
 	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
 		order.Function = model.FunctionHang
 		model.AppDB.Save(&order)
