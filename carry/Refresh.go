@@ -564,6 +564,12 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 			break
 		}
 	}
+	if bidStart < 8 {
+		bidStart = 8
+	}
+	if askStart < 8 {
+		askStart = 8
+	}
 	orders := refreshOrders.getRefreshHang(symbol)
 	if bidStart < 11 && otherPrice*1.0005 >= tick.Bids[bidStart].Price {
 		amount := rightFree * hangRate / float64(11-bidStart) / tick.Bids[bidStart].Price
@@ -574,7 +580,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 					continue
 				}
 			}
-			util.Notice(fmt.Sprintf(`try hang sequence bid %s amount %f pos:%d`, symbol, amount, i))
+			util.Notice(fmt.Sprintf(`try hang sequence bid %s amount %f ---pos:%d`, symbol, amount, i))
 			sequenceBid := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
 				``, accountType, tick.Bids[i].Price, amount)
 			if sequenceBid != nil && sequenceBid.OrderId != `` && sequenceBid.Status != model.CarryStatusFail {
@@ -596,7 +602,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 					continue
 				}
 			}
-			util.Notice(fmt.Sprintf(`try hang sequence ask %s amount %f pos:%d`, symbol, amount, i))
+			util.Notice(fmt.Sprintf(`try hang sequence ask %s amount %f ---pos:%d`, symbol, amount, i))
 			sequenceAsk := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
 				``, accountType, tick.Asks[i].Price, amount)
 			if sequenceAsk != nil && sequenceAsk.OrderId != `` && sequenceAsk.Status != model.CarryStatusFail {
