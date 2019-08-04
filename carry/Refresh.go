@@ -573,7 +573,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 	orders := refreshOrders.getRefreshHang(symbol)
 	if bidStart < 11 && otherPrice*1.0005 >= tick.Bids[bidStart].Price {
 		amount := rightFree * hangRate / float64(11-bidStart) / tick.Bids[bidStart].Price
-		for i := bidStart; i < 11 && amount > 0; i++ {
+		for i := bidStart; i < 11 && amount*tick.Bids[bidStart].Price > 10; i++ {
 			for _, value := range orders {
 				if math.Abs(value.Price-tick.Bids[i].Price) < 0.1*priceDistance &&
 					value.OrderSide == model.OrderSideBuy {
@@ -595,7 +595,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 	}
 	if askStart < 11 && otherPrice*0.9995 <= tick.Asks[askStart].Price {
 		amount := leftFree * hangRate / float64(11-askStart)
-		for i := askStart; i < 11 && amount > 0; i++ {
+		for i := askStart; i < 11 && amount*tick.Asks[askStart].Price > 10; i++ {
 			for _, value := range orders {
 				if math.Abs(value.Price-tick.Asks[i].Price) < 0.1*priceDistance &&
 					value.OrderSide == model.OrderSideSell {
