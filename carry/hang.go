@@ -89,7 +89,7 @@ var ProcessHang = func(market, symbol string) {
 	if bid == nil || bid.Price > tick.Bids[0].Price {
 		didSmth = true
 		bid = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, ``, tick.Bids[0].Price, rightFree/2/tick.Bids[0].Price)
+			setting.AccountType, setting.AccountType, tick.Bids[0].Price, rightFree/2/tick.Bids[0].Price)
 		if bid != nil && bid.OrderId != `` {
 			bid.Function = model.FunctionHang
 			model.AppDB.Save(&bid)
@@ -117,7 +117,7 @@ var ProcessHang = func(market, symbol string) {
 	if ask == nil || ask.Price < tick.Asks[0].Price {
 		didSmth = true
 		ask = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, ``, tick.Asks[0].Price, leftFree/2)
+			setting.AccountType, setting.AccountType, tick.Asks[0].Price, leftFree/2)
 		if ask != nil && ask.OrderId != `` {
 			ask.Function = model.FunctionHang
 			model.AppDB.Save(&ask)
