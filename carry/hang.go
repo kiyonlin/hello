@@ -59,8 +59,6 @@ func (hangStatus *HangStatus) setBid(symbol string, order *model.Order) {
 }
 
 var ProcessHang = func(market, symbol string) {
-	hangStatus.setHanging(true)
-	defer hangStatus.setHanging(false)
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 11 ||
 		tick.Bids.Len() < 11 {
@@ -70,6 +68,8 @@ var ProcessHang = func(market, symbol string) {
 	if hangStatus.hanging || model.AppConfig.Handle != `1` || model.AppPause {
 		return
 	}
+	hangStatus.setHanging(true)
+	defer hangStatus.setHanging(false)
 	delay := util.GetNowUnixMillion() - int64(tick.Ts)
 	if delay > 500 {
 		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
