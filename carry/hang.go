@@ -6,94 +6,146 @@ import (
 	"hello/model"
 	"hello/util"
 	"sync"
+	"time"
 )
 
-var hangStatus = &HangStatus{keys: []string{
-	`6f1ccb0d31e24f42a90e1d04b933609d`,  //haoweizh@qq.com
-	`a6168a5762234a03884fd0e2572ccad5`,  //yjsx_@163.com
-	`c1df9c45d72342eba471cdd0c8b6e658`}, // liwei
-	secrets: map[string]string{
-		`6f1ccb0d31e24f42a90e1d04b933609d`: `74e551965da542d280f6abc8f5f263b8`,
-		`a6168a5762234a03884fd0e2572ccad5`: `4907b7bf3b6447caa6fc91ac7a183a3a`,
-		`c1df9c45d72342eba471cdd0c8b6e658`: `a85eb6ae9bde471db2384f792f73033d`}}
+var hangStatus = &HangStatus{bid: make(map[string]*model.Order), ask: make(map[string]*model.Order)}
 
 type HangStatus struct {
 	lock    sync.Mutex
 	hanging bool
-	orders  map[string]*model.Order // key - order
-	keys    []string
-	secrets map[string]string
+	bid     map[string]*model.Order
+	ask     map[string]*model.Order
 }
 
 func (hangStatus *HangStatus) setHanging(value bool) {
 	hangStatus.hanging = value
 }
 
-func (hangStatus *HangStatus) setOrder(key string, order *model.Order) {
+func (hangStatus *HangStatus) getBid(symbol string) (order *model.Order) {
 	hangStatus.lock.Lock()
 	defer hangStatus.lock.Unlock()
-	if hangStatus.orders == nil {
-		hangStatus.orders = make(map[string]*model.Order)
+	if hangStatus.bid == nil {
+		hangStatus.bid = make(map[string]*model.Order)
 	}
-	hangStatus.orders[key] = order
+	return hangStatus.bid[symbol]
 }
 
-func (hangStatus *HangStatus) getOrder(key string) (order *model.Order) {
+func (hangStatus *HangStatus) getAsk(symbol string) (order *model.Order) {
 	hangStatus.lock.Lock()
 	defer hangStatus.lock.Unlock()
-	if hangStatus.orders == nil || hangStatus.orders[key] == nil {
-		return nil
+	if hangStatus.ask == nil {
+		hangStatus.ask = make(map[string]*model.Order)
 	}
-	return hangStatus.orders[key]
+	return hangStatus.ask[symbol]
+}
+
+func (hangStatus *HangStatus) setAsk(symbol string, order *model.Order) {
+	hangStatus.lock.Lock()
+	defer hangStatus.lock.Unlock()
+	if hangStatus.ask == nil {
+		hangStatus.ask = make(map[string]*model.Order)
+	}
+	hangStatus.ask[symbol] = order
+}
+
+func (hangStatus *HangStatus) setBid(symbol string, order *model.Order) {
+	hangStatus.lock.Lock()
+	defer hangStatus.lock.Unlock()
+	if hangStatus.bid == nil {
+		hangStatus.bid = make(map[string]*model.Order)
+	}
+	hangStatus.bid[symbol] = order
 }
 
 var ProcessHang = func(market, symbol string) {
+	hangStatus.setHanging(true)
+	defer hangStatus.setHanging(false)
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 11 ||
 		tick.Bids.Len() < 11 {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	go validHang(market, symbol)
 	if hangStatus.hanging || model.AppConfig.Handle != `1` || model.AppPause {
 		return
 	}
-	defer hangStatus.setHanging(false)
 	delay := util.GetNowUnixMillion() - int64(tick.Ts)
 	if delay > 500 {
 		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	hang(market, symbol, tick)
-}
-
-func hang(market, symbol string, tick *model.BidAsk) {
-	second := util.GetNow().Second()
-	index := int(second / 20)
-	order := hangStatus.getOrder(hangStatus.keys[index])
-	if order != nil {
+	setting := model.GetSetting(model.FunctionHang, market, symbol)
+	if setting == nil {
 		return
 	}
-	key := hangStatus.keys[index]
-	secret := hangStatus.secrets[key]
-	util.Notice(fmt.Sprintf(`[hang %s %s]price: %f amount: %f`, key, symbol, tick.Bids[4].Price, 10))
-	order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-		``, tick.Bids[4].Price, 10)
-	if order != nil && order.Status != model.CarryStatusFail && order.OrderId != `` {
-		order.Function = model.FunctionHang
-		model.AppDB.Save(&order)
-		hangStatus.setOrder(key, order)
+	leftFree, rightFree, _, _, err := getBalance(key, secret, market, symbol, setting.AccountType)
+	if err != nil {
+		return
 	}
-}
-
-func validHang(market, symbol string) {
-	second := util.GetNow().Second()
-	index := int(second / 20)
-	for _, value := range hangStatus.keys {
-		order := hangStatus.getOrder(value)
-		if value != hangStatus.keys[index] && order != nil {
-			api.CancelOrder(value, hangStatus.secrets[value], market, symbol, order.OrderId)
-			hangStatus.setOrder(value, nil)
+	bid := hangStatus.getBid(symbol)
+	ask := hangStatus.getAsk(symbol)
+	didSmth := false
+	if bid == nil || bid.Price > tick.Bids[0].Price {
+		didSmth = true
+		bid = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
+			setting.AccountType, ``, tick.Bids[0].Price, rightFree/2/tick.Bids[0].Price)
+		if bid != nil && bid.OrderId != `` {
+			bid.Function = model.FunctionHang
+			model.AppDB.Save(&bid)
+			hangStatus.setBid(symbol, bid)
 		}
+	} else {
+		if bid.Price < tick.Bids[0].Price {
+			didSmth = true
+			util.Notice(fmt.Sprintf(`---0 cancel bid not on 1 %f < %f`, bid.Price, tick.Bids[0].Price))
+			api.MustCancel(``, ``, market, symbol, bid.OrderId, true)
+			hangStatus.setBid(symbol, nil)
+		} else if bid.Price == tick.Bids[0].Price {
+			bid = api.QueryOrderById(``, ``, market, symbol, bid.OrderId)
+			if bid.DealAmount > 0 && bid.Status == model.CarryStatusWorking {
+				didSmth = true
+				util.Notice(fmt.Sprintf(`---1 check bid price %f = %f amount %f > deal %f`,
+					bid.Price, tick.Bids[0].Price, bid.Amount, bid.DealAmount))
+				api.MustCancel(``, ``, market, symbol, bid.OrderId, false)
+				hangStatus.setBid(symbol, nil)
+			} else if bid.Status == model.CarryStatusSuccess || bid.Status == model.CarryStatusFail {
+				hangStatus.setBid(symbol, nil)
+			}
+		}
+	}
+	if ask == nil || ask.Price < tick.Asks[0].Price {
+		didSmth = true
+		ask = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
+			setting.AccountType, ``, tick.Asks[0].Price, leftFree/2)
+		if ask != nil && ask.OrderId != `` {
+			ask.Function = model.FunctionHang
+			model.AppDB.Save(&ask)
+			hangStatus.setAsk(symbol, ask)
+		}
+	} else {
+		if ask.Price > tick.Asks[0].Price {
+			didSmth = true
+			util.Notice(fmt.Sprintf(`---0 cancel ask not on 1 %f < %f`, ask.Price, tick.Asks[0].Price))
+			api.MustCancel(``, ``, market, symbol, ask.OrderId, true)
+			hangStatus.setAsk(symbol, nil)
+		} else if ask.Price == tick.Asks[0].Price {
+			ask = api.QueryOrderById(``, ``, market, symbol, ask.OrderId)
+			if ask.DealAmount > 0 && ask.Status == model.CarryStatusWorking {
+				didSmth = true
+				util.Notice(fmt.Sprintf(`---1 check ask price %f = %f amount %f > deal %f`,
+					ask.Price, tick.Asks[0].Price, ask.Amount, ask.DealAmount))
+				api.MustCancel(``, ``, market, symbol, ask.OrderId, false)
+				hangStatus.setAsk(symbol, nil)
+			} else if ask.Status == model.CarryStatusSuccess || ask.Status == model.CarryStatusFail {
+				hangStatus.setAsk(symbol, nil)
+			}
+		}
+	}
+	if didSmth {
+		time.Sleep(time.Second)
+		api.RefreshAccount(``, ``, market)
+	} else {
+		util.Notice(`nothing happened`)
 	}
 }

@@ -29,7 +29,7 @@ func (ticks Ticks) GetMap() (tickMap map[float64]*Tick) {
 	return tickMap
 }
 
-func GetTicks(tickMap map[float64]*Tick) (ticks Ticks) {
+func _(tickMap map[float64]*Tick) (ticks Ticks) {
 	ticks = make([]Tick, len(tickMap))
 	index := 0
 	for _, value := range tickMap {
