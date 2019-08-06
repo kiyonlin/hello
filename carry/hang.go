@@ -89,7 +89,7 @@ var ProcessHang = func(market, symbol string) {
 	if bid == nil || bid.Price > tick.Bids[0].Price {
 		didSmth = true
 		bid = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, setting.AccountType, tick.Bids[0].Price, rightFree/2/tick.Bids[0].Price)
+			setting.AccountType, setting.AccountType, tick.Bids[0].Price, rightFree*0.9/tick.Bids[0].Price)
 		if bid != nil && bid.OrderId != `` {
 			bid.Function = model.FunctionHang
 			model.AppDB.Save(&bid)
@@ -117,7 +117,7 @@ var ProcessHang = func(market, symbol string) {
 	if ask == nil || ask.Price < tick.Asks[0].Price {
 		didSmth = true
 		ask = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, setting.AccountType, tick.Asks[0].Price, leftFree/2)
+			setting.AccountType, setting.AccountType, tick.Asks[0].Price, leftFree*0.9)
 		if ask != nil && ask.OrderId != `` {
 			ask.Function = model.FunctionHang
 			model.AppDB.Save(&ask)
@@ -126,7 +126,7 @@ var ProcessHang = func(market, symbol string) {
 	} else {
 		if ask.Price > tick.Asks[0].Price {
 			didSmth = true
-			util.Notice(fmt.Sprintf(`---0 cancel ask not on 1 %f < %f`, ask.Price, tick.Asks[0].Price))
+			util.Notice(fmt.Sprintf(`---0 cancel ask not on 1 %f > %f`, ask.Price, tick.Asks[0].Price))
 			api.MustCancel(``, ``, market, symbol, ask.OrderId, true)
 			hangStatus.setAsk(symbol, nil)
 		} else if ask.Price == tick.Asks[0].Price {
