@@ -5,6 +5,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"sync"
 	"time"
 )
@@ -89,7 +90,8 @@ var ProcessHang = func(market, symbol string) {
 	if bid == nil || bid.Price > tick.Bids[0].Price {
 		didSmth = true
 		bid = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, setting.AccountType, tick.Bids[0].Price, rightFree*0.9/tick.Bids[0].Price)
+			setting.AccountType, setting.AccountType, tick.Bids[0].Price,
+			math.Min(tick.Bids[0].Amount, rightFree*0.9/tick.Bids[0].Price))
 		if bid != nil && bid.OrderId != `` {
 			bid.Function = model.FunctionHang
 			model.AppDB.Save(&bid)
@@ -117,7 +119,7 @@ var ProcessHang = func(market, symbol string) {
 	if ask == nil || ask.Price < tick.Asks[0].Price {
 		didSmth = true
 		ask = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, setting.AccountType, tick.Asks[0].Price, leftFree*0.9)
+			setting.AccountType, setting.AccountType, tick.Asks[0].Price, math.Min(tick.Asks[0].Amount, leftFree*0.9))
 		if ask != nil && ask.OrderId != `` {
 			ask.Function = model.FunctionHang
 			model.AppDB.Save(&ask)
