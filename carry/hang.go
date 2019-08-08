@@ -105,14 +105,16 @@ var ProcessHang = func(market, symbol string) {
 			hangStatus.setBid(symbol, nil)
 		} else if bid.Price == tick.Bids[0].Price {
 			bid = api.QueryOrderById(``, ``, market, symbol, bid.OrderId)
-			if bid.DealAmount > 0 && bid.Status == model.CarryStatusWorking {
-				didSmth = true
-				util.Notice(fmt.Sprintf(`---1 check bid price %f = %f amount %f > deal %f`,
-					bid.Price, tick.Bids[0].Price, bid.Amount, bid.DealAmount))
-				api.MustCancel(``, ``, market, symbol, bid.OrderId, false)
-				hangStatus.setBid(symbol, nil)
-			} else if bid.Status == model.CarryStatusSuccess || bid.Status == model.CarryStatusFail {
-				hangStatus.setBid(symbol, nil)
+			if bid != nil {
+				if bid.DealAmount > 0 && bid.Status == model.CarryStatusWorking {
+					didSmth = true
+					util.Notice(fmt.Sprintf(`---1 check bid price %f = %f amount %f > deal %f`,
+						bid.Price, tick.Bids[0].Price, bid.Amount, bid.DealAmount))
+					api.MustCancel(``, ``, market, symbol, bid.OrderId, false)
+					hangStatus.setBid(symbol, nil)
+				} else if bid.Status == model.CarryStatusSuccess || bid.Status == model.CarryStatusFail {
+					hangStatus.setBid(symbol, nil)
+				}
 			}
 		}
 	}
@@ -133,14 +135,16 @@ var ProcessHang = func(market, symbol string) {
 			hangStatus.setAsk(symbol, nil)
 		} else if ask.Price == tick.Asks[0].Price {
 			ask = api.QueryOrderById(``, ``, market, symbol, ask.OrderId)
-			if ask.DealAmount > 0 && ask.Status == model.CarryStatusWorking {
-				didSmth = true
-				util.Notice(fmt.Sprintf(`---1 check ask price %f = %f amount %f > deal %f`,
-					ask.Price, tick.Asks[0].Price, ask.Amount, ask.DealAmount))
-				api.MustCancel(``, ``, market, symbol, ask.OrderId, false)
-				hangStatus.setAsk(symbol, nil)
-			} else if ask.Status == model.CarryStatusSuccess || ask.Status == model.CarryStatusFail {
-				hangStatus.setAsk(symbol, nil)
+			if ask != nil {
+				if ask.DealAmount > 0 && ask.Status == model.CarryStatusWorking {
+					didSmth = true
+					util.Notice(fmt.Sprintf(`---1 check ask price %f = %f amount %f > deal %f`,
+						ask.Price, tick.Asks[0].Price, ask.Amount, ask.DealAmount))
+					api.MustCancel(``, ``, market, symbol, ask.OrderId, false)
+					hangStatus.setAsk(symbol, nil)
+				} else if ask.Status == model.CarryStatusSuccess || ask.Status == model.CarryStatusFail {
+					hangStatus.setAsk(symbol, nil)
+				}
 			}
 		}
 	}
