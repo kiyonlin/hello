@@ -102,7 +102,7 @@ var ProcessHang = func(market, symbol string) {
 			didSmth = true
 			util.Notice(fmt.Sprintf(`---0 cancel bid %f < %f or > %f`,
 				bid.Price, tick.Bids[5].Price, tick.Bids[1].Price))
-			api.MustCancel(``, ``, market, symbol, bid.OrderId, true)
+			api.MustCancel(``, ``, market, symbol, bid.OrderId, false)
 			hangStatus.setBid(symbol, nil)
 		}
 	}
@@ -120,7 +120,7 @@ var ProcessHang = func(market, symbol string) {
 			didSmth = true
 			util.Notice(fmt.Sprintf(`---0 cancel ask %f > %f or < %f`,
 				ask.Price, tick.Asks[5].Price, tick.Asks[1].Price))
-			api.MustCancel(``, ``, market, symbol, ask.OrderId, true)
+			api.MustCancel(``, ``, market, symbol, ask.OrderId, false)
 			hangStatus.setAsk(symbol, nil)
 		}
 	}
