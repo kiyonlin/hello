@@ -5,7 +5,8 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"math"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -84,24 +85,31 @@ var ProcessHang = func(market, symbol string) {
 	if err != nil {
 		return
 	}
+	places := strings.Split(setting.FunctionParameter, `_`)
+	if len(places) != 3 {
+		util.Notice(fmt.Sprintf(`hang function len error %d`, len(places)))
+		return
+	}
+	hangNear, _ := strconv.ParseInt(places[0], 10, 64)
+	hangPlace, _ := strconv.ParseInt(places[1], 10, 64)
+	hangFar, _ := strconv.ParseInt(places[2], 10, 64)
 	bid := hangStatus.getBid(symbol)
 	ask := hangStatus.getAsk(symbol)
 	didSmth := false
 	if bid == nil || bid.Price > tick.Bids[0].Price {
 		didSmth = true
-		bid = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, setting.AccountType, tick.Bids[2].Price,
-			math.Min(tick.Bids[2].Amount, rightFree*0.9/tick.Bids[2].Price))
+		bid = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+			setting.AccountType, tick.Bids[hangPlace].Price, rightFree*0.9/tick.Bids[hangPlace].Price)
 		if bid != nil && bid.OrderId != `` {
 			bid.Function = model.FunctionHang
 			model.AppDB.Save(&bid)
 			hangStatus.setBid(symbol, bid)
 		}
 	} else {
-		if bid.Price < tick.Bids[5].Price || bid.Price > tick.Bids[1].Price {
+		if bid.Price < tick.Bids[hangFar].Price || bid.Price > tick.Bids[hangNear].Price {
 			didSmth = true
 			util.Notice(fmt.Sprintf(`---0 cancel bid %f < %f or > %f`,
-				bid.Price, tick.Bids[5].Price, tick.Bids[1].Price))
+				bid.Price, tick.Bids[hangFar].Price, tick.Bids[hangNear].Price))
 			api.MustCancel(``, ``, market, symbol, bid.OrderId, false)
 			hangStatus.setBid(symbol, nil)
 		}
@@ -109,17 +117,17 @@ var ProcessHang = func(market, symbol string) {
 	if ask == nil || ask.Price < tick.Asks[0].Price {
 		didSmth = true
 		ask = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, setting.AccountType, tick.Asks[2].Price, math.Min(tick.Asks[2].Amount, leftFree*0.9))
+			setting.AccountType, setting.AccountType, tick.Asks[hangPlace].Price, leftFree*0.9)
 		if ask != nil && ask.OrderId != `` {
 			ask.Function = model.FunctionHang
 			model.AppDB.Save(&ask)
 			hangStatus.setAsk(symbol, ask)
 		}
 	} else {
-		if ask.Price > tick.Asks[5].Price || ask.Price < tick.Asks[1].Price {
+		if ask.Price > tick.Asks[hangFar].Price || ask.Price < tick.Asks[hangNear].Price {
 			didSmth = true
 			util.Notice(fmt.Sprintf(`---0 cancel ask %f > %f or < %f`,
-				ask.Price, tick.Asks[5].Price, tick.Asks[1].Price))
+				ask.Price, tick.Asks[hangFar].Price, tick.Asks[hangNear].Price))
 			api.MustCancel(``, ``, market, symbol, ask.OrderId, false)
 			hangStatus.setAsk(symbol, nil)
 		}
