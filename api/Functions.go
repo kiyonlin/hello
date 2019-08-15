@@ -38,11 +38,11 @@ func GetPriceDecimal(market, symbol string) int {
 	case model.Fcoin:
 		//{"status":3022,"msg":"limit price decimal: 5"}
 		switch symbol {
-		case `btc_usdt`, `bch_usdt`, `btc_pax`, `dash_usdt`:
+		case `btc_usdt`, `bch_usdt`, `btc_pax`, `btc_tusd`, `btc_usdc`, `dash_usdt`:
 			return 1
-		case `eth_usdt`, `ltc_usdt`, `zec_usdt`, `bsv_usdt`:
+		case `eth_usdt`, `eth_pax`, `eth_usdc`, `ltc_usdt`, `ltc_pax`, `ltc_usdc`, `zec_usdt`, `bsv_usdt`:
 			return 2
-		case `eos_usdt`, `etc_usdt`:
+		case `eos_usdt`, `eos_pax`, `eos_usdc`, `etc_usdt`:
 			return 3
 		case `ft_usdt`, `xrp_usdt`, `iota_usdt`, `ltc_eth`, `xlm_usdt`, `fmex_usdt`:
 			return 4
@@ -80,7 +80,8 @@ func GetAmountDecimal(market, symbol string) int {
 			return 0
 		case `eos_btc`, `xrp_usdt`, `eos_eth`, `iota_usdt`, `ft_usdt`, `ft_btc`, `ft_eth`, `trx_usdt`, `fmex_usdt`:
 			return 2
-		case `btc_usdt`, `btc_pax`, `eos_usdt`, `eth_btc`, `eth_usdt`, `ltc_usdt`, `ltc_btc`, `ltc_eth`,
+		case `btc_usdt`, `btc_pax`, `,btc_tusd`, `btc_usdc`, `eos_usdt`, `eth_btc`, `eth_usdt`, `ltc_usdt`, `ltc_btc`,
+			`ltc_eth`, `eth_pax`, `eth_usdc`, `eos_pax`, `eos_usdc`, `ltc_pax`, `ltc_usdc`,
 			`etc_usdt`, `etc_btc`, `etc_eth`, `bch_btc`, `bch_usdt`, `bsv_usdt`, `zec_usdt`, `xlm_usdt`:
 			return 4
 		}
