@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"hello/util"
 	"strings"
 	"sync"
 )
 
 var HandlerMap = make(map[string]CarryHandler)
+var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
 
 //const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
@@ -276,19 +278,13 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 
 func getSymbolWithSplit(original, split string) (symbol string) {
 	original = strings.ToLower(original)
-	var moneyCurrency string
-	if strings.Contains(original, `btc`) && strings.LastIndex(original, "btc")+3 == len(original) {
-		moneyCurrency = "btc"
-	} else if strings.Contains(original, `usdt`) && strings.LastIndex(original, "usdt")+4 == len(original) {
-		moneyCurrency = "usdt"
-	} else if strings.Contains(original, `eth`) && strings.LastIndex(original, "eth")+3 == len(original) {
-		moneyCurrency = "eth"
-	} else if strings.Contains(original, `ft1808`) && strings.LastIndex(original, `ft1808`)+6 == len(original) {
-		moneyCurrency = `ft1808`
-	} else if strings.Contains(original, `pax`) && strings.LastIndex(original, `pax`)+3 == len(original) {
-		moneyCurrency = `pax`
+	for _, currency := range Currencies {
+		if strings.Contains(original, currency) && strings.LastIndex(original, currency)+len(currency) == len(original) {
+			return original[0:strings.LastIndex(original, currency)] + split + currency
+		}
 	}
-	return original[0:strings.LastIndex(original, moneyCurrency)] + split + moneyCurrency
+	util.Notice(`can not parse symbol for currency absent ` + original)
+	return ``
 }
 
 func GetSymbol(market, subscribe string) (symbol string) {
