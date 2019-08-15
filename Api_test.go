@@ -6,11 +6,9 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
-	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"testing"
-	"time"
 )
 
 func Test_chan(t *testing.T) {
@@ -40,22 +38,22 @@ func Test_loadOrders(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	go carry.CheckPastRefresh()
-	for true {
-		time.Sleep(time.Minute)
-	}
-	d, _ := time.ParseDuration("-24h")
-	timeLine := util.GetNow().Add(d)
-	before := util.GetNow().Unix()
-	after := timeLine.Unix()
-	orders := api.QueryOrders(model.Fcoin, `eos_usdt`, model.CarryStatusWorking, before, after)
-	for _, order := range orders {
-		if order != nil && order.OrderId != `` {
-			//result, errCode, msg := api.CancelOrder(market, symbol, order.OrderId)
-			util.Notice(fmt.Sprintf(`[cancel old]%v %s %f`, true, order.OrderId, order.Price))
-			time.Sleep(time.Millisecond * 100)
-		}
-	}
+	//go carry.CheckPastRefresh()
+	//for true {
+	//	time.Sleep(time.Minute)
+	//}
+	//d, _ := time.ParseDuration("-24h")
+	//timeLine := util.GetNow().Add(d)
+	//before := util.GetNow().Unix()
+	//after := timeLine.Unix()
+	//orders := api.QueryOrders(model.Fcoin, `eos_usdt`, model.CarryStatusWorking, before, after)
+	//for _, order := range orders {
+	//	if order != nil && order.OrderId != `` {
+	//		//result, errCode, msg := api.CancelOrder(market, symbol, order.OrderId)
+	//		util.Notice(fmt.Sprintf(`[cancel old]%v %s %f`, true, order.OrderId, order.Price))
+	//		time.Sleep(time.Millisecond * 100)
+	//	}
+	//}
 	//api.QueryOrderDealsFcoin(`3BgqYy6o70gMlDiCgH0JJEEynoJPqYnz5SZSq-No0EhA2-D4pKe6BB0RqdfJ0fXTDCfKUfhBVHyAFphKAWwylA==`)
 	//orders := api.QueryOrders(model.Fcoin, `btc_usdt`, `success`,
 	//	1557529200, 1557504000)
@@ -73,9 +71,12 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	order := api.QueryOrderById(model.Fcoin, `ltc_usdt`,
-		`pfWOAwuurFQMpmUfWmWd3rRCckHf0uGK_b6xI5tYuYPJArdNgsTMekQw7ppjspj7`)
-	fmt.Println(fmt.Sprintf(`%f %f %s`, order.Amount, order.DealAmount, order.Status))
+	perUsdt, _ := api.GetPrice(``, ``, `usdc_usdt`)
+
+	fmt.Println(perUsdt)
+	//order := api.QueryOrderById(model.Fcoin, `ltc_usdt`,
+	//	`pfWOAwuurFQMpmUfWmWd3rRCckHf0uGK_b6xI5tYuYPJArdNgsTMekQw7ppjspj7`)
+	//fmt.Println(fmt.Sprintf(`%f %f %s`, order.Amount, order.DealAmount, order.Status))
 	//_ = api.GetAccountOkfuture(model.AppAccounts)
 	//for i := 0; i < 50; i++ {
 	//	api.GetKLineOkexFuture(`btc_this_week`, `1min`, 100)

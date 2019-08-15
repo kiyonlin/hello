@@ -155,18 +155,18 @@ func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.
 		return nil
 	}
 	minAmount := api.GetMinAmount(setting.Market, setting.Symbol)
-	for _, value := range tick.Bids {
+	for key, value := range tick.Bids {
 		if value.Amount < minAmount {
-			value.Amount += minAmount
+			tick.Bids[key].Amount += minAmount
 		} else {
-			value.Amount *= 2
+			tick.Bids[key].Amount *= 2
 		}
 	}
-	for _, value := range tick.Asks {
+	for key, value := range tick.Asks {
 		if value.Amount < minAmount {
-			value.Amount += minAmount
+			tick.Asks[key].Amount += minAmount
 		} else {
-			value.Amount *= 2
+			tick.Asks[key].Amount *= 2
 		}
 	}
 	rankFt = rankFt / 5760
