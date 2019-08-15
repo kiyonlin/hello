@@ -139,6 +139,8 @@ var ProcessRank = func(market, symbol string) {
 					``, setting.AccountType, score.Price, math.Max(minAmount, math.Min(score.Amount, amount)))
 				if order.OrderId != `` {
 					newOrders = append(newOrders, order)
+					time.Sleep(time.Second)
+					api.RefreshAccount(``, ``, market)
 				}
 			}
 		}
