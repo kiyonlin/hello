@@ -106,10 +106,6 @@ var ProcessRank = func(market, symbol string) {
 		return
 	}
 	didSmth := false
-	score := calcHighestScore(setting, tick)
-	if score.Point > setting.GridAmount {
-		go model.AppDB.Save(&score)
-	}
 	orders := rank.getOrders(symbol)
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
@@ -128,18 +124,22 @@ var ProcessRank = func(market, symbol string) {
 		time.Sleep(time.Second)
 		api.RefreshAccount(``, ``, market)
 	} else {
-		minAmount := api.GetMinAmount(market, symbol)
-		amount := leftFree
-		if score.OrderSide == model.OrderSideBuy {
-			amount = rightFree / score.Price
-		}
-		if amount < minAmount {
-			util.Notice(fmt.Sprintf(`--- err1 amount not enough %s %s %f`, symbol, score.OrderSide, amount))
-		} else {
-			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
-				``, setting.AccountType, score.Price, math.Max(minAmount, math.Min(score.Amount, amount)))
-			if order.OrderId != `` {
-				newOrders = append(newOrders, order)
+		score := calcHighestScore(setting, tick)
+		if score.Point > setting.GridAmount {
+			go model.AppDB.Save(&score)
+			minAmount := api.GetMinAmount(market, symbol)
+			amount := leftFree
+			if score.OrderSide == model.OrderSideBuy {
+				amount = rightFree / score.Price
+			}
+			if amount < minAmount {
+				util.Notice(fmt.Sprintf(`--- err1 amount not enough %s %s %f`, symbol, score.OrderSide, amount))
+			} else {
+				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
+					``, setting.AccountType, score.Price, math.Max(minAmount, math.Min(score.Amount, amount)))
+				if order.OrderId != `` {
+					newOrders = append(newOrders, order)
+				}
 			}
 		}
 	}
