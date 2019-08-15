@@ -128,15 +128,16 @@ var ProcessRank = func(market, symbol string) {
 		time.Sleep(time.Second)
 		api.RefreshAccount(``, ``, market)
 	} else {
+		minAmount := api.GetMinAmount(market, symbol)
 		amount := leftFree
 		if score.OrderSide == model.OrderSideBuy {
 			amount = rightFree / score.Price
 		}
-		if amount < api.GetMinAmount(market, symbol) {
+		if amount < minAmount {
 			util.Notice(fmt.Sprintf(`--- err1 amount not enough %s %s %f`, symbol, score.OrderSide, amount))
 		} else {
 			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
-				``, setting.AccountType, score.Price, math.Min(score.Amount, amount))
+				``, setting.AccountType, score.Price, math.Max(minAmount, math.Min(score.Amount, amount)))
 			if order.OrderId != `` {
 				newOrders = append(newOrders, order)
 			}
