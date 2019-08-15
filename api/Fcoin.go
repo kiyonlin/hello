@@ -21,13 +21,22 @@ var lastDepthPingFcoin = util.GetNowUnixMillion()
 
 var subscribeHandlerFcoin = func(subscribes []interface{}, subType string) error {
 	var err error = nil
-	subscribeMap := make(map[string]interface{})
-	subscribeMap[`cmd`] = `sub`
-	subscribeMap[`args`] = subscribes
-	subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
-	if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
-		util.SocketInfo("fcoin can not subscribe " + err.Error())
-		return err
+	step := 8
+	stepSubscribes := make([]interface{}, 0)
+	for i := 0; i*step < len(subscribes); i++ {
+		subscribeMap := make(map[string]interface{})
+		subscribeMap[`cmd`] = `sub`
+		if (i+1)*step < len(subscribes) {
+			stepSubscribes = subscribes[i*step : (i+1)*step]
+		} else {
+			stepSubscribes = subscribes[i*step:]
+		}
+		subscribeMap[`args`] = stepSubscribes
+		subscribeMessage := util.JsonEncodeMapToByte(subscribeMap)
+		if err := sendToWs(model.Fcoin, subscribeMessage); err != nil {
+			util.SocketInfo("fcoin can not subscribe " + err.Error())
+			return err
+		}
 	}
 	return err
 }

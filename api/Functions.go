@@ -11,6 +11,27 @@ import (
 	"time"
 )
 
+func GetMinAmount(market, symbol string) float64 {
+	switch market {
+	case model.Fcoin:
+		switch symbol {
+		case `btc_usdt`, `btc_pax`, `btc_tusd`, `btc_usdc`:
+			return 0.005
+		case `eth_usdt`, `eth_pax`, `eth_usdc`, `eth_btc`:
+			return 0.05
+		case `eos_usdt`, `eos_pax`, `eos_usdc`, `eos_btc`, `eos_eth`:
+			return 1
+		case `ltc_usdt`, `ltc_pax`, `ltc_usdc`, `ltc_btc`, `ltc_eth`:
+			return 0.1
+		case `xrp_usdt`, `xrp_btc`, `xrp_eth`:
+			return 10
+		case `bch_usdt`, `bch_btc`:
+			return 0.05
+		}
+	}
+	return 0
+}
+
 // 根据不同的网站返回价格小数位
 func GetPriceDecimal(market, symbol string) int {
 	switch market {

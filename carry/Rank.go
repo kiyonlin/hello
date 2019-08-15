@@ -25,32 +25,32 @@ func (rank *Rank) setRanking(value bool) {
 	rank.ranking = value
 }
 
-func (rank *Rank) setScore(symbol string, score *model.Score) {
-	rank.lock.Lock()
-	defer rank.lock.Unlock()
-	if rank.score == nil {
-		rank.score = make(map[string]*model.Score)
-	}
-	rank.score[symbol] = score
-}
-
-func (rank *Rank) getHighest(settings map[string]*model.Setting) (highest *model.Score) {
-	rank.lock.Lock()
-	defer rank.lock.Unlock()
-	if rank.score == nil {
-		return nil
-	}
-	for symbol := range settings {
-		if rank.score[symbol] == nil {
-			return nil
-		} else {
-			if highest == nil || highest.Point < rank.score[symbol].Point {
-				highest = rank.score[symbol]
-			}
-		}
-	}
-	return highest
-}
+//func (rank *Rank) setScore(symbol string, score *model.Score) {
+//	rank.lock.Lock()
+//	defer rank.lock.Unlock()
+//	if rank.score == nil {
+//		rank.score = make(map[string]*model.Score)
+//	}
+//	rank.score[symbol] = score
+//}
+//
+//func (rank *Rank) getHighest(settings map[string]*model.Setting) (highest *model.Score) {
+//	rank.lock.Lock()
+//	defer rank.lock.Unlock()
+//	if rank.score == nil {
+//		return nil
+//	}
+//	for symbol := range settings {
+//		if rank.score[symbol] == nil {
+//			return nil
+//		} else {
+//			if highest == nil || highest.Point < rank.score[symbol].Point {
+//				highest = rank.score[symbol]
+//			}
+//		}
+//	}
+//	return highest
+//}
 
 func (rank *Rank) getScore(orderSide, symbol string) (score *model.Score) {
 	rank.lock.Lock()
@@ -107,18 +107,16 @@ var ProcessRank = func(market, symbol string) {
 	}
 	didSmth := false
 	score := calcHighestScore(setting, tick)
-	rank.setScore(symbol, score)
-	highest := rank.getHighest(settings)
-	if highest == nil {
-		return
-	} else if symbol == highest.Symbol {
-		go model.AppDB.Save(&highest)
+	if score.Point > setting.GridAmount {
+		go model.AppDB.Save(&score)
 	}
 	orders := rank.getOrders(symbol)
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
-		if orderScore.Point > highest.Point/2 {
+		if orderScore.Point > setting.GridAmount/4 {
+			util.Notice(fmt.Sprintf(`--- keep old order %s %s %f point %f`,
+				symbol, order.OrderSide, order.Price, orderScore.Point))
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price <= tick.Bids[0].Price) ||
 			(order.OrderSide == model.OrderSideSell && order.Price >= tick.Asks[0].Price) {
@@ -130,29 +128,17 @@ var ProcessRank = func(market, symbol string) {
 		time.Sleep(time.Second)
 		api.RefreshAccount(``, ``, market)
 	} else {
-		if symbol == highest.Symbol {
-			if highest.OrderSide == model.OrderSideBuy {
-				if rightFree/highest.Price < highest.Amount/10 {
-					util.Notice(fmt.Sprintf(`----err1 amount not enough %s %s %f 小于十分之一 %f`,
-						symbol, highest.OrderSide, rightFree/highest.Price, highest.Amount))
-				} else {
-					order := api.PlaceOrder(``, ``, highest.OrderSide, model.OrderTypeLimit, market, symbol,
-						``, setting.AccountType, highest.Price, math.Min(highest.Amount, rightFree/highest.Price))
-					if order.OrderId != `` {
-						newOrders = append(newOrders, order)
-					}
-				}
-			} else if highest.OrderSide == model.OrderSideSell {
-				if leftFree < highest.Amount/10 {
-					util.Notice(fmt.Sprintf(`----err1 amount not enough %s %s %f 小于十分之一 %f`,
-						symbol, highest.OrderSide, rightFree/highest.Price, highest.Amount))
-				} else {
-					order := api.PlaceOrder(``, ``, highest.OrderSide, model.OrderTypeLimit, market, symbol,
-						``, setting.AccountType, highest.Price, math.Min(highest.Amount, leftFree))
-					if order.OrderId != `` {
-						newOrders = append(newOrders, order)
-					}
-				}
+		amount := leftFree
+		if score.OrderSide == model.OrderSideBuy {
+			amount = rightFree / score.Price
+		}
+		if amount < api.GetMinAmount(market, symbol) {
+			util.Notice(fmt.Sprintf(`--- err1 amount not enough %s %s %f`, symbol, score.OrderSide, amount))
+		} else {
+			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
+				``, setting.AccountType, score.Price, math.Min(score.Amount, amount))
+			if order.OrderId != `` {
+				newOrders = append(newOrders, order)
 			}
 		}
 	}
@@ -198,7 +184,9 @@ func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.
 }
 
 func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidAsk) (score *model.Score) {
-	if order.Price < tick.Bids[10].Price || order.Price > tick.Asks[10].Price {
+	if order.Price < tick.Bids[10].Price || order.Price > tick.Asks[10].Price ||
+		(order.OrderSide == model.OrderSideBuy && order.Price > tick.Bids[0].Price) ||
+		(order.OrderSide == model.OrderSideSell && order.Price < tick.Asks[0].Price) {
 		return &model.Score{Point: 0}
 	}
 	coins := strings.Split(setting.Symbol, `_`)
@@ -206,7 +194,7 @@ func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidA
 	rankFt, err := strconv.ParseFloat(setting.FunctionParameter, 10)
 	if err != nil {
 		util.Notice(`rank function parameter err ` + setting.FunctionParameter)
-		return nil
+		return &model.Score{Point: 0}
 	}
 	rankFt = rankFt / 5760
 	score = &model.Score{Symbol: setting.Symbol, OrderSide: order.OrderSide, Price: order.Price, Point: 0}
