@@ -45,6 +45,7 @@ const FunctionGrid = `grid`
 const FunctionMaker = `maker`
 const FunctionCarry = `carry`
 const FunctionHang = `hang`
+const FunctionRank = `rank`
 
 //const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`

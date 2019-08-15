@@ -294,10 +294,12 @@ func Maintain() {
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
 	model.HandlerMap[model.FunctionCarry] = ProcessCarry
 	model.HandlerMap[model.FunctionHang] = ProcessHang
+	model.HandlerMap[model.FunctionRank] = ProcessRank
 	defer model.AppDB.Close()
 	model.AppDB.AutoMigrate(&model.Account{})
 	model.AppDB.AutoMigrate(&model.Setting{})
 	model.AppDB.AutoMigrate(&model.Order{})
+	model.AppDB.AutoMigrate(&model.Score{})
 	model.LoadSettings()
 	go CancelOldMakers(``, ``)
 	go AccountHandlerServe()

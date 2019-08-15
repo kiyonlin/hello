@@ -339,9 +339,9 @@ func getAccountFcoin(key, secret string) (currency []string, account []*model.Ac
 				asset := value.(map[string]interface{})
 				free, _ := strconv.ParseFloat(asset["available"].(string), 64)
 				frozen, _ := strconv.ParseFloat(asset["frozen"].(string), 64)
-				if free == 0 && frozen == 0 {
-					continue
-				}
+				//if free == 0 && frozen == 0 {
+				//	continue
+				//}
 				currency := strings.ToLower(asset["currency"].(string))
 				coins = append(coins, currency)
 				accounts = append(accounts,

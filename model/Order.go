@@ -24,3 +24,11 @@ type Order struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+type Score struct {
+	Symbol    string
+	OrderSide string
+	Point     float64
+	Amount    float64
+	Price     float64
+}
