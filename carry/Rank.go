@@ -111,7 +111,7 @@ var ProcessRank = func(market, symbol string) {
 	highest := rank.getHighest(settings)
 	if highest == nil {
 		return
-	} else {
+	} else if symbol == highest.Symbol {
 		go model.AppDB.Save(&highest)
 	}
 	orders := rank.getOrders(symbol)
