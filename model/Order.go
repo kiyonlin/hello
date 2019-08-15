@@ -31,6 +31,7 @@ type Score struct {
 	Point     float64
 	Amount    float64
 	Price     float64
+	Position  int
 	ID        uint `gorm:"primary_key"`
 	CreatedAt time.Time
 	UpdatedAt time.Time

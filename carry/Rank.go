@@ -169,10 +169,10 @@ func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.
 	}
 	rankFt = rankFt / 5760
 	score = &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideBuy, Amount: tick.Bids[0].Amount,
-		Price: tick.Bids[0].Price, Point: rankFt / (tick.Bids[0].Price * tick.Bids[0].Amount * perUsdt)}
+		Price: tick.Bids[0].Price, Point: rankFt / (tick.Bids[0].Price * tick.Bids[0].Amount * perUsdt), Position: 1}
 	if tick.Bids[0].Amount > tick.Asks[0].Amount {
 		score = &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideSell, Amount: tick.Asks[0].Amount,
-			Price: tick.Asks[0].Price, Point: rankFt / (tick.Asks[0].Price * tick.Asks[0].Amount * perUsdt)}
+			Price: tick.Asks[0].Price, Point: rankFt / (tick.Asks[0].Price * tick.Asks[0].Amount * perUsdt), Position: 1}
 	}
 	score10 := &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideBuy,
 		Amount: tick.Bids[1].Amount, Price: tick.Bids[1].Price}
@@ -181,11 +181,13 @@ func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.
 			score10.OrderSide = model.OrderSideBuy
 			score10.Amount = tick.Bids[i].Amount
 			score10.Price = tick.Bids[i].Price
+			score10.Position = i
 		}
 		if score10.Amount > tick.Asks[i].Amount {
 			score10.OrderSide = model.OrderSideSell
 			score10.Amount = tick.Asks[i].Amount
 			score10.Price = tick.Asks[i].Price
+			score10.Position = i
 		}
 	}
 	score10.Point = rankFt / 10 / (score10.Price * score10.Amount * perUsdt)
