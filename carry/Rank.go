@@ -154,6 +154,21 @@ func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.
 		util.Notice(`rank function parameter err ` + setting.FunctionParameter)
 		return nil
 	}
+	minAmount := api.GetMinAmount(setting.Market, setting.Symbol)
+	for _, value := range tick.Bids {
+		if value.Amount < minAmount {
+			value.Amount += minAmount
+		} else {
+			value.Amount *= 2
+		}
+	}
+	for _, value := range tick.Asks {
+		if value.Amount < minAmount {
+			value.Amount += minAmount
+		} else {
+			value.Amount *= 2
+		}
+	}
 	rankFt = rankFt / 5760
 	score = &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideBuy, Amount: tick.Bids[0].Amount,
 		Price: tick.Bids[0].Price, Point: rankFt / (tick.Bids[0].Price * tick.Bids[0].Amount * perUsdt), Position: 0}
