@@ -138,6 +138,8 @@ var ProcessRank = func(market, symbol string) {
 				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
 					``, setting.AccountType, score.Price, math.Max(minAmount, math.Min(score.Amount, amount)))
 				if order.OrderId != `` {
+					order.Function = model.FunctionRank
+					model.AppDB.Save(&order)
 					newOrders = append(newOrders, order)
 					time.Sleep(time.Second)
 					api.RefreshAccount(``, ``, market)
