@@ -112,7 +112,7 @@ var ProcessRank = func(market, symbol string) {
 		orderScore := calcOrderScore(order, setting, tick)
 		util.Notice(fmt.Sprintf(`--- keep old order %s %s %f point %f %v`,
 			symbol, order.OrderSide, order.Price, orderScore.Point, orderScore.Point > setting.GridAmount/4))
-		if orderScore.Point > setting.GridAmount/4 {
+		if orderScore.Point > setting.GridAmount/10 {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price <= tick.Bids[0].Price) ||
 			(order.OrderSide == model.OrderSideSell && order.Price >= tick.Asks[0].Price) {
