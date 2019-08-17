@@ -110,8 +110,8 @@ var ProcessRank = func(market, symbol string) {
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
-		util.Notice(fmt.Sprintf(`--- keep old order %s %s %f point %f %v`,
-			symbol, order.OrderSide, order.Price, orderScore.Point, orderScore.Point > setting.GridAmount/4))
+		//util.Notice(fmt.Sprintf(`--- keep old order %s %s %f point %f %v`,
+		//	symbol, order.OrderSide, order.Price, orderScore.Point, orderScore.Point > setting.GridAmount/4))
 		if orderScore.Point > 0.001 {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price <= tick.Bids[0].Price) ||
@@ -138,14 +138,19 @@ var ProcessRank = func(market, symbol string) {
 			if amount < minAmount {
 				util.Notice(fmt.Sprintf(`--- err1 amount not enough %s %s %f`, symbol, score.OrderSide, amount))
 			} else {
+				amount = math.Max(minAmount, math.Min(score.Amount, amount))
 				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
-					``, setting.AccountType, score.Price, math.Max(minAmount, math.Min(score.Amount, amount)))
+					``, setting.AccountType, score.Price, amount)
 				if order.OrderId != `` {
 					order.Function = model.FunctionRank
 					model.AppDB.Save(&order)
 					newOrders = append(newOrders, order)
 					account := model.AppAccounts.GetAccount(market, currency)
-					account.Free -= amount
+					if score.OrderSide == model.OrderSideSell {
+						account.Free -= amount
+					} else {
+						account.Free -= amount * score.Price
+					}
 					model.AppAccounts.SetAccount(market, currency, account)
 				}
 			}
