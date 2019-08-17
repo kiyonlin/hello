@@ -67,8 +67,6 @@ var AppPause = false
 //var CarryChannel = make(chan Carry, 50)
 //var InnerCarryChannel = make(chan Carry, 50)
 var AccountChannel = make(chan map[string]*Account, 50)
-var CurrencyPrice = make(map[string]float64)
-var GetBuyPriceTime = make(map[string]int64)
 
 type Config struct {
 	lock            sync.Mutex
@@ -112,9 +110,10 @@ type Config struct {
 	HandleMaker     string
 	HandleRefresh   string
 	HandleGrid      string
-	RefreshSeparate string // 1:分开下单 0:多线程同时下单
 	Mail            string
 	Port            string
+	SymbolPrice     map[string]float64 // symbol - price
+	UpdatePriceTime map[string]int64   // symbol -time
 }
 
 var dictMap = map[string]map[string]string{ // market - union name - market name
@@ -371,6 +370,8 @@ func NewConfig() {
 	AppConfig.MarketCost[Coinpark] = 0
 	AppConfig.MarketCost[Coinbig] = 0
 	AppConfig.MarketCost[Bitmex] = 0.0005
+	AppConfig.SymbolPrice = make(map[string]float64)
+	AppConfig.UpdatePriceTime = make(map[string]int64)
 }
 
 func GetAccountInfoSubscribe(marketName string) []interface{} {
@@ -382,6 +383,18 @@ func GetAccountInfoSubscribe(marketName string) []interface{} {
 		return result
 	}
 	return nil
+}
+
+func (config *Config) SetSymbolPrice(symbol string, price float64) {
+	config.lock.Lock()
+	defer config.lock.Unlock()
+	config.SymbolPrice[symbol] = price
+}
+
+func (config *Config) SetUpdatePriceTime(symbol string, updateTime int64) {
+	config.lock.Lock()
+	defer config.lock.Unlock()
+	config.UpdatePriceTime[symbol] = updateTime
 }
 
 func (config *Config) ToString() string {
@@ -398,7 +411,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
 		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
 	str += fmt.Sprintf("orderwait: %d amountrate: %f\n", config.OrderWait, config.AmountRate)
-	str += fmt.Sprintf("between: %d refreshseparate:%s \n", config.Between, config.RefreshSeparate)
+	str += fmt.Sprintf("between: %d \n", config.Between)
 	return str
 }
 

@@ -363,7 +363,7 @@ func getAccountFcoin(key, secret string) (currency []string, account []*model.Ac
 }
 
 func getBuyPriceFcoin(key, secret, symbol string) (buy float64, err error) {
-	model.CurrencyPrice[symbol] = 0
+	model.AppConfig.SetSymbolPrice(symbol, 0)
 	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	responseBody := SignedRequestFcoin(key, secret, `GET`, `/market/ticker/`+requestSymbol, nil)
 	orderJson, err := util.NewJSON([]byte(responseBody))
@@ -371,8 +371,9 @@ func getBuyPriceFcoin(key, secret, symbol string) (buy float64, err error) {
 		orderJson = orderJson.Get(`data`)
 		tickerType, _ := orderJson.Get(`type`).String()
 		if strings.Contains(tickerType, requestSymbol) {
-			model.CurrencyPrice[symbol], _ = orderJson.Get("ticker").GetIndex(0).Float64()
+			price, _ := orderJson.Get("ticker").GetIndex(0).Float64()
+			model.AppConfig.SetSymbolPrice(symbol, price)
 		}
 	}
-	return model.CurrencyPrice[symbol], nil
+	return model.AppConfig.SymbolPrice[symbol], nil
 }

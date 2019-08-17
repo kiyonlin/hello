@@ -389,10 +389,11 @@ func GetPrice(key, secret, symbol string) (buy float64, err error) {
 	if result {
 		return price, nil
 	}
-	if model.GetBuyPriceTime[symbol] != 0 && util.GetNowUnixMillion()-model.GetBuyPriceTime[symbol] < 3600000 {
-		return model.CurrencyPrice[symbol], nil
+	if model.AppConfig.UpdatePriceTime[symbol] != 0 &&
+		util.GetNowUnixMillion()-model.AppConfig.UpdatePriceTime[symbol] < 3600000 {
+		return model.AppConfig.SymbolPrice[symbol], nil
 	}
-	model.GetBuyPriceTime[symbol] = util.GetNowUnixMillion()
+	model.AppConfig.SetUpdatePriceTime(symbol, util.GetNowUnixMillion())
 	if strs[0] == `BIX` || strs[1] == `BIX` || strs[0] == `CP` || strs[1] == `CP` {
 		return getBuyPriceCoinpark(symbol)
 	}

@@ -294,7 +294,7 @@ func getAccountOkex(accounts *model.Accounts) {
 
 //getBuyPriceOkex
 func _(symbol string) (buy float64, err error) {
-	model.CurrencyPrice[symbol] = 0
+	model.AppConfig.SetSymbolPrice(symbol, 0)
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("GET", model.AppConfig.RestUrls[model.OKEX]+
@@ -302,12 +302,13 @@ func _(symbol string) (buy float64, err error) {
 	tickerJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()
-		model.CurrencyPrice[symbol], err = strconv.ParseFloat(strBuy, 64)
+		price, _ := strconv.ParseFloat(strBuy, 64)
+		model.AppConfig.SetSymbolPrice(symbol, price)
 	}
-	return model.CurrencyPrice[symbol], err
+	return model.AppConfig.SymbolPrice[symbol], err
 }
 
-func GetKLineOkex(symbol, timeSlot string, size int64) []*model.KLinePoint {
+func _(symbol, timeSlot string, size int64) []*model.KLinePoint {
 	postData := url.Values{}
 	postData.Set(`symbol`, symbol)
 	postData.Set(`type`, timeSlot)

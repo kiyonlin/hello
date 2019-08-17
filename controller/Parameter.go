@@ -350,10 +350,6 @@ func SetParameters(c *gin.Context) {
 	if handleGrid != `` {
 		model.AppConfig.HandleGrid = handleGrid
 	}
-	refreshSeparate := c.Query(`refreshseparate`)
-	if len(refreshSeparate) > 0 {
-		model.AppConfig.RefreshSeparate = refreshSeparate
-	}
 	between := c.Query(`between`)
 	if len(between) > 0 {
 		model.AppConfig.Between, _ = strconv.ParseInt(between, 10, 64)
