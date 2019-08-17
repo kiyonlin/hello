@@ -146,12 +146,17 @@ var ProcessRank = func(market, symbol string) {
 					model.AppDB.Save(&order)
 					newOrders = append(newOrders, order)
 					account := model.AppAccounts.GetAccount(market, currency)
-					if score.OrderSide == model.OrderSideSell {
-						account.Free -= amount
+					if account != nil {
+						if score.OrderSide == model.OrderSideSell {
+							account.Free -= amount
+						} else {
+							account.Free -= amount * score.Price
+						}
+						model.AppAccounts.SetAccount(market, currency, account)
 					} else {
-						account.Free -= amount * score.Price
+						time.Sleep(time.Second)
+						api.RefreshAccount(``, ``, market)
 					}
-					model.AppAccounts.SetAccount(market, currency, account)
 				}
 			}
 		}
