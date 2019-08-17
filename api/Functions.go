@@ -17,16 +17,24 @@ func GetMinAmount(market, symbol string) float64 {
 		switch symbol {
 		case `btc_usdt`, `btc_pax`, `btc_tusd`, `btc_usdc`:
 			return 0.005
-		case `eth_usdt`, `eth_pax`, `eth_usdc`, `eth_btc`:
+		case `eth_usdt`, `eth_pax`, `eth_usdc`, `eth_btc`, `dash_usdt`, `dash_btc`, `dash_eth`, `bsv_usdt`, `bsv_btc`,
+			`bch_usdt`, `bch_btc`:
 			return 0.05
-		case `eos_usdt`, `eos_pax`, `eos_usdc`, `eos_btc`, `eos_eth`:
-			return 1
-		case `ltc_usdt`, `ltc_pax`, `ltc_usdc`, `ltc_btc`, `ltc_eth`:
+		case `ltc_usdt`, `ltc_pax`, `ltc_usdc`, `ltc_btc`, `ltc_eth`, `zec_usdt`, `zec_btc`, `zec_eth`:
 			return 0.1
-		case `xrp_usdt`, `xrp_btc`, `xrp_eth`:
+		case `eos_usdt`, `eos_pax`, `eos_usdc`, `eos_btc`, `eos_eth`, `etc_usdt`, `etc_btc`, `etc_eth`, `pax_usdt`,
+			`tusd_usdt`, `usdc_usdt`, `gusd_usdt`:
+			return 1
+		case `xrp_usdt`, `xrp_btc`, `xrp_eth`, `ft_usdt`, `ft_pax`, `fmex_usdt`:
 			return 10
-		case `bch_usdt`, `bch_btc`:
-			return 0.05
+		case `iota_usdt`, `iota_btc`, `iota_eth`:
+			return 20
+		case `xlm_usdt`, `xlm_btc`, `xlm_eth`:
+			return 50
+		case `ada_usdt`, `ada_btc`, `ada_eth`:
+			return 100
+		case `trx_usdt`, `trx_btc`, `trx_eth`:
+			return 200
 		}
 	}
 	return 0
@@ -44,15 +52,17 @@ func GetPriceDecimal(market, symbol string) int {
 			return 2
 		case `eos_usdt`, `eos_pax`, `eos_usdc`, `etc_usdt`:
 			return 3
-		case `ft_usdt`, `xrp_usdt`, `iota_usdt`, `ltc_eth`, `xlm_usdt`, `fmex_usdt`:
+		case `ft_usdt`, `xrp_usdt`, `iota_usdt`, `ltc_eth`, `xlm_usdt`, `fmex_usdt`, `pax_usdt`, `tusd_usdt`,
+			`usdc_usdt`, `gusd_usdt`, `ft_pax`:
 			return 4
-		case `eth_btc`, `eos_eth`, `ltc_btc`, `bch_btc`, `etc_eth`, `zec_btc`, `trx_usdt`:
+		case `eth_btc`, `eos_eth`, `ltc_btc`, `bch_btc`, `etc_eth`, `zec_btc`, `trx_usdt`, `ada_usdt`, `dash_btc`,
+			`bsv_btc`:
 			return 5
-		case `etc_btc`, `xrp_eth`, `iota_eth`:
+		case `etc_btc`, `xrp_eth`, `iota_eth`, `xlm_eth`, `zec_eth`, `dash_eth`:
 			return 6
-		case `eos_btc`:
+		case `eos_btc`, `ada_eth`:
 			return 7
-		case `ft_btc`, `xrp_btc`, `iota_btc`, `ft_eth`:
+		case `ft_btc`, `xrp_btc`, `iota_btc`, `ft_eth`, `trx_btc`, `trx_eth`, `xlm_btc`, `ada_btc`:
 			return 8
 		}
 	case model.Coinpark:
@@ -78,11 +88,13 @@ func GetAmountDecimal(market, symbol string) int {
 		switch symbol {
 		case `xrp_btc`, `xrp_eth`, `iota_btc`, `iota_eth`:
 			return 0
-		case `eos_btc`, `xrp_usdt`, `eos_eth`, `iota_usdt`, `ft_usdt`, `ft_btc`, `ft_eth`, `trx_usdt`, `fmex_usdt`:
+		case `eos_btc`, `xrp_usdt`, `eos_eth`, `iota_usdt`, `ft_usdt`, `ft_btc`, `ft_eth`, `trx_usdt`, `fmex_usdt`,
+			`trx_btc`, `trx_eth`, `xlm_btc`, `ada_btc`, `ft_pax`:
 			return 2
 		case `btc_usdt`, `btc_pax`, `,btc_tusd`, `btc_usdc`, `eos_usdt`, `eth_btc`, `eth_usdt`, `ltc_usdt`, `ltc_btc`,
-			`ltc_eth`, `eth_pax`, `eth_usdc`, `eos_pax`, `eos_usdc`, `ltc_pax`, `ltc_usdc`,
-			`etc_usdt`, `etc_btc`, `etc_eth`, `bch_btc`, `bch_usdt`, `bsv_usdt`, `zec_usdt`, `xlm_usdt`:
+			`ltc_eth`, `eth_pax`, `eth_usdc`, `eos_pax`, `eos_usdc`, `ltc_pax`, `ltc_usdc`, `xlm_eth`, `zec_eth`,
+			`etc_usdt`, `etc_btc`, `etc_eth`, `bch_btc`, `bch_usdt`, `bsv_usdt`, `zec_usdt`, `xlm_usdt`, `ada_usdt`,
+			`ada_eth`, `dash_usdt`, `dash_btc`, `dash_eth`, `bsv_btc`, `pax_usdt`, `tusd_usdt`, `usdc_usdt`, `gusd_usdt`:
 			return 4
 		}
 	}
