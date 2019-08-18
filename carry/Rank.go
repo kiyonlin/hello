@@ -125,7 +125,8 @@ var ProcessRank = func(market, symbol string) {
 		api.RefreshAccount(``, ``, market)
 	} else {
 		score := calcHighestScore(setting, tick)
-		if score.Point > setting.GridAmount {
+		if (score.OrderSide == model.OrderSideBuy && score.Point > setting.GridAmount) ||
+			(score.OrderSide == model.OrderSideSell && score.Point > setting.GridAmount/2) {
 			go model.AppDB.Save(&score)
 			minAmount := api.GetMinAmount(market, symbol)
 			amount := leftFree
