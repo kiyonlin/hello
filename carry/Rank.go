@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 var rank = &Rank{}
@@ -101,17 +100,11 @@ var ProcessRank = func(market, symbol string) {
 	if setting == nil || settings == nil {
 		return
 	}
-	leftFree, rightFree, _, _, err := getBalance(key, secret, market, symbol, setting.AccountType)
-	if err != nil {
-		return
-	}
 	didSmth := false
 	orders := rank.getOrders(symbol)
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
-		//util.Notice(fmt.Sprintf(`--- keep old order %s %s %f point %f %v`,
-		//	symbol, order.OrderSide, order.Price, orderScore.Point, orderScore.Point > setting.GridAmount/4))
 		if orderScore.Point > 0.001 {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price <= tick.Bids[0].Price) ||
@@ -120,10 +113,7 @@ var ProcessRank = func(market, symbol string) {
 			didSmth = true
 		}
 	}
-	if didSmth {
-		time.Sleep(time.Second)
-		api.RefreshAccount(``, ``, market)
-	} else {
+	if !didSmth {
 		score := calcHighestScore(setting, tick)
 		pointLine := setting.GridAmount
 		if score.OrderSide == model.OrderSideSell {
@@ -139,37 +129,15 @@ var ProcessRank = func(market, symbol string) {
 		}
 		if score.Point > pointLine {
 			go model.AppDB.Save(&score)
-			minAmount := api.GetMinAmount(market, symbol)
-			amount := leftFree
-			coins := strings.Split(symbol, `_`)
-			currency := coins[0]
-			if score.OrderSide == model.OrderSideBuy {
-				amount = rightFree / score.Price
-				currency = coins[1]
-			}
-			if amount < minAmount {
-				util.Notice(fmt.Sprintf(`--- err1 amount not enough %s %s %f`, symbol, score.OrderSide, amount))
-			} else {
-				amount = math.Max(minAmount, math.Min(score.Amount, amount))
-				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
-					``, setting.AccountType, score.Price, amount)
-				if order.OrderId != `` {
-					order.Function = model.FunctionRank
-					model.AppDB.Save(&order)
-					newOrders = append(newOrders, order)
-					account := model.AppAccounts.GetAccount(market, currency)
-					if account != nil {
-						if score.OrderSide == model.OrderSideSell {
-							account.Free -= amount
-						} else {
-							account.Free -= amount * score.Price
-						}
-						model.AppAccounts.SetAccount(market, currency, account)
-					} else {
-						time.Sleep(time.Second)
-						api.RefreshAccount(``, ``, market)
-					}
-				}
+			score.Amount = math.Max(api.GetMinAmount(market, symbol), score.Amount)
+			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
+				``, setting.AccountType, score.Price, score.Amount)
+			if order.OrderId != `` {
+				order.Function = model.FunctionRank
+				model.AppDB.Save(&order)
+				newOrders = append(newOrders, order)
+			} else if order.ErrCode == `1016` {
+				util.Notice(fmt.Sprintf(`--- coin not enough %s %s < %f`, symbol, score.OrderSide, score.Amount))
 			}
 		}
 	}
