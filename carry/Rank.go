@@ -126,7 +126,12 @@ var ProcessRank = func(market, symbol string) {
 				model.AppDB.Save(&order)
 				newOrders = append(newOrders, order)
 			} else if order.ErrCode == `1016` {
-				util.Notice(fmt.Sprintf(`--- coin not enough %s %s < %f`, symbol, score.OrderSide, score.Amount))
+				coins := strings.Split(symbol, `_`)
+				if score.OrderSide == model.OrderSideBuy {
+					util.Info(fmt.Sprintf(`%s not enough < %f %s`, coins[1], score.Amount, symbol))
+				} else {
+					util.Info(fmt.Sprintf(`%s not enough < %f %s`, coins[0], score.Amount, symbol))
+				}
 			}
 		}
 	}
