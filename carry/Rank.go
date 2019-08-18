@@ -125,8 +125,19 @@ var ProcessRank = func(market, symbol string) {
 		api.RefreshAccount(``, ``, market)
 	} else {
 		score := calcHighestScore(setting, tick)
-		if (score.OrderSide == model.OrderSideBuy && score.Point > setting.GridAmount) ||
-			(score.OrderSide == model.OrderSideSell && score.Point > setting.GridAmount/2) {
+		pointLine := setting.GridAmount
+		if score.OrderSide == model.OrderSideSell {
+			if strings.Contains(symbol, `_eth`) {
+				pointLine *= 0.9
+			} else if strings.Contains(symbol, `_btc`) {
+				pointLine *= 0.8
+			} else if strings.Contains(symbol, `_pax`) {
+				pointLine *= 0.7
+			} else if strings.Contains(symbol, `_usdt`) {
+				pointLine *= 0.6
+			}
+		}
+		if score.Point > pointLine {
 			go model.AppDB.Save(&score)
 			minAmount := api.GetMinAmount(market, symbol)
 			amount := leftFree
