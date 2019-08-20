@@ -116,24 +116,26 @@ var ProcessRank = func(market, symbol string) {
 			didSmth = true
 		}
 	}
-	if !didSmth && model.AppConfig.FcoinKey != `` {
+	if !didSmth {
 		score := calcHighestScore(setting, tick)
 		if (score.OrderSide == model.OrderSideBuy && score.Point > setting.OpenShortMargin) ||
 			(score.OrderSide == model.OrderSideSell && score.Point > setting.CloseShortMargin) {
 			go model.AppDB.Save(&score)
-			score.Amount = math.Max(api.GetMinAmount(market, symbol), score.Amount)
-			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
-				``, setting.AccountType, score.Price, score.Amount)
-			if order.OrderId != `` {
-				order.Function = model.FunctionRank
-				model.AppDB.Save(&order)
-				newOrders = append(newOrders, order)
-			} else if order.ErrCode == `1016` {
-				coins := strings.Split(symbol, `_`)
-				if score.OrderSide == model.OrderSideBuy {
-					util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[1], score.Point, symbol, score.Amount))
-				} else {
-					util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[0], score.Point, symbol, score.Amount))
+			if model.AppConfig.FcoinKey != `` {
+				score.Amount = math.Max(api.GetMinAmount(market, symbol), score.Amount)
+				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
+					``, setting.AccountType, score.Price, score.Amount)
+				if order.OrderId != `` {
+					order.Function = model.FunctionRank
+					model.AppDB.Save(&order)
+					newOrders = append(newOrders, order)
+				} else if order.ErrCode == `1016` {
+					coins := strings.Split(symbol, `_`)
+					if score.OrderSide == model.OrderSideBuy {
+						util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[1], score.Point, symbol, score.Amount))
+					} else {
+						util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[0], score.Point, symbol, score.Amount))
+					}
 				}
 			}
 		}
