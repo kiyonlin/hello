@@ -116,7 +116,7 @@ var ProcessRank = func(market, symbol string) {
 			didSmth = true
 		}
 	}
-	if !didSmth {
+	if !didSmth && model.AppConfig.FcoinKey != `` {
 		score := calcHighestScore(setting, tick)
 		if (score.OrderSide == model.OrderSideBuy && score.Point > setting.OpenShortMargin) ||
 			(score.OrderSide == model.OrderSideSell && score.Point > setting.CloseShortMargin) {
