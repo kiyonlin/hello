@@ -95,6 +95,9 @@ var ProcessRank = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	checkDistance := priceDistance / 10
+	completeTick(market, symbol, tick, priceDistance, checkDistance)
 	settings := model.GetFunctionMarketSettings(model.FunctionRank, market)
 	setting := model.GetSetting(model.FunctionRank, market, symbol)
 	if setting == nil || settings == nil {
@@ -107,8 +110,8 @@ var ProcessRank = func(market, symbol string) {
 		orderScore := calcOrderScore(order, setting, tick)
 		if orderScore.Point > 0.001 {
 			newOrders = append(newOrders, order)
-		} else if (order.OrderSide == model.OrderSideBuy && order.Price <= tick.Bids[0].Price) ||
-			(order.OrderSide == model.OrderSideSell && order.Price >= tick.Asks[0].Price) {
+		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
+			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
 			api.MustCancel(``, ``, market, symbol, order.OrderId, false)
 			didSmth = true
 		}
@@ -128,14 +131,44 @@ var ProcessRank = func(market, symbol string) {
 			} else if order.ErrCode == `1016` {
 				coins := strings.Split(symbol, `_`)
 				if score.OrderSide == model.OrderSideBuy {
-					util.Info(fmt.Sprintf(`%s not enough < %f %s`, coins[1], score.Amount, symbol))
+					util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[1], score.Point, symbol, score.Amount))
 				} else {
-					util.Info(fmt.Sprintf(`%s not enough < %f %s`, coins[0], score.Amount, symbol))
+					util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[0], score.Point, symbol, score.Amount))
 				}
 			}
 		}
 	}
 	rank.setOrders(symbol, newOrders)
+}
+
+func completeTick(market, symbol string, tick *model.BidAsk, priceDistance, checkDistance float64) {
+	newBids := make([]model.Tick, 11)
+	newAsks := make([]model.Tick, 11)
+	basePrice := tick.Bids[0].Price
+	for i := 0; i < 11; i++ {
+		askPrice, _ := util.FormatNum(basePrice+priceDistance*float64(i+1), api.GetPriceDecimal(market, symbol))
+		bidPrice, _ := util.FormatNum(basePrice-priceDistance*float64(i), api.GetPriceDecimal(market, symbol))
+		newAsks[i] = model.Tick{Symbol: symbol, Price: askPrice, Amount: 0}
+		newBids[i] = model.Tick{Symbol: symbol, Price: bidPrice, Amount: 0}
+	}
+	posBid := 0
+	posAsk := 0
+	for i := 0; i < 11; i++ {
+		for ; posBid < 11; posBid++ {
+			if math.Abs(tick.Bids[posBid].Price-newBids[i].Price) < checkDistance {
+				newBids[i].Amount = tick.Bids[posBid].Amount
+				break
+			}
+		}
+		for ; posAsk < 11; posAsk++ {
+			if math.Abs(tick.Asks[posAsk].Price-newAsks[i].Price) < checkDistance {
+				newAsks[i].Amount = tick.Asks[posAsk].Amount
+				break
+			}
+		}
+	}
+	tick.Asks = newAsks
+	tick.Bids = newBids
 }
 
 func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.Score) {
