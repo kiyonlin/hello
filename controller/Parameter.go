@@ -312,6 +312,12 @@ func GetParameters(c *gin.Context) {
 
 func RefreshParameters(c *gin.Context) {
 	model.LoadSettings()
+	for _, market := range model.GetMarkets() {
+		channel := model.AppMarkets.GetDepthChan(market, 0)
+		if channel != nil {
+			carry.ResetChannel(market, channel)
+		}
+	}
 	c.String(http.StatusOK, model.AppConfig.ToString())
 }
 

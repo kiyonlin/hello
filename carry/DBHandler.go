@@ -251,6 +251,20 @@ func createMarketDepthServer(markets *model.Markets, market string) chan struct{
 
 var socketMaintaining = false
 
+func ResetChannel(market string, channel chan struct{}) {
+	model.AppPause = true
+	model.AppMarkets.PutDepthChan(market, 0, nil)
+	symbols := model.GetMarketSymbols(market)
+	for symbol := range symbols {
+		go CancelRefreshHang(key, secret, symbol, RefreshTypeGrid)
+	}
+	channel <- struct{}{}
+	close(channel)
+	model.AppMarkets.PutDepthChan(market, 0, createMarketDepthServer(model.AppMarkets, market))
+	model.AppPause = false
+	util.Notice(market + " reset depth channel ")
+}
+
 func MaintainMarketChan() {
 	if socketMaintaining {
 		return
@@ -263,17 +277,7 @@ func MaintainMarketChan() {
 			util.Notice(market + " create new depth channel ")
 		} else {
 			if model.AppMarkets.RequireDepthChanReset(market) {
-				model.AppPause = true
-				model.AppMarkets.PutDepthChan(market, 0, nil)
-				symbols := model.GetMarketSymbols(market)
-				for symbol := range symbols {
-					go CancelRefreshHang(key, secret, symbol, RefreshTypeGrid)
-				}
-				channel <- struct{}{}
-				close(channel)
-				model.AppMarkets.PutDepthChan(market, 0, createMarketDepthServer(model.AppMarkets, market))
-				model.AppPause = false
-				util.Notice(market + " reset depth channel ")
+				ResetChannel(market, channel)
 			}
 		}
 	}
