@@ -9,8 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
+var recalcRankTime = util.GetNowUnixMillion()
 var rank = &Rank{}
 
 type Rank struct {
@@ -23,33 +25,6 @@ type Rank struct {
 func (rank *Rank) setRanking(value bool) {
 	rank.ranking = value
 }
-
-//func (rank *Rank) setScore(symbol string, score *model.Score) {
-//	rank.lock.Lock()
-//	defer rank.lock.Unlock()
-//	if rank.score == nil {
-//		rank.score = make(map[string]*model.Score)
-//	}
-//	rank.score[symbol] = score
-//}
-//
-//func (rank *Rank) getHighest(settings map[string]*model.Setting) (highest *model.Score) {
-//	rank.lock.Lock()
-//	defer rank.lock.Unlock()
-//	if rank.score == nil {
-//		return nil
-//	}
-//	for symbol := range settings {
-//		if rank.score[symbol] == nil {
-//			return nil
-//		} else {
-//			if highest == nil || highest.Point < rank.score[symbol].Point {
-//				highest = rank.score[symbol]
-//			}
-//		}
-//	}
-//	return highest
-//}
 
 func (rank *Rank) getScore(orderSide, symbol string) (score *model.Score) {
 	rank.lock.Lock()
@@ -141,6 +116,19 @@ var ProcessRank = func(market, symbol string) {
 		}
 	}
 	rank.setOrders(symbol, newOrders)
+	if util.GetNowUnixMillion()-recalcRankTime > 600000 {
+		time.Sleep(time.Second * 2)
+		api.RefreshAccount(``, ``, market)
+		recalcRankTime = util.GetNowUnixMillion()
+		settings := recalcRankLine(market)
+		for _, setting := range settings {
+			model.AppDB.Model(&setting).Where(`function=? and market=? and symbol=?`,
+				model.FunctionRank, setting.Market, setting.Symbol).
+				Updates(model.Setting{OpenShortMargin: setting.OpenShortMargin,
+					CloseShortMargin: setting.CloseShortMargin})
+		}
+		model.LoadSettings()
+	}
 }
 
 func completeTick(market, symbol string, tick *model.BidAsk, priceDistance, checkDistance float64) {
@@ -262,4 +250,57 @@ func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidA
 		}
 	}
 	return score
+}
+
+func recalcRankLine(market string) (settings map[string]*model.Setting) {
+	pointInall := 0.0
+	pointInallNew := 0.0
+	maxValue := 0.0
+	minValue := 0.0
+	maxCoin := ``
+	minCoin := ``
+	settings = model.GetFunctionMarketSettings(model.FunctionRank, market)
+	coinCount := make(map[string]float64)
+	for symbol, setting := range settings {
+		coins := strings.Split(symbol, `_`)
+		coinCount[coins[0]] = coinCount[coins[0]] + 1/(1+coinCount[coins[0]])
+		coinCount[coins[1]] = coinCount[coins[1]] + 1/(1+coinCount[coins[1]])
+		pointInall = pointInall + setting.OpenShortMargin + setting.CloseShortMargin
+	}
+	for key, value := range coinCount {
+		account := model.AppAccounts.GetAccount(market, key)
+		if account != nil && value > 0 {
+			price, _ := api.GetPrice(``, ``, key+`_usdt`)
+			coinCount[key] = account.Free * price / value
+		}
+	}
+	for key, value := range coinCount {
+		if value > maxValue {
+			maxValue = value
+			maxCoin = key
+		}
+		if value < minValue || minValue == 0 {
+			minValue = value
+			minCoin = key
+		}
+	}
+	for symbol, setting := range settings {
+		coins := strings.Split(symbol, `_`)
+		if coins[0] == minCoin {
+			setting.OpenShortMargin *= 0.9
+		} else if coins[0] == maxCoin {
+			setting.OpenShortMargin *= 1.1
+		}
+		if coins[1] == minCoin {
+			setting.CloseShortMargin *= 0.9
+		} else if coins[1] == maxCoin {
+			setting.CloseShortMargin *= 1.1
+		}
+		pointInallNew = pointInallNew + setting.OpenShortMargin + setting.CloseShortMargin
+	}
+	for _, setting := range settings {
+		setting.OpenShortMargin *= pointInallNew / pointInall
+		setting.CloseShortMargin *= pointInallNew / pointInall
+	}
+	return settings
 }
