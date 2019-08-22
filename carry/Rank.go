@@ -14,7 +14,7 @@ import (
 
 var recalcRankTime = util.GetNowUnixMillion()
 var rank = &Rank{}
-var minPoint = 0.001
+var minPoint = 0.0001
 
 type Rank struct {
 	lock sync.Mutex
@@ -282,20 +282,20 @@ func recalcRankLine(market string) (settings map[string]*model.Setting) {
 	}
 	for symbol, setting := range settings {
 		coins := strings.Split(symbol, `_`)
-		if setting.OpenShortMargin > minPoint && setting.CloseShortMargin > minPoint {
+		if setting.OpenShortMargin > 2*minPoint && setting.CloseShortMargin > 2*minPoint {
 			if coins[0] == minCoin {
-				setting.OpenShortMargin -= minPoint / 10
-				setting.CloseShortMargin += minPoint / 10
+				setting.OpenShortMargin -= minPoint
+				setting.CloseShortMargin += minPoint
 			} else if coins[0] == maxCoin {
-				setting.OpenShortMargin += minPoint / 10
-				setting.CloseShortMargin -= minPoint / 10
+				setting.OpenShortMargin += minPoint
+				setting.CloseShortMargin -= minPoint
 			}
 			if coins[1] == minCoin {
-				setting.OpenShortMargin += minPoint / 10
-				setting.CloseShortMargin -= minPoint / 10
+				setting.OpenShortMargin += minPoint
+				setting.CloseShortMargin -= minPoint
 			} else if coins[1] == maxCoin {
-				setting.OpenShortMargin -= minPoint / 10
-				setting.CloseShortMargin += minPoint / 10
+				setting.OpenShortMargin -= minPoint
+				setting.CloseShortMargin += minPoint
 			}
 		}
 	}
