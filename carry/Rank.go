@@ -284,18 +284,18 @@ func recalcRankLine(market string) (settings map[string]*model.Setting) {
 		coins := strings.Split(symbol, `_`)
 		if setting.OpenShortMargin > 2*minPoint && setting.CloseShortMargin > 2*minPoint {
 			if coins[0] == minCoin {
-				setting.OpenShortMargin -= minPoint
-				setting.CloseShortMargin += minPoint
+				setting.OpenShortMargin -= setting.Chance
+				setting.CloseShortMargin += setting.Chance
 			} else if coins[0] == maxCoin {
-				setting.OpenShortMargin += minPoint
-				setting.CloseShortMargin -= minPoint
+				setting.OpenShortMargin += setting.Chance
+				setting.CloseShortMargin -= setting.Chance
 			}
 			if coins[1] == minCoin {
-				setting.OpenShortMargin += minPoint
-				setting.CloseShortMargin -= minPoint
+				setting.OpenShortMargin += setting.Chance
+				setting.CloseShortMargin -= setting.Chance
 			} else if coins[1] == maxCoin {
-				setting.OpenShortMargin -= minPoint
-				setting.CloseShortMargin += minPoint
+				setting.OpenShortMargin -= setting.Chance
+				setting.CloseShortMargin += setting.Chance
 			}
 		}
 	}
