@@ -282,7 +282,7 @@ func recalcRankLine(market string) (settings map[string]*model.Setting) {
 	}
 	for symbol, setting := range settings {
 		coins := strings.Split(symbol, `_`)
-		if setting.OpenShortMargin > 2*minPoint && setting.CloseShortMargin > 2*minPoint {
+		if setting.OpenShortMargin > setting.Chance+minPoint && setting.CloseShortMargin > setting.Chance+minPoint {
 			if coins[0] == minCoin {
 				setting.OpenShortMargin -= setting.Chance
 				setting.CloseShortMargin += setting.Chance
