@@ -14,6 +14,7 @@ import (
 
 var recalcRankTime = util.GetNowUnixMillion()
 var rank = &Rank{}
+var minPoint = 0.001
 
 type Rank struct {
 	lock    sync.Mutex
@@ -83,7 +84,7 @@ var ProcessRank = func(market, symbol string) {
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
-		if orderScore.Point > 0.001 {
+		if orderScore.Point > minPoint {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
@@ -127,7 +128,6 @@ var ProcessRank = func(market, symbol string) {
 				Updates(model.Setting{OpenShortMargin: setting.OpenShortMargin,
 					CloseShortMargin: setting.CloseShortMargin})
 		}
-		model.LoadSettings()
 	}
 }
 
@@ -253,19 +253,16 @@ func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidA
 }
 
 func recalcRankLine(market string) (settings map[string]*model.Setting) {
-	pointInall := 0.0
-	pointInallNew := 0.0
 	maxValue := 0.0
 	minValue := 0.0
 	maxCoin := ``
 	minCoin := ``
 	settings = model.GetFunctionMarketSettings(model.FunctionRank, market)
 	coinCount := make(map[string]float64)
-	for symbol, setting := range settings {
+	for symbol := range settings {
 		coins := strings.Split(symbol, `_`)
 		coinCount[coins[0]] = coinCount[coins[0]] + 1/(1+coinCount[coins[0]])
 		coinCount[coins[1]] = coinCount[coins[1]] + 1/(1+coinCount[coins[1]])
-		pointInall = pointInall + setting.OpenShortMargin + setting.CloseShortMargin
 	}
 	for key, value := range coinCount {
 		account := model.AppAccounts.GetAccount(market, key)
@@ -287,20 +284,19 @@ func recalcRankLine(market string) (settings map[string]*model.Setting) {
 	for symbol, setting := range settings {
 		coins := strings.Split(symbol, `_`)
 		if coins[0] == minCoin {
-			setting.OpenShortMargin *= 0.9
+			setting.OpenShortMargin -= minPoint
+			setting.CloseShortMargin += minPoint
 		} else if coins[0] == maxCoin {
-			setting.OpenShortMargin *= 1.1
+			setting.OpenShortMargin += minPoint
+			setting.CloseShortMargin -= minPoint
 		}
 		if coins[1] == minCoin {
-			setting.CloseShortMargin *= 0.9
+			setting.OpenShortMargin += minPoint
+			setting.CloseShortMargin -= minPoint
 		} else if coins[1] == maxCoin {
-			setting.CloseShortMargin *= 1.1
+			setting.OpenShortMargin -= minPoint
+			setting.CloseShortMargin += minPoint
 		}
-		pointInallNew = pointInallNew + setting.OpenShortMargin + setting.CloseShortMargin
-	}
-	for _, setting := range settings {
-		setting.OpenShortMargin *= pointInallNew / pointInall
-		setting.CloseShortMargin *= pointInallNew / pointInall
 	}
 	return settings
 }
