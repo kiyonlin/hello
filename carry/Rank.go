@@ -17,15 +17,16 @@ var rank = &Rank{}
 var minPoint = 0.001
 
 type Rank struct {
-	lock    sync.Mutex
-	ranking bool
-	orders  map[string][]*model.Order // symbol - orders
-	score   map[string]*model.Score   // symbol - score
+	lock sync.Mutex
+	//ranking bool
+	orders map[string][]*model.Order // symbol - orders
+	score  map[string]*model.Score   // symbol - score
 }
 
-func (rank *Rank) setRanking(value bool) {
-	rank.ranking = value
-}
+//
+//func (rank *Rank) setRanking(value bool) {
+//	rank.ranking = value
+//}
 
 func (rank *Rank) getScore(orderSide, symbol string) (score *model.Score) {
 	rank.lock.Lock()
@@ -61,11 +62,9 @@ var ProcessRank = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	if rank.ranking || model.AppConfig.Handle != `1` || model.AppPause {
+	if model.AppConfig.Handle != `1` || model.AppPause {
 		return
 	}
-	rank.setRanking(true)
-	defer rank.setRanking(false)
 	delay := util.GetNowUnixMillion() - int64(tick.Ts)
 	if delay > 500 {
 		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
@@ -103,7 +102,7 @@ var ProcessRank = func(market, symbol string) {
 					``, setting.AccountType, score.Price, score.Amount)
 				if order.OrderId != `` {
 					order.Function = model.FunctionRank
-					model.AppDB.Save(&order)
+					go model.AppDB.Save(&order)
 					newOrders = append(newOrders, order)
 				} else if order.ErrCode == `1016` {
 					coins := strings.Split(symbol, `_`)
