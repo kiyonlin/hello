@@ -12,21 +12,32 @@ import (
 	"time"
 )
 
-var recalcRankTime = util.GetNowUnixMillion()
 var rank = &Rank{}
 var minPoint = 0.0001
 
 type Rank struct {
 	lock sync.Mutex
 	//ranking bool
-	orders map[string][]*model.Order // symbol - orders
-	score  map[string]*model.Score   // symbol - score
+	checkTime map[string]int64          // symbol - time
+	orders    map[string][]*model.Order // symbol - orders
+	score     map[string]*model.Score   // symbol - score
 }
 
-//
-//func (rank *Rank) setRanking(value bool) {
-//	rank.ranking = value
-//}
+func (rank *Rank) getCheckTime(symbol string) (checkTime int64) {
+	if rank.checkTime == nil {
+		return 0
+	}
+	return rank.checkTime[symbol]
+}
+
+func (rank *Rank) setCheckTime(symbol string) {
+	rank.lock.Lock()
+	defer rank.lock.Unlock()
+	if rank.checkTime == nil {
+		rank.checkTime = make(map[string]int64)
+	}
+	rank.checkTime[symbol] = util.GetNowUnixMillion()
+}
 
 func (rank *Rank) getScore(orderSide, symbol string) (score *model.Score) {
 	rank.lock.Lock()
@@ -115,12 +126,12 @@ var ProcessRank = func(market, symbol string) {
 			}
 		}
 	}
-	if util.GetNowUnixMillion()-recalcRankTime > 300000 {
+	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
 		newOrders = api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
 			0, 0)
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(``, ``, market)
-		recalcRankTime = util.GetNowUnixMillion()
+		rank.setCheckTime(symbol)
 		settings := recalcRankLine(market)
 		for _, setting := range settings {
 			model.AppDB.Model(&setting).Where(`function=? and market=? and symbol=?`,
