@@ -154,7 +154,7 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 	case model.Fcoin:
 		orders = make([]*model.Order, 0)
 		if strings.Contains(accountTypes, model.AccountTypeNormal) {
-			normal := queryOrdersFcoin(key, secret, symbol, states, ``, before, after)
+			normal := queryOrdersFcoin(key, secret, symbol, states, model.AccountTypeNormal, before, after)
 			for _, value := range normal {
 				orders = append(orders, value)
 			}
@@ -235,7 +235,7 @@ func RefreshCoinAccount(key, secret, setMarket, symbol, setCoin, accountType str
 					}
 				}
 			}
-		} else {
+		} else if accountType == model.AccountTypeNormal {
 			currencies, fcoinAccounts := getAccountFcoin(key, secret)
 			for i := 0; i < len(currencies); i++ {
 				if currencies[i] == setCoin {

@@ -71,9 +71,10 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	perUsdt, _ := api.GetPrice(``, ``, `usdc_usdt`)
-
-	fmt.Println(perUsdt)
+	//perUsdt, _ := api.GetPrice(``, ``, `usdc_usdt`)
+	newOrders := api.QueryOrders(``, ``, model.Fcoin, `ada_usdt`,
+		model.CarryStatusWorking, model.AccountTypeNormal, 0, 0)
+	fmt.Println(len(newOrders))
 	//order := api.QueryOrderById(model.Fcoin, `ltc_usdt`,
 	//	`pfWOAwuurFQMpmUfWmWd3rRCckHf0uGK_b6xI5tYuYPJArdNgsTMekQw7ppjspj7`)
 	//fmt.Println(fmt.Sprintf(`%f %f %s`, order.Amount, order.DealAmount, order.Status))
