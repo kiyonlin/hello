@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 var rank = &Rank{}
@@ -107,7 +106,10 @@ var ProcessRank = func(market, symbol string) {
 		if (score.OrderSide == model.OrderSideBuy && score.Point > setting.OpenShortMargin) ||
 			(score.OrderSide == model.OrderSideSell && score.Point > setting.CloseShortMargin) {
 			go model.AppDB.Save(&score)
-			if model.AppConfig.FcoinKey != `` {
+			leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+			if model.AppConfig.FcoinKey != `` &&
+				((score.OrderSide == model.OrderSideSell && score.Amount < leftFree) ||
+					(score.OrderSide == model.OrderSideBuy && score.Amount < rightFree/tick.Asks[0].Price)) {
 				score.Amount = math.Max(api.GetMinAmount(market, symbol), score.Amount)
 				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
 					``, setting.AccountType, score.Price, score.Amount)
@@ -129,16 +131,8 @@ var ProcessRank = func(market, symbol string) {
 	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
 		newOrders = api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
 			0, 0)
-		time.Sleep(time.Second * 2)
-		api.RefreshAccount(``, ``, market)
+		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
 		rank.setCheckTime(symbol)
-		settings := recalcRankLine(market)
-		for _, setting := range settings {
-			model.AppDB.Model(&setting).Where(`function=? and market=? and symbol=?`,
-				model.FunctionRank, setting.Market, setting.Symbol).
-				Updates(model.Setting{OpenShortMargin: setting.OpenShortMargin,
-					CloseShortMargin: setting.CloseShortMargin})
-		}
 	}
 	rank.setOrders(symbol, newOrders)
 }

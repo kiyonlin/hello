@@ -18,6 +18,20 @@ var WSErrHandler = func(err error) {
 	util.SocketInfo(`get error ` + err.Error())
 }
 
+func MaintainFcoinRank() {
+	for true {
+		api.RefreshAccount(``, ``, model.Fcoin)
+		settings := recalcRankLine(model.Fcoin)
+		for _, setting := range settings {
+			model.AppDB.Model(&setting).Where(`function=? and market=? and symbol=?`,
+				model.FunctionRank, setting.Market, setting.Symbol).
+				Updates(model.Setting{OpenShortMargin: setting.OpenShortMargin,
+					CloseShortMargin: setting.CloseShortMargin})
+		}
+		time.Sleep(time.Minute * 3)
+	}
+}
+
 func CheckPastRefresh() {
 	start := fmt.Sprintf(`-%ds`, model.AppConfig.RefreshTimeSlot)
 	d, _ := time.ParseDuration(start)
@@ -306,6 +320,7 @@ func Maintain() {
 	model.AppDB.AutoMigrate(&model.Order{})
 	model.AppDB.AutoMigrate(&model.Score{})
 	model.LoadSettings()
+	go MaintainFcoinRank()
 	go CancelOldMakers(``, ``)
 	go AccountHandlerServe()
 	go CheckPastRefresh()
