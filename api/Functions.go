@@ -149,15 +149,23 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (res
 	return result, errCode, msg
 }
 
-func QueryOrders(key, secret, market, symbol, states string, before, after int64) (orders []*model.Order) {
+func QueryOrders(key, secret, market, symbol, states, accountTypes string, before, after int64) (orders []*model.Order) {
 	switch market {
 	case model.Fcoin:
-		normal := queryOrdersFcoin(key, secret, symbol, states, ``, before, after)
-		lever := queryOrdersFcoin(key, secret, symbol, states, model.AccountTypeLever, before, after)
-		for _, value := range normal {
-			lever = append(lever, value)
+		orders = make([]*model.Order, 0)
+		if strings.Contains(accountTypes, model.AccountTypeNormal) {
+			normal := queryOrdersFcoin(key, secret, symbol, states, ``, before, after)
+			for _, value := range normal {
+				orders = append(orders, value)
+			}
 		}
-		return lever
+		if strings.Contains(accountTypes, model.AccountTypeLever) {
+			lever := queryOrdersFcoin(key, secret, symbol, states, model.AccountTypeLever, before, after)
+			for _, value := range lever {
+				orders = append(orders, value)
+			}
+		}
+		return orders
 	default:
 		util.Notice(market + ` not supported`)
 	}

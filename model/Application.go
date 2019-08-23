@@ -24,6 +24,7 @@ const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
 const Bitmex = `bitmex`
+const AccountTypeNormal = `normal`
 const AccountTypeLever = `lever`
 const SubscribeDepth = `SubscribeDepth`
 const SubscribeDeal = `subscribeDeal`

@@ -115,8 +115,9 @@ var ProcessRank = func(market, symbol string) {
 			}
 		}
 	}
-	rank.setOrders(symbol, newOrders)
-	if util.GetNowUnixMillion()-recalcRankTime > 100000 {
+	if util.GetNowUnixMillion()-recalcRankTime > 300000 {
+		newOrders = api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
+			0, 0)
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(``, ``, market)
 		recalcRankTime = util.GetNowUnixMillion()
@@ -128,6 +129,7 @@ var ProcessRank = func(market, symbol string) {
 					CloseShortMargin: setting.CloseShortMargin})
 		}
 	}
+	rank.setOrders(symbol, newOrders)
 }
 
 func completeTick(market, symbol string, tick *model.BidAsk, priceDistance, checkDistance float64) {
