@@ -115,6 +115,7 @@ var ProcessRank = func(market, symbol string) {
 					``, setting.AccountType, score.Price, score.Amount)
 				if order.OrderId != `` {
 					order.Function = model.FunctionRank
+					order.Status = model.CarryStatusSuccess
 					go model.AppDB.Save(&order)
 					newOrders = append(newOrders, order)
 				} else if order.ErrCode == `1016` {
