@@ -116,7 +116,7 @@ var ProcessRank = func(market, symbol string) {
 		}
 	}
 	rank.setOrders(symbol, newOrders)
-	if util.GetNowUnixMillion()-recalcRankTime > 600000 {
+	if util.GetNowUnixMillion()-recalcRankTime > 100000 {
 		time.Sleep(time.Second * 2)
 		api.RefreshAccount(``, ``, market)
 		recalcRankTime = util.GetNowUnixMillion()
