@@ -409,9 +409,9 @@ func GetPrice(key, secret, symbol string) (buy float64, err error) {
 	if result {
 		return price, nil
 	}
-	if model.AppConfig.UpdatePriceTime[symbol] != 0 &&
-		util.GetNowUnixMillion()-model.AppConfig.UpdatePriceTime[symbol] < 3600000 {
-		return model.AppConfig.SymbolPrice[symbol], nil
+	price = model.AppConfig.SymbolPrice[symbol]
+	if price > 0 && util.GetNowUnixMillion()-model.AppConfig.UpdatePriceTime[symbol] < 3600000 {
+		return price, nil
 	}
 	model.AppConfig.SetUpdatePriceTime(symbol, util.GetNowUnixMillion())
 	if strs[0] == `BIX` || strs[1] == `BIX` || strs[0] == `CP` || strs[1] == `CP` {
