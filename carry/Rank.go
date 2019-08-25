@@ -105,25 +105,29 @@ var ProcessRank = func(market, symbol string) {
 		score := calcHighestScore(setting, tick)
 		if (score.OrderSide == model.OrderSideBuy && score.Point > setting.OpenShortMargin) ||
 			(score.OrderSide == model.OrderSideSell && score.Point > setting.CloseShortMargin) {
-			go model.AppDB.Save(&score)
 			leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
-			if model.AppConfig.FcoinKey != `` &&
-				((score.OrderSide == model.OrderSideSell && score.Amount < leftFree) ||
-					(score.OrderSide == model.OrderSideBuy && score.Amount < rightFree/tick.Asks[0].Price)) {
-				score.Amount = math.Max(api.GetMinAmount(market, symbol), score.Amount)
-				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market, symbol,
-					``, setting.AccountType, score.Price, score.Amount)
-				if order.OrderId != `` {
-					order.Function = model.FunctionRank
-					order.Status = model.CarryStatusSuccess
-					go model.AppDB.Save(&order)
-					newOrders = append(newOrders, order)
-				} else if order.ErrCode == `1016` {
-					coins := strings.Split(symbol, `_`)
-					if score.OrderSide == model.OrderSideBuy {
-						util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[1], score.Point, symbol, score.Amount))
-					} else {
-						util.Info(fmt.Sprintf(`%s %f %s not enough<%f`, coins[0], score.Point, symbol, score.Amount))
+			if model.AppConfig.FcoinKey == `` {
+				model.AppDB.Save(&score)
+			} else {
+				if score.OrderSide == model.OrderSideSell {
+					if score.Amount < leftFree {
+						api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
+							symbol, ``, setting.AccountType, score.Price, score.Amount)
+					}
+					priceOppo := tick.Asks[0].Price - priceDistance
+					if score.Amount < rightFree/priceOppo {
+						api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market,
+							symbol, ``, setting.AccountType, priceOppo, score.Amount)
+					}
+				} else if score.OrderSide == model.OrderSideBuy {
+					if score.Amount < rightFree/score.Price {
+						api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
+							symbol, ``, setting.AccountType, score.Price, score.Amount)
+					}
+					priceOppo := tick.Bids[0].Price + priceDistance
+					if score.Amount < leftFree {
+						api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market,
+							symbol, ``, setting.AccountType, priceOppo, score.Amount)
 					}
 				}
 			}
