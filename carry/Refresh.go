@@ -818,7 +818,8 @@ func CancelRefreshHang(key, secret, symbol, keep string) {
 func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64, tick *model.BidAsk) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	if tick.Asks[0].Price > 1.0003*tick.Bids[0].Price && symbol != `btc_pax` {
+	if tick.Asks[0].Price > 1.0003*tick.Bids[0].Price && symbol != `btc_pax` &&
+		tick.Bids[0].Price+1.1*priceDistance < tick.Asks[0].Price {
 		return false, "", "", 0
 	}
 	if tick.Bids[0].Price > otherPrice*(1+setting.BinanceDisMin) &&
