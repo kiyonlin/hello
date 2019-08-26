@@ -278,13 +278,12 @@ func recalcRankLine(market string) (settings map[string]*model.Setting) {
 		account := model.AppAccounts.GetAccount(market, key)
 		if account != nil && value > 0 {
 			price, _ := api.GetPrice(``, ``, key+`_usdt`)
-			amount[key] = account.Free * price / value
+			amount[key] = account.Free * price
 		}
 	}
 	for symbol, setting := range settings {
 		coins := strings.Split(symbol, `_`)
 		rate := (amount[coins[0]] / weight[coins[0]]) / (amount[coins[1]] / weight[coins[1]])
-		util.Info(fmt.Sprintf(`open-close rate %s %f`, symbol, rate))
 		all := setting.OpenShortMargin + setting.CloseShortMargin
 		setting.OpenShortMargin = all * rate / (1 + rate)
 		setting.CloseShortMargin = all / (1 + rate)
