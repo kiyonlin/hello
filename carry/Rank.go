@@ -111,25 +111,29 @@ var ProcessRank = func(market, symbol string) {
 			} else {
 				if score.OrderSide == model.OrderSideSell {
 					if score.Amount < leftFree {
-						api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
+						order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
 							symbol, ``, setting.AccountType, score.Price, score.Amount)
-					}
-					priceOppo := tick.Asks[0].Price - priceDistance
-					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin &&
-						score.Amount < rightFree/priceOppo {
-						api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market,
-							symbol, ``, setting.AccountType, priceOppo, score.Amount)
+						priceOppo := tick.Asks[0].Price - priceDistance
+						if order.OrderId != `` && score.Point > setting.OpenShortMargin &&
+							score.Point > setting.CloseShortMargin {
+							util.Notice(fmt.Sprintf(`--- %s place oppo order %s at %f point line %f - %f`,
+								symbol, model.OrderSideBuy, priceOppo, setting.OpenShortMargin, setting.CloseShortMargin))
+							api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market,
+								symbol, ``, setting.AccountType, priceOppo, score.Amount)
+						}
 					}
 				} else if score.OrderSide == model.OrderSideBuy {
 					if score.Amount < rightFree/score.Price {
-						api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
+						order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
 							symbol, ``, setting.AccountType, score.Price, score.Amount)
-					}
-					priceOppo := tick.Bids[0].Price + priceDistance
-					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin &&
-						score.Amount < leftFree {
-						api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market,
-							symbol, ``, setting.AccountType, priceOppo, score.Amount)
+						priceOppo := tick.Bids[0].Price + priceDistance
+						if order.OrderId != `` && score.Point > setting.OpenShortMargin &&
+							score.Point > setting.CloseShortMargin {
+							util.Notice(fmt.Sprintf(`--- %s place oppo order %s at %f point line %f - %f`,
+								symbol, model.OrderSideSell, priceOppo, setting.OpenShortMargin, setting.CloseShortMargin))
+							api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market,
+								symbol, ``, setting.AccountType, priceOppo, score.Amount)
+						}
 					}
 				}
 			}
