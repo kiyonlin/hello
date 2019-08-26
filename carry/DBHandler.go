@@ -32,7 +32,8 @@ func MaintainFcoinRank() {
 	}
 }
 
-func CheckPastRefresh() {
+//func CheckPastRefresh() {
+func _() {
 	start := fmt.Sprintf(`-%ds`, model.AppConfig.RefreshTimeSlot)
 	d, _ := time.ParseDuration(start)
 	for true {
@@ -323,8 +324,7 @@ func Maintain() {
 	go MaintainFcoinRank()
 	go CancelOldMakers(``, ``)
 	go AccountHandlerServe()
-	go CheckPastRefresh()
-	//go RefreshAccounts()
+	//go CheckPastRefresh()
 	go MaintainTransFee(key, secret)
 	go util.StartMidNightTimer(CancelAllOrders)
 	for true {
