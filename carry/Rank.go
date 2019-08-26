@@ -115,7 +115,8 @@ var ProcessRank = func(market, symbol string) {
 							symbol, ``, setting.AccountType, score.Price, score.Amount)
 					}
 					priceOppo := tick.Asks[0].Price - priceDistance
-					if score.Amount < rightFree/priceOppo {
+					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin &&
+						score.Amount < rightFree/priceOppo {
 						api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market,
 							symbol, ``, setting.AccountType, priceOppo, score.Amount)
 					}
@@ -125,7 +126,8 @@ var ProcessRank = func(market, symbol string) {
 							symbol, ``, setting.AccountType, score.Price, score.Amount)
 					}
 					priceOppo := tick.Bids[0].Price + priceDistance
-					if score.Amount < leftFree {
+					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin &&
+						score.Amount < leftFree {
 						api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market,
 							symbol, ``, setting.AccountType, priceOppo, score.Amount)
 					}
@@ -264,52 +266,27 @@ func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidA
 }
 
 func recalcRankLine(market string) (settings map[string]*model.Setting) {
-	maxValue := 0.0
-	minValue := 0.0
-	maxCoin := ``
-	minCoin := ``
 	settings = model.GetFunctionMarketSettings(model.FunctionRank, market)
-	coinCount := make(map[string]float64)
+	weight := make(map[string]float64)
 	for symbol := range settings {
 		coins := strings.Split(symbol, `_`)
-		coinCount[coins[0]] = coinCount[coins[0]] + 1/(1+coinCount[coins[0]])
-		coinCount[coins[1]] = coinCount[coins[1]] + 1/(1+coinCount[coins[1]])
+		weight[coins[0]] = weight[coins[0]] + 1/(1+weight[coins[0]])
+		weight[coins[1]] = weight[coins[1]] + 1/(1+weight[coins[1]])
 	}
-	for key, value := range coinCount {
+	amount := make(map[string]float64)
+	for key, value := range weight {
 		account := model.AppAccounts.GetAccount(market, key)
 		if account != nil && value > 0 {
 			price, _ := api.GetPrice(``, ``, key+`_usdt`)
-			coinCount[key] = account.Free * price / value
-		}
-	}
-	for key, value := range coinCount {
-		if value > maxValue {
-			maxValue = value
-			maxCoin = key
-		}
-		if value < minValue || minValue == 0 {
-			minValue = value
-			minCoin = key
+			amount[key] = account.Free * price / value
 		}
 	}
 	for symbol, setting := range settings {
 		coins := strings.Split(symbol, `_`)
-		if setting.OpenShortMargin > setting.Chance+minPoint && setting.CloseShortMargin > setting.Chance+minPoint {
-			if coins[0] == minCoin {
-				setting.OpenShortMargin -= setting.Chance
-				setting.CloseShortMargin += setting.Chance
-			} else if coins[0] == maxCoin {
-				setting.OpenShortMargin += setting.Chance
-				setting.CloseShortMargin -= setting.Chance
-			}
-			if coins[1] == minCoin {
-				setting.OpenShortMargin += setting.Chance
-				setting.CloseShortMargin -= setting.Chance
-			} else if coins[1] == maxCoin {
-				setting.OpenShortMargin -= setting.Chance
-				setting.CloseShortMargin += setting.Chance
-			}
-		}
+		rate := (amount[coins[0]] / weight[coins[0]]) / (amount[coins[1]] / weight[coins[1]])
+		all := setting.OpenShortMargin + setting.CloseShortMargin
+		setting.OpenShortMargin = all * rate / (1 + rate)
+		setting.CloseShortMargin = all / (1 + rate)
 	}
 	return settings
 }
