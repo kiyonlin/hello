@@ -270,8 +270,8 @@ func recalcRankLine(market string) (settings map[string]*model.Setting) {
 	weight := make(map[string]float64)
 	for symbol := range settings {
 		coins := strings.Split(symbol, `_`)
-		weight[coins[0]] = weight[coins[0]] + 1/(1+weight[coins[0]])
-		weight[coins[1]] = weight[coins[1]] + 1/(1+weight[coins[1]])
+		weight[coins[0]] = weight[coins[0]] + 1
+		weight[coins[1]] = weight[coins[1]] + 1
 	}
 	amount := make(map[string]float64)
 	for key, value := range weight {
