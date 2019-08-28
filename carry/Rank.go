@@ -15,8 +15,8 @@ var rank = &Rank{}
 var minPoint = 0.0001
 
 //const RANK_OPPO = `rank_opposite`
-const RANK_REBALANCE = `rank_rebalance`
-const RANK_SEQUENCE = `rank_sequence`
+const RankRebalance = `rank_rebalance`
+const RankSequence = `rank_sequence`
 
 type Rank struct {
 	lock sync.Mutex
@@ -119,9 +119,9 @@ var ProcessRank = func(market, symbol string) {
 					symbol, ``, setting.AccountType, score.Price, score.Amount)
 				if order.OrderId != `` {
 					order.Status = model.CarryStatusSuccess
-					order.RefreshType = RANK_REBALANCE
+					order.RefreshType = RankRebalance
 					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin {
-						order.RefreshType = RANK_SEQUENCE
+						order.RefreshType = RankSequence
 					}
 					model.AppDB.Save(&order)
 				}
