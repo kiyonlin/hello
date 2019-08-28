@@ -126,8 +126,9 @@ var ProcessRank = func(market, symbol string) {
 								score.Point > setting.CloseShortMargin {
 								order.RefreshType = RANK_SEQUENCE
 								model.AppDB.Save(&order)
-								orderOppo := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit,
-									market, symbol, ``, setting.AccountType, priceOppo, score.Amount)
+								orderOppo := api.PlaceOrder(``, ``, model.OrderSideBuy,
+									model.OrderTypeLimit, market, symbol, ``, setting.AccountType, priceOppo,
+									math.Min(score.Amount*3, rightFree/priceOppo))
 								if orderOppo.OrderId != `` {
 									orderOppo.Status = model.CarryStatusSuccess
 									orderOppo.RefreshType = RANK_OPPO
@@ -149,8 +150,9 @@ var ProcessRank = func(market, symbol string) {
 								score.Point > setting.CloseShortMargin {
 								order.RefreshType = RANK_SEQUENCE
 								model.AppDB.Save(&order)
-								orderOppo := api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit,
-									market, symbol, ``, setting.AccountType, priceOppo, score.Amount)
+								orderOppo := api.PlaceOrder(``, ``, model.OrderSideSell,
+									model.OrderTypeLimit, market, symbol, ``, setting.AccountType, priceOppo,
+									math.Min(score.Amount*3, leftFree))
 								if orderOppo.OrderId != `` {
 									orderOppo.Status = model.CarryStatusSuccess
 									orderOppo.RefreshType = RANK_OPPO
