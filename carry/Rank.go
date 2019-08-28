@@ -14,7 +14,7 @@ import (
 var rank = &Rank{}
 var minPoint = 0.0001
 
-const RANK_OPPO = `rank_opposite`
+//const RANK_OPPO = `rank_opposite`
 const RANK_REBALANCE = `rank_rebalance`
 const RANK_SEQUENCE = `rank_sequence`
 
@@ -106,61 +106,24 @@ var ProcessRank = func(market, symbol string) {
 		}
 	}
 	if !didSmth {
-		score := calcHighestScore(setting, tick)
-		if (score.OrderSide == model.OrderSideBuy && score.Point > setting.OpenShortMargin) ||
-			(score.OrderSide == model.OrderSideSell && score.Point > setting.CloseShortMargin) {
-			leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
-			if model.AppConfig.FcoinKey == `` {
-				model.AppDB.Save(&score)
-			} else {
-				if score.OrderSide == model.OrderSideSell {
-					if score.Amount < leftFree {
-						order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
-							symbol, ``, setting.AccountType, score.Price, score.Amount)
-						order.Status = model.CarryStatusSuccess
-						priceOppo := tick.Asks[0].Price - priceDistance
-						if order.OrderId != `` {
-							order.RefreshType = RANK_REBALANCE
-							model.AppDB.Save(&order)
-							if score.Point > setting.OpenShortMargin &&
-								score.Point > setting.CloseShortMargin {
-								order.RefreshType = RANK_SEQUENCE
-								model.AppDB.Save(&order)
-								orderOppo := api.PlaceOrder(``, ``, model.OrderSideBuy,
-									model.OrderTypeLimit, market, symbol, ``, setting.AccountType, priceOppo,
-									math.Min(score.Amount*3, rightFree/priceOppo))
-								if orderOppo.OrderId != `` {
-									orderOppo.Status = model.CarryStatusSuccess
-									orderOppo.RefreshType = RANK_OPPO
-									model.AppDB.Save(&orderOppo)
-								}
-							}
-						}
+		scoreBid, scoreAsk := calcHighestScore(setting, tick)
+		score := scoreBid
+		if scoreAsk.Point < scoreBid.Point {
+			score = scoreAsk
+		}
+		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
+			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
+			if score.Point > setting.OpenShortMargin || score.Point > setting.CloseShortMargin {
+				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
+					symbol, ``, setting.AccountType, score.Price, score.Amount)
+				if order.OrderId != `` {
+					order.Status = model.CarryStatusSuccess
+					order.RefreshType = RANK_REBALANCE
+					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin {
+						order.RefreshType = RANK_SEQUENCE
 					}
-				} else if score.OrderSide == model.OrderSideBuy {
-					if score.Amount < rightFree/score.Price {
-						order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
-							symbol, ``, setting.AccountType, score.Price, score.Amount)
-						order.Status = model.CarryStatusSuccess
-						if order.OrderId != `` {
-							order.RefreshType = RANK_REBALANCE
-							model.AppDB.Save(&order)
-							priceOppo := tick.Bids[0].Price + priceDistance
-							if order.OrderId != `` && score.Point > setting.OpenShortMargin &&
-								score.Point > setting.CloseShortMargin {
-								order.RefreshType = RANK_SEQUENCE
-								model.AppDB.Save(&order)
-								orderOppo := api.PlaceOrder(``, ``, model.OrderSideSell,
-									model.OrderTypeLimit, market, symbol, ``, setting.AccountType, priceOppo,
-									math.Min(score.Amount*3, leftFree))
-								if orderOppo.OrderId != `` {
-									orderOppo.Status = model.CarryStatusSuccess
-									orderOppo.RefreshType = RANK_OPPO
-									model.AppDB.Save(&orderOppo)
-								}
-							}
-						}
-					}
+					model.AppDB.Save(&order)
 				}
 			}
 		}
@@ -204,13 +167,13 @@ func completeTick(market, symbol string, tick *model.BidAsk, priceDistance, chec
 	tick.Bids = newBids
 }
 
-func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.Score) {
+func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (scoreBid, scoreAsk *model.Score) {
 	coins := strings.Split(setting.Symbol, `_`)
 	perUsdt, _ := api.GetPrice(``, ``, coins[1]+`_usdt`)
 	rankFt, err := strconv.ParseFloat(setting.FunctionParameter, 10)
 	if err != nil {
 		util.Notice(`rank function parameter err ` + setting.FunctionParameter)
-		return nil
+		return nil, nil
 	}
 	minAmount := api.GetMinAmount(setting.Market, setting.Symbol)
 	for key, value := range tick.Bids {
@@ -228,33 +191,35 @@ func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (score *model.
 		}
 	}
 	rankFt = rankFt / 5760
-	score = &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideBuy, Amount: tick.Bids[0].Amount,
+	scoreBid = &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideBuy, Amount: tick.Bids[0].Amount,
 		Price: tick.Bids[0].Price, Point: rankFt / (tick.Bids[0].Price * tick.Bids[0].Amount * perUsdt), Position: 0}
-	if tick.Bids[0].Amount > tick.Asks[0].Amount {
-		score = &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideSell, Amount: tick.Asks[0].Amount,
-			Price: tick.Asks[0].Price, Point: rankFt / (tick.Asks[0].Price * tick.Asks[0].Amount * perUsdt), Position: 0}
-	}
-	score10 := &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideBuy,
+	scoreAsk = &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideSell, Amount: tick.Asks[0].Amount,
+		Price: tick.Asks[0].Price, Point: rankFt / (tick.Asks[0].Price * tick.Asks[0].Amount * perUsdt), Position: 0}
+	score10Bid := &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideBuy,
 		Amount: tick.Bids[1].Amount, Price: tick.Bids[1].Price}
+	score10Ask := &model.Score{Symbol: setting.Symbol, OrderSide: model.OrderSideSell,
+		Amount: tick.Asks[1].Amount, Price: tick.Asks[1].Price}
 	for i := 1; i < 11; i++ {
-		if score10.Amount > tick.Bids[i].Amount {
-			score10.OrderSide = model.OrderSideBuy
-			score10.Amount = tick.Bids[i].Amount
-			score10.Price = tick.Bids[i].Price
-			score10.Position = i
+		if score10Bid.Amount > tick.Bids[i].Amount {
+			score10Bid.Amount = tick.Bids[i].Amount
+			score10Bid.Price = tick.Bids[i].Price
+			score10Bid.Position = i
 		}
-		if score10.Amount > tick.Asks[i].Amount {
-			score10.OrderSide = model.OrderSideSell
-			score10.Amount = tick.Asks[i].Amount
-			score10.Price = tick.Asks[i].Price
-			score10.Position = i
+		if score10Ask.Amount > tick.Asks[i].Amount {
+			score10Ask.Amount = tick.Asks[i].Amount
+			score10Ask.Price = tick.Asks[i].Price
+			score10Ask.Position = i
 		}
 	}
-	score10.Point = rankFt / 10 / (score10.Price * score10.Amount * perUsdt)
-	if score10.Point > score.Point {
-		return score10
+	score10Bid.Point = rankFt / 10 / (score10Bid.Price * score10Bid.Amount * perUsdt)
+	score10Ask.Point = rankFt / 10 / (score10Ask.Price * score10Ask.Amount * perUsdt)
+	if scoreBid.Point < score10Bid.Point {
+		scoreBid = score10Bid
 	}
-	return score
+	if scoreAsk.Point < score10Ask.Point {
+		scoreAsk = score10Ask
+	}
+	return scoreBid, scoreAsk
 }
 
 func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidAsk) (score *model.Score) {
