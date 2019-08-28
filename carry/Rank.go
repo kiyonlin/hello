@@ -298,10 +298,14 @@ func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidA
 func recalcRankLine(market string) (settings map[string]*model.Setting) {
 	settings = model.GetFunctionMarketSettings(model.FunctionRank, market)
 	weight := make(map[string]float64)
-	for symbol := range settings {
+	for symbol, setting := range settings {
 		coins := strings.Split(symbol, `_`)
-		weight[coins[0]] = weight[coins[0]] + 1
-		weight[coins[1]] = weight[coins[1]] + 1
+		settingWeight := 1.0
+		if setting.Chance > 0 {
+			settingWeight = setting.Chance
+		}
+		weight[coins[0]] = weight[coins[0]] + settingWeight
+		weight[coins[1]] = weight[coins[1]] + settingWeight
 	}
 	amount := make(map[string]float64)
 	for key, value := range weight {
