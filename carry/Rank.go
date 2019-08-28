@@ -119,22 +119,21 @@ var ProcessRank = func(market, symbol string) {
 							symbol, ``, setting.AccountType, score.Price, score.Amount)
 						order.Status = model.CarryStatusSuccess
 						priceOppo := tick.Asks[0].Price - priceDistance
-						if order.OrderId != `` && score.Point > setting.OpenShortMargin &&
-							score.Point > setting.CloseShortMargin {
-							order.RefreshType = RANK_SEQUENCE
-							model.AppDB.Save(&order)
-							util.Notice(fmt.Sprintf(`--- %s place oppo order %s at %f point line %f - %f`,
-								symbol, model.OrderSideBuy, priceOppo, setting.OpenShortMargin, setting.CloseShortMargin))
-							orderOppo := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market,
-								symbol, ``, setting.AccountType, priceOppo, score.Amount)
-							if orderOppo.OrderId != `` {
-								orderOppo.Status = model.CarryStatusSuccess
-								orderOppo.RefreshType = RANK_OPPO
-								model.AppDB.Save(&order)
-							}
-						} else if order.OrderId != `` {
+						if order.OrderId != `` {
 							order.RefreshType = RANK_REBALANCE
 							model.AppDB.Save(&order)
+							if score.Point > setting.OpenShortMargin &&
+								score.Point > setting.CloseShortMargin {
+								order.RefreshType = RANK_SEQUENCE
+								model.AppDB.Save(&order)
+								orderOppo := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit,
+									market, symbol, ``, setting.AccountType, priceOppo, score.Amount)
+								if orderOppo.OrderId != `` {
+									orderOppo.Status = model.CarryStatusSuccess
+									orderOppo.RefreshType = RANK_OPPO
+									model.AppDB.Save(&orderOppo)
+								}
+							}
 						}
 					}
 				} else if score.OrderSide == model.OrderSideBuy {
@@ -142,23 +141,22 @@ var ProcessRank = func(market, symbol string) {
 						order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
 							symbol, ``, setting.AccountType, score.Price, score.Amount)
 						order.Status = model.CarryStatusSuccess
-						priceOppo := tick.Bids[0].Price + priceDistance
-						if order.OrderId != `` && score.Point > setting.OpenShortMargin &&
-							score.Point > setting.CloseShortMargin {
-							order.RefreshType = RANK_SEQUENCE
-							model.AppDB.Save(&order)
-							util.Notice(fmt.Sprintf(`--- %s place oppo order %s at %f point line %f - %f`,
-								symbol, model.OrderSideSell, priceOppo, setting.OpenShortMargin, setting.CloseShortMargin))
-							orderOppo := api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market,
-								symbol, ``, setting.AccountType, priceOppo, score.Amount)
-							if orderOppo.OrderId != `` {
-								orderOppo.Status = model.CarryStatusSuccess
-								orderOppo.RefreshType = RANK_OPPO
-								model.AppDB.Save(&orderOppo)
-							}
-						} else if order.OrderId != `` {
+						if order.OrderId != `` {
 							order.RefreshType = RANK_REBALANCE
 							model.AppDB.Save(&order)
+							priceOppo := tick.Bids[0].Price + priceDistance
+							if order.OrderId != `` && score.Point > setting.OpenShortMargin &&
+								score.Point > setting.CloseShortMargin {
+								order.RefreshType = RANK_SEQUENCE
+								model.AppDB.Save(&order)
+								orderOppo := api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit,
+									market, symbol, ``, setting.AccountType, priceOppo, score.Amount)
+								if orderOppo.OrderId != `` {
+									orderOppo.Status = model.CarryStatusSuccess
+									orderOppo.RefreshType = RANK_OPPO
+									model.AppDB.Save(&orderOppo)
+								}
+							}
 						}
 					}
 				}
