@@ -93,28 +93,37 @@ var ProcessRank = func(market, symbol string) {
 		return
 	}
 	didSmth := false
+	scoreBid, scoreAsk := calcHighestScore(setting, tick)
+	score := scoreBid
+	cancelSide := model.OrderSideSell
+	if scoreAsk.Point < scoreBid.Point {
+		score = scoreAsk
+		cancelSide = model.OrderSideBuy
+	}
 	orders := rank.getOrders(symbol)
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
-		if orderScore.Point > minPoint {
-			newOrders = append(newOrders, order)
-		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
-			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-			result, _, _ := api.CancelOrder(``, ``, market, symbol, order.OrderId)
-			if result {
-				order.Status = model.CarryStatusFail
-				model.AppDB.Save(&order)
-			}
+		cancelResult := false
+		if order.OrderSide == cancelSide {
+			cancelResult, _, _ = api.CancelOrder(``, ``, market, symbol, order.OrderId)
 			didSmth = true
+		} else {
+			if orderScore.Point > minPoint {
+				newOrders = append(newOrders, order)
+			} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
+				(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
+				cancelResult, _, _ = api.CancelOrder(``, ``, market, symbol, order.OrderId)
+				didSmth = true
+			}
+		}
+		if cancelResult {
+			order.Status = model.CarryStatusFail
+			model.AppDB.Save(&order)
 		}
 	}
+
 	if !didSmth {
-		scoreBid, scoreAsk := calcHighestScore(setting, tick)
-		score := scoreBid
-		if scoreAsk.Point < scoreBid.Point {
-			score = scoreAsk
-		}
 		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
 		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
 			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
