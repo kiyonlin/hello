@@ -101,7 +101,11 @@ var ProcessRank = func(market, symbol string) {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-			api.MustCancel(``, ``, market, symbol, order.OrderId, false)
+			result, errCode, _ := api.CancelOrder(``, ``, market, symbol, order.OrderId)
+			if !result || errCode != `` {
+				order.Status = model.CarryStatusFail
+				model.AppDB.Save(&order)
+			}
 			didSmth = true
 		}
 	}
