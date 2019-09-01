@@ -5,60 +5,8 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
+	"math"
 )
-
-var hangStatus = &HangStatus{bid: make(map[string]*model.Order), ask: make(map[string]*model.Order)}
-
-type HangStatus struct {
-	lock    sync.Mutex
-	hanging bool
-	bid     map[string]*model.Order
-	ask     map[string]*model.Order
-}
-
-func (hangStatus *HangStatus) setHanging(value bool) {
-	hangStatus.hanging = value
-}
-
-func (hangStatus *HangStatus) getBid(symbol string) (order *model.Order) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
-	if hangStatus.bid == nil {
-		hangStatus.bid = make(map[string]*model.Order)
-	}
-	return hangStatus.bid[symbol]
-}
-
-func (hangStatus *HangStatus) getAsk(symbol string) (order *model.Order) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
-	if hangStatus.ask == nil {
-		hangStatus.ask = make(map[string]*model.Order)
-	}
-	return hangStatus.ask[symbol]
-}
-
-func (hangStatus *HangStatus) setAsk(symbol string, order *model.Order) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
-	if hangStatus.ask == nil {
-		hangStatus.ask = make(map[string]*model.Order)
-	}
-	hangStatus.ask[symbol] = order
-}
-
-func (hangStatus *HangStatus) setBid(symbol string, order *model.Order) {
-	hangStatus.lock.Lock()
-	defer hangStatus.lock.Unlock()
-	if hangStatus.bid == nil {
-		hangStatus.bid = make(map[string]*model.Order)
-	}
-	hangStatus.bid[symbol] = order
-}
 
 var ProcessHang = func(market, symbol string) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
@@ -67,75 +15,84 @@ var ProcessHang = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	if hangStatus.hanging || model.AppConfig.Handle != `1` || model.AppPause {
+	if model.AppConfig.Handle != `1` || model.AppPause {
 		return
 	}
-	hangStatus.setHanging(true)
-	defer hangStatus.setHanging(false)
 	delay := util.GetNowUnixMillion() - int64(tick.Ts)
 	if delay > 500 {
 		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	setting := model.GetSetting(model.FunctionHang, market, symbol)
+	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	checkDistance := priceDistance / 10
+	completeTick(market, symbol, tick, priceDistance, checkDistance)
+	setting := model.GetSetting(model.FunctionRank, market, symbol)
 	if setting == nil {
 		return
 	}
-	leftFree, rightFree, _, _, err := getBalance(key, secret, market, symbol, setting.AccountType)
-	if err != nil {
-		return
-	}
-	places := strings.Split(setting.FunctionParameter, `_`)
-	if len(places) != 3 {
-		util.Notice(fmt.Sprintf(`hang function len error %d`, len(places)))
-		return
-	}
-	hangNear, _ := strconv.ParseInt(places[0], 10, 64)
-	hangPlace, _ := strconv.ParseInt(places[1], 10, 64)
-	hangFar, _ := strconv.ParseInt(places[2], 10, 64)
-	bid := hangStatus.getBid(symbol)
-	ask := hangStatus.getAsk(symbol)
+	point := (setting.OpenShortMargin + setting.CloseShortMargin) / 2
 	didSmth := false
-	if bid == nil || bid.Price > tick.Bids[0].Price {
-		didSmth = true
-		bid = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, tick.Bids[hangPlace].Price, rightFree*setting.GridAmount/tick.Bids[hangPlace].Price)
-		if bid != nil && bid.OrderId != `` {
-			bid.Function = model.FunctionHang
-			model.AppDB.Save(&bid)
-			hangStatus.setBid(symbol, bid)
-		}
-	} else {
-		if bid.Price < tick.Bids[hangFar].Price || bid.Price > tick.Bids[hangNear].Price {
+	scoreBid, scoreAsk := calcHighestScore(setting, tick)
+	orders := rank.getOrders(symbol)
+	newOrders := make([]*model.Order, 0)
+	for _, order := range orders {
+		orderScore := calcOrderScore(order, setting, tick)
+		if orderScore.Point > minPoint {
+			newOrders = append(newOrders, order)
+		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
+			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
+			cancelResult, _, _ := api.CancelOrder(``, ``, market, symbol, order.OrderId)
 			didSmth = true
-			util.Notice(fmt.Sprintf(`---0 cancel bid %f < %f or > %f`,
-				bid.Price, tick.Bids[hangFar].Price, tick.Bids[hangNear].Price))
-			api.MustCancel(``, ``, market, symbol, bid.OrderId, false)
-			hangStatus.setBid(symbol, nil)
+			if cancelResult {
+				order.Status = model.CarryStatusFail
+				model.AppDB.Save(&order)
+			}
 		}
 	}
-	if ask == nil || ask.Price < tick.Asks[0].Price {
-		didSmth = true
-		ask = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-			setting.AccountType, setting.AccountType, tick.Asks[hangPlace].Price, leftFree*setting.GridAmount)
-		if ask != nil && ask.OrderId != `` {
-			ask.Function = model.FunctionHang
-			model.AppDB.Save(&ask)
-			hangStatus.setAsk(symbol, ask)
+	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
+		queryOrders := api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
+			0, 0)
+		for _, queryOrder := range queryOrders {
+			for _, order := range newOrders {
+				if queryOrder.OrderId == order.OrderId {
+					queryOrder.RefreshType = order.RefreshType
+					break
+				}
+			}
 		}
-	} else {
-		if ask.Price > tick.Asks[hangFar].Price || ask.Price < tick.Asks[hangNear].Price {
-			didSmth = true
-			util.Notice(fmt.Sprintf(`---0 cancel ask %f > %f or < %f`,
-				ask.Price, tick.Asks[hangFar].Price, tick.Asks[hangNear].Price))
-			api.MustCancel(``, ``, market, symbol, ask.OrderId, false)
-			hangStatus.setAsk(symbol, nil)
+		newOrders = queryOrders
+		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
+		rank.setCheckTime(symbol)
+	} else if !didSmth {
+		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+		if scoreBid.Point > point || scoreAsk.Point > point {
+			if rightFree/scoreBid.Price > scoreBid.Amount {
+				order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,
+					symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount)
+				if order.OrderId != `` {
+					order.Status = model.CarryStatusSuccess
+					order.RefreshType = RankRebalance
+					if scoreBid.Point > scoreAsk.Point {
+						order.RefreshType = RankSequence
+					}
+					newOrders = append(newOrders, order)
+					model.AppDB.Save(&order)
+				}
+			}
+			if leftFree > scoreAsk.Amount {
+				order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, market,
+					symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount)
+				if order.OrderId != `` {
+					order.Status = model.CarryStatusSuccess
+					order.RefreshType = RankRebalance
+					if scoreBid.Point < scoreAsk.Point {
+						order.RefreshType = RankSequence
+					}
+					newOrders = append(newOrders, order)
+					model.AppDB.Save(&order)
+				}
+			}
 		}
 	}
-	if didSmth {
-		time.Sleep(time.Second)
-		api.RefreshAccount(``, ``, market)
-	} else {
-		util.Notice(`nothing happened`)
-	}
+	rank.setOrders(symbol, newOrders)
 }

@@ -87,9 +87,8 @@ var ProcessRank = func(market, symbol string) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	checkDistance := priceDistance / 10
 	completeTick(market, symbol, tick, priceDistance, checkDistance)
-	settings := model.GetFunctionMarketSettings(model.FunctionRank, market)
 	setting := model.GetSetting(model.FunctionRank, market, symbol)
-	if setting == nil || settings == nil {
+	if setting == nil {
 		return
 	}
 	didSmth := false
@@ -124,8 +123,17 @@ var ProcessRank = func(market, symbol string) {
 		}
 	}
 	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
-		newOrders = api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
+		queryOrders := api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
 			0, 0)
+		for _, queryOrder := range queryOrders {
+			for _, order := range newOrders {
+				if queryOrder.OrderId == order.OrderId {
+					queryOrder.RefreshType = order.RefreshType
+					break
+				}
+			}
+		}
+		newOrders = queryOrders
 		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
 		rank.setCheckTime(symbol)
 	} else if !didSmth {
