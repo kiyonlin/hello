@@ -106,6 +106,7 @@ var ProcessRank = func(market, symbol string) {
 		orderScore := calcOrderScore(order, setting, tick)
 		cancelResult := false
 		if order.OrderSide == cancelSide {
+			util.Notice(fmt.Sprintf(`--- cancel less side order %s %s`, symbol, order.OrderId))
 			cancelResult, _, _ = api.CancelOrder(``, ``, market, symbol, order.OrderId)
 			didSmth = true
 		} else {
