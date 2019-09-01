@@ -122,8 +122,12 @@ var ProcessRank = func(market, symbol string) {
 			model.AppDB.Save(&order)
 		}
 	}
-
-	if !didSmth {
+	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
+		newOrders = api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
+			0, 0)
+		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
+		rank.setCheckTime(symbol)
+	} else if !didSmth {
 		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
 		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
 			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
@@ -136,16 +140,11 @@ var ProcessRank = func(market, symbol string) {
 					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin {
 						order.RefreshType = RankSequence
 					}
+					newOrders = append(newOrders, order)
 					model.AppDB.Save(&order)
 				}
 			}
 		}
-	}
-	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
-		newOrders = api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
-			0, 0)
-		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
-		rank.setCheckTime(symbol)
 	}
 	rank.setOrders(symbol, newOrders)
 }
