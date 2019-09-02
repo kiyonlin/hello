@@ -26,7 +26,7 @@ var ProcessHang = func(market, symbol string) {
 	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	checkDistance := priceDistance / 10
 	completeTick(market, symbol, tick, priceDistance, checkDistance)
-	setting := model.GetSetting(model.FunctionRank, market, symbol)
+	setting := model.GetSetting(model.FunctionHang, market, symbol)
 	if setting == nil {
 		return
 	}
