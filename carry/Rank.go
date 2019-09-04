@@ -137,20 +137,22 @@ var ProcessRank = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
 		rank.setCheckTime(symbol)
 	} else if !didSmth {
-		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
-		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
-			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
-			if score.Point > setting.OpenShortMargin || score.Point > setting.CloseShortMargin {
-				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
-					symbol, ``, setting.AccountType, score.Price, score.Amount)
-				if order.OrderId != `` {
-					order.Status = model.CarryStatusSuccess
-					order.RefreshType = RankRebalance
-					if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin {
-						order.RefreshType = RankSequence
+		if model.AppConfig.FcoinKey != `` && model.AppConfig.FcoinSecret != `` {
+			leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+			if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
+				(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
+				if score.Point > setting.OpenShortMargin || score.Point > setting.CloseShortMargin {
+					order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
+						symbol, ``, setting.AccountType, score.Price, score.Amount)
+					if order.OrderId != `` {
+						order.Status = model.CarryStatusSuccess
+						order.RefreshType = RankRebalance
+						if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin {
+							order.RefreshType = RankSequence
+						}
+						newOrders = append(newOrders, order)
+						model.AppDB.Save(&order)
 					}
-					newOrders = append(newOrders, order)
-					model.AppDB.Save(&order)
 				}
 			}
 		}
@@ -239,6 +241,12 @@ func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (scoreBid, sco
 	}
 	if scoreAsk.Point < score10Ask.Point {
 		scoreAsk = score10Ask
+	}
+	if scoreBid.Point > setting.OpenShortMargin {
+		model.AppDB.Save(&scoreBid)
+	}
+	if scoreAsk.Point > setting.CloseShortMargin {
+		model.AppDB.Save(&scoreAsk)
 	}
 	return scoreBid, scoreAsk
 }
