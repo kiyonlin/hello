@@ -12,7 +12,6 @@ import (
 )
 
 var rank = &Rank{}
-var minPoint = 0.0001
 
 //const RANK_OPPO = `rank_opposite`
 const RankRebalance = `rank_rebalance`
@@ -109,7 +108,7 @@ var ProcessRank = func(market, symbol string) {
 			cancelResult, _, _ = api.CancelOrder(``, ``, market, symbol, order.OrderId)
 			didSmth = true
 		} else {
-			if orderScore.Point > minPoint {
+			if orderScore.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/8 {
 				newOrders = append(newOrders, order)
 			} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 				(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
