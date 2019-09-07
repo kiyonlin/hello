@@ -49,6 +49,7 @@ var ProcessHang = func(market, symbol string) {
 			}
 		}
 	}
+	leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
 	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
 		queryOrders := api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
 			0, 0)
@@ -64,33 +65,30 @@ var ProcessHang = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
 		rank.setCheckTime(symbol)
 	} else if !didSmth {
-		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
-		if scoreBid.Point > point || scoreAsk.Point > point {
-			if rightFree/scoreBid.Price > scoreBid.Amount {
-				order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,
-					symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount)
-				if order.OrderId != `` {
-					order.Status = model.CarryStatusSuccess
-					order.RefreshType = RankRebalance
-					if scoreBid.Point > scoreAsk.Point {
-						order.RefreshType = RankSequence
-					}
-					newOrders = append(newOrders, order)
-					model.AppDB.Save(&order)
+		if scoreBid.Point > point && rightFree/scoreBid.Price > scoreBid.Amount {
+			order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,
+				symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount)
+			if order.OrderId != `` {
+				order.Status = model.CarryStatusSuccess
+				order.RefreshType = RankRebalance
+				if scoreBid.Point > scoreAsk.Point {
+					order.RefreshType = RankSequence
 				}
+				newOrders = append(newOrders, order)
+				model.AppDB.Save(&order)
 			}
-			if leftFree > scoreAsk.Amount {
-				order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, market,
-					symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount)
-				if order.OrderId != `` {
-					order.Status = model.CarryStatusSuccess
-					order.RefreshType = RankRebalance
-					if scoreBid.Point < scoreAsk.Point {
-						order.RefreshType = RankSequence
-					}
-					newOrders = append(newOrders, order)
-					model.AppDB.Save(&order)
+		}
+		if scoreAsk.Point > point && leftFree > scoreAsk.Amount {
+			order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, market,
+				symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount)
+			if order.OrderId != `` {
+				order.Status = model.CarryStatusSuccess
+				order.RefreshType = RankRebalance
+				if scoreBid.Point < scoreAsk.Point {
+					order.RefreshType = RankSequence
 				}
+				newOrders = append(newOrders, order)
+				model.AppDB.Save(&order)
 			}
 		}
 	}
