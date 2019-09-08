@@ -41,12 +41,8 @@ var ProcessHang = func(market, symbol string) {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-			cancelResult, _, _ := api.CancelOrder(``, ``, market, symbol, order.OrderId)
+			api.CancelOrder(``, ``, market, symbol, order.OrderId)
 			didSmth = true
-			if cancelResult {
-				order.Status = model.CarryStatusFail
-				model.AppDB.Save(&order)
-			}
 		}
 	}
 	leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
@@ -69,7 +65,7 @@ var ProcessHang = func(market, symbol string) {
 			order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,
 				symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount)
 			if order.OrderId != `` {
-				order.Status = model.CarryStatusSuccess
+				order.Status = model.CarryStatusWorking
 				order.RefreshType = RankRebalance
 				if scoreBid.Point > scoreAsk.Point {
 					order.RefreshType = RankSequence
@@ -82,7 +78,7 @@ var ProcessHang = func(market, symbol string) {
 			order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, market,
 				symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount)
 			if order.OrderId != `` {
-				order.Status = model.CarryStatusSuccess
+				order.Status = model.CarryStatusWorking
 				order.RefreshType = RankRebalance
 				if scoreBid.Point < scoreAsk.Point {
 					order.RefreshType = RankSequence
