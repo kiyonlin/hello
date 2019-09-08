@@ -102,23 +102,18 @@ var ProcessRank = func(market, symbol string) {
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
-		cancelResult := false
 		if order.OrderSide == cancelSide {
 			util.Notice(fmt.Sprintf(`--- cancel less side order %s %s`, symbol, order.OrderId))
-			cancelResult, _, _ = api.CancelOrder(``, ``, market, symbol, order.OrderId)
+			api.CancelOrder(``, ``, market, symbol, order.OrderId)
 			didSmth = true
 		} else {
-			if orderScore.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/8 {
+			if orderScore.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/4 {
 				newOrders = append(newOrders, order)
 			} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 				(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-				cancelResult, _, _ = api.CancelOrder(``, ``, market, symbol, order.OrderId)
+				api.CancelOrder(``, ``, market, symbol, order.OrderId)
 				didSmth = true
 			}
-		}
-		if cancelResult {
-			order.Status = model.CarryStatusFail
-			model.AppDB.Save(&order)
 		}
 	}
 	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
@@ -140,15 +135,12 @@ var ProcessRank = func(market, symbol string) {
 			leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
 			if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
 				(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
-				if score.Point > setting.OpenShortMargin || score.Point > setting.CloseShortMargin {
+				if score.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/2 {
 					order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
 						symbol, ``, setting.AccountType, score.Price, score.Amount)
 					if order.OrderId != `` {
-						order.Status = model.CarryStatusSuccess
-						order.RefreshType = RankRebalance
-						if score.Point > setting.OpenShortMargin && score.Point > setting.CloseShortMargin {
-							order.RefreshType = RankSequence
-						}
+						order.Status = model.CarryStatusWorking
+						order.RefreshType = RankSequence
 						newOrders = append(newOrders, order)
 						model.AppDB.Save(&order)
 					}
