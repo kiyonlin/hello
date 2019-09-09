@@ -130,22 +130,23 @@ var ProcessRank = func(market, symbol string) {
 		newOrders = queryOrders
 		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
 		rank.setCheckTime(symbol)
-	} else if !didSmth {
-		if model.AppConfig.FcoinKey != `` && model.AppConfig.FcoinSecret != `` {
-			leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
-			if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
-				(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
-				if score.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/2 {
-					order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
-						symbol, ``, setting.AccountType, score.Price, score.Amount)
-					if order.OrderId != `` {
-						order.Status = model.CarryStatusWorking
-						order.RefreshType = RankSequence
-						newOrders = append(newOrders, order)
-						model.AppDB.Save(&order)
-					}
+	} else if !didSmth && model.AppConfig.FcoinKey != `` && model.AppConfig.FcoinSecret != `` {
+		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
+			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
+			if score.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/2 {
+				order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
+					symbol, ``, setting.AccountType, score.Price, score.Amount)
+				if order.OrderId != `` {
+					order.Status = model.CarryStatusWorking
+					order.RefreshType = RankSequence
+					newOrders = append(newOrders, order)
+					model.AppDB.Save(&order)
 				}
 			}
+		} else {
+			util.Info(fmt.Sprintf(`--- coin influient %s %s %f point:%f`,
+				symbol, score.OrderSide, score.Amount, score.Point))
 		}
 	}
 	rank.setOrders(symbol, newOrders)
@@ -280,7 +281,8 @@ func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidA
 	return score
 }
 
-func recalcRankLine(market string) (settings map[string]*model.Setting) {
+//recalcRankLine
+func _(market string) (settings map[string]*model.Setting) {
 	settings = model.GetFunctionMarketSettings(model.FunctionRank, market)
 	weight := make(map[string]float64)
 	for symbol, setting := range settings {
