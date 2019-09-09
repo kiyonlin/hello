@@ -145,8 +145,14 @@ var ProcessRank = func(market, symbol string) {
 				}
 			}
 		} else {
-			util.Info(fmt.Sprintf(`--- coin influient %s %s %f point:%f`,
-				symbol, score.OrderSide, score.Amount, score.Point))
+			coins := strings.Split(symbol, `_`)
+			if score.OrderSide == model.OrderSideBuy {
+				util.Info(fmt.Sprintf(`--- coin influient %s %f<%f point:%f`,
+					coins[1], rightFree, score.Price*score.Amount, score.Point))
+			} else {
+				util.Info(fmt.Sprintf(`--- coin influient %s %f<%f point:%f`,
+					coins[0], leftFree, score.Amount, score.Point))
+			}
 		}
 	}
 	rank.setOrders(symbol, newOrders)
