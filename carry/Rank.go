@@ -94,7 +94,8 @@ var ProcessRank = func(market, symbol string) {
 	scoreBid, scoreAsk := calcHighestScore(setting, tick)
 	score := scoreBid
 	cancelSide := model.OrderSideSell
-	if scoreAsk.Point < scoreBid.Point {
+	trendSide := calcTrend(tick)
+	if trendSide == model.OrderSideSell {
 		score = scoreAsk
 		cancelSide = model.OrderSideBuy
 	}
@@ -185,6 +186,19 @@ func completeTick(market, symbol string, tick *model.BidAsk, priceDistance, chec
 	}
 	tick.Asks = newAsks
 	tick.Bids = newBids
+}
+
+func calcTrend(tick *model.BidAsk) (trend string) {
+	amountBid := tick.Bids[0].Amount * 10
+	amountAsk := tick.Asks[0].Amount * 10
+	for i := 1; i < 11; i++ {
+		amountBid += tick.Bids[i].Amount
+		amountAsk += tick.Asks[i].Amount
+	}
+	if amountBid > amountAsk {
+		return model.OrderSideBuy
+	}
+	return model.OrderSideSell
 }
 
 func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (scoreBid, scoreAsk *model.Score) {
