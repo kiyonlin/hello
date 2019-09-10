@@ -161,10 +161,10 @@ var ProcessRank = func(market, symbol string) {
 func completeTick(market, symbol string, tick *model.BidAsk, priceDistance, checkDistance float64) {
 	newBids := make([]model.Tick, 11)
 	newAsks := make([]model.Tick, 11)
-	basePrice := tick.Bids[0].Price
+	basePrice := (tick.Bids[0].Price + tick.Asks[0].Price) / 2
 	for i := 0; i < 11; i++ {
-		askPrice, _ := util.FormatNum(basePrice+priceDistance*float64(i+1), api.GetPriceDecimal(market, symbol))
-		bidPrice, _ := util.FormatNum(basePrice-priceDistance*float64(i), api.GetPriceDecimal(market, symbol))
+		askPrice, _ := util.FormatNum(basePrice+priceDistance*(float64(i)+0.5), api.GetPriceDecimal(market, symbol))
+		bidPrice, _ := util.FormatNum(basePrice-priceDistance*(float64(i)+0.5), api.GetPriceDecimal(market, symbol))
 		newAsks[i] = model.Tick{Symbol: symbol, Price: askPrice, Amount: 0}
 		newBids[i] = model.Tick{Symbol: symbol, Price: bidPrice, Amount: 0}
 	}
