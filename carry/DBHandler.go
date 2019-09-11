@@ -182,6 +182,7 @@ func MaintainTransFee(key, secret string) {
 			if len(orders) == 0 {
 				break
 			}
+			util.Info(fmt.Sprintf(`--- get working orders %d`, len(orders)))
 			feeIndex += len(orders)
 			for _, value := range orders {
 				order := api.QueryOrderById(key, secret, value.Market, value.Symbol, value.OrderId)
