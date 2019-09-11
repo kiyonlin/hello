@@ -37,7 +37,7 @@ var ProcessHang = func(market, symbol string) {
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
-		if orderScore.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/8 {
+		if orderScore.Point > point/2 {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
