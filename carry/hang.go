@@ -6,6 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"strings"
 )
 
 var ProcessHang = func(market, symbol string) {
@@ -45,7 +46,6 @@ var ProcessHang = func(market, symbol string) {
 			didSmth = true
 		}
 	}
-	leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
 	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
 		queryOrders := api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
 			0, 0)
@@ -61,30 +61,40 @@ var ProcessHang = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
 		rank.setCheckTime(symbol)
 	} else if !didSmth {
-		if scoreBid.Point > point && rightFree/scoreBid.Price > scoreBid.Amount {
-			order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,
-				symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount)
-			if order.OrderId != `` {
-				order.Status = model.CarryStatusWorking
-				order.RefreshType = RankRebalance
-				if scoreBid.Point > scoreAsk.Point {
-					order.RefreshType = RankSequence
+		coins := strings.Split(symbol, `_`)
+		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+		if scoreAsk.Point > point || scoreBid.Point > point {
+			if rightFree/scoreBid.Price > scoreBid.Amount {
+				order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,
+					symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount)
+				if order.OrderId != `` {
+					order.Status = model.CarryStatusWorking
+					order.RefreshType = RankRebalance
+					if scoreBid.Point > scoreAsk.Point {
+						order.RefreshType = RankSequence
+					}
+					newOrders = append(newOrders, order)
+					model.AppDB.Save(&order)
 				}
-				newOrders = append(newOrders, order)
-				model.AppDB.Save(&order)
+			} else {
+				util.Info(fmt.Sprintf(`--- coin influient %s %f<%f point:%f`,
+					coins[1], rightFree, scoreBid.Price*scoreBid.Amount, scoreBid.Point))
 			}
-		}
-		if scoreAsk.Point > point && leftFree > scoreAsk.Amount {
-			order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, market,
-				symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount)
-			if order.OrderId != `` {
-				order.Status = model.CarryStatusWorking
-				order.RefreshType = RankRebalance
-				if scoreBid.Point < scoreAsk.Point {
-					order.RefreshType = RankSequence
+			if leftFree > scoreAsk.Amount {
+				order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, market,
+					symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount)
+				if order.OrderId != `` {
+					order.Status = model.CarryStatusWorking
+					order.RefreshType = RankRebalance
+					if scoreBid.Point < scoreAsk.Point {
+						order.RefreshType = RankSequence
+					}
+					newOrders = append(newOrders, order)
+					model.AppDB.Save(&order)
 				}
-				newOrders = append(newOrders, order)
-				model.AppDB.Save(&order)
+			} else {
+				util.Info(fmt.Sprintf(`--- coin influient %s %f<%f point:%f`,
+					coins[0], leftFree, scoreAsk.Amount, scoreAsk.Point))
 			}
 		}
 	}
