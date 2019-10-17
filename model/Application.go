@@ -20,6 +20,7 @@ const OKFUTURE = `okfuture`
 const Huobi = "huobi"
 const Binance = "binance"
 const Fcoin = "fcoin"
+const Fmex = `fmex`
 const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
@@ -101,6 +102,8 @@ type Config struct {
 	BitmexSecret    string
 	FcoinKey        string
 	FcoinSecret     string
+	FmexKey         string
+	FmexSecret      string
 	BnbMin          float64
 	BnbBuy          float64
 	CarryDistance   float64 // carry价差触发条件
@@ -124,6 +127,12 @@ var dictMap = map[string]map[string]string{ // market - union name - market name
 		OrderSideBuy:    `buy`,
 		OrderSideSell:   `sell`,
 	},
+	Fmex: {
+		OrderTypeLimit:  `limit`,
+		OrderTypeMarket: `market`,
+		OrderSideBuy:    `long`,
+		OrderSideSell:   `short`,
+	},
 }
 
 var orderStatusMap = map[string]map[string]string{ // market - market status - united status
@@ -141,7 +150,7 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`partial-filled`:   CarryStatusWorking, //部分成交,
 		`partial-canceled`: CarryStatusSuccess, //部分成交撤销,
 		`filled`:           CarryStatusSuccess, //完全成交,
-		`canceled`:         CarryStatusFail},   //已撤销
+		`canceled`:         CarryStatusFail}, //已撤销
 	OKEX: {
 		"-1": CarryStatusFail,    //已撤销
 		"0":  CarryStatusWorking, //未成交
@@ -258,6 +267,11 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 			// btc_usdt: depth.L20.btcusdt
 			return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
 		}
+	case Fmex:
+		if subType == SubscribeDepth {
+			// btc_usdt: depth.L20.btcusdt
+			return `depth.L20.` + symbol
+		}
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
 		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
 		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
@@ -317,6 +331,9 @@ func GetSymbol(market, subscribe string) (symbol string) {
 			subscribe = strings.Replace(subscribe, `trade.`, ``, 1)
 			return getSymbolWithSplit(subscribe, `_`)
 		}
+	case Fmex:
+		subscribe = strings.Replace(subscribe, "depth.l20.", "", 1)
+		return subscribe
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
 		subscribe = strings.Replace(subscribe, `bibox_sub_spot_`, ``, 1)
 		subscribe = strings.Replace(subscribe, `_ticker`, ``, 1)
@@ -343,6 +360,7 @@ func NewConfig() {
 	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
+	AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
@@ -353,6 +371,8 @@ func NewConfig() {
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
+	AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
+	AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
@@ -361,7 +381,6 @@ func NewConfig() {
 	AppConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 	AppConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
 	//AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
-	AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
 	AppConfig.MarketCost = make(map[string]float64)
 	AppConfig.MarketCost[Fcoin] = 0
 	AppConfig.MarketCost[Huobi] = 0.0005

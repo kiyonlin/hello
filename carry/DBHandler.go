@@ -257,6 +257,8 @@ func createMarketDepthServer(markets *model.Markets, market string) chan struct{
 		channel, err = api.WsDepthServeBinance(markets, WSErrHandler)
 	case model.Fcoin:
 		channel, err = api.WsDepthServeFcoin(markets, WSErrHandler)
+	case model.Fmex:
+		channel, err = api.WsDepthServeFmex(markets, WSErrHandler)
 	case model.Coinpark:
 		channel, err = api.WsDepthServeCoinpark(markets, WSErrHandler)
 	case model.Bitmex:

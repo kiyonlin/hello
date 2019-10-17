@@ -71,6 +71,7 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	api.RefreshAccount(``, ``, model.Fmex)
 	//perUsdt, _ := api.GetPrice(``, ``, `usdc_usdt`)
 	newOrders := api.QueryOrders(``, ``, model.Fcoin, `xrp_usdt`,
 		model.CarryStatusWorking, model.AccountTypeLever, 0, 0)
