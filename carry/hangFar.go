@@ -101,15 +101,43 @@ var ProcessHangFar = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	hang(key, secret, market, symbol, setting.AccountType, pos, amount, tick)
+	if hang(key, secret, market, symbol, setting.AccountType, pos, amount, tick) {
+		cancelNonHang(market, symbol)
+	}
 }
 
-func hang(key, secret, market, symbol, accountType string, pos, amount map[string]float64, tick *model.BidAsk) {
+func cancelNonHang(market, symbol string) {
+	orders := api.QueryOrders(key, secret, market, symbol, ``, ``, 0, 0)
 	ordersBids, orderAsks := hangFarOrders.getFarOrders(symbol)
+	for _, order := range orders {
+		if order != nil && order.OrderId != `` {
+			needCancel := true
+			for _, value := range ordersBids {
+				if value != nil && value.OrderId == order.OrderId {
+					needCancel = false
+				}
+			}
+			for _, value := range orderAsks {
+				if value != nil && value.OrderId == order.OrderId {
+					needCancel = false
+				}
+			}
+			if needCancel {
+				util.Notice(fmt.Sprintf(`==cancel other pending== %s`, order.OrderId))
+				api.MustCancel(key, secret, market, symbol, order.OrderId, true)
+			}
+		}
+	}
+}
+
+func hang(key, secret, market, symbol, accountType string, pos, amount map[string]float64, tick *model.BidAsk) (dosmth bool) {
+	ordersBids, orderAsks := hangFarOrders.getFarOrders(symbol)
+	dosmth = false
 	for str, value := range pos {
 		bidPrice := (tick.Bids[0].Price + tick.Asks[0].Price) / 2 * (1 - value)
 		askPrice := (tick.Bids[0].Price + tick.Asks[0].Price) / 2 * (1 + value)
 		if ordersBids[str] == nil {
+			dosmth = true
 			order := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 				accountType, bidPrice, amount[str])
 			if order != nil && order.OrderId != `` {
@@ -118,6 +146,7 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 			model.AppDB.Save(&order)
 		}
 		if orderAsks[str] == nil {
+			dosmth = true
 			order := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 				accountType, askPrice, amount[str])
 			if order != nil && order.OrderId != `` {
@@ -127,6 +156,7 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 		}
 	}
 	hangFarOrders.setFarOrders(symbol, ordersBids, orderAsks)
+	return dosmth
 }
 
 func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *model.BidAsk) {

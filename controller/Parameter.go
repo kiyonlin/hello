@@ -125,10 +125,9 @@ func setSymbol(c *gin.Context) {
 	defer rows.Close()
 	msg := ``
 	for rows.Next() {
-		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &refreshSameTime, &valid)
-		msg += fmt.Sprintf("%s %s %s %s %f %s %v \n", market, symbol, function, parameter, amountLimit,
-			refreshSameTime, valid)
+		msg += fmt.Sprintf("%s %s %s %s %f %s\n", market, symbol, function, parameter, amountLimit,
+			refreshSameTime)
 	}
 	model.LoadSettings()
 	carry.MaintainMarketChan()
