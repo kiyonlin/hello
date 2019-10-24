@@ -183,6 +183,8 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 			}
 		}
 		return orders
+	case model.Fmex:
+		return queryOrdersFmex(key, secret, symbol)
 	default:
 		util.Notice(market + ` not supported`)
 	}

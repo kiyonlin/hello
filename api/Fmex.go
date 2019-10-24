@@ -187,6 +187,24 @@ func placeOrderFmex(key, secret, orderSide, orderType, symbol, price, amount str
 	return ``, err.Error()
 }
 
+func queryOrdersFmex(key, secret, symbol string) (orders []*model.Order) {
+	orders = make([]*model.Order, 0)
+	responseBody := SignedRequestFmex(key, secret, `GET`, `v3/contracts/orders/open`, nil)
+	orderJson, err := util.NewJSON([]byte(responseBody))
+	if err == nil {
+		jsonOrders := orderJson.GetPath(`data`, `results`)
+		if jsonOrders != nil {
+			orderArray, _ := jsonOrders.Array()
+			for _, order := range orderArray {
+				orderMap := order.(map[string]interface{})
+				order := parseOrderFmex(symbol, orderMap)
+				orders = append(orders, order)
+			}
+		}
+	}
+	return orders
+}
+
 func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg string) {
 	responseBody := SignedRequestFmex(key, secret, `POST`, `v3/contracts/orders/`+orderId+`/cancel`, nil)
 	responseJson, err := util.NewJSON([]byte(responseBody))
@@ -202,27 +220,85 @@ func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg str
 }
 
 func parseOrderFmex(symbol string, orderMap map[string]interface{}) (order *model.Order) {
-	if orderMap == nil || orderMap[`created_at`] == nil || orderMap[`quantity`] == nil ||
-		orderMap[`price`] == nil || orderMap[`unfilled_quantity`] == nil || orderMap[`fee`] == nil ||
-		orderMap[`id`] == nil || orderMap[`type`] == nil || orderMap[`direction`] == nil || orderMap[`status`] == nil {
+	if orderMap == nil || orderMap[`id`] == nil {
 		return nil
 	}
-	createTime, _ := orderMap[`created_at`].(json.Number).Int64()
-	updateTime, _ := orderMap[`updated_at`].(json.Number).Int64()
-	price, _ := orderMap[`price`].(json.Number).Float64()
-	fee, _ := orderMap[`fee`].(json.Number).Float64()
-	orderSide := model.GetDictMapRevert(model.Fmex, orderMap[`direction`].(string))
-	triggerDirection := model.GetDictMapRevert(model.Fmex, orderMap[`trigger_direction`].(string))
-	features, _ := orderMap[`features`].(json.Number).Int64()
-	amount, _ := orderMap[`quantity`].(json.Number).Float64()
-	unfilledQuantity, _ := orderMap[`unfilled_quantity`].(json.Number).Float64()
-	makerFeeRate, _ := orderMap[`maker_fee_rate`].(json.Number).Float64()
-	takerFeeRate, _ := orderMap[`taker_fee_rate`].(json.Number).Float64()
-	triggerOn, _ := orderMap[`trigger_on`].(json.Number).Float64()
-	trailingBasePrice, _ := orderMap[`trailing_base_price`].(json.Number).Float64()
-	trailingDistance, _ := orderMap[`trailing_distance`].(json.Number).Float64()
-	frozenMargin, _ := orderMap[`frozen_margin`].(json.Number).Float64()
-	frozenQuantity, _ := orderMap[`frozen_quantity`].(json.Number).Float64()
+	createTime := int64(0)
+	if orderMap[`created_at`] != nil {
+		createTime, _ = orderMap[`created_at`].(json.Number).Int64()
+	}
+	updateTime := int64(0)
+	if orderMap[`updated_at`] != nil {
+		updateTime, _ = orderMap[`updated_at`].(json.Number).Int64()
+	}
+	price := 0.0
+	if orderMap[`price`] != nil {
+		price, _ = orderMap[`price`].(json.Number).Float64()
+	}
+	fee := 0.0
+	if orderMap[`fee`] != nil {
+		fee, _ = orderMap[`fee`].(json.Number).Float64()
+	}
+	orderSide := ``
+	if orderMap[`direction`] != nil {
+		orderSide = model.GetDictMapRevert(model.Fmex, orderMap[`direction`].(string))
+	}
+	triggerDirection := ``
+	if orderMap[`trigger_direction`] != nil {
+		triggerDirection = model.GetDictMapRevert(model.Fmex, orderMap[`trigger_direction`].(string))
+	}
+	features := int64(0)
+	if orderMap[`features`] != nil {
+		features, _ = orderMap[`features`].(json.Number).Int64()
+	}
+	amount := 0.0
+	if orderMap[`quantity`] != nil {
+		amount, _ = orderMap[`quantity`].(json.Number).Float64()
+	}
+	unfilledQuantity := 0.0
+	if orderMap[`unfilled_quantity`] != nil {
+		unfilledQuantity, _ = orderMap[`unfilled_quantity`].(json.Number).Float64()
+	}
+	makerFeeRate := 0.0
+	if orderMap[`maker_fee_rate`] != nil {
+		makerFeeRate, _ = orderMap[`maker_fee_rate`].(json.Number).Float64()
+	}
+	takerFeeRate := 0.0
+	if orderMap[`taker_fee_rate`] != nil {
+		takerFeeRate, _ = orderMap[`taker_fee_rate`].(json.Number).Float64()
+	}
+	triggerOn := 0.0
+	if orderMap[`trigger_on`] != nil {
+		triggerOn, _ = orderMap[`trigger_on`].(json.Number).Float64()
+	}
+	trailingBasePrice := 0.0
+	if orderMap[`trailing_base_price`] != nil {
+		trailingBasePrice, _ = orderMap[`trailing_base_price`].(json.Number).Float64()
+	}
+	trailingDistance := 0.0
+	if orderMap[`trailing_distance`] != nil {
+		trailingDistance, _ = orderMap[`trailing_distance`].(json.Number).Float64()
+	}
+	frozenMargin := 0.0
+	if orderMap[`frozen_margin`] != nil {
+		frozenMargin, _ = orderMap[`frozen_margin`].(json.Number).Float64()
+	}
+	frozenQuantity := 0.0
+	if orderMap[`frozen_quantity`] != nil {
+		frozenQuantity, _ = orderMap[`frozen_quantity`].(json.Number).Float64()
+	}
+	hidden := false
+	if orderMap[`hidden`] != nil {
+		hidden = orderMap[`hidden`].(bool)
+	}
+	orderType := ``
+	if orderMap[`type`] != nil {
+		orderType = orderMap[`type`].(string)
+	}
+	status := ``
+	if orderMap[`status`] != nil {
+		status = orderMap[`status`].(string)
+	}
 	return &model.Order{
 		OrderId:           orderMap[`id`].(json.Number).String(),
 		Symbol:            symbol,
@@ -231,14 +307,14 @@ func parseOrderFmex(symbol string, orderMap map[string]interface{}) (order *mode
 		DealAmount:        amount - unfilledQuantity,
 		OrderTime:         time.Unix(0, createTime*1000000),
 		OrderUpdateTime:   time.Unix(0, updateTime*1000000),
-		OrderType:         model.GetDictMapRevert(model.Fmex, orderMap[`type`].(string)),
+		OrderType:         model.GetDictMapRevert(model.Fmex, orderType),
 		OrderSide:         orderSide,
 		Price:             price,
 		Fee:               fee,
-		Status:            model.GetOrderStatus(model.Fmex, orderMap[`status`].(string)),
+		Status:            model.GetOrderStatus(model.Fmex, status),
 		TriggerDirection:  triggerDirection,
 		Features:          features,
-		Hidden:            orderMap[`hidden`].(bool),
+		Hidden:            hidden,
 		UnfilledQuantity:  unfilledQuantity,
 		MakerFeeRate:      makerFeeRate,
 		TakerFeeRate:      takerFeeRate,

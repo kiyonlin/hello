@@ -139,8 +139,8 @@ func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *mo
 			order.Price >= tick.Asks[0].Price*(1-pos[posStr]+dis[posStr])) {
 			go api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
 		} else {
-			util.Notice(fmt.Sprintf(`validate order %s %f order id %s price bid %f`,
-				posStr, pos[posStr], order.OrderId, tick.Bids[0].Price))
+			//util.Notice(fmt.Sprintf(`validate order %s %f order id %s price bid %f`,
+			//	posStr, pos[posStr], order.OrderId, tick.Bids[0].Price))
 			bidOrdersValid[posStr] = order
 		}
 	}
@@ -150,8 +150,8 @@ func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *mo
 			order.Price >= tick.Asks[0].Price*(1+pos[posStr]+dis[posStr])) {
 			go api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
 		} else {
-			util.Notice(fmt.Sprintf(`validate order %s %f order id %s price ask %f`,
-				posStr, pos[posStr], order.OrderId, tick.Asks[0].Price))
+			//util.Notice(fmt.Sprintf(`validate order %s %f order id %s price ask %f`,
+			//	posStr, pos[posStr], order.OrderId, tick.Asks[0].Price))
 			askOrdersValid[posStr] = order
 		}
 	}
