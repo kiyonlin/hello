@@ -437,7 +437,7 @@ var ProcessRefresh = func(market, symbol string) {
 		}
 		finalPlace, _ = strconv.ParseFloat(parameters[len(parameters)-1], 64)
 	}
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
 		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
 		CancelRefreshHang(key, secret, symbol, RefreshTypeFar+RefreshTypeGrid)
@@ -621,7 +621,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 }
 
 func hangGrid(key, secret, market, symbol, accountType string, setting *model.Setting, tick *model.BidAsk) {
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	for i := 1; i < 10; i++ {
 		if i%2 == 0 {
 			continue
@@ -817,7 +817,7 @@ func CancelRefreshHang(key, secret, symbol, keep string) {
 
 func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64, tick *model.BidAsk) (
 	result bool, orderSide, reverseSide string, orderPrice float64) {
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	if tick.Asks[0].Price > 1.0003*tick.Bids[0].Price && symbol != `btc_pax` &&
 		tick.Bids[0].Price+1.1*priceDistance < tick.Asks[0].Price {
 		return false, "", "", 0

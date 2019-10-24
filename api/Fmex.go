@@ -162,7 +162,8 @@ func placeOrderFmex(key, secret, orderSide, orderType, symbol, price, amount str
 		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
 		return ``, ``
 	}
-	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
+	postData["symbol"] = symbol
+	//postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	postData["type"] = orderType
 	postData["direction"] = orderSide
 	postData["quantity"] = amount
@@ -172,16 +173,22 @@ func placeOrderFmex(key, secret, orderSide, orderType, symbol, price, amount str
 		data, _ := orderJson.Get(`data`).Map()
 		status, _ := orderJson.Get("status").Int()
 		order := parseOrderFmex(symbol, data)
-		orderId = order.OrderId
-		util.Notice(fmt.Sprintf(`[挂单fmex] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
-			symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
-		return orderId, strconv.Itoa(status)
+		if order != nil && status == 0 {
+			orderId = order.OrderId
+			util.Notice(fmt.Sprintf(
+				`[挂单fmex] %s side: %s type: %s price: %s amount: %s order id %s errCode:%s 返回%s`,
+				symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
+			return orderId, strconv.Itoa(status)
+		} else {
+			util.Notice(string(responseBody))
+			return ``, ``
+		}
 	}
 	return ``, err.Error()
 }
 
 func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg string) {
-	responseBody := SignedRequestFcoin(key, secret, `POST`, `v3/contracts/orders/`+orderId+`/cancel`, nil)
+	responseBody := SignedRequestFmex(key, secret, `POST`, `v3/contracts/orders/`+orderId+`/cancel`, nil)
 	responseJson, err := util.NewJSON([]byte(responseBody))
 	status := -1
 	if err == nil {
@@ -196,18 +203,18 @@ func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg str
 
 func parseOrderFmex(symbol string, orderMap map[string]interface{}) (order *model.Order) {
 	if orderMap == nil || orderMap[`created_at`] == nil || orderMap[`quantity`] == nil ||
-		orderMap[`price`] == nil || orderMap[`filled_amount`] == nil || orderMap[`fee`] == nil ||
+		orderMap[`price`] == nil || orderMap[`unfilled_quantity`] == nil || orderMap[`fee`] == nil ||
 		orderMap[`id`] == nil || orderMap[`type`] == nil || orderMap[`direction`] == nil || orderMap[`status`] == nil {
 		return nil
 	}
 	createTime, _ := orderMap[`created_at`].(json.Number).Int64()
 	updateTime, _ := orderMap[`updated_at`].(json.Number).Int64()
-	amount, _ := strconv.ParseFloat(orderMap[`quantity`].(string), 64)
-	price, _ := strconv.ParseFloat(orderMap[`price`].(string), 64)
-	fee, _ := strconv.ParseFloat(orderMap[`fee`].(string), 64)
+	price, _ := orderMap[`price`].(json.Number).Float64()
+	fee, _ := orderMap[`fee`].(json.Number).Float64()
 	orderSide := model.GetDictMapRevert(model.Fmex, orderMap[`direction`].(string))
 	triggerDirection := model.GetDictMapRevert(model.Fmex, orderMap[`trigger_direction`].(string))
 	features, _ := orderMap[`features`].(json.Number).Int64()
+	amount, _ := orderMap[`quantity`].(json.Number).Float64()
 	unfilledQuantity, _ := orderMap[`unfilled_quantity`].(json.Number).Float64()
 	makerFeeRate, _ := orderMap[`maker_fee_rate`].(json.Number).Float64()
 	takerFeeRate, _ := orderMap[`taker_fee_rate`].(json.Number).Float64()
@@ -217,10 +224,11 @@ func parseOrderFmex(symbol string, orderMap map[string]interface{}) (order *mode
 	frozenMargin, _ := orderMap[`frozen_margin`].(json.Number).Float64()
 	frozenQuantity, _ := orderMap[`frozen_quantity`].(json.Number).Float64()
 	return &model.Order{
-		OrderId:           orderMap[`id`].(string),
+		OrderId:           orderMap[`id`].(json.Number).String(),
 		Symbol:            symbol,
 		Market:            model.Fmex,
 		Amount:            amount,
+		DealAmount:        amount - unfilledQuantity,
 		OrderTime:         time.Unix(0, createTime*1000000),
 		OrderUpdateTime:   time.Unix(0, updateTime*1000000),
 		OrderType:         model.GetDictMapRevert(model.Fmex, orderMap[`type`].(string)),
@@ -254,7 +262,7 @@ func getAccountFmex(key, secret string) (account []*model.Account) {
 			for _, value := range positions {
 				account := value.(map[string]interface{})
 				updateTime, _ := account[`updated_at`].(json.Number).Int64()
-				free,_ := account["quantity"].(json.Number).Float64()
+				free, _ := account["quantity"].(json.Number).Float64()
 				profitReal, _ := account[`realized_pnl`].(json.Number).Float64()
 				margin, _ := account[`margin`].(json.Number).Float64()
 				bankruptcyPrice, _ := account[`bankruptcy_price`].(json.Number).Float64()

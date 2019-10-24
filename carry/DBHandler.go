@@ -278,6 +278,7 @@ func ResetChannel(market string, channel chan struct{}) {
 	symbols := model.GetMarketSymbols(market)
 	for symbol := range symbols {
 		go CancelRefreshHang(key, secret, symbol, RefreshTypeGrid)
+		go CancelHang(key, secret, symbol)
 	}
 	channel <- struct{}{}
 	close(channel)
@@ -320,6 +321,7 @@ func Maintain() {
 	model.HandlerMap[model.FunctionCarry] = ProcessCarry
 	model.HandlerMap[model.FunctionHang] = ProcessHang
 	model.HandlerMap[model.FunctionRank] = ProcessRank
+	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar
 	defer model.AppDB.Close()
 	model.AppDB.AutoMigrate(&model.Account{})
 	model.AppDB.AutoMigrate(&model.Setting{})

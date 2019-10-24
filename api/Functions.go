@@ -36,12 +36,17 @@ func GetMinAmount(market, symbol string) float64 {
 		case `trx_usdt`, `trx_btc`, `trx_eth`:
 			return 200
 		}
+	case model.Fmex:
+		switch symbol {
+		case `btcusd_p`:
+			return 1
+		}
 	}
 	return 0
 }
 
 // 根据不同的网站返回价格小数位
-func GetPriceDecimal(market, symbol string) int {
+func GetPriceDecimal(market, symbol string) float64 {
 	switch market {
 	case model.Fcoin:
 		//{"status":3022,"msg":"limit price decimal: 5"}
@@ -65,6 +70,11 @@ func GetPriceDecimal(market, symbol string) int {
 		case `ft_btc`, `xrp_btc`, `iota_btc`, `ft_eth`, `trx_btc`, `trx_eth`, `xlm_btc`, `ada_btc`:
 			return 8
 		}
+	case model.Fmex:
+		switch symbol {
+		case `btcusd_p`:
+			return 0.5
+		}
 	case model.Coinpark:
 		switch symbol {
 		case `cp_usdt`:
@@ -76,7 +86,7 @@ func GetPriceDecimal(market, symbol string) int {
 	return 8
 }
 
-func GetAmountDecimal(market, symbol string) int {
+func GetAmountDecimal(market, symbol string) float64 {
 	switch market {
 	case model.OKEX:
 		switch symbol {
@@ -96,6 +106,11 @@ func GetAmountDecimal(market, symbol string) int {
 			`etc_usdt`, `etc_btc`, `etc_eth`, `bch_btc`, `bch_usdt`, `bsv_usdt`, `zec_usdt`, `xlm_usdt`, `ada_usdt`,
 			`ada_eth`, `dash_usdt`, `dash_btc`, `dash_eth`, `bsv_btc`, `pax_usdt`, `tusd_usdt`, `usdc_usdt`, `gusd_usdt`:
 			return 4
+		}
+	case model.Fmex:
+		switch symbol {
+		case `btcusd_p`:
+			return 0
 		}
 	}
 	return 4
@@ -144,6 +159,8 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (res
 		result, errCode, msg = CancelOrderCoinpark(orderId)
 	case model.Bitmex:
 		result, errCode, msg = CancelOrderBitmex(orderId)
+	case market:
+		result, errCode, msg = CancelOrderFmex(key, secret, orderId)
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
 	return result, errCode, msg
@@ -340,8 +357,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
-	price, strPrice := util.FormatNum(price, GetPriceDecimal(model.Fcoin, symbol))
-	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(model.Fcoin, symbol))
+	price, strPrice := util.FormatNum(price, GetPriceDecimal(market, symbol))
+	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
 	if amountType == model.AmountTypeContractNumber {
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}
@@ -368,9 +385,11 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
 		orderId, errCode = placeOrderFcoin(key, secret, orderSide, orderType, symbol, accountType, strPrice, strAmount)
-		if orderId == `1002` {
+		if errCode == `1002` {
 			time.Sleep(time.Millisecond * 200)
 		}
+	case model.Fmex:
+		orderId, errCode = placeOrderFmex(key, secret, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Coinpark:
 		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, strPrice, strAmount)
 		if errCode == `4003` {

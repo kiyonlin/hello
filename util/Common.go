@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/bitly/go-simplejson"
 	"io/ioutil"
+	"math"
 	"net/url"
 	"strconv"
 	"time"
@@ -63,8 +64,12 @@ func GetNowUnixMillion() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func FormatNum(input float64, decimal int) (num float64, str string) {
-	format := `%.` + strconv.Itoa(decimal) + `f`
+func FormatNum(input float64, decimal float64) (num float64, str string) {
+	if decimal == 0.5 {
+		base := float64(int(math.Round(input*2))) / 2
+		return FormatNum(base, 1)
+	}
+	format := `%.` + strconv.Itoa(int(decimal)) + `f`
 	str = fmt.Sprintf(format, input)
 	num, _ = strconv.ParseFloat(str, 64)
 	return num, str

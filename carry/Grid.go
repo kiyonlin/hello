@@ -64,7 +64,7 @@ func placeGridOrders(key, secret, market, symbol string, bidAsk *model.BidAsk) (
 		util.Notice(fmt.Sprintf(`%s 没有usdt价格 %s`, symbol, usdtSymbol))
 		return false
 	}
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	priceSell := math.Max(math.Min(bidAsk.Asks[0].Price*(1+setting.GridPriceDistance),
 		grid.lastPrice*(1+setting.GridPriceDistance+0.0007)), bidAsk.Bids[0].Price+priceDistance)
 	priceBuy := priceSell * (1 - 2*setting.GridPriceDistance)

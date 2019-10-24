@@ -83,7 +83,7 @@ var ProcessRank = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
 		return
 	}
-	priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
+	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	checkDistance := priceDistance / 10
 	completeTick(market, symbol, tick, priceDistance, checkDistance)
 	setting := model.GetSetting(model.FunctionRank, market, symbol)

@@ -49,6 +49,7 @@ const FunctionGrid = `grid`
 const FunctionMaker = `maker`
 const FunctionCarry = `carry`
 const FunctionHang = `hang`
+const FunctionHangFar = `hang_far`
 const FunctionRank = `rank`
 
 //const FunctionArbitrary = `arbitrary`
@@ -150,7 +151,7 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`partial-filled`:   CarryStatusWorking, //部分成交,
 		`partial-canceled`: CarryStatusSuccess, //部分成交撤销,
 		`filled`:           CarryStatusSuccess, //完全成交,
-		`canceled`:         CarryStatusFail}, //已撤销
+		`canceled`:         CarryStatusFail},   //已撤销
 	OKEX: {
 		"-1": CarryStatusFail,    //已撤销
 		"0":  CarryStatusWorking, //未成交
