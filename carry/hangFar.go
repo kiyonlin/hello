@@ -85,7 +85,7 @@ var ProcessHangFar = func(market, symbol string) {
 		CancelHang(key, secret, symbol)
 		return
 	}
-	go validHang(key, secret, symbol, pos, posDis, tick)
+	validHang(key, secret, symbol, pos, posDis, tick)
 	if model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s is pause:%v`, model.AppConfig.Handle, model.AppPause))
 		CancelHang(key, secret, symbol)
@@ -137,7 +137,7 @@ func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *mo
 		if pos[posStr] == 0 || (pos[posStr] > 0 &&
 			order.Price <= tick.Bids[0].Price*(1-pos[posStr]-dis[posStr]) ||
 			order.Price >= tick.Asks[0].Price*(1-pos[posStr]+dis[posStr])) {
-			api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
+			go api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
 		} else {
 			bidOrdersValid[posStr] = order
 		}
@@ -146,7 +146,7 @@ func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *mo
 		if pos[posStr] == 0 || (pos[posStr] > 0 &&
 			order.Price <= tick.Bids[0].Price*(1+pos[posStr]-dis[posStr]) ||
 			order.Price >= tick.Asks[0].Price*(1+pos[posStr]+dis[posStr])) {
-			api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
+			go api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
 		} else {
 			askOrdersValid[posStr] = order
 		}
