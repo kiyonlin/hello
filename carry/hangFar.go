@@ -142,8 +142,8 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 				accountType, bidPrice, amount[str])
 			if order != nil && order.OrderId != `` {
 				ordersBids[str] = order
+				model.AppDB.Save(&order)
 			}
-			model.AppDB.Save(&order)
 		}
 		if orderAsks[str] == nil {
 			dosmth = true
@@ -151,8 +151,8 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 				accountType, askPrice, amount[str])
 			if order != nil && order.OrderId != `` {
 				orderAsks[str] = order
+				model.AppDB.Save(&order)
 			}
-			model.AppDB.Save(&order)
 		}
 	}
 	hangFarOrders.setFarOrders(symbol, ordersBids, orderAsks)
