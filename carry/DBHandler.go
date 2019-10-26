@@ -284,7 +284,7 @@ func ResetChannel(market string, channel chan struct{}) {
 	close(channel)
 	model.AppMarkets.PutDepthChan(market, 0, createMarketDepthServer(model.AppMarkets, market))
 	model.AppPause = false
-	util.Notice(market + " reset depth channel ")
+	util.SocketInfo(market + " reset depth channel ")
 }
 
 func MaintainMarketChan() {

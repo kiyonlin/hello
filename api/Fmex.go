@@ -52,7 +52,7 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 		if responseJson == nil {
 			return
 		}
-		if util.GetNowUnixMillion()-lastDepthPingFmex > 30000 {
+		if util.GetNowUnixMillion()-lastDepthPingFmex > 10000 {
 			lastDepthPingFmex = util.GetNowUnixMillion()
 			pingMsg := []byte(fmt.Sprintf(`{"cmd":"ping","args":[%d],"id":"id"}`, util.GetNowUnixMillion()))
 			if err := sendToWs(model.Fmex, pingMsg); err != nil {
