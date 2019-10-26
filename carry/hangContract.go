@@ -72,7 +72,7 @@ var ProcessHangContract = func(market, symbol string) {
 	}
 	hangContractOrders.setInHangingContract(true)
 	defer hangContractOrders.setInHangingContract(false)
-	if start-contractHoldingUpdate > 1000 {
+	if start-contractHoldingUpdate > 3000 {
 		updateContractHolding(market, symbol)
 	} else {
 		hangContract(key, secret, market, symbol, setting.AccountType, setting, tick)
