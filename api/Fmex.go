@@ -350,7 +350,7 @@ func getAccountFmex(key, secret string) (account []*model.Account) {
 				accounts = append(accounts,
 					&model.Account{Market: model.Fmex,
 						Currency:                     symbol,
-						Direction:                    account[`direction`].(string),
+						Direction:                    model.GetDictMapRevert(model.Fmex, account[`direction`].(string)),
 						Free:                         free,
 						ProfitReal:                   profitReal,
 						Margin:                       margin,

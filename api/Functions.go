@@ -322,7 +322,10 @@ func RefreshAccount(key, secret, market string) {
 			model.AppAccounts.SetAccount(model.Fcoin, currencies[i], fcoinAccounts[i])
 		}
 	case model.Fmex:
-		getAccountFmex(``, ``)
+		accounts := getAccountFmex(``, ``)
+		for _, account := range accounts {
+			model.AppAccounts.SetAccount(model.Fmex, account.Currency, account)
+		}
 	case model.Coinpark:
 		getAccountCoinpark(model.AppAccounts)
 	case model.Bitmex:

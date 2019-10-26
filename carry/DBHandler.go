@@ -279,6 +279,7 @@ func ResetChannel(market string, channel chan struct{}) {
 	for symbol := range symbols {
 		go CancelRefreshHang(key, secret, symbol, RefreshTypeGrid)
 		go CancelHang(key, secret, symbol)
+		go CancelHangContract(key, secret, symbol)
 	}
 	channel <- struct{}{}
 	close(channel)
@@ -322,6 +323,7 @@ func Maintain() {
 	model.HandlerMap[model.FunctionHang] = ProcessHang
 	model.HandlerMap[model.FunctionRank] = ProcessRank
 	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar
+	model.HandlerMap[model.FunctionHangContract] = ProcessHangContract
 	defer model.AppDB.Close()
 	model.AppDB.AutoMigrate(&model.Account{})
 	model.AppDB.AutoMigrate(&model.Setting{})

@@ -11,16 +11,16 @@ import (
 )
 
 type HangFarOrders struct {
-	lock      sync.Mutex
-	hanging   bool
-	bidOrders map[string]map[string]*model.Order // symbol - position - orders
-	askOrders map[string]map[string]*model.Order // symbol - position - orders
+	lock       sync.Mutex
+	hangingFar bool
+	bidOrders  map[string]map[string]*model.Order // symbol - position - orders
+	askOrders  map[string]map[string]*model.Order // symbol - position - orders
 }
 
 var hangFarOrders = &HangFarOrders{}
 
-func (hangFarOrders *HangFarOrders) setInHanging(in bool) {
-	hangFarOrders.hanging = in
+func (hangFarOrders *HangFarOrders) setInHangingFar(in bool) {
+	hangFarOrders.hangingFar = in
 }
 
 func (hangFarOrders *HangFarOrders) getFarOrders(symbol string) (bidOrders, askOrders map[string]*model.Order) {
@@ -91,17 +91,11 @@ var ProcessHangFar = func(market, symbol string) {
 		CancelHang(key, secret, symbol)
 		return
 	}
-	if hangFarOrders.hanging {
+	if hangFarOrders.hangingFar {
 		return
 	}
-	hangFarOrders.setInHanging(true)
-	defer hangFarOrders.setInHanging(false)
-	delay := util.GetNowUnixMillion() - int64(tick.Ts)
-	if delay > 500 {
-		CancelHang(key, secret, symbol)
-		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
-		return
-	}
+	hangFarOrders.setInHangingFar(true)
+	defer hangFarOrders.setInHangingFar(false)
 	if hang(key, secret, market, symbol, setting.AccountType, pos, amount, tick) {
 		cancelNonHang(market, symbol)
 	}

@@ -50,6 +50,7 @@ const FunctionMaker = `maker`
 const FunctionCarry = `carry`
 const FunctionHang = `hang`
 const FunctionHangFar = `hang_far`
+const FunctionHangContract = `hang_contract`
 const FunctionRank = `rank`
 
 //const FunctionArbitrary = `arbitrary`
@@ -174,6 +175,16 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`filled`:           CarryStatusSuccess, //完全成交
 		`canceled`:         CarryStatusFail,    //已撤销
 		`pending_cancel`:   CarryStatusWorking, //撤销已提交
+	},
+	Fmex: {
+		`PENDING`:           CarryStatusWorking, //	等待成交
+		`PARTIAL_FILLED`:    CarryStatusWorking, //	部分成交
+		`FULLY_FILLED`:      CarryStatusSuccess, //	完全成交
+		`PARTIAL_CANCELLED`: CarryStatusSuccess, //	部分取消
+		`FULLY_CANCELLED`:   CarryStatusFail,    //	全部取消
+		`STOP_PENDING`:      CarryStatusWorking, //	stop订单正在等待触发
+		`STOP_FAILED`:       CarryStatusFail,    //	stop订单被触发，但执行失败（例如：冻结失败）
+		`STOP_CANCELLED`:    CarryStatusFail,    //	stop订单未被触发而取消
 	},
 	Coinpark: {
 		`1`: CarryStatusWorking, //待成交
@@ -361,7 +372,7 @@ func NewConfig() {
 	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
-	AppConfig.WSUrls[Fmex] = `wss://api.fmex.com/v2/ws`
+	AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
@@ -373,7 +384,7 @@ func NewConfig() {
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
 	AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
-	AppConfig.RestUrls[Fmex] = `https://api.fmex.com/`
+	AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
