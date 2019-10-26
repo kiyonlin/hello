@@ -93,6 +93,8 @@ func updateContractHolding(market, symbol string) {
 		hangContractOrders.holdingShort = account.Free
 	}
 	contractHoldingUpdate = util.GetNowUnixMillion()
+	util.Notice(fmt.Sprintf(`====long %f ====short %f`,
+		hangContractOrders.holdingLong, hangContractOrders.holdingShort))
 }
 
 func calcPending(orders map[string]*model.Order) (pendingLong, pendingShort float64) {
@@ -135,6 +137,7 @@ func hangContract(key, secret, market, symbol, accountType string, setting *mode
 		}
 	}
 	hangContractOrders.setHangContractOrders(symbol, orders)
+	time.Sleep(time.Millisecond * 500)
 }
 
 func validHangContract(key, secret, symbol string, setting *model.Setting, tick *model.BidAsk) {
