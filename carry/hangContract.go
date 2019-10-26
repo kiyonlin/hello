@@ -89,6 +89,7 @@ func updateContractHolding(market, symbol string) {
 	if account.Direction == model.OrderSideSell {
 		hangContractOrders.holdingShort = account.Free
 	}
+	contractHoldingUpdate = util.GetNowUnixMillion()
 }
 
 func calcPending(orders map[string]*model.Order) (pendingLong, pendingShort float64) {

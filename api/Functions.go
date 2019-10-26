@@ -288,7 +288,7 @@ func _(key, secret, market string, coins map[string]bool) {
 }
 
 func RefreshAccount(key, secret, market string) {
-	util.Notice(`refresh all accounts in market ` + market)
+	util.SocketInfo(`refresh all accounts in market ` + market)
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
