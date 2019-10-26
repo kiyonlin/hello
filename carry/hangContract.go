@@ -31,6 +31,9 @@ func (hangContractOrders *HangContractOrders) getHangContractOrders(symbol strin
 	if hangContractOrders.orders == nil {
 		hangContractOrders.orders = make(map[string]map[string]*model.Order)
 	}
+	if hangContractOrders.orders[symbol] == nil {
+		hangContractOrders.orders[symbol] = make(map[string]*model.Order)
+	}
 	return hangContractOrders.orders[symbol]
 }
 
@@ -110,7 +113,7 @@ func hangContract(key, secret, market, symbol, accountType string, setting *mode
 	orders := hangContractOrders.getHangContractOrders(symbol)
 	pendingLong, pendingShort := calcPending(orders)
 	if hangContractOrders.holdingLong+pendingLong < setting.AmountLimit {
-		util.Notice(fmt.Sprintf(`=not limit= %s %f + %f < %f place at %f %f`,
+		util.Notice(fmt.Sprintf(`=not limit= %s %f + %f < %f place at %f %f %f`,
 			symbol, model.OrderSideBuy, hangContractOrders.holdingLong, pendingLong, setting.AmountLimit,
 			tick.Bids[0].Price, tick.Asks[0].Price))
 		order := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
@@ -122,7 +125,7 @@ func hangContract(key, secret, market, symbol, accountType string, setting *mode
 	}
 	if hangContractOrders.holdingShort+pendingShort < setting.AmountLimit {
 		util.Notice(fmt.Sprintf(`=not limit= %s %s %f + %f < %f place at %f %f`,
-			symbol, model.OrderSideBuy, hangContractOrders.holdingLong, pendingLong, setting.AmountLimit,
+			symbol, model.OrderSideSell, hangContractOrders.holdingLong, pendingLong, setting.AmountLimit,
 			tick.Bids[0].Price, tick.Asks[0].Price))
 		order := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
 			accountType, tick.Asks[0].Price, setting.GridAmount)
