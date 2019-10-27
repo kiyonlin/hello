@@ -169,7 +169,7 @@ var ProcessHangFar = func(market, symbol string) {
 	if len(hangFarOrders.needRevertOrders) > 0 {
 		util.Notice(fmt.Sprintf(`=need cancel revert= need:%d revert:%d bid:%d ask:%d`,
 			len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
-			len(hangFarOrders.bidOrders), len(hangFarOrders.askOrders)))
+			len(hangFarOrders.bidOrders[symbol]), len(hangFarOrders.askOrders[symbol])))
 		revertCancelOrder(key, secret, market, symbol, setting.AccountType, tick)
 	} else if hang(key, secret, market, symbol, setting.AccountType, pos, amount, tick) {
 		CancelNonHang(market, symbol)
@@ -201,10 +201,10 @@ func revertCancelOrder(key, secret, market, symbol, accountType string, tick *mo
 
 func CancelNonHang(market, symbol string) {
 	orders := api.QueryOrders(key, secret, market, symbol, ``, ``, 0, 0)
+	ordersBids, orderAsks := hangFarOrders.getFarOrders(symbol)
 	util.Notice(fmt.Sprintf(`=query orders cancel non-hang= open:%d need:%d revert:%d bid:%d ask:%d`,
 		len(orders), len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
-		len(hangFarOrders.bidOrders), len(hangFarOrders.askOrders)))
-	ordersBids, orderAsks := hangFarOrders.getFarOrders(symbol)
+		len(ordersBids), len(orderAsks)))
 	for _, order := range orders {
 		if order != nil && order.OrderId != `` {
 			needCancel := true
@@ -255,8 +255,10 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 			}
 		}
 	}
-	util.Notice(fmt.Sprintf(`hang orders bid %d ask %d`, len(ordersBids), len(orderAsks)))
-	hangFarOrders.setFarOrders(symbol, ordersBids, orderAsks)
+	if dosmth {
+		util.Notice(fmt.Sprintf(`hang orders bid %d ask %d`, len(ordersBids), len(orderAsks)))
+		hangFarOrders.setFarOrders(symbol, ordersBids, orderAsks)
+	}
 	return dosmth
 }
 
