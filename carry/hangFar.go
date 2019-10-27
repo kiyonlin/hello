@@ -320,10 +320,10 @@ func hangFarCancel(key, secret, market, symbol, orderId string) {
 	} else {
 		util.Notice(fmt.Sprintf(`==cancel other pending== %s`, orderId))
 		cancelOrder := api.MustCancel(key, secret, market, symbol, orderId, true)
-		model.AppDB.Save(&cancelOrder)
 		if cancelOrder != nil && cancelOrder.DealAmount > 0 && hangFarOrders.checkFarOrders(symbol, orderId) {
 			util.Notice(fmt.Sprintf(`=add need revert= %s %s deal %f`,
 				cancelOrder.OrderId, cancelOrder.OrderSide, cancelOrder.DealAmount))
+			model.AppDB.Save(&cancelOrder)
 			hangFarOrders.addNeedRevertOrder(cancelOrder)
 		}
 	}
