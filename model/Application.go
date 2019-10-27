@@ -53,6 +53,7 @@ const FunctionHang = `hang`
 const FunctionHangFar = `hang_far`
 const FunctionHangContract = `hang_contract`
 const FunctionRank = `rank`
+const FunctionHangRevert = `hang_revert`
 
 //const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`

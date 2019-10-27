@@ -171,7 +171,9 @@ var ProcessHangFar = func(market, symbol string) {
 	hangFarOrders.setInHangingFar(true)
 	defer hangFarOrders.setInHangingFar(false)
 	if len(hangFarOrders.needRevertOrders) > 0 {
-		util.Notice(fmt.Sprintf(`=need cancel revert= %d`, len(hangFarOrders.needRevertOrders)))
+		util.Notice(fmt.Sprintf(`=need cancel revert= need:%d revert:%d bid:%d ask:%d`,
+			len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
+			len(hangFarOrders.bidOrders), len(hangFarOrders.askOrders)))
 		revertCancelOrder(key, secret, market, symbol, setting.AccountType, tick)
 	} else if hang(key, secret, market, symbol, setting.AccountType, pos, amount, tick) {
 		CancelNonHang(market, symbol)
@@ -194,6 +196,9 @@ func revertCancelOrder(key, secret, market, symbol, accountType string, tick *mo
 			util.Notice(fmt.Sprintf(`=place revert= %s-%s amount%f - %f price %f - %f`,
 				cancelOrder.OrderSide, revertOrder.OrderSide, cancelOrder.DealAmount, revertOrder.Amount,
 				cancelOrder.Price, revertOrder.Price))
+			revertOrder.Function = model.FunctionHangRevert
+			revertOrder.RefreshType = cancelOrder.OrderId
+			model.AppDB.Save(&revertOrder)
 		}
 	}
 }
@@ -234,6 +239,7 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 			if order != nil && order.OrderId != `` {
 				util.Notice(fmt.Sprintf(`=hang= at %s %s`, str, order.OrderId))
 				ordersBids[str] = order
+				order.Function = model.FunctionHangFar
 				model.AppDB.Save(&order)
 			}
 		}
@@ -244,6 +250,7 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 			if order != nil && order.OrderId != `` {
 				util.Notice(fmt.Sprintf(`=hang= at %s %s`, str, order.OrderId))
 				orderAsks[str] = order
+				order.Function = model.FunctionHangFar
 				model.AppDB.Save(&order)
 			}
 		}
@@ -262,8 +269,6 @@ func validHang(key, secret, market, symbol string, pos, dis map[string]float64, 
 				order.Price >= tick.Bids[0].Price*(1-pos[posStr]+dis[posStr]))) {
 			hangFarCancel(key, secret, market, symbol, order.OrderId)
 		} else {
-			util.Info(fmt.Sprintf(`validate order %s %f order id %s price bid %f`,
-				posStr, pos[posStr], order.OrderId, tick.Bids[0].Price))
 			bidOrdersValid[posStr] = order
 		}
 	}
@@ -273,8 +278,6 @@ func validHang(key, secret, market, symbol string, pos, dis map[string]float64, 
 				order.Price >= tick.Bids[0].Price*(1+pos[posStr]+dis[posStr]))) {
 			hangFarCancel(key, secret, market, symbol, order.OrderId)
 		} else {
-			util.Info(fmt.Sprintf(`validate order %s %f order id %s price ask %f`,
-				posStr, pos[posStr], order.OrderId, tick.Asks[0].Price))
 			askOrdersValid[posStr] = order
 		}
 	}
@@ -303,6 +306,7 @@ func hangFarCancel(key, secret, market, symbol, orderId string) {
 	} else {
 		util.Notice(fmt.Sprintf(`==cancel other pending== %s`, orderId))
 		cancelOrder := api.MustCancel(key, secret, market, symbol, orderId, true)
+		model.AppDB.Save(&cancelOrder)
 		if cancelOrder != nil && cancelOrder.DealAmount > 0 && hangFarOrders.checkFarOrders(symbol, orderId) {
 			util.Notice(fmt.Sprintf(`=add need revert= %s %s deal %f`,
 				cancelOrder.OrderId, cancelOrder.OrderSide, cancelOrder.DealAmount))
