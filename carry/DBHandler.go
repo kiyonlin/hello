@@ -127,7 +127,7 @@ var CancelAllOrders = func() {
 				model.AccountTypeLever+model.AccountTypeNormal, 0, 0)
 			for _, order := range orders {
 				if order != nil && order.OrderId != `` {
-					result, errCode, msg := api.CancelOrder(key, secret, market, symbol, order.OrderId)
+					result, errCode, msg, _ := api.CancelOrder(key, secret, market, symbol, order.OrderId)
 					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
 					time.Sleep(time.Millisecond * 100)
 				}
@@ -277,9 +277,9 @@ func ResetChannel(market string, channel chan struct{}) {
 	model.AppMarkets.PutDepthChan(market, 0, nil)
 	symbols := model.GetMarketSymbols(market)
 	for symbol := range symbols {
-		go CancelRefreshHang(key, secret, symbol, RefreshTypeGrid)
-		go CancelHang(key, secret, symbol)
-		go CancelHangContract(key, secret, symbol)
+		go CancelRefreshHang(key, secret, market, symbol, RefreshTypeGrid)
+		go CancelHang(key, secret, market, symbol)
+		go CancelHangContract(key, secret, market, symbol)
 	}
 	channel <- struct{}{}
 	close(channel)

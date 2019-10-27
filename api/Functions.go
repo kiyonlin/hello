@@ -116,15 +116,16 @@ func GetAmountDecimal(market, symbol string) float64 {
 	return 4
 }
 
-func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) {
+func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (order *model.Order) {
 	for i := 0; i < 7; i++ {
-		result, errCode, _ := CancelOrder(key, secret, market, symbol, orderId)
+		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, orderId)
+		order = cancelOrder
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
 		if result || !mustCancel || errCode == `0` {
-			break
+			return cancelOrder
 		}
 		if errCode == `3008` && i >= 3 {
-			break
+			return cancelOrder
 		}
 		//if result || !mustCancel { //3008:"submit cancel invalid order state
 		//	break
@@ -139,9 +140,11 @@ func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) {
 			time.Sleep(time.Second * 10)
 		}
 	}
+	return order
 }
 
-func CancelOrder(key, secret, market string, symbol string, orderId string) (result bool, errCode, msg string) {
+func CancelOrder(key, secret, market string, symbol string, orderId string) (
+	result bool, errCode, msg string, order *model.Order) {
 	errCode = `market-not-supported ` + market
 	msg = `market not supported ` + market
 	switch market {
@@ -159,11 +162,12 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (res
 		result, errCode, msg = CancelOrderCoinpark(orderId)
 	case model.Bitmex:
 		result, errCode, msg = CancelOrderBitmex(orderId)
-	case market:
-		result, errCode, msg = CancelOrderFmex(key, secret, orderId)
+	case model.Fmex:
+		result, errCode, msg, order = CancelOrderFmex(key, secret, orderId)
+		order.Symbol = symbol
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
-	return result, errCode, msg
+	return result, errCode, msg, order
 }
 
 func QueryOrders(key, secret, market, symbol, states, accountTypes string, before, after int64) (orders []*model.Order) {

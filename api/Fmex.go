@@ -43,7 +43,7 @@ var subscribeHandlerFmex = func(subscribes []interface{}, subType string) error 
 
 func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	wsHandler := func(event []byte) {
-		util.Info(string(event))
+		//util.Info(string(event))
 		responseJson, err := util.NewJSON(event)
 		if err != nil {
 			errHandler(err)
@@ -205,18 +205,20 @@ func queryOrdersFmex(key, secret, symbol string) (orders []*model.Order) {
 	return orders
 }
 
-func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg string) {
+func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg string, order *model.Order) {
 	responseBody := SignedRequestFmex(key, secret, `POST`, `v3/contracts/orders/`+orderId+`/cancel`, nil)
 	responseJson, err := util.NewJSON([]byte(responseBody))
 	status := -1
 	if err == nil {
 		status, _ = responseJson.Get(`status`).Int()
+		data, _ := responseJson.Get(`data`).Map()
+		order = parseOrderFmex(``, data)
 	}
 	util.Notice(orderId + "fmex cancel order" + string(responseBody))
 	if status == 0 {
-		return true, ``, ``
+		return true, ``, ``, order
 	}
-	return false, strconv.FormatInt(int64(status), 10), ``
+	return false, strconv.FormatInt(int64(status), 10), ``, nil
 }
 
 func parseOrderFmex(symbol string, orderMap map[string]interface{}) (order *model.Order) {

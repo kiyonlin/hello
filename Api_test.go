@@ -67,10 +67,11 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	orders := api.QueryOrders(``, ``, model.Fmex, `btcusd_p`, ``, ``, 0, 0)
+	orders := api.QueryOrders(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`,
+		model.Fmex, `btcusd_p`, ``, ``, 0, 0)
 	fmt.Println(len(orders))
 	api.MustCancel(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`,
-		model.Fmex, `btcusd_p`, `419967501910`, true)
+		model.Fmex, `btcusd_p`, `469153521910`, true)
 	api.RefreshAccount(``, ``, model.Fmex)
 	//perUsdt, _ := api.GetPrice(``, ``, `usdc_usdt`)
 	newOrders := api.QueryOrders(``, ``, model.Fcoin, `xrp_usdt`,

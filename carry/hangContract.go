@@ -56,18 +56,18 @@ var ProcessHangContract = func(market, symbol string) {
 			timeDis = int(start) - tick.Ts
 		}
 		util.Notice(fmt.Sprintf(`[tick not good time]%s %s %d`, market, symbol, timeDis))
-		CancelHangContract(key, secret, symbol)
+		CancelHangContract(key, secret, market, symbol)
 		return
 	}
 	setting := model.GetSetting(model.FunctionHangContract, market, symbol)
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
 		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
-		CancelHangContract(key, secret, symbol)
+		CancelHangContract(key, secret, market, symbol)
 		return
 	}
 	if model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s is pause:%v`, model.AppConfig.Handle, model.AppPause))
-		CancelHangContract(key, secret, symbol)
+		CancelHangContract(key, secret, market, symbol)
 		return
 	}
 	if hangContractOrders.hangingContract {
@@ -75,6 +75,9 @@ var ProcessHangContract = func(market, symbol string) {
 	}
 	hangContractOrders.setInHangingContract(true)
 	defer hangContractOrders.setInHangingContract(false)
+	if contractHoldingUpdate == 0 {
+		CancelNonHang(market, symbol)
+	}
 	if start-contractHoldingUpdate > 3000 {
 		updateContractHolding(market, symbol)
 	} else {
@@ -115,7 +118,7 @@ func hangContract(key, secret, market, symbol, accountType string, setting *mode
 	orders := hangContractOrders.getHangContractOrders(symbol)
 	pendingLong, pendingShort := calcPending(orders)
 	if hangContractOrders.holdingLong+pendingLong < setting.AmountLimit {
-		util.Notice(fmt.Sprintf(`=not limit= %s %f + %f < %f place at %f %f %f`,
+		util.Notice(fmt.Sprintf(`=not limit= %s %s %f + %f < %f place at %f %f`,
 			symbol, model.OrderSideBuy, hangContractOrders.holdingLong, pendingLong, setting.AmountLimit,
 			tick.Bids[0].Price, tick.Asks[0].Price))
 		order := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
@@ -181,12 +184,12 @@ func validHangContract(key, secret, symbol string, setting *model.Setting, tick 
 	hangContractOrders.setHangContractOrders(symbol, orderFilterPrice)
 }
 
-func CancelHangContract(key, secret, symbol string) {
+func CancelHangContract(key, secret, market, symbol string) {
 	util.Notice(`cancel all hang contract`)
 	orders := hangContractOrders.getHangContractOrders(symbol)
 	for _, order := range orders {
 		if order != nil && order.OrderId != `` {
-			api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
+			api.MustCancel(key, secret, market, symbol, order.OrderId, true)
 			time.Sleep(time.Millisecond * 50)
 		}
 	}
