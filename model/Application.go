@@ -372,7 +372,7 @@ func NewConfig() {
 	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
-	AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
+	AppConfig.WSUrls[Fmex] = `wss://api.fmex.com/v2/ws`
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
@@ -384,7 +384,7 @@ func NewConfig() {
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
 	AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
-	AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
+	AppConfig.RestUrls[Fmex] = `https://api.fmex.com/`
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
