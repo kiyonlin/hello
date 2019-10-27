@@ -41,6 +41,7 @@ type Rule struct {
 type Markets struct {
 	lock      sync.Mutex
 	bidAsks   map[string]map[string]*BidAsk // symbol - market - bidAsk
+	trade     map[int][]float64             // time in second - [fmex price, bitmex price]
 	BigDeals  map[string]map[string]*Deal   // symbol - market - Deal
 	wsDepth   map[string][]chan struct{}    // market - []depth channel
 	isWriting map[string]bool               // market - writing
@@ -48,7 +49,25 @@ type Markets struct {
 }
 
 func NewMarkets() *Markets {
-	return &Markets{bidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{})}
+	return &Markets{bidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{}),
+		trade: make(map[int][]float64)}
+}
+
+func (markets *Markets) SetTrade(fmex, bitmex *Deal) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if fmex != nil {
+		if markets.trade[fmex.Ts/1000] == nil {
+			markets.trade[fmex.Ts/1000] = []float64{0.0, 0.0}
+		}
+		markets.trade[fmex.Ts/1000][0] = fmex.Price
+	}
+	if bitmex != nil {
+		if markets.trade[bitmex.Ts/1000] == nil {
+			markets.trade[bitmex.Ts/1000] = []float64{0.0, 0.0}
+		}
+		markets.trade[bitmex.Ts/1000][1] = bitmex.Price
+	}
 }
 
 func (markets *Markets) GetIsWriting(market string) bool {

@@ -61,24 +61,12 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 		}
 		msgType := responseJson.Get(`type`).MustString()
 		symbol := model.GetSymbol(model.Fmex, responseJson.Get("type").MustString())
-		symbols := model.GetMarketSymbols(model.Fmex)
-		if symbols == nil || symbols[symbol] == false {
-			//util.Notice(symbol + ` not supported`)
-			return
-		}
 		if strings.Index(msgType, `trade.`) == 0 {
 			ts := responseJson.Get("ts").MustInt()
 			amount := responseJson.Get(`amount`).MustFloat64()
 			side := responseJson.Get(`side`).MustString()
 			price := responseJson.Get(`price`).MustFloat64()
-			if markets.SetBigDeal(symbol, model.Fmex, &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price}) {
-				for function, handler := range model.GetFunctions(model.Fmex, symbol) {
-					if handler != nil && function == model.FunctionMaker {
-						util.Notice(fmt.Sprintf(`[try makerl]%s`, symbol))
-						handler(model.Fmex, symbol)
-					}
-				}
-			}
+			markets.SetTrade(&model.Deal{Amount: amount, Ts: ts, Side: side, Price: price}, nil)
 		} else {
 			if symbol != "" && symbol != "_" {
 				bidAsk := model.BidAsk{}
@@ -110,8 +98,9 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 		}
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Fmex]
-	return WebSocketServe(model.Fmex, requestUrl, model.SubscribeDepth,
-		model.GetWSSubscribes(model.Fmex, model.SubscribeDepth), subscribeHandlerFmex, wsHandler, errHandler)
+	subType := model.SubscribeDepth + `,` + model.SubscribeDeal
+	return WebSocketServe(model.Fmex, requestUrl, subType, model.GetWSSubscribes(model.Fmex, subType),
+		subscribeHandlerFmex, wsHandler, errHandler)
 }
 
 func SignedRequestFmex(key, secret, method, path string, body map[string]interface{}) []byte {

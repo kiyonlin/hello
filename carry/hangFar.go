@@ -159,7 +159,7 @@ var ProcessHangFar = func(market, symbol string) {
 		CancelHang(key, secret, market, symbol)
 		return
 	}
-	validHang(key, secret, symbol, pos, posDis, tick)
+	validHang(key, secret, market, symbol, pos, posDis, tick)
 	if model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s is pause:%v`, model.AppConfig.Handle, model.AppPause))
 		CancelHang(key, secret, market, symbol)
@@ -252,7 +252,7 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 	return dosmth
 }
 
-func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *model.BidAsk) {
+func validHang(key, secret, market, symbol string, pos, dis map[string]float64, tick *model.BidAsk) {
 	bidOrders, askOrders := hangFarOrders.getFarOrders(symbol)
 	bidOrdersValid := make(map[string]*model.Order)
 	askOrdersValid := make(map[string]*model.Order)
@@ -260,16 +260,7 @@ func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *mo
 		if pos[posStr] == 0 || (pos[posStr] > 0 &&
 			(order.Price <= tick.Asks[0].Price*(1-pos[posStr]-dis[posStr]) ||
 				order.Price >= tick.Bids[0].Price*(1-pos[posStr]+dis[posStr]))) {
-			if hangFarOrders.checkRevertOrders(order.OrderId) {
-				util.Notice(fmt.Sprintf(`=keep revert validHang= %s`, order.OrderId))
-			} else {
-				cancelOrder := api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
-				if cancelOrder != nil && pos[posStr] > 0 && cancelOrder.DealAmount > 0 {
-					util.Notice(fmt.Sprintf(`=add need revert= %s %s deal %f`,
-						cancelOrder.OrderId, cancelOrder.OrderSide, cancelOrder.DealAmount))
-					hangFarOrders.addNeedRevertOrder(cancelOrder)
-				}
-			}
+			hangFarCancel(key, secret, market, symbol, order.OrderId)
 		} else {
 			util.Info(fmt.Sprintf(`validate order %s %f order id %s price bid %f`,
 				posStr, pos[posStr], order.OrderId, tick.Bids[0].Price))
@@ -280,16 +271,7 @@ func validHang(key, secret, symbol string, pos, dis map[string]float64, tick *mo
 		if pos[posStr] == 0 || (pos[posStr] > 0 &&
 			(order.Price <= tick.Asks[0].Price*(1+pos[posStr]-dis[posStr]) ||
 				order.Price >= tick.Bids[0].Price*(1+pos[posStr]+dis[posStr]))) {
-			if hangFarOrders.checkRevertOrders(order.OrderId) {
-				util.Notice(fmt.Sprintf(`=keep revert validHang= %s`, order.OrderId))
-			} else {
-				cancelOrder := api.MustCancel(key, secret, model.Fmex, symbol, order.OrderId, true)
-				if cancelOrder != nil && pos[posStr] > 0 && cancelOrder.DealAmount > 0 {
-					util.Notice(fmt.Sprintf(`=add need revert= %s %s deal %f`,
-						cancelOrder.OrderId, cancelOrder.OrderSide, cancelOrder.DealAmount))
-					hangFarOrders.addNeedRevertOrder(cancelOrder)
-				}
-			}
+			hangFarCancel(key, secret, market, symbol, order.OrderId)
 		} else {
 			util.Info(fmt.Sprintf(`validate order %s %f order id %s price ask %f`,
 				posStr, pos[posStr], order.OrderId, tick.Asks[0].Price))

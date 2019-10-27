@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"github.com/jinzhu/configor"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"hello/util"
@@ -275,7 +276,7 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		if subType == SubscribeDeal {
 			// btc_usdt: trade.btcusdt
 			return `trade.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
-		} else {
+		} else if subType == SubscribeDepth {
 			// btc_usdt: depth.L20.btcusdt
 			return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
 		}
@@ -283,6 +284,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		if subType == SubscribeDepth {
 			// btc_usdt: depth.L20.btcusdt
 			return `depth.L20.` + symbol
+		} else if subType == SubscribeDeal {
+			return `trade.` + strings.ToUpper(symbol)
 		}
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
 		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
@@ -365,26 +368,35 @@ func GetSymbol(market, subscribe string) (symbol string) {
 
 func NewConfig() {
 	AppConfig = &Config{}
+	err := configor.Load(AppConfig, "./config.yml")
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
 	AppConfig.WSUrls = make(map[string]string)
+	AppConfig.RestUrls = make(map[string]string)
 	//AppConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
 	AppConfig.WSUrls[Huobi] = `wss://api.huobi.br.com/ws`
 	AppConfig.WSUrls[OKEX] = "wss://real.okex.com:10441/websocket?compress=true"
 	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
-	AppConfig.WSUrls[Fmex] = `wss://api.fmex.com/v2/ws`
+	if AppConfig.Env == `test` {
+		AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
+		AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
+	} else {
+		AppConfig.WSUrls[Fmex] = `wss://api.fmex.com/v2/ws`
+		AppConfig.RestUrls[Fmex] = `https://api.fmex.com/`
+	}
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
-	//AppConfig.WSUrls[Bitmex] = `wss://www.bitmex.com/realtime/`
-	AppConfig.WSUrls[Bitmex] = `wss://testnet.bitmex.com/realtime`
-	AppConfig.RestUrls = make(map[string]string)
+	AppConfig.WSUrls[Bitmex] = `wss://www.bitmex.com/realtime/`
+	//AppConfig.WSUrls[Bitmex] = `wss://testnet.bitmex.com/realtime`
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
-	AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
-	AppConfig.RestUrls[Fmex] = `https://api.fmex.com/`
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
@@ -392,7 +404,8 @@ func NewConfig() {
 	AppConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	AppConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 	AppConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
-	//AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
+	//AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
+	AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
 	AppConfig.MarketCost = make(map[string]float64)
 	AppConfig.MarketCost[Fcoin] = 0
 	AppConfig.MarketCost[Huobi] = 0.0005
@@ -451,7 +464,13 @@ func GetWSSubscribes(market, subType string) []interface{} {
 	symbols := GetMarketSymbols(market)
 	subscribes := make([]interface{}, 0)
 	for symbol := range symbols {
-		subscribes = append(subscribes, GetWSSubscribe(market, symbol, subType))
+		subTypes := strings.Split(subType, `,`)
+		for _, value := range subTypes {
+			subscribe := GetWSSubscribe(market, symbol, value)
+			if subscribe != `` {
+				subscribes = append(subscribes, subscribe)
+			}
+		}
 		setting := GetSetting(FunctionMaker, market, symbol)
 		if setting != nil {
 			subscribes = append(subscribes, GetWSSubscribe(market, symbol, SubscribeDeal))
