@@ -353,21 +353,21 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
-	valid := false
-	result, bidAsk := model.AppMarkets.GetBidAsk(symbol, market)
-	if result {
-		if orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.998 {
-			valid = true
-		} else if orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.002 {
-			valid = true
-		}
-	}
-	if !valid {
-		util.Notice(fmt.Sprintf(`[place order limit]%s %s %s %f`, market, symbol, orderSide, price))
-		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
-			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
-	}
+	//valid := false
+	//result, bidAsk := model.AppMarkets.GetBidAsk(symbol, market)
+	//if result {
+	//	if orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.998 {
+	//		valid = true
+	//	} else if orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.002 {
+	//		valid = true
+	//	}
+	//}
+	//if !valid {
+	//	util.Notice(fmt.Sprintf(`[place order limit]%s %s %s %f`, market, symbol, orderSide, price))
+	//	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+	//		AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
+	//		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
+	//}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(market, symbol))
 	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
 	if amountType == model.AmountTypeContractNumber {

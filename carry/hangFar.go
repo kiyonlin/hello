@@ -153,16 +153,7 @@ var ProcessHangFar = func(market, symbol string) {
 		posDis[posStr[i]], _ = strconv.ParseFloat(parameters[i*3+1], 64)
 		amount[posStr[i]], _ = strconv.ParseFloat(parameters[i*3+2], 64)
 	}
-	//priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
-	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
-		util.Notice(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
-		CancelHang(key, secret, market, symbol)
-		return
-	}
-	if validHang(key, secret, market, symbol, pos, posDis, tick) {
-		return
-	}
-	if model.AppConfig.Handle != `1` || model.AppPause {
+	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 || model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s is pause:%v`, model.AppConfig.Handle, model.AppPause))
 		CancelHang(key, secret, market, symbol)
 		return
@@ -172,6 +163,9 @@ var ProcessHangFar = func(market, symbol string) {
 	}
 	hangFarOrders.setInHangingFar(true)
 	defer hangFarOrders.setInHangingFar(false)
+	if validHang(key, secret, market, symbol, pos, posDis, tick) {
+		return
+	}
 	if len(hangFarOrders.needRevertOrders) > 0 {
 		util.Notice(fmt.Sprintf(`=need cancel revert= need:%d revert:%d bid:%d ask:%d`,
 			len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
@@ -297,9 +291,9 @@ func validHang(key, secret, market, symbol string, pos, dis map[string]float64, 
 }
 
 func CancelHang(key, secret, market, symbol string) {
+	bidOrders, askOrders := hangFarOrders.getFarOrders(symbol)
 	hangFarOrders.setFarOrders(symbol, nil, nil)
 	util.Notice(`[cancel all orders]`)
-	bidOrders, askOrders := hangFarOrders.getFarOrders(symbol)
 	for _, order := range bidOrders {
 		if order != nil && order.OrderId != `` {
 			util.Notice(`cancel hang all ` + order.OrderId)
