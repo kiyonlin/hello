@@ -171,6 +171,7 @@ var ProcessHangFar = func(market, symbol string) {
 	hangFarOrders.setInHangingFar(true)
 	defer hangFarOrders.setInHangingFar(false)
 	if len(hangFarOrders.needRevertOrders) > 0 {
+		util.Notice(fmt.Sprintf(`=need cancel revert= %d`, len(hangFarOrders.needRevertOrders)))
 		revertCancelOrder(key, secret, market, symbol, setting.AccountType, tick)
 	} else if hang(key, secret, market, symbol, setting.AccountType, pos, amount, tick) {
 		CancelNonHang(market, symbol)
@@ -190,6 +191,9 @@ func revertCancelOrder(key, secret, market, symbol, accountType string, tick *mo
 			accountType, price, cancelOrder.DealAmount)
 		if revertOrder != nil && revertOrder.OrderId != `` {
 			hangFarOrders.addRevertOrder(revertOrder)
+			util.Notice(fmt.Sprintf(`=place revert= %s-%s amount%f - %f price %f - %f`,
+				cancelOrder.OrderSide, revertOrder.OrderSide, cancelOrder.DealAmount, revertOrder.Amount,
+				cancelOrder.Price, revertOrder.Price))
 		}
 	}
 }

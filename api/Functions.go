@@ -164,7 +164,9 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (
 		result, errCode, msg = CancelOrderBitmex(orderId)
 	case model.Fmex:
 		result, errCode, msg, order = CancelOrderFmex(key, secret, orderId)
-		order.Symbol = symbol
+		if order != nil {
+			order.Symbol = symbol
+		}
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
 	return result, errCode, msg, order
