@@ -255,6 +255,7 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 			}
 		}
 	}
+	util.Notice(fmt.Sprintf(`hang orders bid %d ask %d`, len(ordersBids), len(orderAsks)))
 	hangFarOrders.setFarOrders(symbol, ordersBids, orderAsks)
 	return dosmth
 }

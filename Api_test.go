@@ -65,6 +65,10 @@ func Test_loadOrders(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
+	test := make(map[string]string)
+	test[`sd`] = `sdf`
+	test[`sd23`] = `sdf`
+	fmt.Println(len(test))
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	db, err := gorm.Open("postgres", model.AppConfig.DBConnection)
