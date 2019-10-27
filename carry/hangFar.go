@@ -155,11 +155,13 @@ var ProcessHangFar = func(market, symbol string) {
 	}
 	//priceDistance := 1 / math.Pow(10, float64(api.GetPriceDecimal(market, symbol)))
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
-		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
+		util.Notice(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
 		CancelHang(key, secret, market, symbol)
 		return
 	}
-	validHang(key, secret, market, symbol, pos, posDis, tick)
+	if validHang(key, secret, market, symbol, pos, posDis, tick) {
+		return
+	}
 	if model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s is pause:%v`, model.AppConfig.Handle, model.AppPause))
 		CancelHang(key, secret, market, symbol)
@@ -205,6 +207,9 @@ func revertCancelOrder(key, secret, market, symbol, accountType string, tick *mo
 
 func CancelNonHang(market, symbol string) {
 	orders := api.QueryOrders(key, secret, market, symbol, ``, ``, 0, 0)
+	util.Notice(fmt.Sprintf(`=query orders cancel non-hang= open:%d need:%d revert:%d bid:%d ask:%d`,
+		len(orders), len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
+		len(hangFarOrders.bidOrders), len(hangFarOrders.askOrders)))
 	ordersBids, orderAsks := hangFarOrders.getFarOrders(symbol)
 	for _, order := range orders {
 		if order != nil && order.OrderId != `` {
@@ -220,6 +225,7 @@ func CancelNonHang(market, symbol string) {
 				}
 			}
 			if needCancel {
+				util.Notice(`need cancel non hang ` + order.OrderId)
 				hangFarCancel(key, secret, market, symbol, order.OrderId)
 			}
 		}
@@ -259,7 +265,8 @@ func hang(key, secret, market, symbol, accountType string, pos, amount map[strin
 	return dosmth
 }
 
-func validHang(key, secret, market, symbol string, pos, dis map[string]float64, tick *model.BidAsk) {
+func validHang(key, secret, market, symbol string, pos, dis map[string]float64, tick *model.BidAsk) (doSmTh bool) {
+	doSmTh = false
 	bidOrders, askOrders := hangFarOrders.getFarOrders(symbol)
 	bidOrdersValid := make(map[string]*model.Order)
 	askOrdersValid := make(map[string]*model.Order)
@@ -267,7 +274,9 @@ func validHang(key, secret, market, symbol string, pos, dis map[string]float64, 
 		if pos[posStr] == 0 || (pos[posStr] > 0 &&
 			(order.Price <= tick.Asks[0].Price*(1-pos[posStr]-dis[posStr]) ||
 				order.Price >= tick.Bids[0].Price*(1-pos[posStr]+dis[posStr]))) {
+			util.Notice(`cancel invalid ` + order.OrderId)
 			hangFarCancel(key, secret, market, symbol, order.OrderId)
+			doSmTh = true
 		} else {
 			bidOrdersValid[posStr] = order
 		}
@@ -276,28 +285,33 @@ func validHang(key, secret, market, symbol string, pos, dis map[string]float64, 
 		if pos[posStr] == 0 || (pos[posStr] > 0 &&
 			(order.Price <= tick.Asks[0].Price*(1+pos[posStr]-dis[posStr]) ||
 				order.Price >= tick.Bids[0].Price*(1+pos[posStr]+dis[posStr]))) {
+			util.Notice(`cancel invalid ` + order.OrderId)
 			hangFarCancel(key, secret, market, symbol, order.OrderId)
+			doSmTh = true
 		} else {
 			askOrdersValid[posStr] = order
 		}
 	}
 	hangFarOrders.setFarOrders(symbol, bidOrdersValid, askOrdersValid)
+	return doSmTh
 }
 
 func CancelHang(key, secret, market, symbol string) {
+	hangFarOrders.setFarOrders(symbol, nil, nil)
 	util.Notice(`[cancel all orders]`)
 	bidOrders, askOrders := hangFarOrders.getFarOrders(symbol)
 	for _, order := range bidOrders {
 		if order != nil && order.OrderId != `` {
+			util.Notice(`cancel hang all ` + order.OrderId)
 			hangFarCancel(key, secret, market, symbol, order.OrderId)
 		}
 	}
 	for _, order := range askOrders {
 		if order != nil && order.OrderId != `` {
+			util.Notice(`cancel hang all ` + order.OrderId)
 			hangFarCancel(key, secret, market, symbol, order.OrderId)
 		}
 	}
-	hangFarOrders.setFarOrders(symbol, nil, nil)
 }
 
 func hangFarCancel(key, secret, market, symbol, orderId string) {
