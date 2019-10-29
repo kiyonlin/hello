@@ -83,13 +83,14 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 			return
 		}
 		if strings.Index(msgType, `trade.`) == 0 {
-			ts := responseJson.Get("ts").MustInt()
+			ts, _ := responseJson.Get("ts").Int64()
 			amount := responseJson.Get(`amount`).MustFloat64()
 			side := responseJson.Get(`side`).MustString()
 			price := responseJson.Get(`price`).MustFloat64()
 			//deal := markets.GetBigDeal(symbol, model.Fcoin)
 			//if deal == nil || deal.Ts < ts {
-			if markets.SetBigDeal(symbol, model.Fcoin, &model.Deal{Amount: amount, Ts: ts, Side: side, Price: price}) {
+			if markets.SetBigDeal(symbol, model.Fcoin, &model.Deal{
+				Symbol: symbol, Market: model.Fcoin, Amount: amount, Ts: ts, Side: side, Price: price}) {
 				for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
 					if handler != nil && function == model.FunctionMaker {
 						util.Notice(fmt.Sprintf(`[try makerl]%s`, symbol))

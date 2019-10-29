@@ -262,7 +262,7 @@ func createMarketDepthServer(markets *model.Markets, market string) chan struct{
 	case model.Coinpark:
 		channel, err = api.WsDepthServeCoinpark(markets, WSErrHandler)
 	case model.Bitmex:
-		channel, err = api.WsDepthServeBitmex(WSErrHandler)
+		channel, err = api.WsDepthServeBitmex(markets, WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(market + ` can not create depth server ` + err.Error())
@@ -325,11 +325,13 @@ func Maintain() {
 	model.HandlerMap[model.FunctionRank] = ProcessRank
 	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar
 	model.HandlerMap[model.FunctionHangContract] = ProcessHangContract
+	model.HandlerMap[model.FunctionFollow] = ProcessFollow
 	defer model.AppDB.Close()
 	model.AppDB.AutoMigrate(&model.Account{})
 	model.AppDB.AutoMigrate(&model.Setting{})
 	model.AppDB.AutoMigrate(&model.Order{})
 	model.AppDB.AutoMigrate(&model.Score{})
+	model.AppDB.AutoMigrate(&model.Candle{})
 	model.LoadSettings()
 	go MaintainFcoinRank()
 	go CancelOldMakers(``, ``)

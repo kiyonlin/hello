@@ -62,11 +62,24 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 		msgType := responseJson.Get(`type`).MustString()
 		symbol := model.GetSymbol(model.Fmex, responseJson.Get("type").MustString())
 		if strings.Index(msgType, `trade.`) == 0 {
-			ts := responseJson.Get("ts").MustInt()
-			amount := responseJson.Get(`amount`).MustFloat64()
-			side := responseJson.Get(`side`).MustString()
-			price := responseJson.Get(`price`).MustFloat64()
-			markets.SetTrade(&model.Deal{Amount: amount, Ts: ts, Side: side, Price: price}, nil)
+			deal := &model.Deal{Market: model.Fmex, Symbol: strings.Replace(msgType, `trade.`, ``, 1)}
+			ts, err := responseJson.Get("ts").Int64()
+			if err == nil {
+				deal.Ts = ts
+			}
+			amount, err := responseJson.Get(`amount`).Float64()
+			if err == nil {
+				deal.Amount = amount
+			}
+			side, err := responseJson.Get(`side`).String()
+			if err == nil {
+				deal.Side = side
+			}
+			price, err := responseJson.Get(`price`).Float64()
+			if err == nil {
+				deal.Price = price
+			}
+			markets.SetTrade(deal)
 		} else {
 			if symbol != "" && symbol != "_" {
 				bidAsk := model.BidAsk{}

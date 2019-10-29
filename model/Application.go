@@ -54,6 +54,7 @@ const FunctionHangFar = `hang_far`
 const FunctionHangContract = `hang_contract`
 const FunctionRank = `rank`
 const FunctionHangRevert = `hang_revert`
+const FunctionFollow = `follow`
 
 //const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`
@@ -84,6 +85,7 @@ type Config struct {
 	//SequencePlace   int // position:[0~14]
 	Between         int64
 	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
+	MonitorTime     int64 // 按照秒计算的价格波动监控时间段的长度
 	ChannelSlot     float64
 	Delay           float64
 	MinUsdt         float64 // 折合usdt最小下单金额
@@ -108,8 +110,6 @@ type Config struct {
 	FcoinSecret     string
 	FmexKey         string
 	FmexSecret      string
-	BnbMin          float64
-	BnbBuy          float64
 	CarryDistance   float64 // carry价差触发条件
 	AmountRate      float64 // 刷单填写数量比率
 	PreDealDis      float64
@@ -294,7 +294,12 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 	case Btcdo:
 		return strings.ToUpper(symbol)
 	case Bitmex:
-		return symbol
+		if subType == SubscribeDeal {
+			if symbol == `btcusd_p` {
+				return `trade:XBTUSD`
+			}
+		}
+		return ``
 	case Coinbig:
 		switch symbol {
 		case `btc_usdt`:

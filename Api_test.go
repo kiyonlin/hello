@@ -9,6 +9,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"testing"
+	"time"
 )
 
 func Test_chan(t *testing.T) {
@@ -65,6 +66,8 @@ func Test_loadOrders(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
+	now, _ := time.Parse(time.RFC3339, "2019-10-28T11:12:18.272Z")
+	fmt.Println(now.Unix())
 	test := make(map[string]string)
 	test[`sd`] = `sdf`
 	test[`sd23`] = `sdf`
