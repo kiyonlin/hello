@@ -303,7 +303,6 @@ func MaintainMarketChan() {
 				ResetChannel(market, channel)
 			}
 		}
-		time.Sleep(time.Second * 3)
 	}
 	socketMaintaining = false
 }
