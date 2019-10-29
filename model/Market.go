@@ -70,23 +70,15 @@ func (markets *Markets) SetTrade(deal *Deal) {
 		markets.trade[second][deal.Symbol] = make(map[string]float64)
 	}
 	markets.trade[second][deal.Symbol][deal.Market] = deal.Price
-	needSave := true
 	compareSecond := second - AppConfig.MonitorTime
-	if markets.trade[compareSecond] == nil || markets.trade[compareSecond][deal.Symbol] == nil {
-		needSave = false
-	} else {
-		if markets.trade[compareSecond][deal.Symbol][Fmex] <= 0 ||
-			markets.trade[compareSecond][deal.Symbol][Bitmex] <= 0 {
-			needSave = false
-		}
-		for market := range markets.trade[compareSecond][deal.Symbol] {
-			fmt.Println(markets.trade[second][deal.Symbol][market])
-			if markets.trade[second][deal.Symbol][market] <= 0 {
-				needSave = false
-			}
-		}
-	}
-	if needSave {
+	if markets.trade[compareSecond] != nil &&
+		markets.trade[compareSecond][deal.Symbol] != nil &&
+		markets.trade[compareSecond][deal.Symbol][Bitmex] > 0 &&
+		markets.trade[compareSecond][deal.Symbol][Fmex] > 0 &&
+		markets.trade[second] != nil &&
+		markets.trade[second][deal.Symbol] != nil &&
+		markets.trade[second][deal.Symbol][Bitmex] > 0 &&
+		markets.trade[second][deal.Symbol][Fmex] > 0 {
 		candle := &Candle{Symbol: deal.Symbol, Ts: second,
 			PriceBitmex:    markets.trade[second][deal.Symbol][Bitmex],
 			PriceFmex:      markets.trade[second][deal.Symbol][Fmex],
@@ -94,8 +86,9 @@ func (markets *Markets) SetTrade(deal *Deal) {
 			IncreaseFmex:   markets.trade[second][deal.Symbol][Fmex] - markets.trade[compareSecond][deal.Symbol][Fmex],
 		}
 		candle.Compare = candle.IncreaseBitmex - candle.IncreaseFmex
-		AppDB.Save(&candle)
+		go AppDB.Save(&candle)
 		delete(markets.trade, compareSecond)
+		util.Notice(fmt.Sprintf(`trade map size %d`, len(markets.trade)))
 	}
 }
 
