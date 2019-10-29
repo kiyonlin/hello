@@ -71,6 +71,7 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	}
 	markets.trade[second][deal.Symbol][deal.Market] = deal.Price
 	compareSecond := second - AppConfig.MonitorTime
+	util.Notice(fmt.Sprintf(`%s %d %s %f `, deal.Market, deal.Ts, deal.Symbol, deal.Price))
 	if markets.trade[compareSecond] != nil &&
 		markets.trade[compareSecond][deal.Symbol] != nil &&
 		markets.trade[compareSecond][deal.Symbol][Bitmex] > 0 &&
