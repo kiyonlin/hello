@@ -87,7 +87,7 @@ func (markets *Markets) SetTrade(deal *Deal) {
 		}
 	}
 	if needSave {
-		candle := &Candle{Symbol: deal.Symbol, Ts: deal.Ts,
+		candle := &Candle{Symbol: deal.Symbol, Ts: second,
 			PriceBitmex:    markets.trade[second][deal.Symbol][Bitmex],
 			PriceFmex:      markets.trade[second][deal.Symbol][Fmex],
 			IncreaseBitmex: markets.trade[second][deal.Symbol][Bitmex] - markets.trade[compareSecond][deal.Symbol][Bitmex],
