@@ -297,7 +297,7 @@ func MaintainMarketChan() {
 		channel := model.AppMarkets.GetDepthChan(market, 0)
 		if channel == nil {
 			model.AppMarkets.PutDepthChan(market, 0, createMarketDepthServer(model.AppMarkets, market))
-			util.Notice(market + " create new depth channel ")
+			util.Notice(fmt.Sprintf("%s create new depth channel ", market))
 		} else {
 			if model.AppMarkets.RequireDepthChanReset(market) {
 				ResetChannel(market, channel)

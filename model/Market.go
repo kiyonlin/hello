@@ -247,9 +247,16 @@ func (markets *Markets) RequireDepthChanReset(market string) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	needReset := true
-	for _, value := range markets.bidAsks {
+	for symbol, value := range markets.bidAsks {
 		if value[market] != nil && float64(util.GetNowUnixMillion()-int64(value[market].Ts)) < AppConfig.Delay {
 			needReset = false
+		}
+		end := int64(util.GetNowUnixMillion() / 1000)
+		for i := end - int64(AppConfig.Delay/1000); i <= end; i++ {
+			if markets.trade[i] != nil && markets.trade[i][symbol] != nil && markets.trade[i][symbol][market] > 0 {
+				needReset = false
+				break
+			}
 		}
 	}
 	if needReset {
