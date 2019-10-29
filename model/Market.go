@@ -90,8 +90,8 @@ func (markets *Markets) SetTrade(deal *Deal) {
 		candle := &Candle{Symbol: deal.Symbol, Ts: deal.Ts,
 			PriceBitmex:    markets.trade[second][deal.Symbol][Bitmex],
 			PriceFmex:      markets.trade[second][deal.Symbol][Fmex],
-			IncreaseBitmex: markets.trade[second][deal.Symbol][Bitmex] - markets.trade[compareSecond][deal.Symbol][Fmex],
-			IncreaseFmex:   markets.trade[second][deal.Symbol][Bitmex] - markets.trade[compareSecond][deal.Symbol][Fmex],
+			IncreaseBitmex: markets.trade[second][deal.Symbol][Bitmex] - markets.trade[compareSecond][deal.Symbol][Bitmex],
+			IncreaseFmex:   markets.trade[second][deal.Symbol][Fmex] - markets.trade[compareSecond][deal.Symbol][Fmex],
 		}
 		candle.Compare = candle.IncreaseBitmex - candle.IncreaseFmex
 		AppDB.Save(&candle)
