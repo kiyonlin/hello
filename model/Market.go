@@ -62,7 +62,7 @@ func (markets *Markets) SetTrade(deal *Deal) {
 		markets.trade = make(map[int64]map[string]map[string]float64)
 	}
 	second := deal.Ts / 1000
-	util.Notice(fmt.Sprintf(`= set deal %d %s`, second, deal.Market))
+	//util.Notice(fmt.Sprintf(`= set deal %d %s`, second, deal.Market))
 	if markets.trade[second] == nil {
 		markets.trade[second] = make(map[string]map[string]float64)
 	}
