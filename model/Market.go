@@ -69,6 +69,9 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	if markets.trade[second][deal.Symbol] == nil {
 		markets.trade[second][deal.Symbol] = make(map[string]float64)
 	}
+	if markets.trade[second][deal.Symbol][deal.Market] > 0 {
+		return
+	}
 	markets.trade[second][deal.Symbol][deal.Market] = deal.Price
 	compareSecond := second - AppConfig.MonitorTime
 	util.Notice(fmt.Sprintf(`%s %d %s %f `, deal.Market, deal.Ts, deal.Symbol, deal.Price))
