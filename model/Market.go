@@ -82,8 +82,6 @@ func (markets *Markets) SetTrade(deal *Deal) {
 		return
 	}
 	markets.trade[second][symbol][deal.Market] = deal
-	compareSecond := second - AppConfig.TrendTime
-	compare := markets.trade[compareSecond]
 	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
 		markets.trade[second][symbol][Bitmex] != nil && markets.trade[second][symbol][Fmex] != nil {
 		candle := &Candle{Symbol: symbol, Ts: second,
@@ -91,17 +89,24 @@ func (markets *Markets) SetTrade(deal *Deal) {
 			PriceFmex:   markets.trade[second][symbol][Fmex].Price,
 		}
 		go AppDB.Save(&candle)
-		if compare != nil {
-			if compare[symbol] != nil && compare[symbol][Bitmex] != nil && compare[symbol][Fmex] != nil {
-				priceBM := markets.trade[second][symbol][Bitmex].Price
-				deltaBM := priceBM - compare[symbol][Bitmex].Price
-				if math.Abs(deltaBM) > AppConfig.Trend {
-					util.Notice(fmt.Sprintf(`=create trend= bm:%f`, deltaBM))
-					markets.TrendStart = compare
-					markets.TrendAmount = deltaBM
+		for i := int64(1); i <= AppConfig.TrendTime; i++ {
+			compareSecond := second - i
+			compare := markets.trade[compareSecond]
+			if compare != nil {
+				if compare[symbol] != nil && compare[symbol][Bitmex] != nil && compare[symbol][Fmex] != nil {
+					priceBM := markets.trade[second][symbol][Bitmex].Price
+					deltaBM := priceBM - compare[symbol][Bitmex].Price
+					if math.Abs(deltaBM) > AppConfig.Trend {
+						util.Notice(fmt.Sprintf(`=create trend= bm:%f base on time:%d`, deltaBM, i))
+						markets.TrendStart = compare
+						markets.TrendAmount = deltaBM
+						break
+					}
+				}
+				if i == AppConfig.TrendTime {
+					delete(markets.trade, compareSecond)
 				}
 			}
-			delete(markets.trade, compareSecond)
 		}
 	}
 }

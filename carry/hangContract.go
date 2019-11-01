@@ -62,8 +62,10 @@ var ProcessHangContract = func(market, symbol string) {
 		if tick != nil {
 			timeDis = int(start) - tick.Ts
 		}
-		util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d deal bm:%d`,
-			market, symbol, timeDis, i))
+		if i <= 3 {
+			util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d deal bm:%d`,
+				market, symbol, timeDis, i))
+		}
 		CancelHangContract(key, secret, market, symbol)
 		return
 	}
