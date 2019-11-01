@@ -46,6 +46,11 @@ func (hangContractOrders *HangContractOrders) setHangContractOrders(symbol strin
 
 var ProcessHangContract = func(market, symbol string) {
 	startTime := util.GetNowUnixMillion()
+	start, end := model.AppMarkets.GetTrends(symbol)
+	if start == nil || end == nil || start[market] == nil || end[market] == nil {
+		return
+	}
+	tradeUpdate = end[market].Ts
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 ||
 		float64(startTime-tradeUpdate) > model.AppConfig.Delay ||
@@ -64,11 +69,6 @@ var ProcessHangContract = func(market, symbol string) {
 	}
 	hangContractOrders.setInHangingContract(true)
 	defer hangContractOrders.setInHangingContract(false)
-	start, end := model.AppMarkets.GetTrends(symbol)
-	if start == nil || end == nil || start[market] == nil || end[market] == nil {
-		return
-	}
-	tradeUpdate = end[market].Ts
 	setting := model.GetSetting(model.FunctionHangContract, market, symbol)
 	deltaBM := end[model.Bitmex].Price - start[model.Bitmex].Price
 	delta := end[market].Price - start[market].Price
@@ -222,7 +222,8 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 
 func CancelHangContracts(key, secret, market, symbol string) {
 	util.Notice(`cancel all hang contract`)
-	orders := hangContractOrders.getHangContractOrders(symbol)
+	orders := api.QueryOrders(key, secret, market, symbol, ``, ``, 0, 0)
+	//orders := hangContractOrders.getHangContractOrders(symbol)
 	for _, order := range orders {
 		if order != nil && order.OrderId != `` {
 			api.MustCancel(key, secret, market, symbol, order.OrderId, true)
