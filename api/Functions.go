@@ -345,8 +345,8 @@ func RefreshAccount(key, secret, market string) {
 func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType string, price,
 	amount float64) (order *model.Order) {
 	start := util.GetNowUnixMillion()
-	util.Notice(fmt.Sprintf(`...%s %s %s before order %d`,
-		orderSide, market, symbol, start))
+	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%f price:%f`,
+		orderSide, market, symbol, start, amount, price))
 	if amount < 0.0001 {
 		util.Notice(`can not place order with amount 0`)
 		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
