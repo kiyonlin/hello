@@ -112,12 +112,6 @@ func updateContractHolding(market, symbol string, setting *model.Setting) (order
 		hangContractOrders.holdingLong = 0
 	}
 	orders = api.QueryOrders(key, secret, market, symbol, ``, setting.AccountType, 0, 0)
-	//filteredOrders := make([]*model.Order, 0)
-	//for _, order := range orders {
-	//	if order.OrderId != `` && order.Amount-order.DealAmount > 100 {
-	//		filteredOrders = append(filteredOrders, order)
-	//	}
-	//}
 	hangContractOrders.setHangContractOrders(symbol, orders)
 	//if hangContractOrders.holdingLong > 0 || hangContractOrders.holdingShort > 0 || len(filteredOrders) > 0 {
 	//	util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,
