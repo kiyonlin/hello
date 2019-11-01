@@ -48,7 +48,7 @@ var ProcessHangContract = func(market, symbol string) {
 	start := util.GetNowUnixMillion()
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	dealBM := model.AppMarkets.GetTrade(start/1000, model.Bitmex, symbol)
-	i := int64(0)
+	i := int64(1)
 	second := start / 1000
 	for ; i < model.AppConfig.TrendTime; i++ {
 		if dealBM != nil {
