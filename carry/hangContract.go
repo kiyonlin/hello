@@ -151,13 +151,13 @@ func createHolding(key, secret, market, symbol string, trend float64,
 	util.Notice(fmt.Sprintf(`create holding trend:%f holding long:%f holding short:%f`,
 		trend, holdingLong, holdingShort))
 	order := &model.Order{}
-	if trend > 0 && setting.GridAmount-holdingLong+holdingShort > 0 {
+	if trend > 0 && setting.AmountLimit-holdingLong+holdingShort > 0 {
 		order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, tick.Asks[0].Price, setting.GridAmount-holdingLong+holdingShort)
+			setting.AccountType, tick.Asks[0].Price, setting.AmountLimit-holdingLong+holdingShort)
 	}
-	if trend < 0 && setting.GridAmount-holdingShort+holdingLong > 0 {
+	if trend < 0 && setting.AmountLimit-holdingShort+holdingLong > 0 {
 		order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, tick.Bids[0].Price, setting.GridAmount-holdingShort+holdingLong)
+			setting.AccountType, tick.Bids[0].Price, setting.AmountLimit-holdingShort+holdingLong)
 	}
 	if order != nil && order.OrderId != `` {
 		orders := hangContractOrders.getHangContractOrders(symbol)
