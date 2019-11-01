@@ -281,7 +281,7 @@ func GetParameters(c *gin.Context) {
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &binanceDisMin, &binanceDisMax,
 			&refreshLimitLow, &refreshLimit, &refreshSameTime, &valid, &chance)
 		msg += fmt.Sprintf("%s %s %s %s %s binancedismin:%s binancedismax:%s refreshlimitlow:%s "+
-			"refreshlimit:%s refreshsametime:%d %v stable:%v chance:%f\n",
+			"refreshlimit:%s refreshsametime:%d %v stable:%v chance:%s\n",
 			market, symbol, function, parameter, amountLimit,
 			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, refreshSameTime, valid,
 			model.AppConfig.Stable, chance)
