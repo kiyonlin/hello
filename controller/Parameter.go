@@ -66,6 +66,7 @@ func setSymbol(c *gin.Context) {
 	binanceDisMax := c.Query(`binancedismax`)
 	refreshLimitLowStr := c.Query(`refreshlimitlow`)
 	refreshLimitStr := c.Query(`refreshlimit`)
+	chanceStr := c.Query(`chance`)
 	refreshSameTime := c.Query(`refreshsametime`)
 	valid := false
 	if market == `` || symbol == `` || function == `` {
@@ -119,6 +120,11 @@ func setSymbol(c *gin.Context) {
 		refreshLimit, _ := strconv.ParseFloat(refreshLimitStr, 64)
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{`refresh_limit`: refreshLimit})
+	}
+	if chanceStr != `` {
+		chance, _ := strconv.ParseFloat(chanceStr, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).UpdateColumn("chance", chance)
 	}
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, amount_limit, refresh_same_time, valid`).Rows()
