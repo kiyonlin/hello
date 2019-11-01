@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var contractHoldingUpdate = int64(0)
+var tradeUpdate = int64(0)
 
 type HangContractOrders struct {
 	lock            sync.Mutex
@@ -45,45 +45,40 @@ func (hangContractOrders *HangContractOrders) setHangContractOrders(symbol strin
 }
 
 var ProcessHangContract = func(market, symbol string) {
-	start := util.GetNowUnixMillion()
+	startTime := util.GetNowUnixMillion()
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
-	dealBM := model.AppMarkets.GetTrade(start/1000, model.Bitmex, symbol)
-	i := int64(1)
-	second := start / 1000
-	for ; i < model.AppConfig.TrendTime; i++ {
-		if dealBM != nil {
-			break
-		}
-		dealBM = model.AppMarkets.GetTrade(second-i, model.Bitmex, symbol)
-	}
-	if dealBM == nil || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || i > 3 ||
-		tick.Bids.Len() < 15 || int(start)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
+	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 ||
+		float64(startTime-tradeUpdate) > model.AppConfig.Delay ||
+		tick.Bids.Len() < 15 || int(startTime)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
 		timeDis := 0
 		if tick != nil {
-			timeDis = int(start) - tick.Ts
+			timeDis = int(startTime) - tick.Ts
 		}
-		if i <= 3 {
-			util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d deal bm:%d`,
-				market, symbol, timeDis, i))
-		}
+		util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d deal`,
+			market, symbol, timeDis))
 		CancelHangContracts(key, secret, market, symbol)
 		return
 	}
-	setting := model.GetSetting(model.FunctionHangContract, market, symbol)
 	if hangContractOrders.hangingContract {
 		return
 	}
 	hangContractOrders.setInHangingContract(true)
 	defer hangContractOrders.setInHangingContract(false)
-	if contractHoldingUpdate == 0 {
-		CancelNonHang(market, symbol)
+	start, end := model.AppMarkets.GetTrends(symbol)
+	if start == nil || end == nil || start[market] == nil || end[market] == nil {
+		return
 	}
+	tradeUpdate = end[market].Ts
+	setting := model.GetSetting(model.FunctionHangContract, market, symbol)
+	deltaBM := end[model.Bitmex].Price - start[model.Bitmex].Price
+	delta := end[market].Price - start[market].Price
 	order := &model.Order{}
-	trend := checkTrend(market, symbol, dealBM, tick)
-	if trend == 0 {
-		order = revertHolding(``, ``, market, symbol, setting, tick)
-	} else {
-		order = createHolding(``, ``, market, symbol, trend, setting, tick)
+	if deltaBM > model.AppConfig.Trend && deltaBM-delta > model.AppConfig.Trend {
+		order = createHolding(key, secret, market, symbol, model.AppConfig.Trend, setting, tick)
+	} else if deltaBM < -1*model.AppConfig.Trend && deltaBM-delta < -1*model.AppConfig.Trend {
+		order = createHolding(key, secret, market, symbol, -1*model.AppConfig.Trend, setting, tick)
+	} else if math.Abs(deltaBM-delta) < model.AppConfig.Revert {
+		order = revertHolding(key, secret, market, symbol, setting, tick)
 	}
 	time.Sleep(time.Millisecond * 200)
 	orders := updateContractHolding(market, symbol, setting)
@@ -105,23 +100,6 @@ var ProcessHangContract = func(market, symbol string) {
 	}
 }
 
-func checkTrend(market, symbol string, dealBM *model.Deal, tick *model.BidAsk) (trend float64) {
-	trend = 0
-	trendStart := model.AppMarkets.TrendStart
-	if trendStart == nil || trendStart[symbol] == nil || trendStart[symbol][model.Bitmex] == nil {
-		return trend
-	}
-	delta := (tick.Bids[0].Price+tick.Asks[0].Price)/2 - trendStart[symbol][market].Price
-	deltaBM := dealBM.Price - trendStart[symbol][model.Bitmex].Price
-	if model.AppMarkets.TrendAmount > 0 && deltaBM-delta > model.AppConfig.Trend && deltaBM > model.AppConfig.Trend {
-		return model.AppMarkets.TrendAmount
-	}
-	if model.AppMarkets.TrendAmount < 0 && delta-deltaBM > model.AppConfig.Trend && -1*deltaBM > model.AppConfig.Trend {
-		return model.AppMarkets.TrendAmount
-	}
-	return 0
-}
-
 func updateContractHolding(market, symbol string, setting *model.Setting) (orders []*model.Order) {
 	api.RefreshAccount(key, secret, market)
 	account := model.AppAccounts.GetAccount(market, symbol)
@@ -141,7 +119,6 @@ func updateContractHolding(market, symbol string, setting *model.Setting) (order
 	//	}
 	//}
 	hangContractOrders.setHangContractOrders(symbol, orders)
-	contractHoldingUpdate = util.GetNowUnixMillion()
 	//if hangContractOrders.holdingLong > 0 || hangContractOrders.holdingShort > 0 || len(filteredOrders) > 0 {
 	//	util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,
 	//		hangContractOrders.holdingLong, hangContractOrders.holdingShort, len(filteredOrders)))

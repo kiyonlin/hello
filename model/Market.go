@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"hello/util"
-	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,20 +41,33 @@ type Rule struct {
 }
 
 type Markets struct {
-	lock        sync.Mutex
-	TrendAmount float64
-	TrendStart  map[string]map[string]*Deal           // symbol - market - deal
-	bidAsks     map[string]map[string]*BidAsk         // symbol - market - bidAsk
-	trade       map[int64]map[string]map[string]*Deal // time in second - symbol - market - deal
-	BigDeals    map[string]map[string]*Deal           // symbol - market - Deal
-	wsDepth     map[string][]chan struct{}            // market - []depth channel
-	isWriting   map[string]bool                       // market - writing
-	conns       map[string]*websocket.Conn            // market - conn
+	lock sync.Mutex
+	//TrendAmount float64
+	TrendEnd   map[string]map[string]*Deal           // symbol - market - deal
+	TrendStart map[string]map[string]*Deal           // symbol - market - deal
+	bidAsks    map[string]map[string]*BidAsk         // symbol - market - bidAsk
+	trade      map[int64]map[string]map[string]*Deal // time in second - symbol - market - deal
+	BigDeals   map[string]map[string]*Deal           // symbol - market - Deal
+	wsDepth    map[string][]chan struct{}            // market - []depth channel
+	isWriting  map[string]bool                       // market - writing
+	conns      map[string]*websocket.Conn            // market - conn
 }
 
 func NewMarkets() *Markets {
 	return &Markets{bidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{}),
 		trade: make(map[int64]map[string]map[string]*Deal)}
+}
+
+func (markets *Markets) GetTrends(symbol string) (start, end map[string]*Deal) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.TrendStart != nil {
+		start = markets.TrendStart[symbol]
+	}
+	if markets.TrendEnd != nil {
+		end = markets.TrendEnd[symbol]
+	}
+	return start, end
 }
 
 func (markets *Markets) SetTrade(deal *Deal) {
@@ -66,9 +78,6 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	}
 	second := deal.Ts / 1000
 	symbol := deal.Symbol
-	//if deal.Market == Bitmex {
-	//	util.Notice(fmt.Sprintf(`%d set deal %s`, second%100, deal.Market))
-	//}
 	if len(markets.trade[second]) > 1000 {
 		markets.trade = nil
 		markets.TrendStart = nil
@@ -93,30 +102,25 @@ func (markets *Markets) SetTrade(deal *Deal) {
 		go AppDB.Save(&candle)
 		compareSecond := second - AppConfig.TrendTime
 		compare := markets.trade[compareSecond]
-		if compare != nil {
-			if compare[symbol] != nil && compare[symbol][Bitmex] != nil && compare[symbol][Fmex] != nil {
-				deltaBM := markets.trade[second][symbol][Bitmex].Price - compare[symbol][Bitmex].Price
-				if math.Abs(deltaBM) > AppConfig.Trend {
-					util.Notice(fmt.Sprintf(`=create trend= bm:%f`, deltaBM))
-					markets.TrendStart = compare
-					markets.TrendAmount = deltaBM
-				}
-			}
-			delete(markets.trade, compareSecond)
+		if compare != nil && compare[symbol] != nil && compare[symbol][Bitmex] != nil &&
+			compare[symbol][Fmex] != nil {
+			markets.TrendStart = compare
+			markets.TrendEnd = markets.trade[second]
 		}
+		delete(markets.trade, compareSecond)
 	}
 }
 
-func (markets *Markets) GetTrade(second int64, market, symbol string) (deal *Deal) {
-	markets.lock.Lock()
-	defer markets.lock.Unlock()
-	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
-		markets.trade[second][symbol][market] != nil {
-		deal = markets.trade[second][symbol][market]
-	}
-	//util.Notice(fmt.Sprintf(`%d get bm deal %v`, second%100, deal != nil))
-	return deal
-}
+//func (markets *Markets) GetTrade(second int64, market, symbol string) (deal *Deal) {
+//	markets.lock.Lock()
+//	defer markets.lock.Unlock()
+//	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
+//		markets.trade[second][symbol][market] != nil {
+//		deal = markets.trade[second][symbol][market]
+//	}
+//	//util.Notice(fmt.Sprintf(`%d get bm deal %v`, second%100, deal != nil))
+//	return deal
+//}
 
 func (markets *Markets) GetIsWriting(market string) bool {
 	markets.lock.Lock()

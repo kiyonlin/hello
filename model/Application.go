@@ -90,6 +90,7 @@ type Config struct {
 	MinUsdt         float64 // 折合usdt最小下单金额
 	MaxUsdt         float64 // 折合usdt最大下单金额
 	Trend           float64 // fmex跟随bitmex做市时趋势阈值
+	Revert          float64 // fmex跟随bitmex做市平仓时的阈值
 	Stable          bool
 	WSUrls          map[string]string  // marketName - ws url
 	RestUrls        map[string]string  // marketName - rest url
