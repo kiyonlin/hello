@@ -66,7 +66,9 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	}
 	second := deal.Ts / 1000
 	symbol := deal.Symbol
-	//util.Notice(fmt.Sprintf(`= set deal %d %s`, second, deal.Market))
+	if deal.Market == Bitmex {
+		util.Notice(fmt.Sprintf(`%d set deal %s`, second%100, deal.Market))
+	}
 	if len(markets.trade[second]) > 1000 {
 		markets.trade = nil
 		markets.TrendStart = nil
@@ -118,6 +120,7 @@ func (markets *Markets) GetTrade(second int64, market, symbol string) (deal *Dea
 		markets.trade[second][symbol][market] != nil {
 		deal = markets.trade[second][symbol][market]
 	}
+	util.Notice(fmt.Sprintf(`%d get bm deal %v`, second%100, deal == nil))
 	return deal
 }
 
