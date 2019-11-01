@@ -54,6 +54,7 @@ var ProcessHangContract = func(market, symbol string) {
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 5 || tradeUpdate == 0 ||
 		tick.Bids.Len() < 5 || int(startTime)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
 		timeDis := 0
+		tradeUpdate = startTime
 		if tick != nil {
 			timeDis = int(startTime) - tick.Ts
 		}
@@ -62,7 +63,6 @@ var ProcessHangContract = func(market, symbol string) {
 		CancelHangContracts(key, secret, market, symbol)
 		return
 	}
-	tradeUpdate = startTime
 	if hangContractOrders.hangingContract {
 		return
 	}
