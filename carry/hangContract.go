@@ -93,7 +93,7 @@ var ProcessHangContract = func(market, symbol string) {
 			break
 		}
 	}
-	if needAdd {
+	if needAdd && order != nil && order.OrderId != `` {
 		util.Notice(fmt.Sprintf(`query order can not find %s %f amount %f`,
 			order.OrderSide, order.Price, order.Amount))
 		orders = append(orders, order)
