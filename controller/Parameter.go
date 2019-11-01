@@ -270,19 +270,17 @@ func GetBalance(c *gin.Context) {
 func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).
-		Select(`market, symbol, function, function_parameter, amount_limit, binance_dis_min,
-		binance_dis_max,refresh_limit_low, refresh_limit, valid, chance`).Rows()
+		Select(`market, symbol, function, function_parameter, amount_limit,refresh_limit_low, refresh_limit, valid, chance`).Rows()
 	msg := ``
 	for rows.Next() {
-		var market, symbol, function, parameter, amountLimit, binanceDisMin, binanceDisMax,
-			refreshLimitLow, refreshLimit, chance string
+		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, chance string
 		valid := false
-		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &binanceDisMin, &binanceDisMax,
-			&refreshLimitLow, &refreshLimit, &valid, &chance)
-		msg += fmt.Sprintf("%s %s %s parameter:%s %s binancedismin:%s binancedismax:%s refreshlimitlow:%s "+
+		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &refreshLimitLow, &refreshLimit,
+			&valid, &chance)
+
+		msg += fmt.Sprintf("%s %s %s parameter:%s %s refreshlimitlow:%s "+
 			"refreshlimit:%s %v chance:%s\n",
-			market, symbol, function, parameter, amountLimit,
-			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, valid, chance)
+			market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, valid, chance)
 	}
 	rows.Close()
 	msg += model.AppConfig.ToString()

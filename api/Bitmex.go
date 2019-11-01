@@ -45,7 +45,6 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		if len(event) == 0 {
 			return
 		}
-		fmt.Println(string(event))
 		depthJson, depthErr := util.NewJSON(event)
 		if depthJson == nil {
 			return
