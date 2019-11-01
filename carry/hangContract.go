@@ -86,6 +86,9 @@ var ProcessHangContract = func(market, symbol string) {
 		order = createHolding(``, ``, market, symbol, trend, setting, tick)
 	}
 	orders := updateContractHolding(market, symbol, setting)
+	if order == nil || order.OrderId == `` {
+		return
+	}
 	needAdd := true
 	for _, value := range orders {
 		if value.OrderId == order.OrderId {
@@ -93,7 +96,7 @@ var ProcessHangContract = func(market, symbol string) {
 			break
 		}
 	}
-	if needAdd && order != nil && order.OrderId != `` {
+	if needAdd {
 		util.Notice(fmt.Sprintf(`query order can not find %s %f amount %f`,
 			order.OrderSide, order.Price, order.Amount))
 		orders = append(orders, order)
