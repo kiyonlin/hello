@@ -190,12 +190,13 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 			holdingLong, holdingShort, tick.Bids[0].Price, tick.Asks[0].Price))
 	}
 	if holdingLong > holdingShort {
+		amount := holdingLong - holdingShort
 		for _, order := range orders {
 			if order.OrderSide == model.OrderSideBuy ||
 				(order.OrderSide == model.OrderSideSell && order.Price-priceDistance > tick.Asks[0].Price) {
 				api.MustCancel(key, secret, market, symbol, order.OrderId, false)
 			} else if order.OrderSide == model.OrderSideSell && math.Abs(order.Price-tick.Asks[0].Price) < priceDistance {
-				holdingShort += order.Amount - order.DealAmount
+				amount = amount - (order.Amount - order.DealAmount)
 				util.Notice(fmt.Sprintf(`revert holding already short %f`, order.Amount-order.DealAmount))
 			}
 		}
@@ -203,16 +204,17 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 			util.Notice(fmt.Sprintf(`revert holding place short amount: %f at %f`,
 				holdingLong-holdingShort, tick.Asks[0].Price))
 			api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				setting.AccountType, tick.Asks[0].Price, holdingLong-holdingShort)
+				setting.AccountType, tick.Asks[0].Price, amount)
 		}
 	}
 	if holdingLong < holdingShort {
+		amount := holdingShort - holdingLong
 		for _, order := range orders {
 			if order.OrderSide == model.OrderSideSell ||
 				(order.OrderSide == model.OrderSideBuy && order.Price+priceDistance < tick.Bids[0].Price) {
 				api.MustCancel(key, secret, market, symbol, order.OrderId, false)
 			} else if order.OrderSide == model.OrderSideBuy && math.Abs(order.Price-tick.Bids[0].Price) < priceDistance {
-				holdingLong += order.Amount - order.DealAmount
+				amount = amount - (order.Amount - order.DealAmount)
 				util.Notice(fmt.Sprintf(`revert holding already long %f`, order.Amount-order.DealAmount))
 			}
 		}
@@ -220,7 +222,7 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 			util.Notice(fmt.Sprintf(`revert holding place long amount: %f at %f`,
 				holdingShort-holdingShort, tick.Bids[0].Price))
 			api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				setting.AccountType, tick.Bids[0].Price, holdingShort-holdingLong)
+				setting.AccountType, tick.Bids[0].Price, amount)
 		}
 	}
 }
