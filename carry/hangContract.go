@@ -72,11 +72,11 @@ var ProcessHangContract = func(market, symbol string) {
 	deltaBM := end[model.Bitmex].Price - start[model.Bitmex].Price
 	delta := end[market].Price - start[market].Price
 	order := &model.Order{}
-	if deltaBM > setting.RefreshLimit && deltaBM-delta > setting.RefreshLimit {
+	if deltaBM >= setting.RefreshLimit && deltaBM-delta >= setting.RefreshLimit {
 		order = createHolding(key, secret, market, symbol, setting.RefreshLimit, setting, tick)
-	} else if deltaBM < -1*setting.RefreshLimit && deltaBM-delta < -1*setting.RefreshLimit {
+	} else if deltaBM <= -1*setting.RefreshLimit && deltaBM-delta <= -1*setting.RefreshLimit {
 		order = createHolding(key, secret, market, symbol, -1*setting.RefreshLimit, setting, tick)
-	} else if math.Abs(deltaBM-delta) < setting.RefreshLimitLow {
+	} else if math.Abs(deltaBM-delta) <= setting.RefreshLimitLow {
 		order = revertHolding(key, secret, market, symbol, setting, tick)
 	}
 	time.Sleep(time.Millisecond * 200)
@@ -173,10 +173,10 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 			holdingShort += order.Amount - order.DealAmount
 		}
 	}
-	if holdingShort != 0 || holdingLong != 0 {
-		util.Notice(fmt.Sprintf(`revert holding long:%f short:%f tick:%f-%f`,
-			holdingLong, holdingShort, tick.Bids[0].Price, tick.Asks[0].Price))
-	}
+	//if holdingShort != 0 || holdingLong != 0 {
+	//	util.Notice(fmt.Sprintf(`revert holding long:%f short:%f tick:%f-%f`,
+	//		holdingLong, holdingShort, tick.Bids[0].Price, tick.Asks[0].Price))
+	//}
 	if holdingLong > holdingShort {
 		amount := holdingLong - holdingShort
 		for _, order := range orders {
