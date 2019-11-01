@@ -84,7 +84,9 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	markets.trade[second][symbol][deal.Market] = deal
 	compareSecond := second - AppConfig.TrendTime
 	compare := markets.trade[compareSecond]
-	//util.Notice(fmt.Sprintf(`%s %d %s %f `, deal.Market, deal.Ts, symbol, deal.Price))
+	if deal.Market == Bitmex {
+		util.Notice(fmt.Sprintf(`== set deal %s %d %s %f `, deal.Market, deal.Ts/1000, symbol, deal.Price))
+	}
 	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
 		markets.trade[second][symbol][Bitmex] != nil && markets.trade[second][symbol][Fmex] != nil {
 		candle := &Candle{Symbol: symbol, Ts: second,
@@ -107,14 +109,21 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	}
 }
 
-func (markets *Markets) GetLastTrade(second int64, market, symbol string) (deal *Deal) {
+func (markets *Markets) GetTrade(second int64, market, symbol string) (deal *Deal) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
 		markets.trade[second][symbol][market] != nil {
-		return markets.trade[second][symbol][market]
+		deal = markets.trade[second][symbol][market]
 	}
-	return nil
+	if market == Bitmex {
+		if deal != nil {
+			util.Notice(fmt.Sprintf(`== get deal %s %d %s %f `, market, second, symbol, deal.Price))
+		} else {
+			util.Notice(fmt.Sprintf(`== get deal %s %d %s fail get `, market, second, symbol))
+		}
+	}
+	return deal
 }
 
 func (markets *Markets) GetIsWriting(market string) bool {

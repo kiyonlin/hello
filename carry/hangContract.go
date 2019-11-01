@@ -47,14 +47,14 @@ func (hangContractOrders *HangContractOrders) setHangContractOrders(symbol strin
 var ProcessHangContract = func(market, symbol string) {
 	start := util.GetNowUnixMillion()
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
-	dealBM := model.AppMarkets.GetLastTrade(start/1000, model.Bitmex, symbol)
+	dealBM := model.AppMarkets.GetTrade(start/1000, model.Bitmex, symbol)
 	i := int64(0)
 	second := start / 1000
 	for ; i < model.AppConfig.TrendTime; i++ {
 		if dealBM != nil {
 			break
 		}
-		dealBM = model.AppMarkets.GetLastTrade(second-i, model.Bitmex, symbol)
+		dealBM = model.AppMarkets.GetTrade(second-i, model.Bitmex, symbol)
 	}
 	if dealBM == nil || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || i > 3 ||
 		tick.Bids.Len() < 15 || int(start)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
