@@ -271,19 +271,20 @@ func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, amount_limit, binance_dis_min,
-		binance_dis_max,refresh_limit_low, refresh_limit, refresh_same_time, valid`).Rows()
+		binance_dis_max,refresh_limit_low, refresh_limit, refresh_same_time, valid, chance`).Rows()
 	msg := ``
 	for rows.Next() {
 		var market, symbol, function, parameter, amountLimit, binanceDisMin, binanceDisMax,
-			refreshLimitLow, refreshLimit string
+			refreshLimitLow, refreshLimit, chance string
 		var refreshSameTime int
 		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &binanceDisMin, &binanceDisMax,
-			&refreshLimitLow, &refreshLimit, &refreshSameTime, &valid)
+			&refreshLimitLow, &refreshLimit, &refreshSameTime, &valid, &chance)
 		msg += fmt.Sprintf("%s %s %s %s %s binancedismin:%s binancedismax:%s refreshlimitlow:%s "+
-			"refreshlimit:%s refreshsametime:%d %v stable:%v\n", market, symbol, function, parameter, amountLimit,
+			"refreshlimit:%s refreshsametime:%d %v stable:%v chance:%f\n",
+			market, symbol, function, parameter, amountLimit,
 			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, refreshSameTime, valid,
-			model.AppConfig.Stable)
+			model.AppConfig.Stable, chance)
 	}
 	rows.Close()
 	msg += model.AppConfig.ToString()
