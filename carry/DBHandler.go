@@ -324,7 +324,6 @@ func Maintain() {
 	model.HandlerMap[model.FunctionRank] = ProcessRank
 	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar
 	model.HandlerMap[model.FunctionHangContract] = ProcessHangContract
-	model.HandlerMap[model.FunctionFollow] = ProcessFollow
 	defer model.AppDB.Close()
 	model.AppDB.AutoMigrate(&model.Account{})
 	model.AppDB.AutoMigrate(&model.Setting{})

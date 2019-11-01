@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"hello/util"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -41,59 +42,79 @@ type Rule struct {
 }
 
 type Markets struct {
-	lock      sync.Mutex
-	bidAsks   map[string]map[string]*BidAsk           // symbol - market - bidAsk
-	trade     map[int64]map[string]map[string]float64 // time in second - symbol - market - price
-	BigDeals  map[string]map[string]*Deal             // symbol - market - Deal
-	wsDepth   map[string][]chan struct{}              // market - []depth channel
-	isWriting map[string]bool                         // market - writing
-	conns     map[string]*websocket.Conn              // market - conn
+	lock        sync.Mutex
+	TrendAmount float64
+	TrendStart  map[string]map[string]*Deal           // symbol - market - deal
+	bidAsks     map[string]map[string]*BidAsk         // symbol - market - bidAsk
+	trade       map[int64]map[string]map[string]*Deal // time in second - symbol - market - deal
+	BigDeals    map[string]map[string]*Deal           // symbol - market - Deal
+	wsDepth     map[string][]chan struct{}            // market - []depth channel
+	isWriting   map[string]bool                       // market - writing
+	conns       map[string]*websocket.Conn            // market - conn
 }
 
 func NewMarkets() *Markets {
 	return &Markets{bidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{}),
-		trade: make(map[int64]map[string]map[string]float64)}
+		trade: make(map[int64]map[string]map[string]*Deal)}
 }
 
 func (markets *Markets) SetTrade(deal *Deal) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	if markets.trade == nil {
-		markets.trade = make(map[int64]map[string]map[string]float64)
+		markets.trade = make(map[int64]map[string]map[string]*Deal)
 	}
 	second := deal.Ts / 1000
+	symbol := deal.Symbol
 	//util.Notice(fmt.Sprintf(`= set deal %d %s`, second, deal.Market))
+	if len(markets.trade[second]) > 1000 {
+		markets.trade = nil
+		markets.TrendStart = nil
+		util.Notice(fmt.Sprintf(`clear trade map and trend point`))
+	}
 	if markets.trade[second] == nil {
-		markets.trade[second] = make(map[string]map[string]float64)
+		markets.trade[second] = make(map[string]map[string]*Deal)
 	}
-	if markets.trade[second][deal.Symbol] == nil {
-		markets.trade[second][deal.Symbol] = make(map[string]float64)
+	if markets.trade[second][symbol] == nil {
+		markets.trade[second][symbol] = make(map[string]*Deal)
 	}
-	if markets.trade[second][deal.Symbol][deal.Market] > 0 {
+	if markets.trade[second][symbol][deal.Market] != nil {
 		return
 	}
-	markets.trade[second][deal.Symbol][deal.Market] = deal.Price
-	compareSecond := second - AppConfig.MonitorTime
-	util.Notice(fmt.Sprintf(`%s %d %s %f `, deal.Market, deal.Ts, deal.Symbol, deal.Price))
-	if markets.trade[compareSecond] != nil &&
-		markets.trade[compareSecond][deal.Symbol] != nil &&
-		markets.trade[compareSecond][deal.Symbol][Bitmex] > 0 &&
-		markets.trade[compareSecond][deal.Symbol][Fmex] > 0 &&
-		markets.trade[second] != nil &&
-		markets.trade[second][deal.Symbol] != nil &&
-		markets.trade[second][deal.Symbol][Bitmex] > 0 &&
-		markets.trade[second][deal.Symbol][Fmex] > 0 {
-		candle := &Candle{Symbol: deal.Symbol, Ts: second,
-			PriceBitmex:    markets.trade[second][deal.Symbol][Bitmex],
-			PriceFmex:      markets.trade[second][deal.Symbol][Fmex],
-			IncreaseBitmex: markets.trade[second][deal.Symbol][Bitmex] - markets.trade[compareSecond][deal.Symbol][Bitmex],
-			IncreaseFmex:   markets.trade[second][deal.Symbol][Fmex] - markets.trade[compareSecond][deal.Symbol][Fmex],
+	markets.trade[second][symbol][deal.Market] = deal
+	compareSecond := second - AppConfig.TrendTime
+	compare := markets.trade[compareSecond]
+	util.Notice(fmt.Sprintf(`%s %d %s %f `, deal.Market, deal.Ts, symbol, deal.Price))
+	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
+		markets.trade[second][symbol][Bitmex] != nil && markets.trade[second][symbol][Fmex] != nil {
+		candle := &Candle{Symbol: symbol, Ts: second,
+			PriceBitmex: markets.trade[second][symbol][Bitmex].Price,
+			PriceFmex:   markets.trade[second][symbol][Fmex].Price,
 		}
-		candle.Compare = candle.IncreaseBitmex - candle.IncreaseFmex
 		go AppDB.Save(&candle)
-		delete(markets.trade, compareSecond)
-		util.Notice(fmt.Sprintf(`trade map size %d`, len(markets.trade)))
+		if compare != nil {
+			if compare[symbol] != nil && compare[symbol][Bitmex] != nil && compare[symbol][Fmex] != nil {
+				priceBM := markets.trade[second][symbol][Bitmex].Price
+				deltaBM := priceBM - compare[symbol][Bitmex].Price
+				if math.Abs(deltaBM) > AppConfig.Trend {
+					util.Notice(fmt.Sprintf(`=create trend= bm:%f`, deltaBM))
+					markets.TrendStart = compare
+					markets.TrendAmount = deltaBM
+				}
+			}
+			delete(markets.trade, compareSecond)
+		}
 	}
+}
+
+func (markets *Markets) GetLastTrade(second int64, market, symbol string) (deal *Deal) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
+		markets.trade[second][symbol][market] != nil {
+		return markets.trade[second][symbol][market]
+	}
+	return nil
 }
 
 func (markets *Markets) GetIsWriting(market string) bool {
@@ -250,7 +271,7 @@ func (markets *Markets) RequireDepthChanReset(market string) bool {
 		}
 		end := int64(util.GetNowUnixMillion() / 1000)
 		for i := end - int64(AppConfig.Delay/1000); i <= end; i++ {
-			if markets.trade[i] != nil && markets.trade[i][symbol] != nil && markets.trade[i][symbol][market] > 0 {
+			if markets.trade[i] != nil && markets.trade[i][symbol] != nil && markets.trade[i][symbol][market] != nil {
 				needReset = false
 				break
 			}

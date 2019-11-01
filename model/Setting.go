@@ -98,7 +98,7 @@ func LoadSettings() {
 				relatedSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
 			}
 		}
-		if AppSettings[i].Function == FunctionFollow {
+		if AppSettings[i].Function == FunctionHangContract {
 			relatedSettings[symbol] = &Setting{Market: Bitmex, Symbol: AppSettings[i].Symbol, Valid: true}
 		}
 		if handlers[market] == nil {
