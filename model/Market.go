@@ -84,7 +84,7 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	markets.trade[second][symbol][deal.Market] = deal
 	compareSecond := second - AppConfig.TrendTime
 	compare := markets.trade[compareSecond]
-	util.Notice(fmt.Sprintf(`%s %d %s %f `, deal.Market, deal.Ts, symbol, deal.Price))
+	//util.Notice(fmt.Sprintf(`%s %d %s %f `, deal.Market, deal.Ts, symbol, deal.Price))
 	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
 		markets.trade[second][symbol][Bitmex] != nil && markets.trade[second][symbol][Fmex] != nil {
 		candle := &Candle{Symbol: symbol, Ts: second,

@@ -85,7 +85,6 @@ var ProcessHangContract = func(market, symbol string) {
 
 func checkTrend(market, symbol string, dealBM *model.Deal, tick *model.BidAsk) (trend float64) {
 	trend = 0
-	defer util.Notice(fmt.Sprintf(`trend: %f`, trend))
 	trendStart := model.AppMarkets.TrendStart
 	if trendStart == nil || trendStart[symbol] == nil || trendStart[symbol][model.Bitmex] == nil {
 		return trend
@@ -121,8 +120,10 @@ func updateContractHolding(market, symbol string, setting *model.Setting) {
 	}
 	hangContractOrders.setHangContractOrders(symbol, filteredOrders)
 	contractHoldingUpdate = util.GetNowUnixMillion()
-	util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,
-		hangContractOrders.holdingLong, hangContractOrders.holdingShort, len(filteredOrders)))
+	if hangContractOrders.holdingLong > 0 || hangContractOrders.holdingShort > 0 || len(filteredOrders) > 0 {
+		util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,
+			hangContractOrders.holdingLong, hangContractOrders.holdingShort, len(filteredOrders)))
+	}
 }
 
 func createHolding(key, secret, market, symbol string, trend float64,
@@ -180,8 +181,10 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 			holdingShort += order.Amount - order.DealAmount
 		}
 	}
-	util.Notice(fmt.Sprintf(`revert holding long:%f short:%f tick:%f-%f`,
-		holdingLong, holdingShort, tick.Bids[0].Price, tick.Asks[0].Price))
+	if holdingShort != 0 || holdingLong != 0 {
+		util.Notice(fmt.Sprintf(`revert holding long:%f short:%f tick:%f-%f`,
+			holdingLong, holdingShort, tick.Bids[0].Price, tick.Asks[0].Price))
+	}
 	if holdingLong > holdingShort {
 		for _, order := range orders {
 			if order.OrderSide == model.OrderSideBuy ||
