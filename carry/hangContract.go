@@ -78,13 +78,27 @@ var ProcessHangContract = func(market, symbol string) {
 	if contractHoldingUpdate == 0 {
 		CancelNonHang(market, symbol)
 	}
+	order := &model.Order{}
 	trend := checkTrend(market, symbol, dealBM, tick)
 	if trend == 0 {
-		revertHolding(``, ``, market, symbol, setting, tick)
+		order = revertHolding(``, ``, market, symbol, setting, tick)
 	} else {
-		createHolding(``, ``, market, symbol, trend, setting, tick)
+		order = createHolding(``, ``, market, symbol, trend, setting, tick)
 	}
-	updateContractHolding(market, symbol, setting)
+	orders := updateContractHolding(market, symbol, setting)
+	needAdd := true
+	for _, value := range orders {
+		if value.OrderId == order.OrderId {
+			needAdd = false
+			break
+		}
+	}
+	if needAdd {
+		util.Notice(fmt.Sprintf(`query order can not find %s %f amount %f`,
+			order.OrderSide, order.Price, order.Amount))
+		orders = append(orders, order)
+		hangContractOrders.setHangContractOrders(symbol, orders)
+	}
 }
 
 func checkTrend(market, symbol string, dealBM *model.Deal, tick *model.BidAsk) (trend float64) {
@@ -104,7 +118,7 @@ func checkTrend(market, symbol string, dealBM *model.Deal, tick *model.BidAsk) (
 	return 0
 }
 
-func updateContractHolding(market, symbol string, setting *model.Setting) {
+func updateContractHolding(market, symbol string, setting *model.Setting) (orders []*model.Order) {
 	api.RefreshAccount(key, secret, market)
 	account := model.AppAccounts.GetAccount(market, symbol)
 	if account.Direction == model.OrderSideBuy {
@@ -115,7 +129,7 @@ func updateContractHolding(market, symbol string, setting *model.Setting) {
 		hangContractOrders.holdingShort = account.Free
 		hangContractOrders.holdingLong = 0
 	}
-	orders := api.QueryOrders(key, secret, market, symbol, ``, setting.AccountType, 0, 0)
+	orders = api.QueryOrders(key, secret, market, symbol, ``, setting.AccountType, 0, 0)
 	filteredOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		if order.OrderId != `` && order.Amount-order.DealAmount > 100 {
@@ -128,10 +142,11 @@ func updateContractHolding(market, symbol string, setting *model.Setting) {
 		util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,
 			hangContractOrders.holdingLong, hangContractOrders.holdingShort, len(filteredOrders)))
 	}
+	return orders
 }
 
 func createHolding(key, secret, market, symbol string, trend float64,
-	setting *model.Setting, tick *model.BidAsk) {
+	setting *model.Setting, tick *model.BidAsk) (order *model.Order) {
 	orders := hangContractOrders.getHangContractOrders(symbol)
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	holdingShort := hangContractOrders.holdingShort
@@ -152,7 +167,6 @@ func createHolding(key, secret, market, symbol string, trend float64,
 	}
 	util.Notice(fmt.Sprintf(`create holding trend:%f holding long:%f holding short:%f`,
 		trend, holdingLong, holdingShort))
-	order := &model.Order{}
 	if trend > 0 && setting.AmountLimit-holdingLong+holdingShort > 0 {
 		order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 			setting.AccountType, tick.Asks[0].Price, setting.AmountLimit-holdingLong+holdingShort)
@@ -162,13 +176,13 @@ func createHolding(key, secret, market, symbol string, trend float64,
 			setting.AccountType, tick.Bids[0].Price, setting.AmountLimit-holdingShort+holdingLong)
 	}
 	if order != nil && order.OrderId != `` {
-		orders := hangContractOrders.getHangContractOrders(symbol)
-		orders = append(orders, order)
-		hangContractOrders.setHangContractOrders(symbol, orders)
+		return order
 	}
+	return nil
 }
 
-func revertHolding(key, secret, market, symbol string, setting *model.Setting, tick *model.BidAsk) {
+func revertHolding(key, secret, market, symbol string, setting *model.Setting, tick *model.BidAsk) (
+	revertOrder *model.Order) {
 	orders := hangContractOrders.getHangContractOrders(symbol)
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	holdingShort := hangContractOrders.holdingShort
@@ -195,16 +209,16 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 			if order.OrderSide == model.OrderSideBuy ||
 				(order.OrderSide == model.OrderSideSell && order.Price-priceDistance > tick.Asks[0].Price) {
 				api.MustCancel(key, secret, market, symbol, order.OrderId, false)
-			} else if order.OrderSide == model.OrderSideSell && math.Abs(order.Price-tick.Asks[0].Price) < priceDistance {
+			} else if order.OrderSide == model.OrderSideSell &&
+				math.Abs(order.Price-tick.Asks[0].Price) < priceDistance {
 				amount = amount - (order.Amount - order.DealAmount)
 				util.Notice(fmt.Sprintf(`revert holding already short %f`, order.Amount-order.DealAmount))
 			}
 		}
 		if amount > 0 {
-			util.Notice(fmt.Sprintf(`revert holding place short amount: %f at %f`,
-				holdingLong-holdingShort, tick.Asks[0].Price))
-			api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				setting.AccountType, tick.Asks[0].Price, amount)
+			util.Notice(fmt.Sprintf(`revert holding place short amount: %f at %f`, amount, tick.Asks[0].Price))
+			revertOrder = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
+				``, setting.AccountType, tick.Asks[0].Price, amount)
 		}
 	}
 	if holdingLong < holdingShort {
@@ -213,18 +227,22 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 			if order.OrderSide == model.OrderSideSell ||
 				(order.OrderSide == model.OrderSideBuy && order.Price+priceDistance < tick.Bids[0].Price) {
 				api.MustCancel(key, secret, market, symbol, order.OrderId, false)
-			} else if order.OrderSide == model.OrderSideBuy && math.Abs(order.Price-tick.Bids[0].Price) < priceDistance {
+			} else if order.OrderSide == model.OrderSideBuy &&
+				math.Abs(order.Price-tick.Bids[0].Price) < priceDistance {
 				amount = amount - (order.Amount - order.DealAmount)
 				util.Notice(fmt.Sprintf(`revert holding already long %f`, order.Amount-order.DealAmount))
 			}
 		}
 		if amount > 0 {
-			util.Notice(fmt.Sprintf(`revert holding place long amount: %f at %f`,
-				holdingShort-holdingShort, tick.Bids[0].Price))
-			api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
+			util.Notice(fmt.Sprintf(`revert holding place long amount: %f at %f`, amount, tick.Bids[0].Price))
+			revertOrder = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
 				setting.AccountType, tick.Bids[0].Price, amount)
 		}
 	}
+	if revertOrder != nil && revertOrder.OrderId != `` {
+		return revertOrder
+	}
+	return nil
 }
 
 func CancelHangContract(key, secret, market, symbol string) {
