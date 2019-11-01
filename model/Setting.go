@@ -99,7 +99,9 @@ func LoadSettings() {
 			}
 		}
 		if AppSettings[i].Function == FunctionHangContract {
-			relatedSettings[symbol] = &Setting{Market: Bitmex, Symbol: AppSettings[i].Symbol, Valid: true}
+			relatedSettings[symbol] = &Setting{Market: Bitmex, Symbol: AppSettings[i].Symbol, Valid: true,
+				Chance: AppSettings[i].Chance, RefreshLimitLow: AppSettings[i].RefreshLimitLow,
+				RefreshLimit: AppSettings[i].RefreshLimit}
 		}
 		if handlers[market] == nil {
 			handlers[market] = make(map[string]map[string]CarryHandler)

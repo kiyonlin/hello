@@ -100,7 +100,14 @@ func (markets *Markets) SetTrade(deal *Deal) {
 			PriceFmex:   markets.trade[second][symbol][Fmex].Price,
 		}
 		go AppDB.Save(&candle)
-		compareSecond := second - AppConfig.TrendTime
+		chance := 15.0
+		for _, setting := range AppSettings {
+			if setting.Function == FunctionHangContract &&
+				setting.Market == deal.Market && setting.Symbol == deal.Symbol {
+				chance = setting.Chance
+			}
+		}
+		compareSecond := second - int64(chance)
 		compare := markets.trade[compareSecond]
 		if compare != nil && compare[symbol] != nil && compare[symbol][Bitmex] != nil &&
 			compare[symbol][Fmex] != nil {

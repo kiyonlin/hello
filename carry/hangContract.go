@@ -50,11 +50,9 @@ var ProcessHangContract = func(market, symbol string) {
 	if start == nil || end == nil || start[market] == nil || end[market] == nil {
 		return
 	}
-	tradeUpdate = end[market].Ts
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
-	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 ||
-		float64(startTime-tradeUpdate) > model.AppConfig.Delay ||
-		tick.Bids.Len() < 15 || int(startTime)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
+	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 5 || tradeUpdate == 0 ||
+		tick.Bids.Len() < 5 || int(startTime)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
 		timeDis := 0
 		if tick != nil {
 			timeDis = int(startTime) - tick.Ts
@@ -64,6 +62,7 @@ var ProcessHangContract = func(market, symbol string) {
 		CancelHangContracts(key, secret, market, symbol)
 		return
 	}
+	tradeUpdate = startTime
 	if hangContractOrders.hangingContract {
 		return
 	}
@@ -73,11 +72,11 @@ var ProcessHangContract = func(market, symbol string) {
 	deltaBM := end[model.Bitmex].Price - start[model.Bitmex].Price
 	delta := end[market].Price - start[market].Price
 	order := &model.Order{}
-	if deltaBM > model.AppConfig.Trend && deltaBM-delta > model.AppConfig.Trend {
-		order = createHolding(key, secret, market, symbol, model.AppConfig.Trend, setting, tick)
-	} else if deltaBM < -1*model.AppConfig.Trend && deltaBM-delta < -1*model.AppConfig.Trend {
-		order = createHolding(key, secret, market, symbol, -1*model.AppConfig.Trend, setting, tick)
-	} else if math.Abs(deltaBM-delta) < model.AppConfig.Revert {
+	if deltaBM > setting.RefreshLimit && deltaBM-delta > setting.RefreshLimit {
+		order = createHolding(key, secret, market, symbol, setting.RefreshLimit, setting, tick)
+	} else if deltaBM < -1*setting.RefreshLimit && deltaBM-delta < -1*setting.RefreshLimit {
+		order = createHolding(key, secret, market, symbol, -1*setting.RefreshLimit, setting, tick)
+	} else if math.Abs(deltaBM-delta) < setting.RefreshLimitLow {
 		order = revertHolding(key, secret, market, symbol, setting, tick)
 	}
 	time.Sleep(time.Millisecond * 200)

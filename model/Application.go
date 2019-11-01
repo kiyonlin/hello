@@ -84,13 +84,10 @@ type Config struct {
 	//SequencePlace   int // position:[0~14]
 	Between         int64
 	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
-	TrendTime       int64 // 按照秒计算的价格波动监控时间段的长度
 	ChannelSlot     float64
 	Delay           float64
 	MinUsdt         float64 // 折合usdt最小下单金额
 	MaxUsdt         float64 // 折合usdt最大下单金额
-	Trend           float64 // fmex跟随bitmex做市时趋势阈值
-	Revert          float64 // fmex跟随bitmex做市平仓时的阈值
 	Stable          bool
 	WSUrls          map[string]string  // marketName - ws url
 	RestUrls        map[string]string  // marketName - rest url
