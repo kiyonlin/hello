@@ -298,6 +298,10 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 			if symbol == `btcusd_p` {
 				return `trade:XBTUSD`
 			}
+		} else if subType == SubscribeDepth {
+			if symbol == `btcusd_p` {
+				return `orderBookL2_25:XBTUSD`
+			}
 		}
 		return ``
 	case Coinbig:
