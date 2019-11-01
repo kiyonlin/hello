@@ -48,20 +48,22 @@ var ProcessHangContract = func(market, symbol string) {
 	start := util.GetNowUnixMillion()
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	dealBM := model.AppMarkets.GetLastTrade(start/1000, model.Bitmex, symbol)
-	if dealBM == nil {
-		dealBM = model.AppMarkets.GetLastTrade(start/1000-1, model.Bitmex, symbol)
+	i := int64(0)
+	second := start / 1000
+	for ; i < model.AppConfig.TrendTime; i++ {
+		if dealBM != nil {
+			break
+		}
+		dealBM = model.AppMarkets.GetLastTrade(second-i, model.Bitmex, symbol)
 	}
-	if dealBM == nil {
-		dealBM = model.AppMarkets.GetLastTrade(start/1000-2, model.Bitmex, symbol)
-		util.Notice(`= deal BM is nil =`)
-	}
-	if dealBM == nil || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
-		int(start)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
+	if dealBM == nil || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || i > 3 ||
+		tick.Bids.Len() < 15 || int(start)-tick.Ts > 500 || model.AppConfig.Handle != `1` || model.AppPause {
 		timeDis := 0
 		if tick != nil {
 			timeDis = int(start) - tick.Ts
 		}
-		util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d`, market, symbol, timeDis))
+		util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d deal bm:%d`,
+			market, symbol, timeDis, i))
 		CancelHangContract(key, secret, market, symbol)
 		return
 	}
