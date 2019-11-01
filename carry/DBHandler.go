@@ -279,7 +279,7 @@ func ResetChannel(market string, channel chan struct{}) {
 	for symbol := range symbols {
 		go CancelRefreshHang(key, secret, market, symbol, RefreshTypeGrid)
 		go CancelHang(key, secret, market, symbol)
-		go CancelHangContract(key, secret, market, symbol)
+		go CancelHangContracts(key, secret, market, symbol)
 	}
 	channel <- struct{}{}
 	close(channel)

@@ -66,7 +66,7 @@ var ProcessHangContract = func(market, symbol string) {
 			util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d deal bm:%d`,
 				market, symbol, timeDis, i))
 		}
-		CancelHangContract(key, secret, market, symbol)
+		CancelHangContracts(key, secret, market, symbol)
 		return
 	}
 	setting := model.GetSetting(model.FunctionHangContract, market, symbol)
@@ -85,6 +85,7 @@ var ProcessHangContract = func(market, symbol string) {
 	} else {
 		order = createHolding(``, ``, market, symbol, trend, setting, tick)
 	}
+	time.Sleep(time.Millisecond * 200)
 	orders := updateContractHolding(market, symbol, setting)
 	if order == nil || order.OrderId == `` {
 		return
@@ -133,18 +134,18 @@ func updateContractHolding(market, symbol string, setting *model.Setting) (order
 		hangContractOrders.holdingLong = 0
 	}
 	orders = api.QueryOrders(key, secret, market, symbol, ``, setting.AccountType, 0, 0)
-	filteredOrders := make([]*model.Order, 0)
-	for _, order := range orders {
-		if order.OrderId != `` && order.Amount-order.DealAmount > 100 {
-			filteredOrders = append(filteredOrders, order)
-		}
-	}
-	hangContractOrders.setHangContractOrders(symbol, filteredOrders)
+	//filteredOrders := make([]*model.Order, 0)
+	//for _, order := range orders {
+	//	if order.OrderId != `` && order.Amount-order.DealAmount > 100 {
+	//		filteredOrders = append(filteredOrders, order)
+	//	}
+	//}
+	hangContractOrders.setHangContractOrders(symbol, orders)
 	contractHoldingUpdate = util.GetNowUnixMillion()
-	if hangContractOrders.holdingLong > 0 || hangContractOrders.holdingShort > 0 || len(filteredOrders) > 0 {
-		util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,
-			hangContractOrders.holdingLong, hangContractOrders.holdingShort, len(filteredOrders)))
-	}
+	//if hangContractOrders.holdingLong > 0 || hangContractOrders.holdingShort > 0 || len(filteredOrders) > 0 {
+	//	util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,
+	//		hangContractOrders.holdingLong, hangContractOrders.holdingShort, len(filteredOrders)))
+	//}
 	return orders
 }
 
@@ -165,7 +166,7 @@ func createHolding(key, secret, market, symbol string, trend float64,
 			order.Price-priceDistance <= tick.Bids[0].Price {
 			holdingShort += order.Amount - order.DealAmount
 		} else {
-			api.MustCancel(``, ``, market, symbol, order.OrderId, false)
+			cancelHangContract(key, secret, order)
 		}
 	}
 	util.Notice(fmt.Sprintf(`create holding trend:%f holding long:%f holding short:%f`,
@@ -211,7 +212,7 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 		for _, order := range orders {
 			if order.OrderSide == model.OrderSideBuy ||
 				(order.OrderSide == model.OrderSideSell && order.Price-priceDistance > tick.Asks[0].Price) {
-				api.MustCancel(key, secret, market, symbol, order.OrderId, false)
+				cancelHangContract(key, secret, order)
 			} else if order.OrderSide == model.OrderSideSell &&
 				math.Abs(order.Price-tick.Asks[0].Price) < priceDistance {
 				amount = amount - (order.Amount - order.DealAmount)
@@ -229,7 +230,7 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 		for _, order := range orders {
 			if order.OrderSide == model.OrderSideSell ||
 				(order.OrderSide == model.OrderSideBuy && order.Price+priceDistance < tick.Bids[0].Price) {
-				api.MustCancel(key, secret, market, symbol, order.OrderId, false)
+				cancelHangContract(key, secret, order)
 			} else if order.OrderSide == model.OrderSideBuy &&
 				math.Abs(order.Price-tick.Bids[0].Price) < priceDistance {
 				amount = amount - (order.Amount - order.DealAmount)
@@ -248,7 +249,7 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 	return nil
 }
 
-func CancelHangContract(key, secret, market, symbol string) {
+func CancelHangContracts(key, secret, market, symbol string) {
 	util.Notice(`cancel all hang contract`)
 	orders := hangContractOrders.getHangContractOrders(symbol)
 	for _, order := range orders {
@@ -258,4 +259,10 @@ func CancelHangContract(key, secret, market, symbol string) {
 		}
 	}
 	hangContractOrders.setHangContractOrders(symbol, nil)
+}
+
+func cancelHangContract(key, secret string, order *model.Order) {
+	if order != nil && order.Amount-order.DealAmount > 100 {
+		api.MustCancel(key, secret, order.Market, order.Symbol, order.OrderId, false)
+	}
 }
