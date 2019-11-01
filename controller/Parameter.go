@@ -70,7 +70,7 @@ func setSymbol(c *gin.Context) {
 	refreshSameTime := c.Query(`refreshsametime`)
 	valid := false
 	if market == `` || symbol == `` || function == `` {
-		c.String(http.StatusOK, `market symbo function cannot be empty`)
+		c.String(http.StatusOK, `market symbol function cannot be empty`)
 	}
 	op := c.Query(`op`)
 	if op == `1` {
@@ -271,48 +271,21 @@ func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).
 		Select(`market, symbol, function, function_parameter, amount_limit, binance_dis_min,
-		binance_dis_max,refresh_limit_low, refresh_limit, refresh_same_time, valid, chance`).Rows()
+		binance_dis_max,refresh_limit_low, refresh_limit, valid, chance`).Rows()
 	msg := ``
 	for rows.Next() {
 		var market, symbol, function, parameter, amountLimit, binanceDisMin, binanceDisMax,
 			refreshLimitLow, refreshLimit, chance string
-		var refreshSameTime int
 		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &binanceDisMin, &binanceDisMax,
-			&refreshLimitLow, &refreshLimit, &refreshSameTime, &valid, &chance)
-		msg += fmt.Sprintf("%s %s %s %s %s binancedismin:%s binancedismax:%s refreshlimitlow:%s "+
-			"refreshlimit:%s refreshsametime:%d %v stable:%v chance:%s\n",
+			&refreshLimitLow, &refreshLimit, &valid, &chance)
+		msg += fmt.Sprintf("%s %s %s parameter:%s %s binancedismin:%s binancedismax:%s refreshlimitlow:%s "+
+			"refreshlimit:%s %v chance:%s\n",
 			market, symbol, function, parameter, amountLimit,
-			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, refreshSameTime, valid,
-			model.AppConfig.Stable, chance)
+			binanceDisMin, binanceDisMax, refreshLimitLow, refreshLimit, valid, chance)
 	}
 	rows.Close()
 	msg += model.AppConfig.ToString()
-	var orders model.Order
-	rows, _ = model.AppDB.Model(&orders).Select(`date(order_time), symbol, order_side,count(*),
-		round(sum(fee),4) as fee, round(sum(fee_income),4) as fee_income,
-		round(sum(price*deal_amount)/sum(deal_amount),4) as price,round(sum(price*deal_amount),0) as inall`).
-		Where(`deal_amount>? and status != ?`, 0, `fail`).
-		Group(`order_side, symbol, date(order_time)`).Order(`date(order_time) desc`).
-		Limit(12).Rows()
-	for rows.Next() {
-		var date, symbol, side, count string
-		var fee, feeIncome, price, inAll float64
-		_ = rows.Scan(&date, &symbol, &side, &count, &fee, &feeIncome, &price, &inAll)
-		if side == model.OrderSideBuy {
-			fee = fee * price
-		}
-		if side == model.OrderSideSell {
-			feeIncome = feeIncome * price
-		}
-		rate := 0.0
-		if inAll > 0 {
-			rate = 10000 * (feeIncome - fee) / inAll
-		}
-		msg += fmt.Sprintf("%s %s %s %s pay: %f earn: %f amount:%f rate(万分之):%f price:%f\n",
-			date, symbol, side, count, fee, feeIncome, inAll, rate, price)
-	}
-	rows.Close()
 	c.String(http.StatusOK, msg)
 }
 
