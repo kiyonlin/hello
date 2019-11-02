@@ -76,8 +76,8 @@ var ProcessHangContract = func(market, symbol string) {
 		order = createHolding(key, secret, market, symbol, setting.RefreshLimit, setting, tick)
 	} else if deltaBM <= -1*setting.RefreshLimit && deltaBM-delta <= -1*setting.RefreshLimit {
 		order = createHolding(key, secret, market, symbol, -1*setting.RefreshLimit, setting, tick)
-	} else if math.Abs(deltaBM-delta) <= setting.RefreshLimitLow {
-		order = revertHolding(key, secret, market, symbol, setting, tick)
+	} else {
+		order = revertHolding(key, secret, market, symbol, deltaBM, delta, setting, tick)
 	}
 	time.Sleep(time.Millisecond * 200)
 	orders := updateContractHolding(market, symbol, setting)
@@ -155,7 +155,8 @@ func createHolding(key, secret, market, symbol string, trend float64,
 	return nil
 }
 
-func revertHolding(key, secret, market, symbol string, setting *model.Setting, tick *model.BidAsk) (
+func revertHolding(key, secret, market, symbol string, deltaBM, delta float64,
+	setting *model.Setting, tick *model.BidAsk) (
 	revertOrder *model.Order) {
 	orders := hangContractOrders.getHangContractOrders(symbol)
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
@@ -177,7 +178,7 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 	//	util.Notice(fmt.Sprintf(`revert holding long:%f short:%f tick:%f-%f`,
 	//		holdingLong, holdingShort, tick.Bids[0].Price, tick.Asks[0].Price))
 	//}
-	if holdingLong > holdingShort {
+	if holdingLong > holdingShort && deltaBM-delta > setting.RefreshLimitLow {
 		amount := holdingLong - holdingShort
 		for _, order := range orders {
 			if order.OrderSide == model.OrderSideBuy ||
@@ -195,7 +196,7 @@ func revertHolding(key, secret, market, symbol string, setting *model.Setting, t
 				``, setting.AccountType, tick.Asks[0].Price, amount)
 		}
 	}
-	if holdingLong < holdingShort {
+	if holdingLong < holdingShort && deltaBM-delta > setting.RefreshLimitLow {
 		amount := holdingShort - holdingLong
 		for _, order := range orders {
 			if order.OrderSide == model.OrderSideSell ||
