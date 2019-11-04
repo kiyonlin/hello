@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"hello/model"
 	"hello/util"
+	"sort"
+	"strconv"
 	"time"
 )
 
@@ -45,6 +47,7 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		if len(event) == 0 {
 			return
 		}
+		fmt.Println(string(event))
 		depthJson, depthErr := util.NewJSON(event)
 		if depthJson == nil {
 			return
@@ -56,73 +59,117 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 			util.SocketInfo(`bitmex parse err` + string(event))
 			return
 		}
-		switch action {
-		case `partial`:
-			//bidAsks := model.BidAsk{Ts: int(util.GetNowUnixMillion())}
-			//bidAsks.Asks = model.Ticks{}
-			//bidAsks.Bids = model.Ticks{}
-			//for _, value := range data {
-			//	symbol, _ := value.(map[string]interface{})[`symbol`].(string)
-			//	id, _ := value.(map[string]interface{})[`id`].(json.Number).Int64()
-			//	side, _ := value.(map[string]interface{})[`side`].(string)
-			//	size, _ := value.(map[string]interface{})[`size`].(json.Number).Float64()
-			//	price, _ := value.(map[string]interface{})[`price`].(json.Number).Float64()
-			//	bidAsk := model.Tick{Id: fmt.Sprintf(`%d`, id), Price: price, Amount: size, Symbol: symbol}
-			//	if side == `Buy` {
-			//		bidAsks.Bids = append(bidAsks.Bids, bidAsk)
-			//	} else if side == `Sell` {
-			//		bidAsks.Asks = append(bidAsks.Asks, bidAsk)
-			//	}
-			//}
-			//sort.Sort(bidAsks.Asks)
-			//sort.Sort(sort.Reverse(bidAsks.Bids))
-		case `update`:
-		case `insert`:
-			switch table {
-			case `trade`:
-				for _, value := range data {
-					item := value.(map[string]interface{})
-					if item == nil {
-						continue
-					}
-					deal := &model.Deal{Market: model.Bitmex}
-					if item[`timestamp`] != nil {
-						dealTime, err := time.Parse(time.RFC3339, item[`timestamp`].(string))
-						if err == nil {
-							deal.Ts = dealTime.Unix() * 1000
-						}
-					}
-					if item[`size`] != nil {
-						amount, err := item[`size`].(json.Number).Float64()
-						if err == nil {
-							deal.Amount = amount
-						}
-					}
-					if item[`price`] != nil {
-						price, err := item[`price`].(json.Number).Float64()
-						if err == nil {
-							deal.Price = price
-						}
-					}
-					if item[`symbol`] != nil {
-						switch item[`symbol`].(string) {
-						case `XBTUSD`:
-							deal.Symbol = `btcusd_p`
-
-						}
-					}
-					if item[`side`] != nil {
-						deal.Side = item[`side`].(string)
-					}
-					markets.SetTrade(deal)
-				}
-			}
-		case `delete`:
+		switch table {
+		case `trade`:
+			handleTrade(markets, action, data)
+		case `orderBookL2_25`:
+			handleOrderBook(markets, action, data)
 		}
 	}
 	return WebSocketServe(model.Bitmex, model.AppConfig.WSUrls[model.Bitmex], model.SubscribeDepth,
-		model.GetWSSubscribes(model.Bitmex, model.SubscribeDeal),
+		model.GetWSSubscribes(model.Bitmex, model.SubscribeDeal+`,`+model.SubscribeDepth),
 		subscribeHandlerBitmex, wsHandler, errHandler)
+}
+
+func handleOrderBook(markets *model.Markets, action string, data []interface{}) {
+	//markets.GetBidAsk(symbol, market)
+	symbol := ``
+	switch action {
+	case `partial`:
+		bidAsks := &model.BidAsk{Ts: int(util.GetNowUnixMillion())}
+		bidAsks.Asks = model.Ticks{}
+		bidAsks.Bids = model.Ticks{}
+		for _, value := range data {
+			item := value.(map[string]interface{})
+			if item == nil {
+				continue
+			}
+			tick := model.Tick{}
+			if item[`symbol`] != nil {
+				switch item[`symbol`].(string) {
+				case `XBTUSD`:
+					symbol = `btcusd_p`
+					tick.Symbol = symbol
+				}
+			}
+			if item[`id`] != nil {
+				id, err := item[`id`].(json.Number).Int64()
+				if err == nil {
+					tick.Id = strconv.FormatInt(id, 10)
+				}
+			}
+			if item[`size`] != nil {
+				amount, err := item[`size`].(json.Number).Float64()
+				if err == nil {
+					tick.Amount = amount
+				}
+			}
+			if item[`price`] != nil {
+				price, err := item[`price`].(json.Number).Float64()
+				if err == nil {
+					tick.Price = price
+				}
+			}
+			if item[`side`] != nil {
+				if item[`side`].(string) == model.OrderSideBuy {
+					bidAsks.Bids = append(bidAsks.Bids, tick)
+				} else if item[`side`].(string) == model.OrderSideSell {
+					bidAsks.Asks = append(bidAsks.Asks, tick)
+				}
+			}
+		}
+		sort.Sort(bidAsks.Asks)
+		sort.Sort(sort.Reverse(bidAsks.Bids))
+		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
+	case `update`:
+	case `insert`:
+	case `delete`:
+	}
+}
+
+func handleTrade(markets *model.Markets, action string, data []interface{}) {
+	switch action {
+	case `partial`:
+	case `update`:
+	case `insert`:
+		for _, value := range data {
+			item := value.(map[string]interface{})
+			if item == nil {
+				continue
+			}
+			deal := &model.Deal{Market: model.Bitmex}
+			if item[`timestamp`] != nil {
+				dealTime, err := time.Parse(time.RFC3339, item[`timestamp`].(string))
+				if err == nil {
+					deal.Ts = dealTime.Unix() * 1000
+				}
+			}
+			if item[`size`] != nil {
+				amount, err := item[`size`].(json.Number).Float64()
+				if err == nil {
+					deal.Amount = amount
+				}
+			}
+			if item[`price`] != nil {
+				price, err := item[`price`].(json.Number).Float64()
+				if err == nil {
+					deal.Price = price
+				}
+			}
+			if item[`symbol`] != nil {
+				switch item[`symbol`].(string) {
+				case `XBTUSD`:
+					deal.Symbol = `btcusd_p`
+
+				}
+			}
+			if item[`side`] != nil {
+				deal.Side = item[`side`].(string)
+			}
+			markets.SetTrade(deal)
+		}
+	case `delete`:
+	}
 }
 
 func CancelOrderBitmex(orderId string) (result bool, errCode, msg string) {
