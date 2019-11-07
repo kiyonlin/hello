@@ -506,6 +506,7 @@ func placeOrderBitmex(key, secret, orderSide, orderType, execInst, symbol, price
 	postData["ordType"] = strings.ToUpper(orderType[0:1]) + orderType[1:]
 	postData[`execInst`] = execInst
 	response := SignedRequestBitmex(key, secret, `POST`, `/order`, postData)
+	util.Notice(string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderId = orderJson.Get(`orderID`).MustString()
