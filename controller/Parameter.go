@@ -68,6 +68,8 @@ func setSymbol(c *gin.Context) {
 	refreshLimitStr := c.Query(`refreshlimit`)
 	chanceStr := c.Query(`chance`)
 	refreshSameTime := c.Query(`refreshsametime`)
+	gridAmountStr := c.Query(`gridamount`)
+	griddisStr := c.Query(`griddis`)
 	valid := false
 	if market == `` || symbol == `` || function == `` {
 		c.String(http.StatusOK, `market symbol function cannot be empty`)
@@ -90,6 +92,16 @@ func setSymbol(c *gin.Context) {
 	if parameter != `` {
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{`function_parameter`: parameter})
+	}
+	if gridAmountStr != `` {
+		gridAmount, _ := strconv.ParseFloat(gridAmountStr, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`grid_amount`: gridAmount})
+	}
+	if griddisStr != `` {
+		gridPriceDistance, _ := strconv.ParseFloat(griddisStr, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`grid_price_distance`: gridPriceDistance})
 	}
 	if strLimit != `` {
 		amountLimit, _ = strconv.ParseFloat(strLimit, 64)
