@@ -66,10 +66,10 @@ var ProcessCarryOrder = func(market, symbol string) {
 		(math.Abs(fmTakeAmount-bmOrder.DealAmount) < 1 && bmOrder.Status != model.CarryStatusWorking) {
 		time.Sleep(time.Second)
 		api.RefreshAccount(``, ``, market)
-		bmOrder = nil
-		fmTakeAmount = 0
 		util.Notice(fmt.Sprintf(`carry done set nil and 0, %s %s-%s amount:%f-%f`,
 			bmOrder.Status, bmOrder.OrderSide, orderSide, bmOrder.DealAmount, fmTakeAmount))
+		bmOrder = nil
+		fmTakeAmount = 0
 	}
 }
 
