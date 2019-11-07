@@ -477,6 +477,7 @@ func queryOrderBitmex(key, secret, symbol string) (orders []*model.Order) {
 	postData := make(map[string]interface{})
 	postData[`symbol`] = symbol
 	response := SignedRequestBitmex(key, secret, `GET`, `/order`, postData)
+	util.Notice(`===== query bitmex orders ===` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderArray, _ := orderJson.Array()
