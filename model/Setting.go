@@ -98,7 +98,7 @@ func LoadSettings() {
 				relatedSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
 			}
 		}
-		if AppSettings[i].Function == FunctionHangContract {
+		if AppSettings[i].Function == FunctionHangContract || AppSettings[i].Function == FunctionCarry {
 			relatedSettings[symbol] = &Setting{Market: Bitmex, Symbol: AppSettings[i].Symbol, Valid: true,
 				Chance: AppSettings[i].Chance, RefreshLimitLow: AppSettings[i].RefreshLimitLow,
 				RefreshLimit: AppSettings[i].RefreshLimit}

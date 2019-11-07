@@ -102,11 +102,11 @@ var ProcessHangContract = func(market, symbol string) {
 func updateContractHolding(market, symbol string, setting *model.Setting) (orders []*model.Order) {
 	api.RefreshAccount(key, secret, market)
 	account := model.AppAccounts.GetAccount(market, symbol)
-	if account.Direction == model.OrderSideBuy {
+	if account != nil && account.Direction == model.OrderSideBuy {
 		hangContractOrders.holdingLong = account.Free
 		hangContractOrders.holdingShort = 0
 	}
-	if account.Direction == model.OrderSideSell {
+	if account != nil && account.Direction == model.OrderSideSell {
 		hangContractOrders.holdingShort = account.Free
 		hangContractOrders.holdingLong = 0
 	}

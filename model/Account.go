@@ -25,6 +25,7 @@ type Account struct {
 	Direction                    string
 	AccountUpdateTime            time.Time
 	Timestamp                    time.Time
+	Ts                           int64
 	Margin                       float64 // 仓位保证金，必须为正
 	BankruptcyPrice              float64 // 破产价格，以该价格平仓，扣除taker手续费后，其权益恰好为0
 	LiquidationPrice             float64 // 强平价格，以该价格平仓，扣除taker手续费后，其剩余权益恰好为仓位价值 x 维持保证金率

@@ -41,21 +41,36 @@ type Rule struct {
 }
 
 type Markets struct {
-	lock sync.Mutex
-	//TrendAmount float64
-	TrendEnd   map[string]map[string]*Deal           // symbol - market - deal
-	TrendStart map[string]map[string]*Deal           // symbol - market - deal
-	bidAsks    map[string]map[string]*BidAsk         // symbol - market - bidAsk
-	trade      map[int64]map[string]map[string]*Deal // time in second - symbol - market - deal
-	BigDeals   map[string]map[string]*Deal           // symbol - market - Deal
-	wsDepth    map[string][]chan struct{}            // market - []depth channel
-	isWriting  map[string]bool                       // market - writing
-	conns      map[string]*websocket.Conn            // market - conn
+	lock            sync.Mutex
+	bmPendingOrders map[string]*Order                     // bm中的orderId-order
+	TrendEnd        map[string]map[string]*Deal           // symbol - market - deal
+	TrendStart      map[string]map[string]*Deal           // symbol - market - deal
+	bidAsks         map[string]map[string]*BidAsk         // symbol - market - bidAsk
+	trade           map[int64]map[string]map[string]*Deal // time in second - symbol - market - deal
+	BigDeals        map[string]map[string]*Deal           // symbol - market - Deal
+	wsDepth         map[string][]chan struct{}            // market - []depth channel
+	isWriting       map[string]bool                       // market - writing
+	conns           map[string]*websocket.Conn            // market - conn
 }
 
 func NewMarkets() *Markets {
 	return &Markets{bidAsks: make(map[string]map[string]*BidAsk), wsDepth: make(map[string][]chan struct{}),
 		trade: make(map[int64]map[string]map[string]*Deal)}
+}
+
+func (markets *Markets) GetBmPendingOrders() (orders map[string]*Order) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.bmPendingOrders == nil {
+		markets.bmPendingOrders = make(map[string]*Order)
+	}
+	return markets.bmPendingOrders
+}
+
+func (markets *Markets) SetBMPendingOrders(orders map[string]*Order) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	markets.bmPendingOrders = orders
 }
 
 func (markets *Markets) GetTrends(symbol string) (start, end map[string]*Deal) {
@@ -280,6 +295,7 @@ func (markets *Markets) RequireDepthChanReset(market string) bool {
 	for symbol, value := range markets.bidAsks {
 		if value[market] != nil && float64(util.GetNowUnixMillion()-int64(value[market].Ts)) < AppConfig.Delay {
 			needReset = false
+			break
 		}
 		end := int64(util.GetNowUnixMillion() / 1000)
 		for i := end - int64(AppConfig.Delay/1000); i <= end; i++ {

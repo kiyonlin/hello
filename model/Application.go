@@ -54,6 +54,7 @@ const FunctionHangFar = `hang_far`
 const FunctionHangContract = `hang_contract`
 const FunctionRank = `rank`
 const FunctionHangRevert = `hang_revert`
+const FunctionBMCarryHang = `bm_carry_hang`
 
 //const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`
@@ -185,6 +186,18 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`STOP_PENDING`:      CarryStatusWorking, //	stop订单正在等待触发
 		`STOP_FAILED`:       CarryStatusFail,    //	stop订单被触发，但执行失败（例如：冻结失败）
 		`STOP_CANCELLED`:    CarryStatusFail,    //	stop订单未被触发而取消
+	},
+	Bitmex: {
+		"New":             CarryStatusWorking,
+		"PartiallyFilled": CarryStatusWorking,
+		"Filled":          CarryStatusSuccess,
+		"DoneForDay":      CarryStatusWorking,
+		"Canceled":        CarryStatusFail,
+		"PendingCancel":   CarryStatusWorking,
+		"Stopped":         CarryStatusFail,
+		"Rejected":        CarryStatusFail,
+		"PendingNew":      CarryStatusWorking,
+		"Expired":         CarryStatusFail,
 	},
 	Coinpark: {
 		`1`: CarryStatusWorking, //待成交
@@ -412,7 +425,7 @@ func NewConfig() {
 	AppConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	AppConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
 	AppConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
-	//AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com/api/v1`
+	//AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com`
 	AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
 	AppConfig.MarketCost = make(map[string]float64)
 	AppConfig.MarketCost[Fcoin] = 0
@@ -483,6 +496,10 @@ func GetWSSubscribes(market, subType string) []interface{} {
 		if setting != nil {
 			subscribes = append(subscribes, GetWSSubscribe(market, symbol, SubscribeDeal))
 		}
+	}
+	if market == Bitmex {
+		subscribes = append(subscribes, `order`)
+		subscribes = append(subscribes, `position`)
 	}
 	return subscribes
 }

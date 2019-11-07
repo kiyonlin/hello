@@ -41,6 +41,12 @@ func GetMinAmount(market, symbol string) float64 {
 		case `btcusd_p`:
 			return 1
 		}
+	case model.Bitmex:
+		switch symbol {
+		case `btcusd_p`:
+			return 1
+		}
+
 	}
 	return 0
 }
@@ -82,6 +88,11 @@ func GetPriceDecimal(market, symbol string) float64 {
 		case `cp_eth`, `cp_btc`:
 			return 8
 		}
+	case model.Bitmex:
+		switch symbol {
+		case `btcusd_p`:
+			return 0.5
+		}
 	}
 	return 8
 }
@@ -108,6 +119,11 @@ func GetAmountDecimal(market, symbol string) float64 {
 			return 4
 		}
 	case model.Fmex:
+		switch symbol {
+		case `btcusd_p`:
+			return 0
+		}
+	case model.Bitmex:
 		switch symbol {
 		case `btcusd_p`:
 			return 0
@@ -161,7 +177,7 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (
 	case model.Coinpark:
 		result, errCode, msg = CancelOrderCoinpark(orderId)
 	case model.Bitmex:
-		result, errCode, msg = CancelOrderBitmex(orderId)
+		result, errCode, msg = CancelOrderBitmex(key, secret, orderId)
 	case model.Fmex:
 		result, errCode, msg, order = CancelOrderFmex(key, secret, orderId)
 		if order != nil {
@@ -214,7 +230,16 @@ func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.O
 	case model.Coinpark:
 		dealAmount, dealPrice, status = queryOrderCoinpark(orderId)
 	case model.Bitmex:
-		dealAmount, dealPrice, status = queryOrderBitmex(orderId)
+		orders := queryOrderBitmex(key, secret, symbol)
+		for _, value := range orders {
+			if value.OrderId == orderId {
+				return value
+			}
+		}
+		return nil
+	case model.Fmex:
+		order = queryOrderFmex(key, secret, orderId)
+		return order
 	}
 	return &model.Order{OrderId: orderId, Symbol: symbol, Market: market, DealAmount: dealAmount, DealPrice: dealPrice,
 		Status: status}
@@ -328,7 +353,7 @@ func RefreshAccount(key, secret, market string) {
 			model.AppAccounts.SetAccount(model.Fcoin, currencies[i], fcoinAccounts[i])
 		}
 	case model.Fmex:
-		accounts := getAccountFmex(``, ``)
+		accounts := getAccountFmex(key, secret)
 		for _, account := range accounts {
 			model.AppAccounts.SetAccount(model.Fmex, account.Currency, account)
 		}
@@ -408,7 +433,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Bitmex:
-		orderId, errCode = placeOrderBitmex(orderSide, orderType, symbol, strPrice, strAmount)
+		orderId, errCode = placeOrderBitmex(key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
+			symbol, strPrice, strAmount)
 	}
 	if orderId == "0" || orderId == "" {
 		status = model.CarryStatusFail

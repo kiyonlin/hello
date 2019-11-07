@@ -189,6 +189,17 @@ func placeOrderFmex(key, secret, orderSide, orderType, symbol, price, amount str
 	return ``, err.Error()
 }
 
+func queryOrderFmex(key, secret, orderId string) (order *model.Order) {
+	responseBody := SignedRequestFmex(key, secret, `GET`, `v3/contracts/orders/`+orderId, nil)
+	orderJson, err := util.NewJSON([]byte(responseBody))
+	if err == nil {
+		data, _ := orderJson.Get(`data`).Map()
+		//status, _ := orderJson.Get("status").Int()
+		order = parseOrderFmex(``, data)
+	}
+	return
+}
+
 func queryOrdersFmex(key, secret, symbol string) (orders []*model.Order) {
 	orders = make([]*model.Order, 0)
 	responseBody := SignedRequestFmex(key, secret, `GET`, `v3/contracts/orders/open`, nil)
@@ -351,10 +362,14 @@ func getAccountFmex(key, secret string) (account []*model.Account) {
 				minimumMaintenanceMarginRate, _ := account[`minimum_maintenance_margin_rate`].(json.Number).Float64()
 				symbol := strings.ToLower(account["symbol"].(string))
 				closed := account[`closed`].(bool)
+				direction := model.GetDictMapRevert(model.Fmex, account[`direction`].(string))
+				if direction == model.OrderSideSell {
+					free = -1 * free
+				}
 				accounts = append(accounts,
 					&model.Account{Market: model.Fmex,
 						Currency:                     symbol,
-						Direction:                    model.GetDictMapRevert(model.Fmex, account[`direction`].(string)),
+						Direction:                    direction,
 						Free:                         free,
 						ProfitReal:                   profitReal,
 						Margin:                       margin,
