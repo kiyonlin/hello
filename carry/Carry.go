@@ -117,8 +117,6 @@ var ProcessCarry = func(market, symbol string) {
 	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	fmba := getDepthAmountBuy(tickBM.Bids[0].Price+setting.GridPriceDistance-p1, priceDistance, tick)
 	fmsa := getDepthAmountSell(tickBM.Asks[0].Price-setting.GridPriceDistance+p2, priceDistance, tick)
-	util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f fmsa:%f`,
-		account.Free, accountBM.Free, p1, p2, a1, a2, fmba, fmsa))
 	var order *model.Order
 	if bmOrder == nil {
 		if tick.Bids[0].Price-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow {
