@@ -107,8 +107,6 @@ type Config struct {
 	BitmexSecret    string
 	FcoinKey        string
 	FcoinSecret     string
-	FmexKey         string
-	FmexSecret      string
 	CarryDistance   float64 // carry价差触发条件
 	AmountRate      float64 // 刷单填写数量比率
 	PreDealDis      float64

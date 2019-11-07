@@ -114,6 +114,7 @@ func parseAccount(account *model.Account, item map[string]interface{}) {
 			account.EntryPrice = price
 		}
 	}
+	account.Ts = util.GetNowUnixMillion()
 	return
 }
 

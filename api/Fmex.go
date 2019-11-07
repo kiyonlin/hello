@@ -118,10 +118,10 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 
 func SignedRequestFmex(key, secret, method, path string, body map[string]interface{}) []byte {
 	if key == `` {
-		key = model.AppConfig.FmexKey
+		key = model.AppConfig.FcoinKey
 	}
 	if secret == `` {
-		secret = model.AppConfig.FmexSecret
+		secret = model.AppConfig.FcoinSecret
 	}
 	uri := model.AppConfig.RestUrls[model.Fmex] + path
 	current := util.GetNow()
