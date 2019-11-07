@@ -15,7 +15,7 @@ import (
 // 4000 setting.refreshLimitLow
 // 20000 setting.GridAmount
 
-var carrying bool
+var carrying = false
 var carryLock sync.Mutex
 var bmOrder *model.Order
 var fmTakeAmount = 0.0
@@ -30,6 +30,7 @@ var ProcessCarryOrder = func(market, symbol string) {
 	defer carryLock.Unlock()
 	orders := model.AppMarkets.GetBmPendingOrders()
 	if bmStartUpTime == 0 {
+		util.Notice(`first entry order handler, cancel all orders`)
 		for _, value := range orders {
 			api.MustCancel(``, ``, value.Market, value.Symbol, value.OrderId, false)
 		}
@@ -80,12 +81,13 @@ var ProcessCarry = func(market, symbol string) {
 	account := model.AppAccounts.GetAccount(market, symbol)
 	if account == nil {
 		api.RefreshAccount(``, ``, market)
+		util.Notice(`account is nil, refresh and return`)
+		return
 	}
-	model.AppAccounts.GetAccount(market, symbol)
 	if tick == nil || tickBM == nil || tick.Asks == nil || tick.Bids == nil || tickBM.Asks == nil ||
 		tickBM.Bids == nil || tick.Asks.Len() < 18 || tick.Bids.Len() < 18 || tickBM.Asks.Len() < 18 ||
 		tickBM.Bids.Len() < 18 || int(startTime)-tickBM.Ts > 500 || int(startTime)-tick.Ts > 500 ||
-		model.AppConfig.Handle != `1` || model.AppPause || accountBM == nil || account == nil ||
+		model.AppConfig.Handle != `1` || model.AppPause || accountBM == nil ||
 		startTime-accountBM.Ts > 10000 {
 		if bmOrder != nil {
 			util.Notice(fmt.Sprintf(`[for some reason cancel bm order]%s %s %s`, market, symbol, bmOrder.OrderId))
@@ -115,6 +117,8 @@ var ProcessCarry = func(market, symbol string) {
 	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	fmba := getDepthAmountBuy(tickBM.Bids[0].Price+setting.GridPriceDistance-p1, priceDistance, tick)
 	fmsa := getDepthAmountSell(tickBM.Asks[0].Price-setting.GridPriceDistance+p2, priceDistance, tick)
+	util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f fmsa:%f`,
+		account.Free, accountBM.Free, p1, p2, a1, a2, fmba, fmsa))
 	var order *model.Order
 	if bmOrder == nil {
 		if tick.Bids[0].Price-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow {
