@@ -89,10 +89,10 @@ var ProcessCarry = func(market, symbol string) {
 		tickBM.Bids.Len() < 18 || int(startTime)-tickBM.Ts > 500 || int(startTime)-tick.Ts > 500 ||
 		model.AppConfig.Handle != `1` || model.AppPause || accountBM == nil ||
 		startTime-accountBM.Ts > 10000 {
-		if bmOrder != nil {
-			util.Notice(fmt.Sprintf(`[for some reason cancel bm order]%s %s %s`, market, symbol, bmOrder.OrderId))
-			//api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, true)
-		}
+		//if bmOrder != nil {
+		//	util.Notice(fmt.Sprintf(`[for some reason cancel bm order]%s %s %s`, market, symbol, bmOrder.OrderId))
+		//	api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, true)
+		//}
 		return
 	}
 	if carrying {
