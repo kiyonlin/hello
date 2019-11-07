@@ -119,6 +119,8 @@ var ProcessCarry = func(market, symbol string) {
 	fmsa := getDepthAmountSell(tickBM.Asks[0].Price-setting.GridPriceDistance+p2, priceDistance, tick)
 	var order *model.Order
 	if bmOrder == nil {
+		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f fmsa:%f`,
+			account.Free, accountBM.Free, p1, p2, a1, a2, fmba, fmsa))
 		if tick.Bids[0].Price-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow {
 			amount := math.Min(math.Min(fmba/2, a1), setting.GridAmount)
 			price := tickBM.Bids[0].Price
@@ -129,7 +131,8 @@ var ProcessCarry = func(market, symbol string) {
 				account.Free, accountBM.Free, p1, p2, a1, a2, fmba, fmsa))
 			order = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex, symbol,
 				``, ``, price, amount)
-		} else if tickBM.Asks[0].Price-tick.Asks[0].Price >= setting.GridPriceDistance-p2 && fmsa >= setting.RefreshLimitLow {
+		} else if tickBM.Asks[0].Price-tick.Asks[0].Price >= setting.GridPriceDistance-p2 &&
+			fmsa >= setting.RefreshLimitLow {
 			amount := math.Min(math.Min(fmsa/2, a2), setting.GridAmount)
 			price := tickBM.Asks[0].Price
 			if tickBM.Asks[0].Amount < tickBM.Bids[0].Amount/10 {
