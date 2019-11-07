@@ -405,10 +405,10 @@ func handleTrade(markets *model.Markets, action string, data []interface{}) {
 
 func SignedRequestBitmex(key, secret, method, path string, body map[string]interface{}) []byte {
 	if key == `` {
-		key = model.AppConfig.FmexKey
+		key = model.AppConfig.BitmexKey
 	}
 	if secret == `` {
-		secret = model.AppConfig.FmexSecret
+		secret = model.AppConfig.BitmexSecret
 	}
 	uri := model.AppConfig.RestUrls[model.Bitmex] + path
 	expire := util.GetNow().Unix() + 5
