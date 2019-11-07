@@ -292,18 +292,19 @@ func (markets *Markets) RequireDepthChanReset(market string) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	needReset := true
-	for symbol, value := range markets.bidAsks {
+	for _, value := range markets.bidAsks {
 		if value[market] != nil && float64(util.GetNowUnixMillion()-int64(value[market].Ts)) < AppConfig.Delay {
+			util.Notice(market + ` no need to reconnect`)
 			needReset = false
 			break
 		}
-		end := int64(util.GetNowUnixMillion() / 1000)
-		for i := end - int64(AppConfig.Delay/1000); i <= end; i++ {
-			if markets.trade[i] != nil && markets.trade[i][symbol] != nil && markets.trade[i][symbol][market] != nil {
-				needReset = false
-				break
-			}
-		}
+		//end := int64(util.GetNowUnixMillion() / 1000)
+		//for i := end - int64(AppConfig.Delay/1000); i <= end; i++ {
+		//	if markets.trade[i] != nil && markets.trade[i][symbol] != nil && markets.trade[i][symbol][market] != nil {
+		//		needReset = false
+		//		break
+		//	}
+		//}
 	}
 	if needReset {
 		util.SocketInfo(fmt.Sprintf(`socket need reset %v`, needReset))
