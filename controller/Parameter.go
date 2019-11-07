@@ -282,17 +282,20 @@ func GetBalance(c *gin.Context) {
 func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).
-		Select(`market, symbol, function, function_parameter, amount_limit,refresh_limit_low, refresh_limit, valid, chance`).Rows()
+		Select(`market, symbol, function, function_parameter, amount_limit,refresh_limit_low, 
+			refresh_limit, valid, chance, grid_amount, grid_price_distance`).Rows()
 	msg := ``
 	for rows.Next() {
-		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, chance string
+		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, chance, gridAmount,
+			gridPriceDistance string
 		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &parameter, &amountLimit, &refreshLimitLow, &refreshLimit,
-			&valid, &chance)
+			&valid, &chance, &gridAmount, &gridPriceDistance)
 
-		msg += fmt.Sprintf("%s %s %s parameter:%s %s refreshlimitlow:%s "+
+		msg += fmt.Sprintf("%s %s %s parameter:%s A总:%s 下单数量:%s 价差：%s refreshlimitlow:%s "+
 			"refreshlimit:%s %v chance:%s\n",
-			market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, valid, chance)
+			market, symbol, function, parameter, amountLimit, gridAmount, gridPriceDistance, refreshLimitLow,
+			refreshLimit, valid, chance)
 	}
 	rows.Close()
 	msg += model.AppConfig.ToString()
