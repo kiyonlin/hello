@@ -351,7 +351,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		bidAsks.Asks = asks
 		bidAsks.Ts = int(util.GetNowUnixMillion())
 		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
-		model.HandlerMap[model.FunctionCarry](``, symbol)
+		//model.HandlerMap[model.FunctionCarry](``, symbol)
 	}
 }
 
