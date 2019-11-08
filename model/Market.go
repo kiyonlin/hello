@@ -294,7 +294,7 @@ func (markets *Markets) RequireDepthChanReset(market string) bool {
 	needReset := true
 	for _, value := range markets.bidAsks {
 		if value[market] != nil && float64(util.GetNowUnixMillion()-int64(value[market].Ts)) < AppConfig.Delay {
-			util.Notice(market + ` no need to reconnect`)
+			//util.Notice(market + ` no need to reconnect`)
 			needReset = false
 			break
 		}
