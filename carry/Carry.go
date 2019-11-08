@@ -142,9 +142,11 @@ var ProcessCarry = func(ignore, symbol string) {
 	a2 := setting.AmountLimit
 	if accountFM.Free > setting.AmountLimit/3 && accountBM.Free < setting.AmountLimit/-3 {
 		p1 = accountBM.EntryPrice - accountFM.EntryPrice - setting.GridPriceDistance
+		p2 = setting.GridPriceDistance * accountBM.Free / 2 / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
 	} else if accountFM.Free < setting.AmountLimit/-3 && accountBM.Free > setting.AmountLimit/3 {
+		p1 = setting.GridPriceDistance * accountFM.Free / 2 / setting.AmountLimit
 		p2 = accountFM.EntryPrice - accountBM.EntryPrice - setting.GridPriceDistance
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
@@ -162,8 +164,10 @@ var ProcessCarry = func(ignore, symbol string) {
 				tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
 				tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
 				tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
-			order = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex, symbol,
-				``, ``, price, amount)
+			if amount > 1 {
+				order = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex, symbol,
+					``, ``, price, amount)
+			}
 		} else if tickBM.Asks[0].Price-tickFM.Asks[0].Price >= setting.GridPriceDistance-p2 &&
 			fmsa >= setting.RefreshLimitLow {
 			amount := math.Min(math.Min(fmsa/2, a2), setting.GridAmount)
@@ -173,8 +177,10 @@ var ProcessCarry = func(ignore, symbol string) {
 				tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
 				tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
 				tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
-			order = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, symbol,
-				``, ``, price, amount)
+			if amount > 1 {
+				order = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, symbol,
+					``, ``, price, amount)
+			}
 		}
 		if order != nil && order.OrderId != `` {
 			go model.AppDB.Save(&order)
