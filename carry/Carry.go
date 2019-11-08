@@ -152,9 +152,6 @@ var ProcessCarry = func(ignore, symbol string) {
 		if tickFM.Bids[0].Price-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow {
 			amount := math.Min(math.Min(fmba/2, a1), setting.GridAmount)
 			price := tickBM.Bids[0].Price
-			if tickBM.Bids[0].Amount < tickBM.Asks[0].Amount/10 {
-				price = tickBM.Bids[1].Price
-			}
 			util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f 
 			fmsa:%f=%f-%f 价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba,
 				tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
@@ -166,9 +163,6 @@ var ProcessCarry = func(ignore, symbol string) {
 			fmsa >= setting.RefreshLimitLow {
 			amount := math.Min(math.Min(fmsa/2, a2), setting.GridAmount)
 			price := tickBM.Asks[0].Price
-			if tickBM.Asks[0].Amount < tickBM.Bids[0].Amount/10 {
-				price = tickBM.Asks[1].Price
-			}
 			util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f fmsa:%f=%f-%f 
 			价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba,
 				tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
@@ -192,20 +186,14 @@ var ProcessCarry = func(ignore, symbol string) {
 			if fmba < 1.2*(bmOrder.Amount-bmOrder.DealAmount) || tickBM.Bids[1].Price-priceDistance > bmOrder.Price ||
 				(math.Abs(tickBM.Bids[1].Price-bmOrder.Price) < priceDistance &&
 					tickBM.Asks[0].Amount < 10*tickBM.Bids[0].Amount) {
-				util.Notice(fmt.Sprintf(`=== cancel order bid %f<%f || %f<%f || (%f==%f && %f<%f)`,
-					fmba, 1.2*(bmOrder.Amount-bmOrder.DealAmount), tickBM.Bids[1].Price-priceDistance, bmOrder.Price,
-					tickBM.Bids[1].Price, bmOrder.Price,
-					tickBM.Asks[0].Amount, 10*tickBM.Bids[0].Amount))
+				util.Notice(fmt.Sprintf(`=== cancel order bid %f<%f || %f<%f`,
+					fmba, 1.2*(bmOrder.Amount-bmOrder.DealAmount), tickBM.Bids[1].Price-priceDistance, bmOrder.Price))
 				api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, true)
 			}
 		case model.OrderSideSell:
-			if fmsa < 1.2*(bmOrder.Amount-bmOrder.DealAmount) || tickBM.Asks[1].Price+priceDistance < bmOrder.Price ||
-				(math.Abs(tickBM.Asks[1].Price-bmOrder.Price) < priceDistance &&
-					tickBM.Bids[0].Amount < 10*tickBM.Asks[0].Amount) {
-				util.Notice(fmt.Sprintf(`=== cancel order ask %f<%f || %f<%f || (%f==%f && %f<%f)`,
-					fmsa, 1.2*(bmOrder.Amount-bmOrder.DealAmount), tickBM.Asks[1].Price+priceDistance, bmOrder.Price,
-					tickBM.Asks[1].Price, bmOrder.Price,
-					tickBM.Bids[0].Amount, 10*tickBM.Asks[0].Amount))
+			if fmsa < 1.2*(bmOrder.Amount-bmOrder.DealAmount) || tickBM.Asks[0].Price+priceDistance < bmOrder.Price {
+				util.Notice(fmt.Sprintf(`=== cancel order ask %f<%f || %f<%f`,
+					fmsa, 1.2*(bmOrder.Amount-bmOrder.DealAmount), tickBM.Asks[1].Price+priceDistance, bmOrder.Price))
 				api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, true)
 			}
 		}
