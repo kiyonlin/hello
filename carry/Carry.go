@@ -61,14 +61,18 @@ var ProcessCarryOrder = func(market, symbol string) {
 		accountBM := model.AppAccounts.GetAccount(model.Bitmex, symbol)
 		accountFM := model.AppAccounts.GetAccount(model.Fmex, symbol)
 		now := util.GetNowUnixMillion()
-		if accountBM == nil || accountFM == nil || now-accountBM.Ts > 30000 || now-accountFM.Ts > 30000 {
-			util.Notice(`= = = fm bm 持仓信息未能及时更新`)
+		bmOrder = api.QueryOrderById(``, ``, model.Bitmex, symbol, bmOrder.OrderId)
+		if bmOrder != nil {
+			if orders == nil {
+				orders = make(map[string]*model.Order)
+			}
+			orders[bmOrder.OrderId] = bmOrder
+			model.AppMarkets.SetBMPendingOrders(orders)
+			util.Notice(fmt.Sprintf(`lost bm renew order %s amount:%f carry:%f left:%f`,
+				bmOrder.OrderId, bmOrder.Amount, fmTakeAmount, bmOrder.DealAmount-fmTakeAmount))
 		} else {
-			bmOrder = api.QueryOrderById(``, ``, model.Bitmex, symbol, bmOrder.OrderId)
-			if bmOrder != nil {
-				fmTakeAmount = bmOrder.DealAmount
-				util.Notice(fmt.Sprintf(`lost bm renew order %s amount:%f carry:%f left:%f`,
-					bmOrder.OrderId, bmOrder.Amount, fmTakeAmount, bmOrder.DealAmount-fmTakeAmount))
+			if accountBM == nil || accountFM == nil || now-accountBM.Ts > 30000 || now-accountFM.Ts > 30000 {
+				util.Notice(`= = = fm bm 持仓信息未能及时更新`)
 			} else {
 				if accountFM.Free+accountBM.Free > 1 {
 					fmOrder := api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeMarket, market,
@@ -87,10 +91,9 @@ var ProcessCarryOrder = func(market, symbol string) {
 							accountFM.Free, accountBM.Free, fmOrder.OrderSide, fmOrder.OrderId, fmOrder.Amount))
 					}
 				}
-				fmTakeAmount = 0
 			}
+			fmTakeAmount = 0
 		}
-
 	}
 	if math.Abs(fmTakeAmount-bmOrder.Amount) < 1 ||
 		(math.Abs(fmTakeAmount-bmOrder.DealAmount) < 1 && bmOrder.Status != model.CarryStatusWorking) {
@@ -188,13 +191,13 @@ var ProcessCarry = func(ignore, symbol string) {
 					tickBM.Asks[0].Amount < 10*tickBM.Bids[0].Amount) {
 				util.Notice(fmt.Sprintf(`=== cancel order bid %f<%f || %f<%f`,
 					fmba, 1.2*(bmOrder.Amount-bmOrder.DealAmount), tickBM.Bids[1].Price-priceDistance, bmOrder.Price))
-				api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, true)
+				api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, false)
 			}
 		case model.OrderSideSell:
 			if fmsa < 1.2*(bmOrder.Amount-bmOrder.DealAmount) || tickBM.Asks[0].Price+priceDistance < bmOrder.Price {
 				util.Notice(fmt.Sprintf(`=== cancel order ask %f<%f || %f<%f`,
 					fmsa, 1.2*(bmOrder.Amount-bmOrder.DealAmount), tickBM.Asks[1].Price+priceDistance, bmOrder.Price))
-				api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, true)
+				api.MustCancel(``, ``, model.Bitmex, symbol, bmOrder.OrderId, false)
 			}
 		}
 	}
