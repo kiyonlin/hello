@@ -114,7 +114,7 @@ var ProcessCarry = func(ignore, symbol string) {
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
 	}
-	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
+	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	fmba := getDepthAmountBuy(tickBM.Bids[0].Price+setting.GridPriceDistance-p1, priceDistance, tickFM)
 	fmsa := getDepthAmountSell(tickBM.Asks[0].Price-setting.GridPriceDistance+p2, priceDistance, tickFM)
 	var order *model.Order
@@ -125,9 +125,11 @@ var ProcessCarry = func(ignore, symbol string) {
 			if tickBM.Bids[0].Amount < tickBM.Asks[0].Amount/10 {
 				price = tickBM.Bids[1].Price
 			}
-			util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f fmsa:%f=%f-%f`,
-				accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba, tickBM.Bids[0].Price+setting.GridPriceDistance-p1,
-				tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price, tickBM.Asks[0].Price-setting.GridPriceDistance+p2))
+			util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f 
+			fmsa:%f=%f-%f 价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba,
+				tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
+				tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
+				tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 			order = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex, symbol,
 				``, ``, price, amount)
 		} else if tickBM.Asks[0].Price-tickFM.Asks[0].Price >= setting.GridPriceDistance-p2 &&
@@ -137,9 +139,11 @@ var ProcessCarry = func(ignore, symbol string) {
 			if tickBM.Asks[0].Amount < tickBM.Bids[0].Amount/10 {
 				price = tickBM.Asks[1].Price
 			}
-			util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f fmsa:%f=%f-%f`,
-				accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba, tickBM.Bids[0].Price+setting.GridPriceDistance-p1,
-				tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price, tickBM.Asks[0].Price-setting.GridPriceDistance+p2))
+			util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f fmsa:%f=%f-%f 
+			价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba,
+				tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
+				tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
+				tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 			order = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, symbol,
 				``, ``, price, amount)
 		}
