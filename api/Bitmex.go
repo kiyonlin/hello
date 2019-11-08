@@ -287,6 +287,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			if symbolTicks[tick.Symbol] == nil {
 				_, symbolTicks[tick.Symbol] = markets.GetBidAsk(tick.Symbol, model.Bitmex)
 			}
+			if symbolTicks[tick.Symbol] == nil {
+				continue
+			}
 			if tick.Side == model.OrderSideBuy {
 				symbolTicks[tick.Symbol].Bids = append(symbolTicks[tick.Symbol].Bids, *tick)
 			}
@@ -296,6 +299,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		case `delete`:
 			if symbolTicks[tick.Symbol] == nil {
 				_, symbolTicks[tick.Symbol] = markets.GetBidAsk(tick.Symbol, model.Bitmex)
+			}
+			if symbolTicks[tick.Symbol] == nil {
+				continue
 			}
 			if tick.Side == model.OrderSideBuy {
 				bids := model.Ticks{}
@@ -318,6 +324,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 	}
 	for symbol, bidAsks := range symbolTicks {
+		if bidAsks == nil {
+			continue
+		}
 		bids := model.Ticks{}
 		asks := model.Ticks{}
 		for _, value := range bidAsks.Bids {
