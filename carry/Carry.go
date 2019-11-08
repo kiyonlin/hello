@@ -72,6 +72,8 @@ var ProcessCarryOrder = func(market, symbol string) {
 				bmOrder.OrderId, bmOrder.Amount, fmTakeAmount, bmOrder.DealAmount-fmTakeAmount))
 		} else {
 			if accountBM == nil || accountFM == nil || now-accountBM.Ts > 30000 || now-accountFM.Ts > 30000 {
+				api.RefreshAccount(``, ``, model.Bitmex)
+				api.RefreshAccount(``, ``, model.Fmex)
 				util.Notice(`= = = fm bm 持仓信息未能及时更新`)
 			} else {
 				if accountFM.Free+accountBM.Free > 1 {

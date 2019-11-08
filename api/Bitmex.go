@@ -479,9 +479,14 @@ func CancelOrderBitmex(key, secret, orderId string) (result bool, errCode, msg s
 func queryOrderBitmex(key, secret, symbol string) (orders []*model.Order) {
 	orders = make([]*model.Order, 0)
 	postData := make(map[string]interface{})
+	switch symbol {
+	case `btcusd_p`:
+		symbol = `XBTUSD`
+	}
 	postData[`symbol`] = symbol
+	postData[`reverse`] = `true`
 	response := SignedRequestBitmex(key, secret, `GET`, `/order`, postData)
-	util.Notice(`===== query bitmex orders ===` + string(response))
+	//util.Notice(`===== query bitmex orders ===` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderArray, _ := orderJson.Array()
@@ -496,8 +501,22 @@ func queryOrderBitmex(key, secret, symbol string) (orders []*model.Order) {
 	return
 }
 
-func getAccountBitmex(accounts *model.Accounts) {
-	fmt.Println(len(accounts.Data))
+func getAccountBitmex(key, secret string, accounts *model.Accounts) {
+	postData := make(map[string]interface{})
+	postData[`count`] = `100`
+	response := SignedRequestBitmex(key, secret, `GET`, `/position`, postData)
+	//fmt.Println(string(response))
+	positionJson, err := util.NewJSON(response)
+	if err == nil {
+		positions, err := positionJson.Array()
+		if err == nil {
+			for _, data := range positions {
+				account := &model.Account{Market: model.Bitmex, Ts: util.GetNowUnixMillion()}
+				parseAccount(account, data.(map[string]interface{}))
+				accounts.SetAccount(model.Bitmex, account.Currency, account)
+			}
+		}
+	}
 }
 
 func placeOrderBitmex(key, secret, orderSide, orderType, execInst, symbol, price, amount string) (orderId, errCode string) {

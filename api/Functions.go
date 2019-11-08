@@ -360,7 +360,7 @@ func RefreshAccount(key, secret, market string) {
 	case model.Coinpark:
 		getAccountCoinpark(model.AppAccounts)
 	case model.Bitmex:
-		getAccountBitmex(model.AppAccounts)
+		getAccountBitmex(key, secret, model.AppAccounts)
 	}
 }
 

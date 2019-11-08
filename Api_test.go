@@ -67,8 +67,10 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-		model.Bitmex, `btcusd_p`, ``)
+	//api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+	//	model.Bitmex, `btcusd_p`, `5b83b73f-dd2e-5329-2437-fcc61f20ab74`)
+	api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
+
 	//api.PlaceOrder(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`,
 	//	model.OrderSideSell, model.OrderTypeMarket, model.Fmex, `btcusd_p`, ``, ``,
 	//	0, 3)
