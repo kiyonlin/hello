@@ -12,6 +12,7 @@ import (
 
 var HandlerMap = make(map[string]CarryHandler)
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
+var ConnectionResetTime = int64(0)
 
 //const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0

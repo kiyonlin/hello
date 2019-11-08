@@ -9,7 +9,6 @@ import (
 	"hello/model"
 	"hello/util"
 	"testing"
-	"time"
 )
 
 func Test_chan(t *testing.T) {
@@ -68,9 +67,11 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	api.PlaceOrder(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`,
-		model.OrderSideSell, model.OrderTypeMarket, model.Fmex, `btcusd_p`, ``, ``,
-		0, 3)
-	time.Sleep(time.Second)
-	api.RefreshAccount(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`, model.Fmex)
+	api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+		model.Bitmex, `btcusd_p`, ``)
+	//api.PlaceOrder(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`,
+	//	model.OrderSideSell, model.OrderTypeMarket, model.Fmex, `btcusd_p`, ``, ``,
+	//	0, 3)
+	//time.Sleep(time.Second)
+	//api.RefreshAccount(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`, model.Fmex)
 }

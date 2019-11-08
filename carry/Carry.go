@@ -19,7 +19,6 @@ var carrying = false
 var carryLock sync.Mutex
 var bmOrder *model.Order
 var fmTakeAmount = 0.0
-var bmStartUpTime = int64(0)
 
 func setCarrying(value bool) {
 	carrying = value
@@ -29,12 +28,12 @@ var ProcessCarryOrder = func(market, symbol string) {
 	carryLock.Lock()
 	defer carryLock.Unlock()
 	orders := model.AppMarkets.GetBmPendingOrders()
-	if bmStartUpTime == 0 {
+	if model.ConnectionResetTime == 0 {
 		util.Notice(`first entry order handler, cancel all orders`)
 		for _, value := range orders {
 			api.MustCancel(``, ``, value.Market, value.Symbol, value.OrderId, false)
 		}
-		bmStartUpTime = util.GetNowUnixMillion()
+		model.ConnectionResetTime = util.GetNowUnixMillion()
 	}
 	if bmOrder == nil {
 		return
@@ -58,9 +57,40 @@ var ProcessCarryOrder = func(market, symbol string) {
 			}
 		}
 	} else {
-		bmOrder = api.QueryOrderById(``, ``, model.Bitmex, symbol, bmOrder.OrderId)
-		util.Notice(fmt.Sprintf(`lost bm renew order %s amount:%f carry:%f left:%f`,
-			bmOrder.OrderId, bmOrder.Amount, fmTakeAmount, bmOrder.DealAmount-fmTakeAmount))
+		util.Notice(fmt.Sprintf(`= = = = lost bm need renew order`))
+		accountBM := model.AppAccounts.GetAccount(model.Bitmex, symbol)
+		accountFM := model.AppAccounts.GetAccount(model.Fmex, symbol)
+		now := util.GetNowUnixMillion()
+		if accountBM == nil || accountFM == nil || now-accountBM.Ts > 30000 || now-accountFM.Ts > 30000 {
+			util.Notice(`= = = fm bm 持仓信息未能及时更新`)
+		} else {
+			bmOrder = api.QueryOrderById(``, ``, model.Bitmex, symbol, bmOrder.OrderId)
+			if bmOrder != nil {
+				fmTakeAmount = bmOrder.DealAmount
+				util.Notice(fmt.Sprintf(`lost bm renew order %s amount:%f carry:%f left:%f`,
+					bmOrder.OrderId, bmOrder.Amount, fmTakeAmount, bmOrder.DealAmount-fmTakeAmount))
+			} else {
+				if accountFM.Free+accountBM.Free > 1 {
+					fmOrder := api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeMarket, market,
+						symbol, ``, ``, bmOrder.DealPrice, accountFM.Free+accountBM.Free)
+					if fmOrder != nil && fmOrder.OrderId != `` {
+						go model.AppDB.Save(&fmOrder)
+						util.Notice(fmt.Sprintf(`-- -- 扯平仓位 fm:%f bm:%f place order %s %s amount %f`,
+							accountFM.Free, accountBM.Free, fmOrder.OrderSide, fmOrder.OrderId, fmOrder.Amount))
+					}
+				} else if accountFM.Free+accountBM.Free < -1 {
+					fmOrder := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeMarket, market,
+						symbol, ``, ``, bmOrder.DealPrice, math.Abs(accountFM.Free+accountBM.Free))
+					if fmOrder != nil && fmOrder.OrderId != `` {
+						go model.AppDB.Save(&fmOrder)
+						util.Notice(fmt.Sprintf(`-- -- 扯平仓位 fm:%f bm:%f place order %s %s amount %f`,
+							accountFM.Free, accountBM.Free, fmOrder.OrderSide, fmOrder.OrderId, fmOrder.Amount))
+					}
+				}
+				fmTakeAmount = 0
+			}
+		}
+
 	}
 	if math.Abs(fmTakeAmount-bmOrder.Amount) < 1 ||
 		(math.Abs(fmTakeAmount-bmOrder.DealAmount) < 1 && bmOrder.Status != model.CarryStatusWorking) {
@@ -149,6 +179,10 @@ var ProcessCarry = func(ignore, symbol string) {
 		}
 		if order != nil && order.OrderId != `` {
 			go model.AppDB.Save(&order)
+			orders := model.AppMarkets.GetBmPendingOrders()
+			if orders[order.OrderId] == nil {
+				orders[order.OrderId] = order
+			}
 			bmOrder = order
 			fmTakeAmount = 0
 		}

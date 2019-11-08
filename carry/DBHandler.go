@@ -243,6 +243,7 @@ func MaintainTransFee(key, secret string) {
 }
 
 func createMarketDepthServer(markets *model.Markets, market string) chan struct{} {
+	model.ConnectionResetTime = 0
 	util.SocketInfo(" create depth chan for " + market)
 	var channel chan struct{}
 	var err error
