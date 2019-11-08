@@ -254,6 +254,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			if symbolTicks[tick.Symbol] == nil {
 				_, symbolTicks[tick.Symbol] = markets.GetBidAsk(tick.Symbol, model.Bitmex)
 			}
+			if symbolTicks[tick.Symbol] == nil {
+				continue
+			}
 			for _, ask := range symbolTicks[tick.Symbol].Asks {
 				if ask.Id == tick.Id {
 					if tick.Amount > 0 {
