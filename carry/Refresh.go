@@ -496,7 +496,11 @@ var ProcessRefresh = func(market, symbol string) {
 		return
 	}
 	amount := math.Min(leftFree, rightFree/tick.Asks[0].Price) * model.AppConfig.AmountRate
-	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount, tick)
+	resize := 1.0
+	if model.AppConfig.Env == `simon` {
+		resize = 100
+	}
+	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount*resize, tick)
 	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
 		refreshOrders.SetLastChancePrice(market, symbol, 0)
 		refreshAble = false
