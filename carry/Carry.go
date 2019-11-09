@@ -109,6 +109,8 @@ var ProcessCarryOrder = func(market, symbol string) {
 }
 
 var ProcessCarry = func(ignore, symbol string) {
+	carryLock.Lock()
+	defer carryLock.Unlock()
 	startTime := util.GetNowUnixMillion()
 	_, tickBM := model.AppMarkets.GetBidAsk(symbol, model.Bitmex)
 	_, tickFM := model.AppMarkets.GetBidAsk(symbol, model.Fmex)
