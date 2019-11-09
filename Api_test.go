@@ -69,8 +69,11 @@ func Test_RefreshAccount(t *testing.T) {
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	//api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Bitmex, `btcusd_p`, `5b83b73f-dd2e-5329-2437-fcc61f20ab74`)
-	api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
-
+	//api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
+	order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`,
+		`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+		model.Bitmex, `btcusd_p`, `a660ff2a-a3b4-1e70-7b1f-8ff40daae5fd`)
+	fmt.Println(order.OrderId)
 	//api.PlaceOrder(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`,
 	//	model.OrderSideSell, model.OrderTypeMarket, model.Fmex, `btcusd_p`, ``, ``,
 	//	0, 3)

@@ -132,16 +132,17 @@ func GetAmountDecimal(market, symbol string) float64 {
 	return 4
 }
 
-func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (order *model.Order) {
+func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (res bool, order *model.Order) {
 	for i := 0; i < 7; i++ {
 		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, orderId)
+		res = result
 		order = cancelOrder
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
 		if result || !mustCancel || errCode == `0` {
-			return cancelOrder
+			return result, cancelOrder
 		}
 		if errCode == `3008` && i >= 3 {
-			return cancelOrder
+			return result, cancelOrder
 		}
 		//if result || !mustCancel { //3008:"submit cancel invalid order state
 		//	break
@@ -156,7 +157,7 @@ func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (o
 			time.Sleep(time.Second * 10)
 		}
 	}
-	return order
+	return res, order
 }
 
 func CancelOrder(key, secret, market string, symbol string, orderId string) (
