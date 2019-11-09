@@ -13,7 +13,7 @@ type Setting struct {
 	Symbol            string
 	FunctionParameter string
 	AccountType       string
-	Margin            float64 // carry use
+	PriceX            float64
 	OpenShortMargin   float64 // arbitrary future use
 	CloseShortMargin  float64 // arbitrary future use
 	Chance            float64 // arbitrary future use
@@ -44,13 +44,6 @@ func GetFunctionMarkets(function string) []string {
 		i++
 	}
 	return markets
-}
-
-func GetFunctionMarketSettings(function, market string) (settings map[string]*Setting) {
-	if marketSymbolSetting[function] == nil || marketSymbolSetting == nil {
-		return nil
-	}
-	return marketSymbolSetting[function][market]
 }
 
 func GetSetting(function, market, symbol string) *Setting {

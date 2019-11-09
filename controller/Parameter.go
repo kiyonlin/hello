@@ -70,6 +70,7 @@ func setSymbol(c *gin.Context) {
 	refreshSameTime := c.Query(`refreshsametime`)
 	gridAmountStr := c.Query(`gridamount`)
 	griddisStr := c.Query(`griddis`)
+	priceXStr := c.Query(`pricex`)
 	valid := false
 	if market == `` || symbol == `` || function == `` {
 		c.String(http.StatusOK, `market symbol function cannot be empty`)
@@ -92,6 +93,11 @@ func setSymbol(c *gin.Context) {
 	if parameter != `` {
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, function).Updates(map[string]interface{}{`function_parameter`: parameter})
+	}
+	if priceXStr != `` {
+		priceX, _ := strconv.ParseFloat(priceXStr, 64)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, function).Updates(map[string]interface{}{`price_x`: priceX})
 	}
 	if gridAmountStr != `` {
 		gridAmount, _ := strconv.ParseFloat(gridAmountStr, 64)
@@ -282,19 +288,19 @@ func GetBalance(c *gin.Context) {
 func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
-		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, chance`).Rows()
+		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
 	msg := ``
 	for rows.Next() {
 		_ = rows.Scan(&setting)
-		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, chance, gridAmount,
-			gridPriceDistance string
+		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
+			gridPriceDistance, priceX string
 		valid := false
 		_ = rows.Scan(&market, &symbol, &function, &gridAmount, &gridPriceDistance, &parameter, &amountLimit,
-			&refreshLimitLow, &refreshLimit, &valid, &chance)
+			&refreshLimitLow, &refreshLimit, &valid, &priceX)
 		msg += fmt.Sprintf("%s %s %s parameter:%s A总:%s 下单数量:%s 价差：%s refreshlimitlow:%s "+
-			"refreshlimit:%s %v chance:%s\n",
+			"refreshlimit:%s %v priceX:%s\n",
 			market, symbol, function, parameter, amountLimit, gridAmount, gridPriceDistance, refreshLimitLow,
-			refreshLimit, valid, chance)
+			refreshLimit, valid, priceX)
 	}
 	rows.Close()
 	msg += model.AppConfig.ToString()
