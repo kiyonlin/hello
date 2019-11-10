@@ -66,6 +66,12 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	fmsa := getDepthAmountSell(calcAmtPriceSell, priceDistance, tickFM)
 	fmb1 := tickFM.Bids[0].Price + setting.PriceX
 	fms1 := tickFM.Asks[0].Price + setting.PriceX
+	util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
+			fmba:%f=%f->BO:%f 
+			fmsa:%f=A0:%f->%f
+			量1:B0:%f A0:%f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
+		fmba, calcAmtPriceBuy, tickFM.Bids[0].Price, fmsa, tickFM.Asks[0].Price, calcAmtPriceSell,
+		tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 	if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
 		tickBM.Bids[0].Amount*10 < tickBM.Asks[0].Amount {
 		amount := math.Min(math.Min(fmba/2, a1), setting.GridAmount)
@@ -76,13 +82,6 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		amount := math.Min(math.Min(fmsa/2, a2), setting.GridAmount)
 		placeBothOrders(model.OrderSideSell, model.OrderSideBuy, symbol,
 			tickBM.Asks[0].Price, calcAmtPriceSell, amount)
-	} else {
-		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
-			fmba:%f=%f->BO:%f 
-			fmsa:%f=A0:%f->%f
-			量1:B0:%f A0%f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
-			fmba, calcAmtPriceBuy, tickFM.Bids[0].Price, fmsa, tickFM.Asks[0].Price, calcAmtPriceSell,
-			tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 	}
 }
 
@@ -91,7 +90,7 @@ func placeBothOrders(orderSideBM, orderSideFM, symbol string, priceBM, priceFM, 
 		for i := 0; i < 10; i++ {
 			orderBM := api.PlaceOrder(``, ``, orderSideBM, model.OrderTypeLimit, model.Bitmex, symbol,
 				``, ``, priceBM, amount)
-			if orderBM != nil && orderBM.OrderId != `` {
+			if orderBM != nil && orderBM.OrderId != `` && orderBM.Status != model.CarryStatusFail {
 				go model.AppDB.Save(&orderBM)
 				util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
 					orderBM.OrderSide, orderBM.Price, orderBM.Amount, orderBM.OrderId))

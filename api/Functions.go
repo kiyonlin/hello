@@ -434,8 +434,9 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Bitmex:
-		orderId, errCode = placeOrderBitmex(key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
+		order := placeOrderBitmex(key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
 			symbol, strPrice, strAmount)
+		return order
 	}
 	if orderId == "0" || orderId == "" {
 		status = model.CarryStatusFail
