@@ -48,13 +48,13 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	p2 := 0.0
 	a1 := setting.AmountLimit
 	a2 := setting.AmountLimit
-	if accountFM.Free > setting.AmountLimit/3 && accountBM.Free < setting.AmountLimit/-3 {
+	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
 		p1 = accountBM.EntryPrice - accountFM.EntryPrice - setting.PriceX - setting.GridPriceDistance
-		p2 = setting.GridPriceDistance * accountBM.Free * 2 / setting.AmountLimit
+		p2 = setting.GridPriceDistance * accountBM.Free * 3 / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
-	} else if accountFM.Free < setting.AmountLimit/-3 && accountBM.Free > setting.AmountLimit/3 {
-		p1 = setting.GridPriceDistance * accountFM.Free * 2 / setting.AmountLimit
+	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
+		p1 = setting.GridPriceDistance * accountFM.Free * 3 / setting.AmountLimit
 		p2 = accountFM.EntryPrice - accountBM.EntryPrice + setting.PriceX - setting.GridPriceDistance
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
@@ -77,10 +77,10 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		placeBothOrders(model.OrderSideSell, model.OrderSideBuy, symbol,
 			tickBM.Asks[0].Price, calcAmtPriceSell, amount)
 	} else {
-		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f 
-			fmsa:%f=%f-%f 价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
+		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f \n fmba:%f=%f->BO:%f 
+			fmsa:%f=A0:%f->%f \n \n量1:B0:%f A0%f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
 			fmba, calcAmtPriceBuy, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price, calcAmtPriceSell,
-			tickBM.Bids[0].Price, tickBM.Asks[0].Price, tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
+			tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 	}
 }
 
