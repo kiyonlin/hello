@@ -82,7 +82,7 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 			handleOrderBook(markets, action, data)
 		case `order`:
 			handleOrder(markets, action, data)
-			model.HandlerMap[model.FunctionBMCarryHang](``, ``)
+			//model.HandlerMap[model.FunctionBMCarryHang](``, ``)
 		case `position`:
 			handleAccount(action, data)
 		}
@@ -351,7 +351,6 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		bidAsks.Asks = asks
 		bidAsks.Ts = int(util.GetNowUnixMillion())
 		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
-		//model.HandlerMap[model.FunctionCarry](``, symbol)
 	}
 }
 

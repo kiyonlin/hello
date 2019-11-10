@@ -497,7 +497,7 @@ func GetWSSubscribes(market, subType string) []interface{} {
 		}
 	}
 	if market == Bitmex {
-		subscribes = append(subscribes, `order`)
+		//subscribes = append(subscribes, `order`)
 		subscribes = append(subscribes, `position`)
 	}
 	return subscribes

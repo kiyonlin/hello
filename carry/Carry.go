@@ -108,7 +108,7 @@ var ProcessCarryOrder = func(market, symbol string) {
 	}
 }
 
-var ProcessCarry = func(ignore, symbol string) {
+var _ = func(ignore, symbol string) {
 	carryLock.Lock()
 	defer carryLock.Unlock()
 	startTime := util.GetNowUnixMillion()
@@ -214,29 +214,6 @@ var ProcessCarry = func(ignore, symbol string) {
 	orders := model.AppMarkets.GetBmPendingOrders()
 	if order != nil && orders[order.OrderId] == nil {
 		orders[order.OrderId] = order
+		model.AppMarkets.SetBMPendingOrders(orders)
 	}
-}
-
-func getDepthAmountSell(price, priceDistance float64, tick *model.BidAsk) (amount float64) {
-	amount = 0
-	for i := 0; i < tick.Asks.Len(); i++ {
-		if price > tick.Asks[i].Price-priceDistance {
-			amount += tick.Asks[i].Amount
-		} else {
-			break
-		}
-	}
-	return
-}
-
-func getDepthAmountBuy(price, priceDistance float64, tick *model.BidAsk) (amount float64) {
-	amount = 0
-	for i := 0; i < tick.Bids.Len(); i++ {
-		if price < tick.Bids[i].Price+priceDistance {
-			amount += tick.Bids[i].Amount
-		} else {
-			break
-		}
-	}
-	return
 }

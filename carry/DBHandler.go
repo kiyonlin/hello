@@ -320,7 +320,8 @@ func Maintain() {
 	model.HandlerMap[model.FunctionGrid] = ProcessGrid
 	//model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
-	model.HandlerMap[model.FunctionCarry] = ProcessCarry
+	//model.HandlerMap[model.FunctionCarry] = ProcessCarry
+	model.HandlerMap[model.FunctionCarry] = ProcessCarrySameTime
 	model.HandlerMap[model.FunctionHang] = ProcessHang
 	model.HandlerMap[model.FunctionRank] = ProcessRank
 	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar

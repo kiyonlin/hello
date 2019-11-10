@@ -70,9 +70,12 @@ func Test_RefreshAccount(t *testing.T) {
 	//api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Bitmex, `btcusd_p`, `5b83b73f-dd2e-5329-2437-fcc61f20ab74`)
 	//api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
-	order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`,
-		`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-		model.Bitmex, `btcusd_p`, `a660ff2a-a3b4-1e70-7b1f-8ff40daae5fd`)
+	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`,
+	//	`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+	//	model.Bitmex, `btcusd_p`, `a660ff2a-a3b4-1e70-7b1f-8ff40daae5fd`)
+	order := api.PlaceOrder(`HHCJIVMpxYEahfxGZH9NoFzD`,
+		`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
+		`btcusd_p`, ``, ``, 1111, 1)
 	fmt.Println(order.OrderId)
 	//api.PlaceOrder(`7fc67592435b416db6863d22d7e01799`, `6311bc12ca4645718103b7d0760f16b3`,
 	//	model.OrderSideSell, model.OrderTypeMarket, model.Fmex, `btcusd_p`, ``, ``,
