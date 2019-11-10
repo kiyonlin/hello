@@ -95,36 +95,27 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 
 func placeBothOrders(orderSideBM, orderSideFM, symbol string, priceBM, priceFM, amount float64) {
 	if amount > 1 {
-		for i := 0; i < 10; i++ {
-			orderBM := api.PlaceOrder(``, ``, orderSideBM, model.OrderTypeLimit, model.Bitmex, symbol,
-				``, ``, priceBM, amount)
-			if orderBM != nil && orderBM.OrderId != `` && orderBM.Status != model.CarryStatusFail {
-				go model.AppDB.Save(&orderBM)
-				util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
-					orderBM.OrderSide, orderBM.Price, orderBM.Amount, orderBM.OrderId))
-				for j := 0; i < 10; j++ {
-					orderFM := api.PlaceOrder(``, ``, orderSideFM, model.OrderTypeLimit, model.Fmex,
-						symbol, ``, ``, priceFM, amount)
-					if orderFM != nil && orderFM.OrderId != `` {
-						api.RefreshAccount(``, ``, model.Fmex)
-						go model.AppDB.Save(&orderFM)
-						util.Notice(fmt.Sprintf(`== fm order %s at %f amount %f return %s`,
-							orderFM.OrderSide, orderFM.Price, orderFM.Amount, orderFM.OrderId))
-						break
-					} else {
-						util.Notice(fmt.Sprintf(`-- fm place order fail time: %d %s %f %f`,
-							j, orderSideFM, priceFM, amount))
-						if j == 9 {
-							time.Sleep(time.Second * 10)
-						}
+		orderBM := api.PlaceOrder(``, ``, orderSideBM, model.OrderTypeLimit, model.Bitmex, symbol,
+			``, ``, priceBM, amount)
+		if orderBM != nil && orderBM.OrderId != `` && orderBM.Status != model.CarryStatusFail {
+			go model.AppDB.Save(&orderBM)
+			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
+				orderBM.OrderSide, orderBM.Price, orderBM.Amount, orderBM.OrderId))
+			for i := 0; i < 10; i++ {
+				orderFM := api.PlaceOrder(``, ``, orderSideFM, model.OrderTypeLimit, model.Fmex,
+					symbol, ``, ``, priceFM, amount)
+				if orderFM != nil && orderFM.OrderId != `` {
+					api.RefreshAccount(``, ``, model.Fmex)
+					go model.AppDB.Save(&orderFM)
+					util.Notice(fmt.Sprintf(`== fm order %s at %f amount %f return %s`,
+						orderFM.OrderSide, orderFM.Price, orderFM.Amount, orderFM.OrderId))
+					break
+				} else {
+					util.Notice(fmt.Sprintf(`-- fm place order fail time: %d %s %f %f`,
+						i, orderSideFM, priceFM, amount))
+					if i == 9 {
+						time.Sleep(time.Second * 10)
 					}
-				}
-				break
-			} else {
-				util.Notice(fmt.Sprintf(`-- bm post order fail time: %d %s %f %f`,
-					i, orderSideBM, priceBM, amount))
-				if i == 9 {
-					time.Sleep(time.Second * 10)
 				}
 			}
 		}
