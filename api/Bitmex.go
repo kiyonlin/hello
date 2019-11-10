@@ -79,6 +79,8 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		case `trade`:
 			handleTrade(markets, action, data)
 		case `orderBookL2_25`:
+			fmt.Println(string(event))
+			util.Notice(string(event))
 			handleOrderBook(markets, action, data)
 		case `order`:
 			handleOrder(markets, action, data)
@@ -347,6 +349,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 		sort.Sort(asks)
 		sort.Sort(sort.Reverse(bids))
+		util.Notice(fmt.Sprintf(`%f-%f %f-%f`, bids[0].Price, asks[0].Price, bids[0].Amount, asks[0].Price))
 		bidAsks.Bids = bids
 		bidAsks.Asks = asks
 		bidAsks.Ts = int(util.GetNowUnixMillion())
