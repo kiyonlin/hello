@@ -67,9 +67,9 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	fmb1 := tickFM.Bids[0].Price + setting.PriceX
 	fms1 := tickFM.Asks[0].Price + setting.PriceX
 	util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
-			fmba:%f=%f->BO:%f 
-			fmsa:%f=A0:%f->%f
-			量1:B0:%f A0:%f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
+			fmba:%f=%f->b0:%f 
+			fmsa:%f=a0:%f->%f
+			量1:b0:%f a0:%f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
 		fmba, calcAmtPriceBuy, tickFM.Bids[0].Price, fmsa, tickFM.Asks[0].Price, calcAmtPriceSell,
 		tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 	if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
