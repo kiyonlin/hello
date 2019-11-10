@@ -810,8 +810,8 @@ func validRefreshHang(key, secret, symbol string, amountLimit, otherPrice, price
 
 func CancelRefreshHang(key, secret, market, symbol, keep string) {
 	orders := refreshOrders.getRefreshHang(symbol)
-	util.Notice(market + `[cancel orders] all hang but ` + symbol + ` ` + keep)
 	for _, order := range orders {
+		util.Notice(market + `[cancel orders] all hang but ` + symbol + ` ` + keep)
 		if order != nil && order.OrderId != `` && !strings.Contains(keep, order.RefreshType) {
 			refreshOrders.removeRefreshHang(key, secret, symbol, order, true)
 			time.Sleep(time.Millisecond * 50)

@@ -259,6 +259,8 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			if symbolTicks[tick.Symbol] == nil {
 				continue
 			}
+			newBids := model.Ticks{}
+			newAsks := model.Ticks{}
 			for _, ask := range symbolTicks[tick.Symbol].Asks {
 				if ask.Id == tick.Id {
 					if tick.Amount > 0 {
@@ -271,7 +273,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 						ask.Price = tick.Price
 					}
 				}
+				newAsks = append(newAsks, ask)
 			}
+			symbolTicks[tick.Symbol].Asks = newAsks
 			for _, bid := range symbolTicks[tick.Symbol].Bids {
 				if bid.Id == tick.Id {
 					if tick.Amount > 0 {
@@ -284,7 +288,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 						bid.Price = tick.Price
 					}
 				}
+				newBids = append(newBids, bid)
 			}
+			symbolTicks[tick.Symbol].Bids = newBids
 		case `insert`:
 			if symbolTicks[tick.Symbol] == nil {
 				_, symbolTicks[tick.Symbol] = markets.GetBidAsk(tick.Symbol, model.Bitmex)
@@ -349,7 +355,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 		sort.Sort(asks)
 		sort.Sort(sort.Reverse(bids))
-		util.Notice(fmt.Sprintf(`%f-%f %f-%f`, bids[0].Price, asks[0].Price, bids[0].Amount, asks[0].Price))
+		util.Notice(fmt.Sprintf(`%f-%f %f-%f`, bids[0].Price, asks[0].Price, bids[0].Amount, asks[0].Amount))
 		bidAsks.Bids = bids
 		bidAsks.Asks = asks
 		bidAsks.Ts = int(util.GetNowUnixMillion())
