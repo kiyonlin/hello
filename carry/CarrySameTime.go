@@ -35,6 +35,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		tickBM.Bids.Len() < 18 || int(startTime)-tickBM.Ts > 500 || int(startTime)-tickFM.Ts > 500 ||
 		model.AppConfig.Handle != `1` || model.AppPause || accountBM == nil ||
 		startTime-accountBM.Ts > 10000 {
+		util.Notice(`info env not good, return`)
 		return
 	}
 	if carrySameTiming {
@@ -75,6 +76,12 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		amount := math.Min(math.Min(fmsa/2, a2), setting.GridAmount)
 		placeBothOrders(model.OrderSideSell, model.OrderSideBuy, symbol,
 			tickBM.Asks[0].Price, calcAmtPriceSell, amount)
+	} else {
+		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f 
+			fmsa:%f=%f-%f 价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba,
+			tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
+			tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
+			tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 	}
 }
 
