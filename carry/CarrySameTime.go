@@ -77,9 +77,11 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		placeBothOrders(model.OrderSideSell, model.OrderSideBuy, symbol,
 			tickBM.Asks[0].Price, calcAmtPriceSell, amount)
 	} else {
-		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f \n fmba:%f=%f->BO:%f 
-			fmsa:%f=A0:%f->%f \n \n量1:B0:%f A0%f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
-			fmba, calcAmtPriceBuy, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price, calcAmtPriceSell,
+		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
+			fmba:%f=%f->BO:%f 
+			fmsa:%f=A0:%f->%f
+			量1:B0:%f A0%f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
+			fmba, calcAmtPriceBuy, tickFM.Bids[0].Price, fmsa, tickFM.Asks[0].Price, calcAmtPriceSell,
 			tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 	}
 }
