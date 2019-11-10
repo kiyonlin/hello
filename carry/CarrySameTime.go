@@ -6,20 +6,16 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"sync"
 	"time"
 )
 
 var carrySameTiming = false
-var carrySameTimeLock sync.Mutex
 
 func setCarrySameTiming(value bool) {
 	carrySameTiming = value
 }
 
 var ProcessCarrySameTime = func(ignore, symbol string) {
-	carrySameTimeLock.Lock()
-	defer carrySameTimeLock.Unlock()
 	startTime := util.GetNowUnixMillion()
 	_, tickBM := model.AppMarkets.GetBidAsk(symbol, model.Bitmex)
 	_, tickFM := model.AppMarkets.GetBidAsk(symbol, model.Fmex)
@@ -110,6 +106,7 @@ func placeBothOrders(orderSideBM, orderSideFM, symbol string, priceBM, priceFM, 
 					orderFM := api.PlaceOrder(``, ``, orderSideFM, model.OrderTypeLimit, model.Fmex,
 						symbol, ``, ``, priceFM, amount)
 					if orderFM != nil && orderFM.OrderId != `` {
+						api.RefreshAccount(``, ``, model.Fmex)
 						go model.AppDB.Save(&orderFM)
 						util.Notice(fmt.Sprintf(`== fm order %s at %f amount %f return %s`,
 							orderFM.OrderSide, orderFM.Price, orderFM.Amount, orderFM.OrderId))
