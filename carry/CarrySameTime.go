@@ -78,10 +78,9 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 			tickBM.Asks[0].Price, calcAmtPriceSell, amount)
 	} else {
 		util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f fmba:%f=%f-%f 
-			fmsa:%f=%f-%f 价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2, fmba,
-			tickBM.Bids[0].Price+setting.GridPriceDistance-p1, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price,
-			tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
-			tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
+			fmsa:%f=%f-%f 价1:%f %f 量1:%f %f`, accountFM.Free, accountBM.Free, p1, p2, a1, a2,
+			fmba, calcAmtPriceBuy, tickBM.Bids[0].Price, fmsa, tickBM.Asks[0].Price, calcAmtPriceSell,
+			tickBM.Bids[0].Price, tickBM.Asks[0].Price, tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 	}
 }
 
