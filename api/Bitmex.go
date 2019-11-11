@@ -228,6 +228,17 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 			}
 		}
 	}
+	symbols := make(map[string]bool)
+	for key, value := range orders {
+		if value != nil {
+			symbols[key] = true
+		}
+	}
+	for symbol := range symbols {
+		for _, handler := range model.GetFunctions(model.Bitmex, symbol) {
+			go handler(model.Bitmex, symbol)
+		}
+	}
 	markets.SetBMPendingOrders(orders)
 }
 

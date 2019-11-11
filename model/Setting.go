@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 )
 
@@ -10,6 +11,7 @@ type Setting struct {
 	Valid             bool
 	Function          string
 	Market            string
+	MarketRelated     string
 	Symbol            string
 	FunctionParameter string
 	AccountType       string
@@ -91,10 +93,16 @@ func LoadSettings() {
 				relatedSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
 			}
 		}
-		if AppSettings[i].Function == FunctionHangContract || AppSettings[i].Function == FunctionCarry {
+		if AppSettings[i].Function == FunctionHangContract {
 			relatedSettings[symbol] = &Setting{Market: Bitmex, Symbol: AppSettings[i].Symbol, Valid: true,
 				Chance: AppSettings[i].Chance, RefreshLimitLow: AppSettings[i].RefreshLimitLow,
 				RefreshLimit: AppSettings[i].RefreshLimit}
+		}
+		if AppSettings[i].MarketRelated != `` {
+			marketsRelated := strings.Split(AppSettings[i].MarketRelated, `,`)
+			for _, value := range marketsRelated {
+				relatedSettings[symbol] = &Setting{Market: value, Symbol: AppSettings[i].Symbol, Valid: true}
+			}
 		}
 		if handlers[market] == nil {
 			handlers[market] = make(map[string]map[string]CarryHandler)
