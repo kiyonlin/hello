@@ -39,7 +39,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	}
 	setCarrySameTiming(true)
 	defer setCarrySameTiming(false)
-	setting := model.GetSetting(model.FunctionCarry, model.Fmex, symbol)
+	setting := model.GetSetting(model.FunctionCarry, model.Bitmex, symbol)
 	p1 := 0.0
 	p2 := 0.0
 	a1 := setting.AmountLimit
