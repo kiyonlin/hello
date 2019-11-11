@@ -278,9 +278,17 @@ func ResetChannel(market string, channel chan struct{}) {
 	model.AppMarkets.PutDepthChan(market, 0, nil)
 	symbols := model.GetMarketSymbols(market)
 	for symbol := range symbols {
-		go CancelRefreshHang(key, secret, market, symbol, RefreshTypeGrid)
-		go CancelHang(key, secret, market, symbol)
-		go CancelHangContracts(key, secret, market, symbol)
+		for function := range model.GetFunctions(model.Bitmex, symbol) {
+			if model.FunctionHangContract == function {
+				go CancelHangContracts(key, secret, market, symbol)
+			}
+			if model.FunctionRefresh == function {
+				go CancelRefreshHang(key, secret, market, symbol, RefreshTypeGrid)
+			}
+			if model.FunctionHangFar == function {
+				go CancelHang(key, secret, market, symbol)
+			}
+		}
 	}
 	channel <- struct{}{}
 	close(channel)
