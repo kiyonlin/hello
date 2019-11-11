@@ -53,18 +53,16 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		pb = 0
 	}
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
-		p1 = pb - pf - setting.PriceX - setting.GridPriceDistance
+		p1 = math.Max(0, pb-pf-setting.PriceX-setting.GridPriceDistance)
 		p2 = setting.GridPriceDistance * accountBM.Free * 3 / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
 	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
 		p1 = setting.GridPriceDistance * accountFM.Free * 3 / setting.AmountLimit
-		p2 = pf - pb + setting.PriceX - setting.GridPriceDistance
+		p2 = math.Max(0, pf-pb+setting.PriceX-setting.GridPriceDistance)
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
 	}
-	p1 = math.Max(0, p1)
-	p2 = math.Max(0, p2)
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - setting.PriceX
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - setting.PriceX
