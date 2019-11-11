@@ -63,6 +63,8 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
 	}
+	p1 = math.Max(0, p1)
+	p2 = math.Max(0, p2)
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - setting.PriceX
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - setting.PriceX
