@@ -228,17 +228,6 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 			}
 		}
 	}
-	symbols := make(map[string]bool)
-	for key, value := range orders {
-		if value != nil {
-			symbols[key] = true
-		}
-	}
-	for symbol := range symbols {
-		for _, handler := range model.GetFunctions(model.Bitmex, symbol) {
-			go handler(model.Bitmex, symbol)
-		}
-	}
 	markets.SetBMPendingOrders(orders)
 }
 
@@ -366,11 +355,16 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 		sort.Sort(asks)
 		sort.Sort(sort.Reverse(bids))
-		//util.Notice(fmt.Sprintf(`%f-%f %f-%f`, bids[0].Price, asks[0].Price, bids[0].Amount, asks[0].Amount))
 		bidAsks.Bids = bids
 		bidAsks.Asks = asks
 		bidAsks.Ts = int(util.GetNowUnixMillion())
-		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
+		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
+			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+				if handler != nil && function != model.FunctionMaker {
+					go handler(model.Bitmex, symbol)
+				}
+			}
+		}
 	}
 }
 
