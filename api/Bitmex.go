@@ -358,11 +358,10 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		bidAsks.Bids = bids
 		bidAsks.Asks = asks
 		bidAsks.Ts = int(util.GetNowUnixMillion())
-		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-				if handler != nil && function != model.FunctionMaker {
-					go handler(model.Bitmex, symbol)
-				}
+		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
+		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+			if handler != nil && function != model.FunctionMaker {
+				go handler(model.Bitmex, symbol)
 			}
 		}
 	}
