@@ -115,7 +115,8 @@ func AccountHandlerServe() {
 	}
 }
 
-var CancelAllOrders = func() {
+//CancelAllOrders
+var _ = func() {
 	model.AppPause = true
 	time.Sleep(time.Second)
 	markets := model.GetMarkets()
@@ -347,7 +348,7 @@ func Maintain() {
 	go AccountHandlerServe()
 	//go CheckPastRefresh()
 	go MaintainTransFee(key, secret)
-	go util.StartMidNightTimer(CancelAllOrders)
+	//go util.StartMidNightTimer(CancelAllOrders)
 	for true {
 		go MaintainMarketChan()
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
