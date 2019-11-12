@@ -53,13 +53,13 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		pb = 0
 	}
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
-		p1 = math.Max(0, pb-pf-setting.PriceX-setting.GridPriceDistance)
+		p1 = math.Max(0, (pb-pf-setting.PriceX-setting.GridPriceDistance)/2)
 		p2 = setting.GridPriceDistance * accountBM.Free * 3 / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
 	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
 		p1 = setting.GridPriceDistance * accountFM.Free * 3 / setting.AmountLimit
-		p2 = math.Max(0, pf-pb+setting.PriceX-setting.GridPriceDistance)
+		p2 = math.Max(0, (pf-pb+setting.PriceX-setting.GridPriceDistance)/2)
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
 	}
