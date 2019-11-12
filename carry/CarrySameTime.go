@@ -81,12 +81,12 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		tickFM.Bids[0].Price, tickFM.Asks[0].Price,
 		tickFM.Bids[0].Amount, tickFM.Asks[0].Amount))
 	if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
-		tickBM.Bids[0].Amount*10 < tickBM.Asks[0].Amount {
+		tickBM.Bids[0].Amount*10 < tickBM.Asks[0].Amount && tickBM.Asks[0].Amount > 800000 {
 		amount := math.Min(math.Min(fmba/2, a1), setting.GridAmount)
 		placeBothOrders(model.OrderSideBuy, model.OrderSideSell, symbol,
 			tickBM.Bids[0].Price, calcAmtPriceBuy, amount)
 	} else if tickBM.Asks[0].Price-fms1 >= setting.GridPriceDistance-p2 && fmsa >= setting.RefreshLimitLow &&
-		tickBM.Asks[0].Amount*10 < tickBM.Bids[0].Amount {
+		tickBM.Asks[0].Amount*10 < tickBM.Bids[0].Amount && tickBM.Bids[0].Amount > 800000 {
 		amount := math.Min(math.Min(fmsa/2, a2), setting.GridAmount)
 		placeBothOrders(model.OrderSideSell, model.OrderSideBuy, symbol,
 			tickBM.Asks[0].Price, calcAmtPriceSell, amount)
