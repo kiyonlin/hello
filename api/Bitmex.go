@@ -557,7 +557,6 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 	util.Notice(string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
-		order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: model.Bitmex, Symbol: symbol}
 		item, err := orderJson.Map()
 		if err == nil {
 			parseOrderBM(order, item)
