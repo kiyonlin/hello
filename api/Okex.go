@@ -127,7 +127,7 @@ func sendSignRequest(method, path string, postData *url.Values, waitMillionSecon
 
 // orderType:  限价单（buy/sell） 市价单（buy_market/sell_market）
 // okex中amount在市价买单中指的是右侧的钱
-func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+func placeOrderOkex(order *model.Order, orderSide, orderType, symbol, price, amount string) {
 	orderParam := ``
 	postData := url.Values{}
 	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeLimit {
@@ -146,7 +146,6 @@ func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId
 		postData.Set("amount", amount)
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s order type: %s`, orderSide, orderType))
-		return ``, ``
 	}
 	postData.Set("symbol", symbol)
 	postData.Set("type", orderParam)
@@ -156,16 +155,15 @@ func placeOrderOkex(orderSide, orderType, symbol, price, amount string) (orderId
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("order_id").Int()
 		if orderIdInt != 0 {
-			orderId = strconv.Itoa(orderIdInt)
+			order.OrderId = strconv.Itoa(orderIdInt)
 		}
 		errCodeInt, _ := orderJson.Get("error_code").Int()
 		if errCodeInt != 0 {
-			errCode = strconv.Itoa(errCodeInt)
+			order.OrderId = strconv.Itoa(errCodeInt)
 		}
 	}
-	util.Notice(fmt.Sprintf(`[挂单Okex] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
-		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
-	return orderId, errCode
+	util.Notice(fmt.Sprintf(`[挂单Okex] %s side: %s type: %s price: %s amount: %s order id %s 返回%s`,
+		symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
 }
 
 func CancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg string) {

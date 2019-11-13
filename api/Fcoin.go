@@ -168,7 +168,7 @@ func SignedRequestFcoin(key, secret, method, path string, body map[string]interf
 // side: buy sell
 // type: limit market
 // fcoin中amount在市价买单中指的是右侧的钱
-func placeOrderFcoin(key, secret, orderSide, orderType, symbol, accountType, price, amount string) (orderId, errCode string) {
+func placeOrderFcoin(order *model.Order, key, secret, orderSide, orderType, symbol, accountType, price, amount string) {
 	postData := make(map[string]interface{})
 	if orderType == model.OrderTypeLimit {
 		postData["price"] = price
@@ -176,12 +176,10 @@ func placeOrderFcoin(key, secret, orderSide, orderType, symbol, accountType, pri
 	orderSide = model.GetDictMap(model.Fcoin, orderSide)
 	if orderSide == `` {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
-		return ``, ``
 	}
 	orderType = model.GetDictMap(model.Fcoin, orderType)
 	if orderType == `` {
 		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
-		return ``, ``
 	}
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	postData["type"] = orderType
@@ -193,13 +191,12 @@ func placeOrderFcoin(key, secret, orderSide, orderType, symbol, accountType, pri
 	responseBody := SignedRequestFcoin(key, secret, "POST", "/orders", postData)
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
-		orderId, _ := orderJson.Get("data").String()
+		order.OrderId, _ = orderJson.Get("data").String()
 		status, _ := orderJson.Get("status").Int()
+		order.ErrCode = strconv.Itoa(status)
 		util.Notice(fmt.Sprintf(`[挂单fcoin] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
-			symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
-		return orderId, strconv.Itoa(status)
+			symbol, orderSide, orderType, price, amount, order.OrderId, order.ErrCode, string(responseBody)))
 	}
-	return ``, err.Error()
 }
 
 func CancelOrderFcoin(key, secret, orderId string) (result bool, errCode, msg string) {

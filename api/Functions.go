@@ -399,12 +399,14 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	if amountType == model.AmountTypeContractNumber {
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}
-	var orderId, errCode, status string
+	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price,
+		OrderTime: util.GetNow()}
 	switch market {
 	case model.Huobi:
-		orderId, errCode = placeOrderHuobi(orderSide, orderType, symbol, strPrice, strAmount)
+		placeOrderHuobi(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKEX:
-		orderId, errCode = placeOrderOkex(orderSide, orderType, symbol, strPrice, strAmount)
+		placeOrderOkex(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
 		if amountType == model.AmountTypeCoinNumber {
 			contractAmount := math.Floor(amount * price / model.OKEXOtherContractFaceValue)
@@ -417,39 +419,34 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			}
 			strAmount = strconv.FormatFloat(contractAmount, 'f', 0, 64)
 		}
-		orderId, errCode = placeOrderOkfuture(orderSide, orderType, symbol, strPrice, strAmount)
+		placeOrderOkfuture(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Binance:
-		orderId, errCode = placeOrderBinance(orderSide, orderType, symbol, strPrice, strAmount)
+		placeOrderBinance(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
-		orderId, errCode = placeOrderFcoin(key, secret, orderSide, orderType, symbol, accountType, strPrice, strAmount)
-		if errCode == `1002` {
+		placeOrderFcoin(order, key, secret, orderSide, orderType, symbol, accountType, strPrice, strAmount)
+		if order.ErrCode == `1002` {
 			time.Sleep(time.Millisecond * 200)
 		}
 	case model.Fmex:
-		orderId, errCode = placeOrderFmex(key, secret, orderSide, orderType, symbol, strPrice, strAmount)
+		placeOrderFmex(order, key, secret, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Coinpark:
-		orderId, errCode, _ = placeOrderCoinpark(orderSide, orderType, symbol, strPrice, strAmount)
-		if errCode == `4003` {
+		placeOrderCoinpark(order, orderSide, orderType, symbol, strPrice, strAmount)
+		if order.ErrCode == `4003` {
 			util.Notice(`【发现4003错误】sleep 3 minutes`)
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Bitmex:
-		order = placeOrderBitmex(key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
+		placeOrderBitmex(order, key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
 			symbol, strPrice, strAmount)
 	}
-	if orderId == "0" || orderId == "" {
-		status = model.CarryStatusFail
-	} else if order != nil && order.Status == `` {
-		status = model.CarryStatusWorking
+	if order.OrderId == "0" || order.OrderId == "" {
+		order.Status = model.CarryStatusFail
+	} else if order.Status == `` {
+		order.Status = model.CarryStatusWorking
 	}
 	end := util.GetNowUnixMillion()
 	util.Notice(fmt.Sprintf(`...%s %s %s return order %d distance %d`,
 		orderSide, market, symbol, end, end-start))
-	if order == nil {
-		order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-			AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
-			Status: status, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
-	}
 	if saveDB {
 		go model.AppDB.Save(&order)
 	}

@@ -147,7 +147,7 @@ func getContractType(contractSymbol string) (contractType string) {
 
 // orderSide:  1:开多 2:开空 3:平多 4:平空
 // orderType: 是否为对手价 0:不是 1:是
-func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+func placeOrderOkfuture(order *model.Order, orderSide, orderType, symbol, price, amount string) {
 	switch orderSide {
 	case model.OrderSideBuy:
 		orderSide = `1`
@@ -183,12 +183,10 @@ func placeOrderOkfuture(orderSide, orderType, symbol, price, amount string) (ord
 	if err == nil {
 		//result, _ := resultJson.Get(`result`).Bool()
 		oid, _ := resultJson.Get(`order_id`).Int64()
-		orderId = strconv.FormatInt(oid, 10)
-		util.Notice(fmt.Sprintf(`[挂单Ok future] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
-			symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
-		return orderId, ``
+		order.OrderId = strconv.FormatInt(oid, 10)
+		util.Notice(fmt.Sprintf(`[挂单Ok future] %s side: %s type: %s price: %s amount: %s order id: %s 返回%s`,
+			symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
 	}
-	return orderId, errCode
 }
 
 //func QueryPendingOrderAmount(symbol string) (orderAmount int, err error) {
@@ -331,7 +329,8 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 //	return futureAccount, nil
 //}
 
-func GetKLineOkexFuture(symbol, timeSlot string, size int64) []*model.KLinePoint {
+// GetKLineOkexFuture
+func _(symbol, timeSlot string, size int64) []*model.KLinePoint {
 	postData := url.Values{}
 	symbol = getSymbol(symbol)
 	contractType := getContractType(symbol)

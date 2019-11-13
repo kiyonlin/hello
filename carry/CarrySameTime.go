@@ -67,11 +67,8 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f`,
 		bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
 		bmLastOrder.Symbol, price, bmLastOrder.Amount-bmLastOrder.DealAmount))
-	order := api.PlaceOrder(``, ``, bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
+	bmLastOrder = api.PlaceOrder(``, ``, bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
 		bmLastOrder.Symbol, ``, setting.AccountType, price, bmLastOrder.Amount-bmLastOrder.DealAmount, true)
-	if order != nil {
-		bmLastOrder = order
-	}
 }
 
 func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, accountFM *model.Account,
@@ -89,13 +86,13 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 		pb = 0
 	}
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
-		p1 = math.Max(0, (pb-pf-setting.PriceX-setting.GridPriceDistance)/2)
+		p1 = math.Max(0, (pb-pf-setting.PriceX-setting.GridPriceDistance)/5)
 		p2 = setting.GridPriceDistance * accountBM.Free * 3 / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
 	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
 		p1 = setting.GridPriceDistance * accountFM.Free * 3 / setting.AmountLimit
-		p2 = math.Max(0, (pf-pb+setting.PriceX-setting.GridPriceDistance)/2)
+		p2 = math.Max(0, (pf-pb+setting.PriceX-setting.GridPriceDistance)/5)
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
 	}

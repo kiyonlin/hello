@@ -542,7 +542,7 @@ func getAccountBitmex(key, secret string, accounts *model.Accounts) {
 	}
 }
 
-func placeOrderBitmex(key, secret, orderSide, orderType, execInst, symbol, price, amount string) (order *model.Order) {
+func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, execInst, symbol, price, amount string) {
 	postData := make(map[string]interface{})
 	if symbol == `btcusd_p` {
 		symbol = `XBTUSD`
@@ -561,7 +561,6 @@ func placeOrderBitmex(key, secret, orderSide, orderType, execInst, symbol, price
 		item, err := orderJson.Map()
 		if err == nil {
 			parseOrderBM(order, item)
-			return order
 		}
 	}
 	return

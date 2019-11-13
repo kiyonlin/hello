@@ -167,7 +167,7 @@ func GetSpotAccountId() (accountId string, err error) {
 
 // orderType: buy-market：市价买, sell-market：市价卖, buy-limit：限价买, sell-limit：限价卖
 // huobi中amount在市价买单中指的是右侧的钱
-func placeOrderHuobi(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+func placeOrderHuobi(order *model.Order, orderSide, orderType, symbol, price, amount string) {
 	orderParam := ``
 	if orderSide == model.OrderSideBuy && orderType == model.OrderTypeLimit {
 		orderParam = `buy-limit`
@@ -179,7 +179,6 @@ func placeOrderHuobi(orderSide, orderType, symbol, price, amount string) (orderI
 		orderParam = `sell-market`
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s order type: %s`, orderSide, orderType))
-		return ``, ``
 	}
 	if model.HuobiAccountId == `` {
 		model.HuobiAccountId, _ = GetSpotAccountId()
@@ -198,14 +197,13 @@ func placeOrderHuobi(orderSide, orderType, symbol, price, amount string) (orderI
 	if err == nil {
 		status, _ := orderJson.Get("status").String()
 		if status == "ok" {
-			orderId, _ = orderJson.Get("data").String()
+			order.OrderId, _ = orderJson.Get("data").String()
 		} else if status == "error" {
-			errCode, _ = orderJson.Get("err-code").String()
+			order.OrderId, _ = orderJson.Get("err-code").String()
 		}
 	}
-	util.Notice(fmt.Sprintf(`[挂单huobi] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
-		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
-	return orderId, errCode
+	util.Notice(fmt.Sprintf(`[挂单huobi] %s side: %s type: %s price: %s amount: %s order id %s 返回%s`,
+		symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
 }
 
 func CancelOrderHuobi(orderId string) (result bool, errCode, msg string) {

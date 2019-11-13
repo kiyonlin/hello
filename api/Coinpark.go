@@ -140,7 +140,7 @@ func getAccountCoinpark(accounts *model.Accounts) {
 
 // order_side 交易方向，1-买，2-卖
 // order_type 交易类型，2-限价单
-func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (orderId, errCode, errMsg string) {
+func placeOrderCoinpark(order *model.Order, orderSide, orderType, symbol, price, amount string) {
 	if orderSide == model.OrderSideBuy {
 		orderSide = `1`
 	} else if orderSide == model.OrderSideSell {
@@ -148,11 +148,9 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 		temp, _ := strconv.ParseFloat(amount, 64)
 		if temp > 50000 {
 			util.Notice(orderType + `==sell==do not execute ` + amount)
-			return ``, ``, orderType + `==sell==do not execute ` + amount
 		}
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
-		return ``, ``, fmt.Sprintf(`[parameter error] order side: %s`, orderSide)
 	}
 	if orderType == model.OrderTypeLimit {
 		orderType = `2`
@@ -176,7 +174,7 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 			resultData := results[0].(map[string]interface{})["result"]
 			if resultData != nil {
 				str, _ := resultData.(json.Number).Int64()
-				return strconv.FormatInt(str, 10), ``, ``
+				order.OrderId = strconv.FormatInt(str, 10)
 			}
 		}
 	}
@@ -184,15 +182,9 @@ func placeOrderCoinpark(orderSide, orderType, symbol, price, amount string) (ord
 	if errorJson.Get(`error`) != nil {
 		errorCodeJson := errorJson.Get(`code`)
 		if errorCodeJson != nil {
-			errCode, _ = errorCodeJson.String()
+			order.ErrCode, _ = errorCodeJson.String()
 		}
-		errMsgJson := errorJson.Get(`msg`)
-		if errMsgJson != nil {
-			errMsg, _ = errMsgJson.String()
-		}
-		return ``, errCode, errMsg
 	}
-	return ``, ``, `response format err`
 }
 
 //dealPrice 返回委托价格，市价单是0

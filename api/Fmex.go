@@ -149,7 +149,7 @@ func SignedRequestFmex(key, secret, method, path string, body map[string]interfa
 }
 
 //quantity	订单数量，至少为1
-func placeOrderFmex(key, secret, orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+func placeOrderFmex(order *model.Order, key, secret, orderSide, orderType, symbol, price, amount string) {
 	postData := make(map[string]interface{})
 	if orderType == model.OrderTypeLimit {
 		postData["price"] = price
@@ -157,12 +157,10 @@ func placeOrderFmex(key, secret, orderSide, orderType, symbol, price, amount str
 	orderSide = model.GetDictMap(model.Fmex, orderSide)
 	if orderSide == `` {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
-		return ``, ``
 	}
 	orderType = model.GetDictMap(model.Fmex, orderType)
 	if orderType == `` {
 		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
-		return ``, ``
 	}
 	postData["symbol"] = symbol
 	//postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
@@ -173,20 +171,16 @@ func placeOrderFmex(key, secret, orderSide, orderType, symbol, price, amount str
 	orderJson, err := util.NewJSON([]byte(responseBody))
 	if err == nil {
 		data, _ := orderJson.Get(`data`).Map()
-		status, _ := orderJson.Get("status").Int()
-		order := parseOrderFmex(symbol, data)
-		if order != nil && status == 0 {
-			orderId = order.OrderId
+		errCode, _ := orderJson.Get("status").Int()
+		if errCode == 0 {
+			parseOrderFmex(order, data)
 			util.Notice(fmt.Sprintf(
-				`[挂单fmex] %s side: %s type: %s price: %s amount: %s order id %s errCode:%s 返回%s`,
-				symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
-			return orderId, strconv.Itoa(status)
+				`[挂单fmex] %s side: %s type: %s price: %s amount: %s order id %s errCode:%d 返回%s`,
+				symbol, orderSide, orderType, price, amount, order.OrderId, errCode, string(responseBody)))
 		} else {
 			util.Notice(string(responseBody))
-			return ``, ``
 		}
 	}
-	return ``, err.Error()
 }
 
 func queryOrderFmex(key, secret, orderId string) (order *model.Order) {
@@ -195,7 +189,8 @@ func queryOrderFmex(key, secret, orderId string) (order *model.Order) {
 	if err == nil {
 		data, _ := orderJson.Get(`data`).Map()
 		//status, _ := orderJson.Get("status").Int()
-		order = parseOrderFmex(``, data)
+		order = &model.Order{}
+		parseOrderFmex(order, data)
 	}
 	return
 }
@@ -208,9 +203,10 @@ func queryOrdersFmex(key, secret, symbol string) (orders []*model.Order) {
 		jsonOrders := orderJson.GetPath(`data`, `results`)
 		if jsonOrders != nil {
 			orderArray, _ := jsonOrders.Array()
-			for _, order := range orderArray {
-				orderMap := order.(map[string]interface{})
-				order := parseOrderFmex(symbol, orderMap)
+			for _, orderData := range orderArray {
+				orderMap := orderData.(map[string]interface{})
+				order := &model.Order{Symbol: symbol}
+				parseOrderFmex(order, orderMap)
 				orders = append(orders, order)
 			}
 		}
@@ -225,7 +221,8 @@ func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg str
 	if err == nil {
 		status, _ = responseJson.Get(`status`).Int()
 		data, _ := responseJson.Get(`data`).Map()
-		order = parseOrderFmex(``, data)
+		order = &model.Order{}
+		parseOrderFmex(order, data)
 	}
 	util.Notice(orderId + "fmex cancel order" + string(responseBody))
 	if status == 0 {
@@ -234,111 +231,74 @@ func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg str
 	return false, strconv.FormatInt(int64(status), 10), ``, nil
 }
 
-func parseOrderFmex(symbol string, orderMap map[string]interface{}) (order *model.Order) {
-	if orderMap == nil || orderMap[`id`] == nil {
-		return nil
+func parseOrderFmex(order *model.Order, orderMap map[string]interface{}) {
+	if orderMap == nil || orderMap[`id`] == nil || order == nil {
+		return
 	}
+	order.Market = model.Bitmex
 	createTime := int64(0)
 	if orderMap[`created_at`] != nil {
 		createTime, _ = orderMap[`created_at`].(json.Number).Int64()
+		order.OrderTime = time.Unix(0, createTime*1000000)
 	}
 	updateTime := int64(0)
 	if orderMap[`updated_at`] != nil {
 		updateTime, _ = orderMap[`updated_at`].(json.Number).Int64()
+		order.OrderUpdateTime = time.Unix(0, updateTime*1000000)
 	}
-	price := 0.0
 	if orderMap[`price`] != nil {
-		price, _ = orderMap[`price`].(json.Number).Float64()
+		order.Price, _ = orderMap[`price`].(json.Number).Float64()
 	}
-	fee := 0.0
 	if orderMap[`fee`] != nil {
-		fee, _ = orderMap[`fee`].(json.Number).Float64()
+		order.Fee, _ = orderMap[`fee`].(json.Number).Float64()
 	}
-	orderSide := ``
 	if orderMap[`direction`] != nil {
-		orderSide = model.GetDictMapRevert(model.Fmex, orderMap[`direction`].(string))
+		order.OrderSide = model.GetDictMapRevert(model.Fmex, orderMap[`direction`].(string))
 	}
-	triggerDirection := ``
 	if orderMap[`trigger_direction`] != nil {
-		triggerDirection = model.GetDictMapRevert(model.Fmex, orderMap[`trigger_direction`].(string))
+		order.TriggerDirection = model.GetDictMapRevert(model.Fmex, orderMap[`trigger_direction`].(string))
 	}
-	features := int64(0)
 	if orderMap[`features`] != nil {
-		features, _ = orderMap[`features`].(json.Number).Int64()
+		order.Features, _ = orderMap[`features`].(json.Number).Int64()
 	}
-	amount := 0.0
 	if orderMap[`quantity`] != nil {
-		amount, _ = orderMap[`quantity`].(json.Number).Float64()
+		order.Amount, _ = orderMap[`quantity`].(json.Number).Float64()
 	}
-	unfilledQuantity := 0.0
 	if orderMap[`unfilled_quantity`] != nil {
-		unfilledQuantity, _ = orderMap[`unfilled_quantity`].(json.Number).Float64()
+		order.UnfilledQuantity, _ = orderMap[`unfilled_quantity`].(json.Number).Float64()
 	}
-	makerFeeRate := 0.0
 	if orderMap[`maker_fee_rate`] != nil {
-		makerFeeRate, _ = orderMap[`maker_fee_rate`].(json.Number).Float64()
+		order.MakerFeeRate, _ = orderMap[`maker_fee_rate`].(json.Number).Float64()
 	}
-	takerFeeRate := 0.0
 	if orderMap[`taker_fee_rate`] != nil {
-		takerFeeRate, _ = orderMap[`taker_fee_rate`].(json.Number).Float64()
+		order.TakerFeeRate, _ = orderMap[`taker_fee_rate`].(json.Number).Float64()
 	}
-	triggerOn := 0.0
 	if orderMap[`trigger_on`] != nil {
-		triggerOn, _ = orderMap[`trigger_on`].(json.Number).Float64()
+		order.TriggerOn, _ = orderMap[`trigger_on`].(json.Number).Float64()
 	}
-	trailingBasePrice := 0.0
 	if orderMap[`trailing_base_price`] != nil {
-		trailingBasePrice, _ = orderMap[`trailing_base_price`].(json.Number).Float64()
+		order.TrailingBasePrice, _ = orderMap[`trailing_base_price`].(json.Number).Float64()
 	}
-	trailingDistance := 0.0
 	if orderMap[`trailing_distance`] != nil {
-		trailingDistance, _ = orderMap[`trailing_distance`].(json.Number).Float64()
+		order.TrailingDistance, _ = orderMap[`trailing_distance`].(json.Number).Float64()
 	}
-	frozenMargin := 0.0
 	if orderMap[`frozen_margin`] != nil {
-		frozenMargin, _ = orderMap[`frozen_margin`].(json.Number).Float64()
+		order.FrozenMargin, _ = orderMap[`frozen_margin`].(json.Number).Float64()
 	}
-	frozenQuantity := 0.0
 	if orderMap[`frozen_quantity`] != nil {
-		frozenQuantity, _ = orderMap[`frozen_quantity`].(json.Number).Float64()
+		order.FrozenQuantity, _ = orderMap[`frozen_quantity`].(json.Number).Float64()
 	}
-	hidden := false
 	if orderMap[`hidden`] != nil {
-		hidden = orderMap[`hidden`].(bool)
+		order.Hidden = orderMap[`hidden`].(bool)
 	}
-	orderType := ``
 	if orderMap[`type`] != nil {
-		orderType = orderMap[`type`].(string)
+		order.OrderType = model.GetDictMapRevert(model.Fmex, orderMap[`type`].(string))
 	}
-	status := ``
 	if orderMap[`status`] != nil {
-		status = orderMap[`status`].(string)
+		order.Status = model.GetOrderStatus(model.Fmex, orderMap[`status`].(string))
 	}
-	return &model.Order{
-		OrderId:           orderMap[`id`].(json.Number).String(),
-		Symbol:            symbol,
-		Market:            model.Fmex,
-		Amount:            amount,
-		DealAmount:        amount - unfilledQuantity,
-		OrderTime:         time.Unix(0, createTime*1000000),
-		OrderUpdateTime:   time.Unix(0, updateTime*1000000),
-		OrderType:         model.GetDictMapRevert(model.Fmex, orderType),
-		OrderSide:         orderSide,
-		Price:             price,
-		Fee:               fee,
-		Status:            model.GetOrderStatus(model.Fmex, status),
-		TriggerDirection:  triggerDirection,
-		Features:          features,
-		Hidden:            hidden,
-		UnfilledQuantity:  unfilledQuantity,
-		MakerFeeRate:      makerFeeRate,
-		TakerFeeRate:      takerFeeRate,
-		TriggerOn:         triggerOn,
-		TrailingBasePrice: trailingBasePrice,
-		TrailingDistance:  trailingDistance,
-		FrozenMargin:      frozenMargin,
-		FrozenQuantity:    frozenQuantity,
-	}
+	order.OrderId = orderMap[`id`].(json.Number).String()
+	order.DealAmount = order.Amount - order.UnfilledQuantity
 }
 
 func getAccountFmex(key, secret string) (account []*model.Account) {

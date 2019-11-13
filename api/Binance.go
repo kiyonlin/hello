@@ -96,7 +96,7 @@ func signBinance(postData *url.Values, secretKey string) {
 // orderType: BUY SELL
 // 注意，binance中amount无论是市价还是限价，都指的是要买入或者卖出的左侧币种，而非右侧的钱,所以在市价买入的时候
 // 要把参数从左侧的币换成右测的钱
-func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orderId, errCode string) {
+func placeOrderBinance(order *model.Order, orderSide, orderType, symbol, price, amount string) {
 	postData := url.Values{}
 	if orderSide == model.OrderSideBuy {
 		orderSide = `BUY`
@@ -104,7 +104,6 @@ func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orde
 		orderSide = `SELL`
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s`, orderSide))
-		return ``, ``
 	}
 	if orderType == model.OrderTypeMarket {
 		orderType = `MARKET`
@@ -120,7 +119,6 @@ func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orde
 		postData.Set("timeInForce", "GTC")
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order type: %s`, orderType))
-		return ``, ``
 	}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("type", orderType)
@@ -134,16 +132,15 @@ func placeOrderBinance(orderSide, orderType, symbol, price, amount string) (orde
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("orderId").Int()
 		if orderIdInt != 0 {
-			orderId = strconv.Itoa(orderIdInt)
+			order.OrderId = strconv.Itoa(orderIdInt)
 		}
 		errCodeInt, _ := orderJson.Get("code").Int()
 		if errCodeInt != 0 {
-			errCode = strconv.Itoa(errCodeInt)
+			order.OrderId = strconv.Itoa(errCodeInt)
 		}
 	}
-	util.Notice(fmt.Sprintf(`[挂单binance] %s side: %s type: %s price: %s amount: %s order id %s errCode: %s 返回%s`,
-		symbol, orderSide, orderType, price, amount, orderId, errCode, string(responseBody)))
-	return orderId, errCode
+	util.Notice(fmt.Sprintf(`[挂单binance] %s side: %s type: %s price: %s amount: %s order id %s 返回%s`,
+		symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
 }
 
 func CancelOrderBinance(symbol string, orderId string) (result bool, errCode, msg string) {
