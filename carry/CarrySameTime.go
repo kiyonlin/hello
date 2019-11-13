@@ -6,6 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"time"
 )
 
 var carrySameTiming = false
@@ -123,7 +124,10 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 				symbol, ``, setting.AccountType, calcAmtPriceBuy, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
 				symbol, ``, setting.AccountType, tickBM.Bids[0].Price, amount, true)
-			api.RefreshAccount(``, ``, model.Fmex)
+			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
+				time.Sleep(time.Millisecond * 200)
+				api.RefreshAccount(``, ``, model.Fmex)
+			}
 			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
 				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId))
 		}
@@ -135,7 +139,10 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 				symbol, ``, setting.AccountType, calcAmtPriceSell, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex,
 				symbol, ``, setting.AccountType, tickBM.Asks[0].Price, amount, true)
-			api.RefreshAccount(``, ``, model.Fmex)
+			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
+				time.Sleep(time.Millisecond * 200)
+				api.RefreshAccount(``, ``, model.Fmex)
+			}
 			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
 				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId))
 		}
