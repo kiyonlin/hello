@@ -21,17 +21,25 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	_, tickFM := model.AppMarkets.GetBidAsk(symbol, model.Fmex)
 	accountBM := model.AppAccounts.GetAccount(model.Bitmex, symbol)
 	accountFM := model.AppAccounts.GetAccount(model.Fmex, symbol)
-	if accountFM == nil {
+	if accountFM == nil || accountBM == nil {
 		api.RefreshAccount(``, ``, model.Fmex)
-		util.Notice(`account is nil, refresh and return`)
+		util.Notice(`error1 account is nil, refresh and return`)
 		return
 	}
 	if tickFM == nil || tickBM == nil || tickFM.Asks == nil || tickFM.Bids == nil || tickBM.Asks == nil ||
-		tickBM.Bids == nil || tickFM.Asks.Len() < 18 || tickFM.Bids.Len() < 18 || tickBM.Asks.Len() < 18 ||
-		tickBM.Bids.Len() < 18 || int(startTime)-tickBM.Ts > 500 || int(startTime)-tickFM.Ts > 500 ||
-		model.AppConfig.Handle != `1` || model.AppPause || accountBM == nil ||
-		startTime-accountBM.Ts > 10000 {
-		util.Notice(`info env not good, return`)
+		tickBM.Bids == nil {
+		util.Notice(`error2 fm/bm tick or account is nil`)
+		return
+	}
+	if tickFM.Asks.Len() < 18 || tickFM.Bids.Len() < 18 || tickBM.Asks.Len() < 18 ||
+		tickBM.Bids.Len() < 18 {
+		util.Notice(`error3 fm/bm depth tick length not good`)
+		return
+	}
+	if int(startTime)-tickBM.Ts > 500 || int(startTime)-tickFM.Ts > 500 || model.AppConfig.Handle != `1` ||
+		model.AppPause || startTime-accountBM.Ts > 10000 {
+		util.Notice(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d accountBM delta:%d`,
+			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts, startTime-accountBM.Ts))
 		return
 	}
 	if carrySameTiming {
@@ -97,7 +105,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	fmsa := getDepthAmountSell(calcAmtPriceSell, priceDistance, tickFM)
 	fmb1 := tickFM.Bids[0].Price + setting.PriceX
 	fms1 := tickFM.Asks[0].Price + setting.PriceX
-	util.Notice(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
+	util.Info(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
 			fmba:%f=%f->b0:%f fmsa:%f=a0:%f->%f
 			BM价1:b0:%f a0:%f BM量1:b0:%f a0:%f
 			FM价1:b0:%f a0:%f FM量1:b0:%f a0:%f`,
