@@ -374,12 +374,12 @@ func handleAccount(action string, data []interface{}) {
 		switch action {
 		case `partial`:
 			model.AppAccounts.SetAccount(model.Bitmex, account.Currency, account)
-			util.Notice(fmt.Sprintf(`partial account time %d`, account.Ts))
+			//util.Notice(fmt.Sprintf(`partial account time %d`, account.Ts))
 		case `update`:
 			preAccount := model.AppAccounts.GetAccount(model.Bitmex, account.Currency)
 			if preAccount != nil {
 				parseAccount(preAccount, value.(map[string]interface{}))
-				util.Notice(fmt.Sprintf(`update account time %d`, preAccount.Ts))
+				//util.Notice(fmt.Sprintf(`update account time %d`, preAccount.Ts))
 			}
 			model.AppAccounts.SetAccount(model.Bitmex, account.Currency, preAccount)
 		}
