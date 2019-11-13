@@ -99,7 +99,8 @@ func placeGridOrder(key, secret, orderSide, market, symbol, accountType string, 
 	order := &model.Order{OrderSide: orderSide, OrderType: model.OrderTypeLimit, Market: market, Symbol: symbol,
 		AmountType: ``, Price: price, Amount: amount, OrderId: ``, ErrCode: ``,
 		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price}
-	order = api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``, accountType, price, amount)
+	order = api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``,
+		accountType, price, amount, true)
 	order.Function = model.FunctionGrid
 	grid := getGrid(order.Market, order.Symbol)
 	if order.OrderSide == model.OrderSideBuy {
@@ -133,7 +134,6 @@ func handleOrderDeal(key, secret string, grid *grid, order *model.Order, market,
 	grid.sellOrder = nil
 	grid.buyOrder = nil
 	if order.OrderId != `` {
-		model.AppDB.Save(&order)
 		api.RefreshAccount(key, secret, market)
 	}
 }

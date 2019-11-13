@@ -155,15 +155,12 @@ var ProcessMake = func(market, symbol string) {
 	}
 	if orderSide != `` {
 		order := api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, deal.Price, amount)
+			setting.AccountType, deal.Price, amount, true)
 		order.Function = model.FunctionMaker
 		time.Sleep(time.Millisecond * 500)
 		api.RefreshAccount(key, secret, market)
 		if order.Status == model.CarryStatusWorking {
 			addMaker(market, order)
-		}
-		if order.OrderId != `` {
-			model.AppDB.Save(&order)
 		}
 	}
 }

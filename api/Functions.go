@@ -369,7 +369,7 @@ func RefreshAccount(key, secret, market string) {
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType string, price,
-	amount float64) (order *model.Order) {
+	amount float64, saveDB bool) (order *model.Order) {
 	start := util.GetNowUnixMillion()
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%f price:%f`,
 		orderSide, market, symbol, start, amount, price))
@@ -434,21 +434,26 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Bitmex:
-		order := placeOrderBitmex(key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
+		order = placeOrderBitmex(key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
 			symbol, strPrice, strAmount)
-		return order
 	}
 	if orderId == "0" || orderId == "" {
 		status = model.CarryStatusFail
-	} else {
+	} else if order != nil && order.Status == `` {
 		status = model.CarryStatusWorking
 	}
 	end := util.GetNowUnixMillion()
 	util.Notice(fmt.Sprintf(`...%s %s %s return order %d distance %d`,
 		orderSide, market, symbol, end, end-start))
-	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-		AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
-		Status: status, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
+	if order == nil {
+		order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+			AmountType: amountType, Price: price, Amount: amount, OrderId: orderId, ErrCode: errCode,
+			Status: status, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
+	}
+	if saveDB {
+		go model.AppDB.Save(&order)
+	}
+	return
 }
 
 func GetPrice(key, secret, symbol string) (buy float64, err error) {

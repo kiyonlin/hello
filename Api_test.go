@@ -75,6 +75,6 @@ func Test_RefreshAccount(t *testing.T) {
 	//	model.Bitmex, `btcusd_p`, `c05bea31-932c-7d9b-2339-6d322e796b56`)
 	order := api.PlaceOrder(`HHCJIVMpxYEahfxGZH9NoFzD`,
 		`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
-		`btcusd_p`, ``, ``, 8830, 1)
+		`btcusd_p`, ``, ``, 8830, 1, false)
 	fmt.Println(order.OrderId)
 }

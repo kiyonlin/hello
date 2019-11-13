@@ -6,10 +6,10 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"time"
 )
 
 var carrySameTiming = false
+var bmLastOrder = &model.Order{}
 
 func setCarrySameTiming(value bool) {
 	carrySameTiming = value
@@ -40,6 +40,33 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	setCarrySameTiming(true)
 	defer setCarrySameTiming(false)
 	setting := model.GetSetting(model.FunctionCarry, model.Bitmex, symbol)
+	if bmLastOrder != nil && bmLastOrder.Status == model.CarryStatusFail {
+		reOrder(tickBM, setting)
+	} else {
+		placeBothOrders(symbol, tickBM, tickFM, accountBM, accountFM, setting)
+	}
+}
+
+func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
+	if bmLastOrder.Amount-bmLastOrder.DealAmount < 1 {
+		bmLastOrder = nil
+	}
+	price := tickBM.Bids[0].Price
+	if bmLastOrder.OrderSide == model.OrderSideSell {
+		price = tickBM.Asks[0].Price
+	}
+	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f`,
+		bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
+		bmLastOrder.Symbol, price, bmLastOrder.Amount-bmLastOrder.DealAmount))
+	order := api.PlaceOrder(``, ``, bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
+		bmLastOrder.Symbol, ``, setting.AccountType, price, bmLastOrder.Amount-bmLastOrder.DealAmount, true)
+	if order != nil {
+		bmLastOrder = order
+	}
+}
+
+func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, accountFM *model.Account,
+	setting *model.Setting) {
 	p1 := 0.0
 	p2 := 0.0
 	a1 := setting.AmountLimit
@@ -83,41 +110,26 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
 		tickBM.Bids[0].Amount*10 < tickBM.Asks[0].Amount && tickBM.Asks[0].Amount > 800000 {
 		amount := math.Min(math.Min(fmba/2, a1), setting.GridAmount)
-		placeBothOrders(model.OrderSideBuy, model.OrderSideSell, symbol,
-			tickBM.Bids[0].Price, calcAmtPriceBuy, amount)
+		if amount > 1 {
+			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Fmex,
+				symbol, ``, setting.AccountType, calcAmtPriceBuy, amount, true)
+			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
+				symbol, ``, setting.AccountType, tickBM.Bids[0].Price, amount, true)
+			api.RefreshAccount(``, ``, model.Fmex)
+			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId))
+		}
 	} else if tickBM.Asks[0].Price-fms1 >= setting.GridPriceDistance-p2 && fmsa >= setting.RefreshLimitLow &&
 		tickBM.Asks[0].Amount*10 < tickBM.Bids[0].Amount && tickBM.Bids[0].Amount > 800000 {
 		amount := math.Min(math.Min(fmsa/2, a2), setting.GridAmount)
-		placeBothOrders(model.OrderSideSell, model.OrderSideBuy, symbol,
-			tickBM.Asks[0].Price, calcAmtPriceSell, amount)
-	}
-}
-
-func placeBothOrders(orderSideBM, orderSideFM, symbol string, priceBM, priceFM, amount float64) {
-	if amount > 1 {
-		orderBM := api.PlaceOrder(``, ``, orderSideBM, model.OrderTypeLimit, model.Bitmex, symbol,
-			``, ``, priceBM, amount)
-		if orderBM != nil && orderBM.OrderId != `` && orderBM.Status != model.CarryStatusFail {
-			go model.AppDB.Save(&orderBM)
+		if amount > 1 {
+			go api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Fmex,
+				symbol, ``, setting.AccountType, calcAmtPriceSell, amount, true)
+			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex,
+				symbol, ``, setting.AccountType, tickBM.Asks[0].Price, amount, true)
+			api.RefreshAccount(``, ``, model.Fmex)
 			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
-				orderBM.OrderSide, orderBM.Price, orderBM.Amount, orderBM.OrderId))
-			for i := 0; i < 10; i++ {
-				orderFM := api.PlaceOrder(``, ``, orderSideFM, model.OrderTypeLimit, model.Fmex,
-					symbol, ``, ``, priceFM, amount)
-				if orderFM != nil && orderFM.OrderId != `` {
-					api.RefreshAccount(``, ``, model.Fmex)
-					go model.AppDB.Save(&orderFM)
-					util.Notice(fmt.Sprintf(`== fm order %s at %f amount %f return %s`,
-						orderFM.OrderSide, orderFM.Price, orderFM.Amount, orderFM.OrderId))
-					break
-				} else {
-					util.Notice(fmt.Sprintf(`-- fm place order fail time: %d %s %f %f`,
-						i, orderSideFM, priceFM, amount))
-					if i == 9 {
-						time.Sleep(time.Second * 10)
-					}
-				}
-			}
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId))
 		}
 	}
 }

@@ -584,7 +584,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 			if !alreadyExist {
 				util.Notice(fmt.Sprintf(`try hang sequence bid %s amount %f ---pos:%d`, symbol, amount, i))
 				sequenceBid := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol,
-					``, accountType, tick.Bids[i].Price, amount)
+					``, accountType, tick.Bids[i].Price, amount, false)
 				if sequenceBid != nil && sequenceBid.OrderId != `` && sequenceBid.Status != model.CarryStatusFail {
 					sequenceBid.Function = model.FunctionHang
 					sequenceBid.RefreshType = RefreshTypeSequence
@@ -610,7 +610,7 @@ func hangSequence(key, secret, market, symbol, accountType string, leftFree, rig
 			if !alreadyExist {
 				util.Notice(fmt.Sprintf(`try hang sequence ask %s amount %f ---pos:%d`, symbol, amount, i))
 				sequenceAsk := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-					``, accountType, tick.Asks[i].Price, amount)
+					``, accountType, tick.Asks[i].Price, amount, false)
 				if sequenceAsk != nil && sequenceAsk.OrderId != `` && sequenceAsk.Status != model.CarryStatusFail {
 					sequenceAsk.Function = model.FunctionHang
 					sequenceAsk.RefreshType = RefreshTypeSequence
@@ -633,7 +633,7 @@ func hangGrid(key, secret, market, symbol, accountType string, setting *model.Se
 		bid := refreshOrders.getGridHang(symbol, model.OrderSideBuy, tick.Bids[i].Price, priceDistance)
 		if bid == nil {
 			bid = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				accountType, tick.Bids[i].Price, setting.GridAmount)
+				accountType, tick.Bids[i].Price, setting.GridAmount, false)
 			if bid != nil && bid.OrderId != `` && bid.Status != model.CarryStatusFail {
 				bid.Function = model.FunctionHang
 				bid.RefreshType = RefreshTypeGrid
@@ -644,7 +644,7 @@ func hangGrid(key, secret, market, symbol, accountType string, setting *model.Se
 		ask := refreshOrders.getGridHang(symbol, model.OrderSideSell, tick.Asks[i].Price, priceDistance)
 		if ask == nil {
 			ask = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				accountType, tick.Asks[i].Price, setting.GridAmount)
+				accountType, tick.Asks[i].Price, setting.GridAmount, false)
 			if ask != nil && ask.OrderId != `` && ask.Status != model.CarryStatusFail {
 				ask.Function = model.FunctionHang
 				ask.RefreshType = RefreshTypeGrid
@@ -668,7 +668,7 @@ func hangFar(key, secret, market, symbol, accountType string, farRate, finalPlac
 			util.Notice(fmt.Sprintf(`try hang far bid %s price %f amount %f place %f`,
 				symbol, farBidPrice, farBidAmount, place))
 			farBid := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				accountType, farBidPrice, farBidAmount)
+				accountType, farBidPrice, farBidAmount, false)
 			if farBid != nil && farBid.OrderId != `` && farBid.Status != model.CarryStatusFail {
 				farBid.Function = model.FunctionHang
 				farBid.RefreshType = RefreshTypeFar
@@ -681,7 +681,7 @@ func hangFar(key, secret, market, symbol, accountType string, farRate, finalPlac
 			}
 			util.Notice(fmt.Sprintf(`try hang far ask %s %f`, symbol, place))
 			farAsk := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-				accountType, tick.Asks[0].Price*(1+place), askAmount)
+				accountType, tick.Asks[0].Price*(1+place), askAmount, false)
 			if farAsk != nil && farAsk.OrderId != `` && farAsk.Status != model.CarryStatusFail {
 				farAsk.Function = model.FunctionHang
 				farAsk.RefreshType = RefreshTypeFar
@@ -700,7 +700,7 @@ func hangFar(key, secret, market, symbol, accountType string, farRate, finalPlac
 		util.Notice(fmt.Sprintf(`place bid final %s %f price %f amount %f`,
 			symbol, finalPlace, farBidPrice, farBidAmount))
 		farBid := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			accountType, farBidPrice, farBidAmount)
+			accountType, farBidPrice, farBidAmount, false)
 		if farBid != nil && farBid.OrderId != `` && farBid.Status != model.CarryStatusFail {
 			farBid.Function = model.FunctionHang
 			farBid.RefreshType = RefreshTypeFar
@@ -716,7 +716,7 @@ func hangFar(key, secret, market, symbol, accountType string, farRate, finalPlac
 		util.Notice(fmt.Sprintf(`place ask final %s %f price %f amount %f`,
 			symbol, finalPlace, farAskPrice, askAmount))
 		farAsk := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-			accountType, farAskPrice, farAskAmount)
+			accountType, farAskPrice, farAskAmount, false)
 		if farAsk != nil && farAsk.OrderId != `` && farAsk.Status != model.CarryStatusFail {
 			farAsk.Function = model.FunctionHang
 			farAsk.RefreshType = RefreshTypeFar
@@ -992,11 +992,11 @@ func receiveRefresh(key, secret string, orders *RefreshBidAsk, market, symbol, a
 func placeRefreshOrder(key, secret string, orders *RefreshBidAsk, orderSide, market, symbol, accountType string,
 	price, amount float64) {
 	order := api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``, accountType,
-		price, amount)
+		price, amount, false)
 	if order.Status == model.CarryStatusFail && order.ErrCode == `1002` {
 		time.Sleep(time.Millisecond * 500)
 		order = api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``,
-			accountType, price, amount)
+			accountType, price, amount, false)
 	}
 	order.Function = model.FunctionRefresh
 	if orderSide == model.OrderSideBuy {

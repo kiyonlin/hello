@@ -66,7 +66,7 @@ var ProcessHang = func(market, symbol string) {
 		if scoreAsk.Point > point || scoreBid.Point > point {
 			if rightFree/scoreBid.Price > scoreBid.Amount {
 				order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,
-					symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount)
+					symbol, ``, setting.AccountType, scoreBid.Price, scoreBid.Amount, false)
 				if order.OrderId != `` {
 					order.Status = model.CarryStatusWorking
 					order.RefreshType = RankRebalance
@@ -82,7 +82,7 @@ var ProcessHang = func(market, symbol string) {
 			}
 			if leftFree > scoreAsk.Amount {
 				order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, market,
-					symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount)
+					symbol, ``, setting.AccountType, scoreAsk.Price, scoreAsk.Amount, false)
 				if order.OrderId != `` {
 					order.Status = model.CarryStatusWorking
 					order.RefreshType = RankRebalance
