@@ -122,7 +122,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
 				symbol, ``, setting.AccountType, tickBM.Bids[0].Price, amount, true)
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 400)
+				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
 			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
@@ -137,7 +137,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex,
 				symbol, ``, setting.AccountType, tickBM.Asks[0].Price, amount, true)
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 400)
+				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
 			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
