@@ -77,22 +77,14 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	p2 := 0.0
 	a1 := setting.AmountLimit
 	a2 := setting.AmountLimit
-	pb := accountBM.EntryPrice
-	pf := accountFM.EntryPrice
-	if accountFM.Free == 0 {
-		pf = 0
-	}
-	if accountBM.Free == 0 {
-		pb = 0
-	}
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
-		p1 = math.Max(0, (pb-pf-setting.PriceX-setting.GridPriceDistance)/5)
+		p1 = 0
 		p2 = setting.GridPriceDistance * accountBM.Free * 3 / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
 	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
 		p1 = setting.GridPriceDistance * accountFM.Free * 3 / setting.AmountLimit
-		p2 = math.Max(0, (pf-pb+setting.PriceX-setting.GridPriceDistance)/5)
+		p2 = 0
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
 	}
@@ -103,16 +95,16 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	fmsa := getDepthAmountSell(calcAmtPriceSell, priceDistance, tickFM)
 	fmb1 := tickFM.Bids[0].Price + setting.PriceX
 	fms1 := tickFM.Asks[0].Price + setting.PriceX
-	util.Info(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
-			fmba:%f=%f->b0:%f fmsa:%f=a0:%f->%f
-			BM价1:b0:%f a0:%f BM量1:b0:%f a0:%f
-			FM价1:b0:%f a0:%f FM量1:b0:%f a0:%f`,
-		accountFM.Free, accountBM.Free, p1, p2, a1, a2,
-		fmba, calcAmtPriceBuy, tickFM.Bids[0].Price, fmsa, tickFM.Asks[0].Price, calcAmtPriceSell,
-		tickBM.Bids[0].Price, tickBM.Asks[0].Price,
-		tickBM.Bids[0].Amount, tickBM.Asks[0].Amount,
-		tickFM.Bids[0].Price, tickFM.Asks[0].Price,
-		tickFM.Bids[0].Amount, tickFM.Asks[0].Amount))
+	//util.Info(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
+	//		fmba:%f=%f->b0:%f fmsa:%f=a0:%f->%f
+	//		BM价1:b0:%f a0:%f BM量1:b0:%f a0:%f
+	//		FM价1:b0:%f a0:%f FM量1:b0:%f a0:%f`,
+	//	accountFM.Free, accountBM.Free, p1, p2, a1, a2,
+	//	fmba, calcAmtPriceBuy, tickFM.Bids[0].Price, fmsa, tickFM.Asks[0].Price, calcAmtPriceSell,
+	//	tickBM.Bids[0].Price, tickBM.Asks[0].Price,
+	//	tickBM.Bids[0].Amount, tickBM.Asks[0].Amount,
+	//	tickFM.Bids[0].Price, tickFM.Asks[0].Price,
+	//	tickFM.Bids[0].Amount, tickFM.Asks[0].Amount))
 	if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
 		tickBM.Bids[0].Amount*10 < tickBM.Asks[0].Amount && tickBM.Asks[0].Amount > 800000 {
 		amount := math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
