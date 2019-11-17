@@ -37,7 +37,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		util.Notice(`error3 fm/bm depth tick length not good`)
 		return
 	}
-	if int(startTime)-tickBM.Ts > 500 || model.AppConfig.Handle != `1` ||
+	if int(startTime)-tickBM.Ts > 500 || int(startTime)-tickFM.Ts > 500 || model.AppConfig.Handle != `1` ||
 		model.AppPause || startTime-accountBM.Ts > 60000 {
 		util.Notice(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d accountBM delta:%d`,
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts, startTime-accountBM.Ts))
