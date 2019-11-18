@@ -310,7 +310,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 			}
 		} else if subType == SubscribeDepth {
 			if symbol == `btcusd_p` {
-				return `orderBookL2_25:XBTUSD`
+				//return `orderBookL2_25:XBTUSD`
+				return `quote:XBTUSD`
 			}
 		}
 		return ``

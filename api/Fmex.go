@@ -99,8 +99,8 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 				sort.Sort(bidAsk.Asks)
 				sort.Sort(sort.Reverse(bidAsk.Bids))
 				bidAsk.Ts = responseJson.Get("ts").MustInt()
-				startTime := util.GetNowUnixMillion()
-				util.Info(fmt.Sprintf(`%d %s`, startTime-int64(bidAsk.Ts), string(event)))
+				//startTime := util.GetNowUnixMillion()
+				//util.Info(fmt.Sprintf(`%d %s`, startTime-int64(bidAsk.Ts), string(event)))
 				if markets.SetBidAsk(symbol, model.Fmex, &bidAsk) {
 					for function, handler := range model.GetFunctions(model.Fmex, symbol) {
 						if handler != nil && function != model.FunctionMaker {

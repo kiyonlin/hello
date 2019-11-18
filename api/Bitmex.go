@@ -63,7 +63,6 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		if len(event) == 0 {
 			return
 		}
-		//util.SocketInfo(string(event))
 		depthJson, depthErr := util.NewJSON(event)
 		if depthJson == nil {
 			return
@@ -76,11 +75,11 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 			return
 		}
 		switch table {
+		case `quote`:
+			handleQuote(action, data)
 		case `trade`:
 			handleTrade(markets, action, data)
 		case `orderBookL2_25`:
-			//fmt.Println(string(event))
-			//util.Notice(string(event))
 			handleOrderBook(markets, action, data)
 		case `order`:
 			handleOrder(markets, action, data)
@@ -188,6 +187,22 @@ func parseOrderBM(order *model.Order, item map[string]interface{}) {
 		order.DealPrice, _ = item[`avgPx`].(json.Number).Float64()
 	}
 	return
+}
+
+func handleQuote(action string, data []interface{}) {
+	for _, value := range data {
+		switch action {
+		case `partial`:
+		case `insert`:
+			if value.(map[string]interface{})[`timestamp`] != nil {
+				dealTime, err := time.Parse(time.RFC3339, value.(map[string]interface{})[`timestamp`].(string))
+				if err == nil {
+					quoteTime := dealTime.UnixNano() / 1000000
+					util.Notice(fmt.Sprintf(`%d`, util.GetNowUnixMillion()-quoteTime))
+				}
+			}
+		}
+	}
 }
 
 func handleOrder(markets *model.Markets, action string, data []interface{}) {
@@ -374,12 +389,10 @@ func handleAccount(action string, data []interface{}) {
 		switch action {
 		case `partial`:
 			model.AppAccounts.SetAccount(model.Bitmex, account.Currency, account)
-			//util.Notice(fmt.Sprintf(`partial account time %d`, account.Ts))
 		case `update`:
 			preAccount := model.AppAccounts.GetAccount(model.Bitmex, account.Currency)
 			if preAccount != nil {
 				parseAccount(preAccount, value.(map[string]interface{}))
-				//util.Notice(fmt.Sprintf(`update account time %d`, preAccount.Ts))
 			}
 			model.AppAccounts.SetAccount(model.Bitmex, account.Currency, preAccount)
 		}
@@ -400,7 +413,7 @@ func handleTrade(markets *model.Markets, action string, data []interface{}) {
 			if item[`timestamp`] != nil {
 				dealTime, err := time.Parse(time.RFC3339, item[`timestamp`].(string))
 				if err == nil {
-					deal.Ts = dealTime.Unix() * 1000
+					deal.Ts = dealTime.UnixNano() / 1000000
 				}
 			}
 			if item[`size`] != nil {
@@ -509,7 +522,6 @@ func queryOrderBitmex(key, secret, symbol string) (orders []*model.Order) {
 	postData[`symbol`] = symbol
 	postData[`reverse`] = `true`
 	response := SignedRequestBitmex(key, secret, `GET`, `/order`, postData)
-	//util.Notice(`===== query bitmex orders ===` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderArray, _ := orderJson.Array()
