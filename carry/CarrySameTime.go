@@ -37,11 +37,11 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		util.Notice(`error3 fm/bm depth tick length not good`)
 		return
 	}
-	setCarrySameTiming(true)
-	defer setCarrySameTiming(false)
 	if carrySameTiming {
 		return
 	}
+	setCarrySameTiming(true)
+	defer setCarrySameTiming(false)
 	setting := model.GetSetting(model.FunctionCarry, model.Bitmex, symbol)
 	if bmLastOrder != nil && bmLastOrder.Status == model.CarryStatusFail {
 		reOrder(tickBM, setting)
