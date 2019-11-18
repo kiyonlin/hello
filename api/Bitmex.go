@@ -71,16 +71,16 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		}
 		switch table {
 		case `quote`:
-			handleQuote(action, data)
+			go handleQuote(action, data)
 		case `trade`:
-			handleTrade(markets, action, data)
+			go handleTrade(markets, action, data)
 		case `orderBookL2_25`:
-			handleOrderBook(markets, action, data)
+			go handleOrderBook(markets, action, data)
 		case `order`:
-			handleOrder(markets, action, data)
+			go handleOrder(markets, action, data)
 			//model.HandlerMap[model.FunctionBMCarryHang](``, ``)
 		case `position`:
-			handleAccount(action, data)
+			go handleAccount(action, data)
 		}
 	}
 	return WebSocketServe(model.Bitmex, model.AppConfig.WSUrls[model.Bitmex], model.SubscribeDepth,
