@@ -310,8 +310,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 			}
 		} else if subType == SubscribeDepth {
 			if symbol == `btcusd_p` {
-				return `orderBookL2_25:XBTUSD`
-				//return `quote:XBTUSD`
+				//return `orderBookL2_25:XBTUSD`
+				return `quote:XBTUSD`
 			}
 		}
 		return ``
@@ -500,7 +500,6 @@ func GetWSSubscribes(market, subType string) []interface{} {
 	if market == Bitmex {
 		//subscribes = append(subscribes, `order`)
 		subscribes = append(subscribes, `position`)
-		subscribes = append(subscribes, `quote:XBTUSD`)
 	}
 	return subscribes
 }

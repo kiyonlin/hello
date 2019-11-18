@@ -71,7 +71,8 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		}
 		switch table {
 		case `quote`:
-			go handleQuote(action, data)
+			fmt.Println(string(event))
+			go handleQuote(markets, action, data)
 		case `trade`:
 			go handleTrade(markets, action, data)
 		case `orderBookL2_25`:
@@ -111,6 +112,50 @@ func parseAccount(account *model.Account, item map[string]interface{}) {
 		}
 	}
 	account.Ts = util.GetNowUnixMillion()
+	return
+}
+
+func parseQuote(item map[string]interface{}) (bid, ask *model.Tick, quoteTime time.Time, symbol string) {
+	if item == nil {
+		return
+	}
+	bid = &model.Tick{Side: model.OrderSideBuy}
+	ask = &model.Tick{Side: model.OrderSideSell}
+	if item[`symbol`] != nil {
+		switch item[`symbol`].(string) {
+		case `XBTUSD`:
+			symbol = `btcusd_p`
+		}
+		bid.Symbol = symbol
+		ask.Symbol = symbol
+	}
+	if item[`bidPrice`] != nil {
+		price, err := item[`bidPrice`].(json.Number).Float64()
+		if err == nil {
+			bid.Price = price
+		}
+	}
+	if item[`askPrice`] != nil {
+		price, err := item[`askPrice`].(json.Number).Float64()
+		if err == nil {
+			ask.Price = price
+		}
+	}
+	if item[`bidSize`] != nil {
+		size, err := item[`bidSize`].(json.Number).Float64()
+		if err == nil {
+			bid.Amount = size
+		}
+	}
+	if item[`askSize`] != nil {
+		size, err := item[`askSize`].(json.Number).Float64()
+		if err == nil {
+			ask.Amount = size
+		}
+	}
+	if item[`timestamp`] != nil {
+		quoteTime, _ = time.Parse(time.RFC3339, item[`timestamp`].(string))
+	}
 	return
 }
 
@@ -184,17 +229,29 @@ func parseOrderBM(order *model.Order, item map[string]interface{}) {
 	return
 }
 
-func handleQuote(action string, data []interface{}) {
+func handleQuote(markets *model.Markets, action string, data []interface{}) {
+	symbolTicks := make(map[string]*model.BidAsk)
+	var compareTime *time.Time
 	for _, value := range data {
+		item := value.(map[string]interface{})
+		bid, ask, quoteTime, symbol := parseQuote(item)
 		switch action {
 		case `partial`:
+			symbolTicks[symbol] = &model.BidAsk{Ts: int(quoteTime.UnixNano() / 1000000),
+				Bids: []model.Tick{*bid}, Asks: []model.Tick{*ask}}
 		case `insert`:
-			if value.(map[string]interface{})[`timestamp`] != nil {
-				dealTime, err := time.Parse(time.RFC3339, value.(map[string]interface{})[`timestamp`].(string))
-				if err == nil {
-					quoteTime := dealTime.UnixNano() / 1000000
-					util.Notice(fmt.Sprintf(`%d`, util.GetNowUnixMillion()-quoteTime))
-				}
+			if compareTime == nil || compareTime.Before(quoteTime) {
+				compareTime = &quoteTime
+				symbolTicks[symbol] = &model.BidAsk{Ts: int(quoteTime.UnixNano() / 1000000),
+					Bids: []model.Tick{*bid}, Asks: []model.Tick{*ask}}
+			}
+		}
+	}
+	for symbol, bidAsks := range symbolTicks {
+		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
+		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+			if handler != nil && function != model.FunctionMaker {
+				go handler(model.Bitmex, symbol)
 			}
 		}
 	}
