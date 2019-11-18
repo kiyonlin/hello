@@ -11,11 +11,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
-
-var bmMsgLock sync.Mutex
 
 var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) error {
 	var err error = nil
@@ -52,8 +49,6 @@ var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) erro
 func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte) {
-		bmMsgLock.Lock()
-		defer bmMsgLock.Unlock()
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping bitmex server every 5 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := sendToWs(model.Bitmex, []byte(`ping`)); err != nil {
