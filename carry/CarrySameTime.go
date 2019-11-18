@@ -32,8 +32,8 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		util.Notice(`error2 fm/bm tick or account is nil`)
 		return
 	}
-	if tickFM.Asks.Len() < 18 || tickFM.Bids.Len() < 18 || tickBM.Asks.Len() < 18 ||
-		tickBM.Bids.Len() < 18 {
+	if tickFM.Asks.Len() < 15 || tickFM.Bids.Len() < 15 || tickBM.Asks.Len() < 1 ||
+		tickBM.Bids.Len() < 1 {
 		util.Notice(`error3 fm/bm depth tick length not good`)
 		return
 	}
