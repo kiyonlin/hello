@@ -564,7 +564,7 @@ func CancelOrderBitmex(key, secret, orderId string) (result bool, errCode, msg s
 	return false, ``, ``
 }
 
-func queryOrderBitmex(key, secret, symbol string) (orders []*model.Order) {
+func queryOrderBitmex(key, secret, symbol, orderId string) (orders []*model.Order) {
 	orders = make([]*model.Order, 0)
 	postData := make(map[string]interface{})
 	switch symbol {
@@ -573,6 +573,7 @@ func queryOrderBitmex(key, secret, symbol string) (orders []*model.Order) {
 	}
 	postData[`symbol`] = symbol
 	postData[`reverse`] = `true`
+	postData[`filter`] = fmt.Sprintf(`{"orderID":"%s"}`, orderId)
 	response := SignedRequestBitmex(key, secret, `GET`, `/order`, postData)
 	orderJson, err := util.NewJSON(response)
 	if err == nil {

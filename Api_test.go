@@ -67,14 +67,17 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	//api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-	//	model.Bitmex, `btcusd_p`, `5b83b73f-dd2e-5329-2437-fcc61f20ab74`)
+	order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+		model.Bitmex, `btcusd_p`, `3b7b754d-d9b6-2999-a89b-820db8c6b800`)
 	//api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
 	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`,
 	//	`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Bitmex, `btcusd_p`, `c05bea31-932c-7d9b-2339-6d322e796b56`)
-	order := api.PlaceOrder(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
-		model.OrderSideBuy, model.OrderTypeLimit, model.Fmex, `btcusd_p`, ``, ``,
-		7777, 1, true)
+	//order := api.PlaceOrder(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
+	//	model.OrderSideBuy, model.OrderTypeLimit, model.Fmex, `btcusd_p`, ``, ``,
+	//	7777, 1, true)
+
+	//order := api.QueryOrderById(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
+	//	model.Bitmex, `btcusd_p`, `3b7b754d-d9b6-2999-a89b-820db8c6b800`)
 	fmt.Println(order.OrderId)
 }

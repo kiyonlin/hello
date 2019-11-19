@@ -231,7 +231,7 @@ func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.O
 	case model.Coinpark:
 		dealAmount, dealPrice, status = queryOrderCoinpark(orderId)
 	case model.Bitmex:
-		orders := queryOrderBitmex(key, secret, symbol)
+		orders := queryOrderBitmex(key, secret, symbol, orderId)
 		for _, value := range orders {
 			if value.OrderId == orderId {
 				return value
