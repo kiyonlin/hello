@@ -73,8 +73,8 @@ func Test_RefreshAccount(t *testing.T) {
 	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`,
 	//	`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Bitmex, `btcusd_p`, `c05bea31-932c-7d9b-2339-6d322e796b56`)
-	order := api.PlaceOrder(`HHCJIVMpxYEahfxGZH9NoFzD`,
-		`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
-		`btcusd_p`, ``, ``, 8830, 1, false)
+	order := api.PlaceOrder(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
+		model.OrderSideBuy, model.OrderTypeLimit, model.Fmex, `btcusd_p`, ``, ``,
+		7777, 1, true)
 	fmt.Println(order.OrderId)
 }

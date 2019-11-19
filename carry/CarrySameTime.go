@@ -47,7 +47,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		reOrder(tickBM, setting)
 		return
 	}
-	if int(startTime)-tickBM.Ts > 500 || int(startTime)-tickFM.Ts > 1000 || model.AppConfig.Handle != `1` ||
+	if int(startTime)-tickBM.Ts > 1000 || int(startTime)-tickFM.Ts > 1000 || model.AppConfig.Handle != `1` ||
 		model.AppPause || startTime-accountBM.Ts > 60000 {
 		util.Notice(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d accountBM delta:%d`,
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts, startTime-accountBM.Ts))

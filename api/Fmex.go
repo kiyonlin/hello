@@ -236,7 +236,7 @@ func parseOrderFmex(order *model.Order, orderMap map[string]interface{}) {
 	if orderMap == nil || orderMap[`id`] == nil || order == nil {
 		return
 	}
-	order.Market = model.Bitmex
+	order.Market = model.Fmex
 	createTime := int64(0)
 	if orderMap[`created_at`] != nil {
 		createTime, _ = orderMap[`created_at`].(json.Number).Int64()
