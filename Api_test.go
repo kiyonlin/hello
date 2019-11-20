@@ -67,8 +67,8 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-		model.Bitmex, `btcusd_p`, `3b7b754d-d9b6-2999-a89b-820db8c6b800`)
+	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+	//	model.Fmex, `btcusd_p`, `8330017131911`)
 	//api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
 	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`,
 	//	`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
@@ -77,7 +77,7 @@ func Test_RefreshAccount(t *testing.T) {
 	//	model.OrderSideBuy, model.OrderTypeLimit, model.Fmex, `btcusd_p`, ``, ``,
 	//	7777, 1, true)
 
-	//order := api.QueryOrderById(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
-	//	model.Bitmex, `btcusd_p`, `3b7b754d-d9b6-2999-a89b-820db8c6b800`)
+	order := api.QueryOrderById(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
+		model.Fmex, `btcusd_p`, `8330017131911`)
 	fmt.Println(order.OrderId)
 }

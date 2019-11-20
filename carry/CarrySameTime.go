@@ -77,24 +77,27 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	p2 := 0.0
 	a1 := setting.AmountLimit
 	a2 := setting.AmountLimit
+	priceX := setting.PriceX
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
 		p1 = 0
-		p2 = setting.GridPriceDistance * accountBM.Free * 3 / setting.AmountLimit
+		p2 = setting.GridPriceDistance * accountBM.Free / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
+		priceX = setting.PriceX - 2*p2
 	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
-		p1 = setting.GridPriceDistance * accountFM.Free * 3 / setting.AmountLimit
+		p1 = setting.GridPriceDistance * accountFM.Free / setting.AmountLimit
 		p2 = 0
 		a1 = setting.AmountLimit - accountBM.Free
 		a2 = accountBM.Free
+		priceX = setting.PriceX + 2*p1
 	}
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
-	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - setting.PriceX
-	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - setting.PriceX
+	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
+	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
 	fmba := getDepthAmountBuy(calcAmtPriceBuy, priceDistance, tickFM)
 	fmsa := getDepthAmountSell(calcAmtPriceSell, priceDistance, tickFM)
-	fmb1 := tickFM.Bids[0].Price + setting.PriceX
-	fms1 := tickFM.Asks[0].Price + setting.PriceX
+	fmb1 := tickFM.Bids[0].Price + priceX
+	fms1 := tickFM.Asks[0].Price + priceX
 	//util.Info(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
 	//		fmba:%f=%f->b0:%f fmsa:%f=a0:%f->%f
 	//		BM价1:b0:%f a0:%f BM量1:b0:%f a0:%f
