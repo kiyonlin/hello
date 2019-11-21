@@ -26,6 +26,8 @@ type Rank struct {
 }
 
 func (rank *Rank) getCheckTime(symbol string) (checkTime int64) {
+	rank.lock.Lock()
+	defer rank.lock.Unlock()
 	if rank.checkTime == nil {
 		return 0
 	}
