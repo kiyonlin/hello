@@ -11,6 +11,9 @@ import (
 )
 
 var HandlerMap = make(map[string]CarryHandler)
+var fundingRatelock sync.Mutex
+var fundingRate = make(map[string]map[string]float64)     // market - symbol - funding rate
+var fundingRateUpdate = make(map[string]map[string]int64) // market - symbol - update time
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
 var ConnectionResetTime = int64(0)
 
@@ -214,6 +217,43 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`5`: CarryStatusSuccess, //部分撤回,
 		`6`: CarryStatusFail,    //成交失败
 	},
+}
+
+func GetFundingRate(market, symbol string) (rate float64, updateTime int64) {
+	fundingRatelock.Lock()
+	defer fundingRatelock.Unlock()
+	if fundingRate == nil {
+		fundingRate = make(map[string]map[string]float64)
+	}
+	if fundingRate[market] == nil {
+		fundingRate[market] = make(map[string]float64)
+	}
+	if fundingRateUpdate == nil {
+		fundingRateUpdate = make(map[string]map[string]int64)
+	}
+	if fundingRateUpdate[market] == nil {
+		fundingRateUpdate[market] = make(map[string]int64)
+	}
+	return fundingRate[market][symbol], fundingRateUpdate[market][symbol]
+}
+
+func SetFundingRate(market, symbol string, rate float64, updateTime int64) {
+	fundingRatelock.Lock()
+	defer fundingRatelock.Unlock()
+	if fundingRate == nil {
+		fundingRate = make(map[string]map[string]float64)
+	}
+	if fundingRate[market] == nil {
+		fundingRate[market] = make(map[string]float64)
+	}
+	if fundingRateUpdate == nil {
+		fundingRateUpdate = make(map[string]map[string]int64)
+	}
+	if fundingRateUpdate[market] == nil {
+		fundingRateUpdate[market] = make(map[string]int64)
+	}
+	fundingRate[market][symbol] = rate
+	fundingRateUpdate[market][symbol] = updateTime
 }
 
 func GetOrderStatusRevert(market, status string) (combinedStatus string, err error) {

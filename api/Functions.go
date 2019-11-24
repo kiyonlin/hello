@@ -214,6 +214,25 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 	return nil
 }
 
+func GetFundingRate(market, symbol string) (fundingRate float64) {
+	rate, updateTime := model.GetFundingRate(market, symbol)
+	now := util.GetNow().Unix()
+	if now-updateTime < 28800 {
+		return rate
+	}
+	util.Notice(market + `need update funding rate ` + symbol)
+	switch market {
+	case model.Fmex:
+		fundingRate, updateTime = getFundingRateFmex(symbol)
+	case model.Bitmex:
+		fundingRate, updateTime = getFundingRateBitmex(symbol)
+	}
+	if updateTime > 0 {
+		model.SetFundingRate(market, symbol, fundingRate, updateTime)
+	}
+	return fundingRate
+}
+
 func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.Order) {
 	var dealAmount, dealPrice float64
 	var status string

@@ -346,3 +346,21 @@ func getAccountFmex(key, secret string) (account []*model.Account) {
 	}
 	return nil
 }
+func getFundingRateFmex(symbol string) (fundingRate float64, updateTime int64) {
+	if symbol == `btcusd_p` {
+		symbol = `.btcusdpi8h`
+	}
+	responseBody := SignedRequestFmex(``, ``, `GET`, `v2/market/indexes`, nil)
+	indexJson, err := util.NewJSON(responseBody)
+	if err == nil && indexJson != nil {
+		array, err := indexJson.GetPath(`data`, symbol).Array()
+		if err == nil && len(array) > 1 {
+			updateTime, err = array[0].(json.Number).Int64()
+			if err == nil {
+				updateTime = updateTime / 1000
+			}
+			fundingRate, _ = array[1].(json.Number).Float64()
+		}
+	}
+	return
+}

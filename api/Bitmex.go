@@ -629,3 +629,45 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 	}
 	return
 }
+
+func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
+	postData := make(map[string]interface{})
+	if symbol == `btcusd_p` {
+		symbol = `XBTUSD`
+	}
+	postData["symbol"] = symbol
+	postData[`columns`] = `fundingRate`
+	response := SignedRequestBitmex(``, ``, `GET`, `/instrument`, postData)
+	instrumentJson, err := util.NewJSON(response)
+	if err == nil {
+		array, err := instrumentJson.Array()
+		if err == nil {
+			for _, value := range array {
+				item := value.(map[string]interface{})
+				if item[`symbol`] != nil && item[`symbol`] == symbol && item["fundingRate"] != nil &&
+					item[`timestamp`] != nil {
+					fundingRate, err = item["fundingRate"].(json.Number).Float64()
+					updateTime, err := time.Parse(time.RFC3339, item[`timestamp`].(string))
+					if err == nil {
+						zone, offset := updateTime.Local().Zone()
+						if zone != `CST` {
+							util.Notice(`time zone local env is not CST!!!!!!`)
+						}
+						d, _ := time.ParseDuration(fmt.Sprintf(`%ds`, offset))
+						updateTime = updateTime.Add(d)
+						hour := updateTime.Hour()
+						hour = int((hour+4)/8)*8 - 4 - hour
+						d, _ = time.ParseDuration(fmt.Sprintf("%dh", hour))
+						updateTime = updateTime.Add(d)
+						d, _ = time.ParseDuration(fmt.Sprintf(`-%ds`, updateTime.Minute()*60+updateTime.Second()))
+						updateTime = updateTime.Add(d)
+						d, _ = time.ParseDuration(fmt.Sprintf(`-%ds`, offset))
+						updateTime = updateTime.Add(d)
+						update = updateTime.Unix()
+					}
+				}
+			}
+		}
+	}
+	return
+}

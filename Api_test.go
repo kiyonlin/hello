@@ -67,6 +67,12 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
+	//rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
+	//fmt.Println(rate)
+	rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
+	fmt.Println(rate)
+	rate = api.GetFundingRate(model.Bitmex, `btcusd_p`)
+	fmt.Println(rate)
 	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Fmex, `btcusd_p`, `8330017131911`)
 	//api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
@@ -77,7 +83,4 @@ func Test_RefreshAccount(t *testing.T) {
 	//	model.OrderSideBuy, model.OrderTypeLimit, model.Fmex, `btcusd_p`, ``, ``,
 	//	7777, 1, true)
 
-	order := api.QueryOrderById(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
-		model.Fmex, `btcusd_p`, `8330017131911`)
-	fmt.Println(order.OrderId)
 }
