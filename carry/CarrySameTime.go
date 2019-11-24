@@ -79,7 +79,6 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	a2 := setting.AmountLimit
 	zb := api.GetFundingRate(model.Bitmex, symbol)
 	zf := api.GetFundingRate(model.Fmex, symbol)
-	util.Notice(fmt.Sprintf(`funding rate zb %f zf %f`, zb, zf))
 	priceX := setting.PriceX + (zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
 		p1 = 0
@@ -113,6 +112,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	//	tickFM.Bids[0].Amount, tickFM.Asks[0].Amount))
 	if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
 		tickBM.Bids[0].Amount*10 < tickBM.Asks[0].Amount && tickBM.Asks[0].Amount > 700000 {
+		util.Notice(fmt.Sprintf(`funding rate zb %f zf %f`, zb, zf))
 		amount := math.Min(math.Min(fmba*0.5, a1), setting.GridAmount)
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Fmex,
@@ -123,8 +123,8 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId))
+			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s funding rate zb %f zf %f`,
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf))
 		}
 	} else if tickBM.Asks[0].Price-fms1 >= setting.GridPriceDistance-p2 && fmsa >= setting.RefreshLimitLow &&
 		tickBM.Asks[0].Amount*10 < tickBM.Bids[0].Amount && tickBM.Bids[0].Amount > 700000 {
@@ -138,8 +138,8 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId))
+			util.Notice(fmt.Sprintf(`== bm order %s at %f amount %f return %s funding rate zb %f zf %f`,
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf))
 		}
 	}
 }
