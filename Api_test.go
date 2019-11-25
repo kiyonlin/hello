@@ -69,9 +69,9 @@ func Test_RefreshAccount(t *testing.T) {
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	//rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
 	//fmt.Println(rate)
-	rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
+	rate := api.GetFundingRate(model.Fmex, `btcusd_p`)
 	fmt.Println(rate)
-	rate = api.GetFundingRate(model.Bitmex, `btcusd_p`)
+	rate = api.GetFundingRate(model.Fmex, `btcusd_p`)
 	fmt.Println(rate)
 	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Fmex, `btcusd_p`, `8330017131911`)

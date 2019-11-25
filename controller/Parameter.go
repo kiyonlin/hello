@@ -291,7 +291,13 @@ func GetParameters(c *gin.Context) {
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
 	zb := api.GetFundingRate(model.Bitmex, `btcusd_p`)
 	zf := api.GetFundingRate(model.Fmex, `btcusd_p`)
-	msg := fmt.Sprintf("资金费率zb:%f zf:%f\n", zb, zf)
+	carrySetting := model.GetSetting(model.FunctionCarry, model.Bitmex, `btcusd_p`)
+	_, tickFM := model.AppMarkets.GetBidAsk(`btcusd_p`, model.Fmex)
+	msg := fmt.Sprintf("资金费率zb:%f zf:%f ", zb, zf)
+	if tickFM != nil && tickFM.Asks != nil && tickFM.Bids != nil {
+		priceX := carrySetting.PriceX + (zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
+		msg += fmt.Sprintf("py:%f /n", priceX)
+	}
 	for rows.Next() {
 		_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,

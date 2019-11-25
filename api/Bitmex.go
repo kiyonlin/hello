@@ -635,10 +635,8 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 	if symbol == `btcusd_p` {
 		symbol = `XBTUSD`
 	}
-	postData[`filter`] = fmt.Sprintf(`{"symbol":"%s"}`, symbol)
-	postData[`count`] = `1`
-	postData[`reverse`] = `true`
-	response := SignedRequestBitmex(``, ``, `GET`, `/funding`, postData)
+	postData[`symbol`] = symbol
+	response := SignedRequestBitmex(``, ``, `GET`, `/instrument`, postData)
 	fmt.Println(string(response))
 	instrumentJson, err := util.NewJSON(response)
 	if err == nil {
@@ -649,7 +647,7 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 				if item[`symbol`] != nil && item[`symbol`] == symbol && item["fundingRate"] != nil &&
 					item[`timestamp`] != nil {
 					fundingRate, err = item["fundingRate"].(json.Number).Float64()
-					updateTime, err := time.Parse(time.RFC3339, item[`timestamp`].(string))
+					updateTime, err := time.Parse(time.RFC3339, item[`fundingTimestamp`].(string))
 					if err == nil {
 						//zone, offset := updateTime.Local().Zone()
 						//if zone != `CST` {
