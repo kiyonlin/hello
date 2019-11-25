@@ -17,6 +17,9 @@ var fundingRateUpdate = make(map[string]map[string]int64) // market - symbol - u
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
 var ConnectionResetTime = int64(0)
 
+var PriceY float64 // carry between bitmex and fmex
+var PriceX float64 // carry between bitmex and fmex
+
 //const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
 const OKEXOtherContractFaceValue = 10.0

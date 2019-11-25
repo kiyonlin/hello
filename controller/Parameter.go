@@ -21,8 +21,6 @@ var code = ``
 var data = make(map[string]interface{})
 var dataUpdateTime *time.Time
 var balances = make(map[string]map[string]map[string][]float64) // time - market - currency - value
-var PriceY float64
-var PriceX float64
 
 func ParameterServe() {
 	router := gin.Default()
@@ -293,7 +291,7 @@ func GetParameters(c *gin.Context) {
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
 	zb := api.GetFundingRate(model.Bitmex, `btcusd_p`)
 	zf := api.GetFundingRate(model.Fmex, `btcusd_p`)
-	msg := fmt.Sprintf("资金费率zb:%f zf:%f py:%f px:%f\n", zb, zf, PriceY, PriceX)
+	msg := fmt.Sprintf("资金费率zb:%f zf:%f py:%f px:%f\n", zb, zf, model.PriceY, model.PriceX)
 	for rows.Next() {
 		_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
