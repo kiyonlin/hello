@@ -21,6 +21,8 @@ var code = ``
 var data = make(map[string]interface{})
 var dataUpdateTime *time.Time
 var balances = make(map[string]map[string]map[string][]float64) // time - market - currency - value
+var PriceY float64
+var PriceX float64
 
 func ParameterServe() {
 	router := gin.Default()
@@ -291,13 +293,7 @@ func GetParameters(c *gin.Context) {
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
 	zb := api.GetFundingRate(model.Bitmex, `btcusd_p`)
 	zf := api.GetFundingRate(model.Fmex, `btcusd_p`)
-	carrySetting := model.GetSetting(model.FunctionCarry, model.Bitmex, `btcusd_p`)
-	_, tickFM := model.AppMarkets.GetBidAsk(`btcusd_p`, model.Fmex)
-	msg := fmt.Sprintf("资金费率zb:%f zf:%f ", zb, zf)
-	if tickFM != nil && tickFM.Asks != nil && tickFM.Bids != nil {
-		priceX := carrySetting.PriceX + (zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
-		msg += fmt.Sprintf("py:%f \n", priceX)
-	}
+	msg := fmt.Sprintf("资金费率zb:%f zf:%f py:%f px:%f\n", zb, zf, PriceY, PriceX)
 	for rows.Next() {
 		_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,

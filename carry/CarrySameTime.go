@@ -3,6 +3,7 @@ package carry
 import (
 	"fmt"
 	"hello/api"
+	"hello/controller"
 	"hello/model"
 	"hello/util"
 	"math"
@@ -80,6 +81,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	zb := api.GetFundingRate(model.Bitmex, symbol)
 	zf := api.GetFundingRate(model.Fmex, symbol)
 	priceX := setting.PriceX + (zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
+	controller.PriceY = priceX
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
 		p1 = 0
 		p2 = setting.GridPriceDistance * accountBM.Free / setting.AmountLimit
@@ -93,6 +95,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 		a2 = accountBM.Free
 		priceX = setting.PriceX + 3*p1
 	}
+	controller.PriceX = priceX
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
