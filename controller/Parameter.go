@@ -289,9 +289,7 @@ func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
-	zb := api.GetFundingRate(model.Bitmex, `btcusd_p`)
-	zf := api.GetFundingRate(model.Fmex, `btcusd_p`)
-	msg := fmt.Sprintf("资金费率zb:%f zf:%f py:%f px:%f\n", zb, zf, model.PriceY, model.PriceX)
+	msg := model.CarryInfo
 	for rows.Next() {
 		_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
