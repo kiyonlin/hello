@@ -291,7 +291,7 @@ func GetParameters(c *gin.Context) {
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
 	zb := api.GetFundingRate(model.Bitmex, `btcusd_p`)
 	zf := api.GetFundingRate(model.Fmex, `btcusd_p`)
-	msg := fmt.Sprintf(`资金费率zb:%f zf:%f\n`, zb, zf)
+	msg := fmt.Sprintf("资金费率zb:%f zf:%f\n", zb, zf)
 	for rows.Next() {
 		_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
