@@ -296,7 +296,7 @@ func GetParameters(c *gin.Context) {
 	msg := fmt.Sprintf("资金费率zb:%f zf:%f ", zb, zf)
 	if tickFM != nil && tickFM.Asks != nil && tickFM.Bids != nil {
 		priceX := carrySetting.PriceX + (zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
-		msg += fmt.Sprintf("py:%f /n", priceX)
+		msg += fmt.Sprintf("py:%f \n", priceX)
 	}
 	for rows.Next() {
 		_ = rows.Scan(&setting)

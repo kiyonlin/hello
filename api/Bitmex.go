@@ -637,7 +637,6 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 	}
 	postData[`symbol`] = symbol
 	response := SignedRequestBitmex(``, ``, `GET`, `/instrument`, postData)
-	fmt.Println(string(response))
 	instrumentJson, err := util.NewJSON(response)
 	if err == nil {
 		array, err := instrumentJson.Array()
