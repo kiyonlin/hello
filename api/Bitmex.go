@@ -635,9 +635,11 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 	if symbol == `btcusd_p` {
 		symbol = `XBTUSD`
 	}
-	postData["symbol"] = symbol
-	postData[`columns`] = `fundingRate`
-	response := SignedRequestBitmex(``, ``, `GET`, `/instrument`, postData)
+	postData[`filter`] = fmt.Sprintf(`{"symbol":"%s"}`, symbol)
+	postData[`count`] = `1`
+	postData[`reverse`] = `true`
+	response := SignedRequestBitmex(``, ``, `GET`, `/funding`, postData)
+	fmt.Println(string(response))
 	instrumentJson, err := util.NewJSON(response)
 	if err == nil {
 		array, err := instrumentJson.Array()
@@ -649,20 +651,18 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 					fundingRate, err = item["fundingRate"].(json.Number).Float64()
 					updateTime, err := time.Parse(time.RFC3339, item[`timestamp`].(string))
 					if err == nil {
-						zone, offset := updateTime.Local().Zone()
-						if zone != `CST` {
-							util.Notice(`time zone local env is not CST!!!!!!`)
-						}
-						d, _ := time.ParseDuration(fmt.Sprintf(`%ds`, offset))
-						updateTime = updateTime.Add(d)
-						hour := updateTime.Hour()
-						hour = int((hour+4)/8)*8 - 4 - hour
-						d, _ = time.ParseDuration(fmt.Sprintf("%dh", hour))
-						updateTime = updateTime.Add(d)
-						d, _ = time.ParseDuration(fmt.Sprintf(`-%ds`, updateTime.Minute()*60+updateTime.Second()))
-						updateTime = updateTime.Add(d)
-						d, _ = time.ParseDuration(fmt.Sprintf(`-%ds`, offset))
-						updateTime = updateTime.Add(d)
+						//zone, offset := updateTime.Local().Zone()
+						//if zone != `CST` {
+						//	util.Notice(`time zone local env is not CST!!!!!!`)
+						//}
+						//d, _ := time.ParseDuration(fmt.Sprintf(`%ds`, offset))
+						//updateTime = updateTime.Add(d)
+						//hour := updateTime.Hour()
+						//hour = int((hour+4)/8)*8 - 4 - hour
+						//d, _ = time.ParseDuration(fmt.Sprintf("%dh", hour))
+						//updateTime = updateTime.Add(d)
+						//d, _ = time.ParseDuration(fmt.Sprintf(`-%ds`, offset))
+						//updateTime = updateTime.Add(d)
 						update = updateTime.Unix()
 					}
 				}

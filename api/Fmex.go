@@ -348,7 +348,7 @@ func getAccountFmex(key, secret string) (account []*model.Account) {
 }
 func getFundingRateFmex(symbol string) (fundingRate float64, updateTime int64) {
 	if symbol == `btcusd_p` {
-		symbol = `.btcusdpi8h`
+		symbol = `.btcusdfr8h`
 	}
 	responseBody := SignedRequestFmex(``, ``, `GET`, `v2/market/indexes`, nil)
 	indexJson, err := util.NewJSON(responseBody)
