@@ -79,7 +79,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountBM, acc
 	a2 := setting.AmountLimit
 	zb := api.GetFundingRate(model.Bitmex, symbol)
 	zf := api.GetFundingRate(model.Fmex, symbol)
-	priceX := setting.PriceX + (zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
+	priceX := setting.PriceX + 1.5*(zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
 	py := priceX
 	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
 		p1 = 0
