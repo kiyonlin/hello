@@ -617,7 +617,9 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 	postData["orderQty"] = amount
 	postData[`price`] = price
 	postData["ordType"] = strings.ToUpper(orderType[0:1]) + orderType[1:]
-	postData[`execInst`] = execInst
+	if execInst != `` {
+		postData[`execInst`] = execInst
+	}
 	response := SignedRequestBitmex(key, secret, `POST`, `/order`, postData)
 	util.Notice(string(response))
 	orderJson, err := util.NewJSON(response)
@@ -648,18 +650,6 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 					fundingRate, err = item["fundingRate"].(json.Number).Float64()
 					updateTime, err := time.Parse(time.RFC3339, item[`fundingTimestamp`].(string))
 					if err == nil {
-						//zone, offset := updateTime.Local().Zone()
-						//if zone != `CST` {
-						//	util.Notice(`time zone local env is not CST!!!!!!`)
-						//}
-						//d, _ := time.ParseDuration(fmt.Sprintf(`%ds`, offset))
-						//updateTime = updateTime.Add(d)
-						//hour := updateTime.Hour()
-						//hour = int((hour+4)/8)*8 - 4 - hour
-						//d, _ = time.ParseDuration(fmt.Sprintf("%dh", hour))
-						//updateTime = updateTime.Add(d)
-						//d, _ = time.ParseDuration(fmt.Sprintf(`-%ds`, offset))
-						//updateTime = updateTime.Add(d)
 						update = updateTime.Unix()
 					}
 				}

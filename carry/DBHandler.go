@@ -292,6 +292,7 @@ func Maintain() {
 	//model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
 	//model.HandlerMap[model.FunctionCarry] = ProcessCarry
+	model.HandlerMap[model.FunctionTurtle] = ProcessTurtle
 	model.HandlerMap[model.FunctionCarry] = ProcessCarrySameTime
 	model.HandlerMap[model.FunctionHang] = ProcessHang
 	model.HandlerMap[model.FunctionRank] = ProcessRank

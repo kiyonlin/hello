@@ -49,8 +49,8 @@ var ProcessCarryOrder = func(market, symbol string) {
 		if bmOrder.DealAmount-fmTakeAmount >= 1 {
 			util.Notice(fmt.Sprintf(`follow place market order %s-%s amount:%f->%f`,
 				bmOrder.OrderSide, orderSide, fmTakeAmount, bmOrder.DealAmount))
-			fmOrder := api.PlaceOrder(``, ``, orderSide, model.OrderTypeMarket, market,
-				symbol, ``, ``, bmOrder.DealPrice, bmOrder.DealAmount-fmTakeAmount, true)
+			fmOrder := api.PlaceOrder(``, ``, orderSide, model.OrderTypeMarket, market, symbol,
+				``, ``, ``, bmOrder.DealPrice, bmOrder.DealAmount-fmTakeAmount, true)
 			if fmOrder != nil && fmOrder.OrderId != `` {
 				fmTakeAmount = bmOrder.DealAmount
 			}
@@ -77,14 +77,14 @@ var ProcessCarryOrder = func(market, symbol string) {
 			} else {
 				if accountFM.Free+accountBM.Free > 1 {
 					fmOrder := api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeMarket, market,
-						symbol, ``, ``, bmOrder.DealPrice, accountFM.Free+accountBM.Free, true)
+						symbol, ``, ``, ``, bmOrder.DealPrice, accountFM.Free+accountBM.Free, true)
 					if fmOrder != nil && fmOrder.OrderId != `` {
 						util.Notice(fmt.Sprintf(`-- -- 扯平仓位 fm:%f bm:%f place order %s %s amount %f`,
 							accountFM.Free, accountBM.Free, fmOrder.OrderSide, fmOrder.OrderId, fmOrder.Amount))
 					}
 				} else if accountFM.Free+accountBM.Free < -1 {
 					fmOrder := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeMarket, market,
-						symbol, ``, ``, bmOrder.DealPrice,
+						symbol, ``, ``, ``, bmOrder.DealPrice,
 						math.Abs(accountFM.Free+accountBM.Free), true)
 					if fmOrder != nil && fmOrder.OrderId != `` {
 						util.Notice(fmt.Sprintf(`-- -- 扯平仓位 fm:%f bm:%f place order %s %s amount %f`,
@@ -166,7 +166,7 @@ var _ = func(ignore, symbol string) {
 					tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
 					tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 				order = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex, symbol,
-					``, ``, price, amount, true)
+					``, ``, ``, price, amount, true)
 			}
 		} else if tickBM.Asks[0].Price-fms1 >= setting.GridPriceDistance-p2 &&
 			fmsa >= setting.RefreshLimitLow {
@@ -179,7 +179,7 @@ var _ = func(ignore, symbol string) {
 					tickBM.Asks[0].Price-setting.GridPriceDistance+p2, tickBM.Bids[0].Price, tickBM.Asks[0].Price,
 					tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 				order = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, symbol,
-					``, ``, price, amount, true)
+					``, ``, ``, price, amount, true)
 			}
 		}
 		if order != nil && order.OrderId != `` {

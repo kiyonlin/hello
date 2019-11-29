@@ -387,8 +387,8 @@ func RefreshAccount(key, secret, market string) {
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType string, price,
-	amount float64, saveDB bool) (order *model.Order) {
+func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam string,
+	price, amount float64, saveDB bool) (order *model.Order) {
 	start := util.GetNowUnixMillion()
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%f price:%f`,
 		orderSide, market, symbol, start, amount, price))
@@ -455,8 +455,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Bitmex:
-		placeOrderBitmex(order, key, secret, orderSide, orderType, `ParticipateDoNotInitiate`,
-			symbol, strPrice, strAmount)
+		placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	}
 	if order.OrderId == "0" || order.OrderId == "" {
 		order.Status = model.CarryStatusFail

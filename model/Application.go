@@ -52,6 +52,7 @@ const OrderSideLiquidateShort = `liquidateShort`
 const AmountTypeContractNumber = `contractnumber`
 const AmountTypeCoinNumber = `coinnumber`
 
+const FunctionTurtle = `turtle`
 const FunctionGrid = `grid`
 const FunctionMaker = `maker`
 const FunctionCarry = `carry`

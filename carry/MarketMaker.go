@@ -155,7 +155,7 @@ var ProcessMake = func(market, symbol string) {
 	}
 	if orderSide != `` {
 		order := api.PlaceOrder(key, secret, orderSide, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, deal.Price, amount, true)
+			setting.AccountType, ``, deal.Price, amount, true)
 		order.Function = model.FunctionMaker
 		time.Sleep(time.Millisecond * 500)
 		api.RefreshAccount(key, secret, market)

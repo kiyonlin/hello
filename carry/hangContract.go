@@ -143,11 +143,11 @@ func createHolding(key, secret, market, symbol string, trend float64,
 		trend, holdingLong, holdingShort))
 	if trend > 0 && setting.AmountLimit-holdingLong+holdingShort > 0 {
 		order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, tick.Asks[0].Price, setting.AmountLimit-holdingLong+holdingShort, true)
+			setting.AccountType, ``, tick.Asks[0].Price, setting.AmountLimit-holdingLong+holdingShort, true)
 	}
 	if trend < 0 && setting.AmountLimit-holdingShort+holdingLong > 0 {
 		order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, tick.Bids[0].Price, setting.AmountLimit-holdingShort+holdingLong, true)
+			setting.AccountType, ``, tick.Bids[0].Price, setting.AmountLimit-holdingShort+holdingLong, true)
 	}
 	if order != nil && order.OrderId != `` {
 		return order
@@ -195,7 +195,7 @@ func revertHolding(key, secret, market, symbol string, deltaBM, delta float64,
 			util.Notice(fmt.Sprintf(`revert long amount:%f at %f long:%f short:%f deltaBM:%f delta:%f low:%f`,
 				amount, tick.Asks[0].Price, holdingLong, holdingShort, deltaBM, delta, setting.RefreshLimitLow))
 			revertOrder = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeLimit, market, symbol,
-				``, setting.AccountType, tick.Asks[0].Price, amount, true)
+				``, setting.AccountType, ``, tick.Asks[0].Price, amount, true)
 		}
 	}
 	if holdingLong < holdingShort && deltaBM-delta > setting.RefreshLimitLow {
@@ -215,7 +215,7 @@ func revertHolding(key, secret, market, symbol string, deltaBM, delta float64,
 			util.Notice(fmt.Sprintf(`revert short amount:%f at %f long:%f short:%f deltaBM:%f delta:%f low:%f`,
 				amount, tick.Bids[0].Price, holdingLong, holdingShort, deltaBM, delta, setting.RefreshLimitLow))
 			revertOrder = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeLimit, market, symbol, ``,
-				setting.AccountType, tick.Bids[0].Price, amount, true)
+				setting.AccountType, ``, tick.Bids[0].Price, amount, true)
 		}
 	}
 	if revertOrder != nil && revertOrder.OrderId != `` {
