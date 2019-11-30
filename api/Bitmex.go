@@ -71,7 +71,6 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		}
 		switch table {
 		case `quote`:
-			//fmt.Println(string(event))
 			go handleQuote(markets, action, data)
 		case `trade`:
 			go handleTrade(markets, action, data)
@@ -593,7 +592,6 @@ func getAccountBitmex(key, secret string, accounts *model.Accounts) {
 	postData := make(map[string]interface{})
 	postData[`count`] = `100`
 	response := SignedRequestBitmex(key, secret, `GET`, `/position`, postData)
-	fmt.Println(string(response))
 	positionJson, err := util.NewJSON(response)
 	if err == nil {
 		positions, err := positionJson.Array()
