@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const POST_ONLY = `ParticipateDoNotInitiate`
+
 var carrySameTiming = false
 var bmLastOrder = &model.Order{}
 
@@ -64,11 +66,14 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 	if bmLastOrder.OrderSide == model.OrderSideSell {
 		price = tickBM.Asks[0].Price
 	}
+	if bmLastOrder.RefreshType == POST_ONLY {
+		price = bmLastOrder.Price
+	}
 	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f`,
 		bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
 		bmLastOrder.Symbol, price, bmLastOrder.Amount-bmLastOrder.DealAmount))
 	bmLastOrder = api.PlaceOrder(``, ``, bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
-		bmLastOrder.Symbol, ``, setting.AccountType, `ParticipateDoNotInitiate`,
+		bmLastOrder.Symbol, ``, setting.AccountType, bmLastOrder.RefreshType,
 		price, bmLastOrder.Amount-bmLastOrder.DealAmount, true)
 }
 
@@ -120,12 +125,13 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	//	tickFM.Bids[0].Amount, tickFM.Asks[0].Amount))
 	if fmb1-tickBM.Asks[0].Price >= setting.GridPriceDistance-p1+tickBM.Asks[0].Price/1000 &&
 		fmbaNew >= setting.RefreshLimitLow {
-		amount := math.Min(math.Min(0.5*fmbaNew, a1), math.Min(setting.GridAmount, tickBM.Asks[0].Amount))
+		amount := math.Min(math.Min(0.5*fmbaNew, a1), math.Min(setting.GridAmount, tickBM.Asks[0].Amount/2))
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceBuyNew, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
 				symbol, ``, setting.AccountType, ``, tickBM.Asks[0].Price, amount, true)
+			bmLastOrder.RefreshType = ``
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
@@ -140,8 +146,9 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceBuy, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
-				symbol, ``, setting.AccountType, `ParticipateDoNotInitiate`,
+				symbol, ``, setting.AccountType, POST_ONLY,
 				tickBM.Bids[0].Price, amount, true)
+			bmLastOrder.RefreshType = POST_ONLY
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
@@ -151,12 +158,13 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 		}
 	} else if tickBM.Bids[0].Price-fms1 >= setting.GridPriceDistance-p2+tickBM.Bids[0].Price/1000 &&
 		fmsaNew >= setting.RefreshLimitLow {
-		amount := math.Min(math.Min(0.5*fmsaNew, a2), math.Min(setting.GridAmount, tickBM.Bids[0].Amount))
+		amount := math.Min(math.Min(0.5*fmsaNew, a2), math.Min(setting.GridAmount, tickBM.Bids[0].Amount/2))
 		if amount > 0 {
 			api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceSellNew, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex,
 				symbol, ``, setting.AccountType, ``, tickBM.Bids[0].Price, amount, true)
+			bmLastOrder.RefreshType = ``
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
@@ -171,8 +179,9 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 			go api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceSell, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex,
-				symbol, ``, setting.AccountType, `ParticipateDoNotInitiate`,
+				symbol, ``, setting.AccountType, POST_ONLY,
 				tickBM.Asks[0].Price, amount, true)
+			bmLastOrder.RefreshType = POST_ONLY
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
