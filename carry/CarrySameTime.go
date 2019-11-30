@@ -66,7 +66,7 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 	if bmLastOrder.OrderSide == model.OrderSideSell {
 		price = tickBM.Asks[0].Price
 	}
-	if bmLastOrder.RefreshType == POST_ONLY {
+	if bmLastOrder.RefreshType == `` {
 		price = bmLastOrder.Price
 	}
 	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f`,

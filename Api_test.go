@@ -67,7 +67,7 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	api.GetMargin(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
+	api.GetMargin(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, `XBt`)
 	//rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
 	//fmt.Println(rate)
 	rate := api.GetFundingRate(model.Fmex, `btcusd_p`)
