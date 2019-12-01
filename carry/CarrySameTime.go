@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const POST_ONLY = `ParticipateDoNotInitiate`
+const PostOnly = `ParticipateDoNotInitiate`
 
 var carrySameTiming = false
 var bmLastOrder = &model.Order{}
@@ -62,16 +62,16 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 	if bmLastOrder.Amount-bmLastOrder.DealAmount < 1 {
 		bmLastOrder = nil
 	}
-	price := tickBM.Bids[0].Price
-	if bmLastOrder.OrderSide == model.OrderSideSell {
-		price = tickBM.Asks[0].Price
+	price := bmLastOrder.Price
+	if bmLastOrder.RefreshType == PostOnly {
+		price = tickBM.Bids[0].Price
+		if bmLastOrder.OrderSide == model.OrderSideSell {
+			price = tickBM.Asks[0].Price
+		}
 	}
-	if bmLastOrder.RefreshType == `` {
-		price = bmLastOrder.Price
-	}
-	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f`,
+	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f orderParam:%s`,
 		bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
-		bmLastOrder.Symbol, price, bmLastOrder.Amount-bmLastOrder.DealAmount))
+		bmLastOrder.Symbol, price, bmLastOrder.Amount-bmLastOrder.DealAmount, bmLastOrder.RefreshType))
 	bmLastOrder = api.PlaceOrder(``, ``, bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
 		bmLastOrder.Symbol, ``, setting.AccountType, bmLastOrder.RefreshType,
 		price, bmLastOrder.Amount-bmLastOrder.DealAmount, true)
@@ -136,8 +136,9 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`new bm order %s at %f amount %f return %s zb %f zf %f px:%f`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX))
+			util.Notice(fmt.Sprintf(`new bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
+				bmLastOrder.RefreshType))
 		}
 	} else if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
 		tickBM.Bids[0].Amount*10 < tickBM.Asks[0].Amount && tickBM.Asks[0].Amount > 700000 {
@@ -146,15 +147,16 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceBuy, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
-				symbol, ``, setting.AccountType, POST_ONLY,
+				symbol, ``, setting.AccountType, PostOnly,
 				tickBM.Bids[0].Price, amount, true)
-			bmLastOrder.RefreshType = POST_ONLY
+			bmLastOrder.RefreshType = PostOnly
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`bm order %s at %f amount %f return %s zb %f zf %f px:%f`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX))
+			util.Notice(fmt.Sprintf(`bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
+				bmLastOrder.RefreshType))
 		}
 	} else if tickBM.Bids[0].Price-fms1 >= setting.GridPriceDistance-p2+tickBM.Bids[0].Price/1000 &&
 		fmsaNew >= setting.RefreshLimitLow {
@@ -169,8 +171,9 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`new bm order %s at %f amount %f return %s zb %f zf %f px:%f`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX))
+			util.Notice(fmt.Sprintf(`new bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
+				bmLastOrder.RefreshType))
 		}
 	} else if tickBM.Asks[0].Price-fms1 >= setting.GridPriceDistance-p2 && fmsa >= setting.RefreshLimitLow &&
 		tickBM.Asks[0].Amount*10 < tickBM.Bids[0].Amount && tickBM.Bids[0].Amount > 700000 {
@@ -179,15 +182,16 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 			go api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceSell, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex,
-				symbol, ``, setting.AccountType, POST_ONLY,
+				symbol, ``, setting.AccountType, PostOnly,
 				tickBM.Asks[0].Price, amount, true)
-			bmLastOrder.RefreshType = POST_ONLY
+			bmLastOrder.RefreshType = PostOnly
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`bm order %s at %f amount %f return %s zb %f zf %f px:%f`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX))
+			util.Notice(fmt.Sprintf(`bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
+				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
+				bmLastOrder.RefreshType))
 		}
 	}
 }
