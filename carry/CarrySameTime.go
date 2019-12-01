@@ -69,12 +69,14 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 			price = tickBM.Asks[0].Price
 		}
 	}
+	refreshType := bmLastOrder.RefreshType
 	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f orderParam:%s`,
 		bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
 		bmLastOrder.Symbol, price, bmLastOrder.Amount-bmLastOrder.DealAmount, bmLastOrder.RefreshType))
 	bmLastOrder = api.PlaceOrder(``, ``, bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
-		bmLastOrder.Symbol, ``, setting.AccountType, bmLastOrder.RefreshType,
+		bmLastOrder.Symbol, ``, setting.AccountType, refreshType,
 		price, bmLastOrder.Amount-bmLastOrder.DealAmount, true)
+	bmLastOrder.RefreshType = refreshType
 }
 
 func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *model.Account,

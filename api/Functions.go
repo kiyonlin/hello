@@ -217,7 +217,7 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 func GetFundingRate(market, symbol string) (fundingRate float64) {
 	rate, expireTime := model.GetFundingRate(market, symbol)
 	now := util.GetNow().Unix()
-	if now < expireTime {
+	if now-60 < expireTime {
 		return rate
 	}
 	util.Notice(fmt.Sprintf(`before update funding %s %s rate %f expire %d`, market, symbol, rate, expireTime))
