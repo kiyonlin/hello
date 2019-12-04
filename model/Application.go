@@ -8,16 +8,18 @@ import (
 	"hello/util"
 	"strings"
 	"sync"
+	"time"
 )
 
 var HandlerMap = make(map[string]CarryHandler)
-var fundingRatelock sync.Mutex
+var infoLock sync.Mutex
 var fundingRate = make(map[string]map[string]float64)     // market - symbol - funding rate
 var fundingRateUpdate = make(map[string]map[string]int64) // market - symbol - update time
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
 var ConnectionResetTime = int64(0)
-
-var CarryInfo string // carry between bitmex and fmex
+var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
+var candles = make(map[string]*Candle)    // market+symbol+period+rfc3339, candle
+var CarryInfo string                      // carry between bitmex and fmex
 
 //const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
@@ -222,9 +224,49 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 	},
 }
 
+func GetBtcBalance(market string, timeBalance time.Time) (balance float64) {
+	infoLock.Lock()
+	defer infoLock.Unlock()
+	if btcBalance == nil {
+		btcBalance = make(map[string]float64)
+	}
+	return btcBalance[market+timeBalance.Format(time.RFC3339)[0:19]]
+}
+
+func SetBtcBalance(market string, timeBalance time.Time, balance float64) {
+	infoLock.Lock()
+	defer infoLock.Unlock()
+	if btcBalance == nil {
+		btcBalance = make(map[string]float64)
+	}
+	btcBalance[market+timeBalance.Format(time.RFC3339)[0:19]] = balance
+}
+
+func GetCandle(market, symbol, period string, timeCandle time.Time) (candle *Candle) {
+	infoLock.Lock()
+	defer infoLock.Unlock()
+	if candles == nil {
+		candles = make(map[string]*Candle)
+	}
+	key := market + symbol + period + timeCandle.Format(time.RFC3339)[0:19]
+	fmt.Println(key + ` get candle`)
+	return candles[key]
+}
+
+func SetCandle(market, symbol, period string, timeCandle time.Time, candle *Candle) {
+	infoLock.Lock()
+	defer infoLock.Unlock()
+	if candles == nil {
+		candles = make(map[string]*Candle)
+	}
+	key := market + symbol + period + timeCandle.Format(time.RFC3339)[0:19]
+	candles[key] = candle
+	fmt.Println(key + ` set candle`)
+}
+
 func GetFundingRate(market, symbol string) (rate float64, updateTime int64) {
-	fundingRatelock.Lock()
-	defer fundingRatelock.Unlock()
+	infoLock.Lock()
+	defer infoLock.Unlock()
 	if fundingRate == nil {
 		fundingRate = make(map[string]map[string]float64)
 	}
@@ -241,8 +283,8 @@ func GetFundingRate(market, symbol string) (rate float64, updateTime int64) {
 }
 
 func SetFundingRate(market, symbol string, rate float64, updateTime int64) {
-	fundingRatelock.Lock()
-	defer fundingRatelock.Unlock()
+	infoLock.Lock()
+	defer infoLock.Unlock()
 	if fundingRate == nil {
 		fundingRate = make(map[string]map[string]float64)
 	}

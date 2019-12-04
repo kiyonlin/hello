@@ -630,11 +630,63 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 	return
 }
 
-func GetMargin(key, secret, currency string) {
+// binSize [1m,5m,1h,1d]
+func getCandlesBitmex(key, secret, symbol, binSize string, startTime time.Time, count int) (
+	candles map[string]*model.Candle) {
+	candles = make(map[string]*model.Candle)
 	postData := make(map[string]interface{})
-	postData[`currency`] = currency
+	symbolBitmex := symbol
+	if symbol == `btcusd_p` {
+		symbolBitmex = `XBTUSD`
+	}
+	postData[`symbol`] = symbolBitmex
+	postData[`reverse`] = `false`
+	postData[`binSize`] = binSize
+	postData[`count`] = strconv.Itoa(count)
+	postData[`startTime`] = startTime.Format(time.RFC3339)
+	response := SignedRequestBitmex(key, secret, `GET`, `/trade/bucketed`, postData)
+	candleJson, err := util.NewJSON(response)
+	if err == nil {
+		candleJsons, err := candleJson.Array()
+		if err == nil {
+			for _, value := range candleJsons {
+				item := value.(map[string]interface{})
+				candle := &model.Candle{Market: model.Bitmex, Symbol: symbol, Period: binSize}
+				if item[`open`] != nil {
+					candle.PriceOpen, _ = item[`open`].(json.Number).Float64()
+				}
+				if item[`close`] != nil {
+					candle.PriceClose, _ = item[`close`].(json.Number).Float64()
+				}
+				if item[`high`] != nil {
+					candle.PriceHigh, _ = item[`high`].(json.Number).Float64()
+				}
+				if item[`low`] != nil {
+					candle.PriceLow, _ = item[`low`].(json.Number).Float64()
+				}
+				if item[`timestamp`] != nil {
+					candle.Start, _ = time.Parse(time.RFC3339, item[`timestamp`].(string))
+					candles[candle.Start.Format(time.RFC3339)] = candle
+				}
+			}
+		}
+	}
+	return
+}
+
+func getBtcBalanceBitmex(key, secret string) (balance float64) {
+	postData := make(map[string]interface{})
+	postData[`currency`] = `XBt`
 	response := SignedRequestBitmex(key, secret, `GET`, `/user/margin`, postData)
-	fmt.Println(string(response))
+	balanceJson, err := util.NewJSON(response)
+	if err == nil {
+		balanceJson = balanceJson.Get(`marginBalance`)
+		if balanceJson != nil {
+			balance, err = balanceJson.Float64()
+			balance = balance / 100000000
+		}
+	}
+	return
 }
 
 func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {

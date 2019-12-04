@@ -9,6 +9,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"testing"
+	"time"
 )
 
 func Test_chan(t *testing.T) {
@@ -67,12 +68,15 @@ func Test_loadOrders(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	api.GetMargin(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, `XBt`)
-	//rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
-	//fmt.Println(rate)
+	today := util.GetNow()
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	rate := api.GetFundingRate(model.Fmex, `btcusd_p`)
 	fmt.Println(rate)
 	rate = api.GetFundingRate(model.Fmex, `btcusd_p`)
+	api.GetCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex,
+		`btcusd_p`, `1d`, util.GetNow())
+	api.GetBtcBalance(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
+
 	fmt.Println(rate)
 	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Fmex, `btcusd_p`, `8330017131911`)

@@ -214,6 +214,54 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 	return nil
 }
 
+func GetCandle(key, secret, market, symbol, period string, timeStart time.Time) (candle *model.Candle) {
+	candle = model.GetCandle(market, symbol, period, timeStart)
+	if candle != nil && candle.N > 0 {
+		return
+	}
+	candle = &model.Candle{}
+	model.AppDB.Where(`market = ? and symbol = ? and period = ? and start = ?`,
+		market, symbol, period, timeStart).First(candle)
+	if candle.N > 0 {
+		return
+	}
+	d, _ := time.ParseDuration(`-` + period)
+	last := timeStart.Add(d)
+	switch market {
+	case model.Bitmex:
+		candles := getCandlesBitmex(key, secret, symbol, period, last, 2)
+		for _, value := range candles {
+			c := model.GetCandle(value.Market, value.Symbol, value.Period, value.Start)
+			if c == nil || c.N == 0 {
+				model.SetCandle(market, symbol, period, value.Start, value)
+			}
+		}
+	}
+	//candleCurrent := model.GetCandle(market, symbol, period, timeStart)
+	//candlePrev := model.GetCandle(market, symbol, period, last)
+	//if candlePrev == nil || candlePrev.N == 0 {
+	//
+	//}
+	model.AppDB.Where(`market = ? and symbol = ? and period = ? and start = ?`,
+		market, symbol, period, last).First(candle)
+	return model.GetCandle(market, symbol, period, timeStart)
+}
+
+func GetBtcBalance(key, secret, market string) (balance float64) {
+	today := util.GetNow()
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	balance = model.GetBtcBalance(market, today)
+	if balance > 0 {
+		return
+	}
+	switch market {
+	case model.Bitmex:
+		balance = getBtcBalanceBitmex(key, secret)
+		model.SetBtcBalance(market, today, balance)
+	}
+	return
+}
+
 func GetFundingRate(market, symbol string) (fundingRate float64) {
 	rate, expireTime := model.GetFundingRate(market, symbol)
 	now := util.GetNow().Unix()
