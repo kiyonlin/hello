@@ -30,7 +30,7 @@ func Test_chan(t *testing.T) {
 
 }
 
-func Test_loadOrders(t *testing.T) {
+func Test_initTurtleN(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	var err error

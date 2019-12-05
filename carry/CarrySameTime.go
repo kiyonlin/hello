@@ -109,22 +109,12 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
 	fmba := getDepthAmountBuy(calcAmtPriceBuy, priceDistance, tickFM)
 	fmsa := getDepthAmountSell(calcAmtPriceSell, priceDistance, tickFM)
-	calcAmtPriceBuyNew := tickBM.Asks[0].Price*1001/1000 + setting.GridPriceDistance - p1 - priceX
-	calcAmtPriceSellNew := tickBM.Bids[0].Price*999/1000 - setting.GridPriceDistance + p2 - priceX
+	calcAmtPriceBuyNew := tickBM.Asks[0].Price*1000.5/1000 + setting.GridPriceDistance - p1 - priceX
+	calcAmtPriceSellNew := tickBM.Bids[0].Price*999.5/1000 - setting.GridPriceDistance + p2 - priceX
 	fmbaNew := getDepthAmountBuy(calcAmtPriceBuyNew, priceDistance, tickFM)
 	fmsaNew := getDepthAmountSell(calcAmtPriceSellNew, priceDistance, tickFM)
 	fmb1 := tickFM.Bids[0].Price + priceX
 	fms1 := tickFM.Asks[0].Price + priceX
-	//util.Info(fmt.Sprintf(`amt fm:%f amt bm:%f p1:%f p2:%f a1:%f a2:%f
-	//		fmba:%f=%f->b0:%f fmsa:%f=a0:%f->%f
-	//		BM价1:b0:%f a0:%f BM量1:b0:%f a0:%f
-	//		FM价1:b0:%f a0:%f FM量1:b0:%f a0:%f`,
-	//	accountFM.Free, accountBM.Free, p1, p2, a1, a2,
-	//	fmba, calcAmtPriceBuy, tickFM.Bids[0].Price, fmsa, tickFM.Asks[0].Price, calcAmtPriceSell,
-	//	tickBM.Bids[0].Price, tickBM.Asks[0].Price,
-	//	tickBM.Bids[0].Amount, tickBM.Asks[0].Amount,
-	//	tickFM.Bids[0].Price, tickFM.Asks[0].Price,
-	//	tickFM.Bids[0].Amount, tickFM.Asks[0].Amount))
 	if fmb1-tickBM.Asks[0].Price >= setting.GridPriceDistance-p1+tickBM.Asks[0].Price/500 &&
 		fmbaNew >= setting.RefreshLimitLow {
 		amount := math.Min(math.Min(0.5*fmbaNew, a1), setting.GridAmount)
