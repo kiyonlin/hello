@@ -39,6 +39,16 @@ func Test_loadOrders(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	yesterday := util.GetNow()
+	yesterday = time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
+	//api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+	//	model.Bitmex, `btcusd_p`, yesterday)
+	for i := 10; i > 0; i-- {
+		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
+		index := yesterday.Add(d)
+		api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+			model.Bitmex, `btcusd_p`, index)
+	}
 	//go carry.CheckPastRefresh()
 	//for true {
 	//	time.Sleep(time.Minute)
@@ -73,8 +83,6 @@ func Test_RefreshAccount(t *testing.T) {
 	rate := api.GetFundingRate(model.Fmex, `btcusd_p`)
 	fmt.Println(rate)
 	rate = api.GetFundingRate(model.Fmex, `btcusd_p`)
-	api.GetCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex,
-		`btcusd_p`, `1d`, util.GetNow())
 	api.GetBtcBalance(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
 
 	fmt.Println(rate)

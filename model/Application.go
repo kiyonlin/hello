@@ -249,7 +249,6 @@ func GetCandle(market, symbol, period string, timeCandle time.Time) (candle *Can
 		candles = make(map[string]*Candle)
 	}
 	key := market + symbol + period + timeCandle.Format(time.RFC3339)[0:19]
-	fmt.Println(key + ` get candle`)
 	return candles[key]
 }
 
@@ -261,7 +260,6 @@ func SetCandle(market, symbol, period string, timeCandle time.Time, candle *Cand
 	}
 	key := market + symbol + period + timeCandle.Format(time.RFC3339)[0:19]
 	candles[key] = candle
-	fmt.Println(key + ` set candle`)
 }
 
 func GetFundingRate(market, symbol string) (rate float64, updateTime int64) {

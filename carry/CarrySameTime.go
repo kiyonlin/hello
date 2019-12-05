@@ -125,14 +125,14 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	//	tickBM.Bids[0].Amount, tickBM.Asks[0].Amount,
 	//	tickFM.Bids[0].Price, tickFM.Asks[0].Price,
 	//	tickFM.Bids[0].Amount, tickFM.Asks[0].Amount))
-	if fmb1-tickBM.Asks[0].Price >= setting.GridPriceDistance-p1+tickBM.Asks[0].Price/1000 &&
+	if fmb1-tickBM.Asks[0].Price >= setting.GridPriceDistance-p1+tickBM.Asks[0].Price/500 &&
 		fmbaNew >= setting.RefreshLimitLow {
-		amount := math.Min(math.Min(0.5*fmbaNew, a1), math.Min(setting.GridAmount, tickBM.Asks[0].Amount/2))
+		amount := math.Min(math.Min(0.5*fmbaNew, a1), setting.GridAmount)
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceBuyNew, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Bitmex,
-				symbol, ``, setting.AccountType, ``, tickBM.Asks[0].Price, amount, true)
+				symbol, ``, setting.AccountType, ``, tickBM.Asks[0].Price*1.001, amount, true)
 			bmLastOrder.RefreshType = ``
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)
@@ -160,14 +160,14 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
 				bmLastOrder.RefreshType))
 		}
-	} else if tickBM.Bids[0].Price-fms1 >= setting.GridPriceDistance-p2+tickBM.Bids[0].Price/1000 &&
+	} else if tickBM.Bids[0].Price-fms1 >= setting.GridPriceDistance-p2+tickBM.Bids[0].Price/500 &&
 		fmsaNew >= setting.RefreshLimitLow {
-		amount := math.Min(math.Min(0.5*fmsaNew, a2), math.Min(setting.GridAmount, tickBM.Bids[0].Amount/2))
+		amount := math.Min(math.Min(0.5*fmsaNew, a2), setting.GridAmount)
 		if amount > 0 {
 			api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Fmex,
 				symbol, ``, setting.AccountType, ``, calcAmtPriceSellNew, amount, true)
 			bmLastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Bitmex,
-				symbol, ``, setting.AccountType, ``, tickBM.Bids[0].Price, amount, true)
+				symbol, ``, setting.AccountType, ``, tickBM.Bids[0].Price*0.999, amount, true)
 			bmLastOrder.RefreshType = ``
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
 				time.Sleep(time.Millisecond * 500)

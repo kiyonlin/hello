@@ -214,37 +214,64 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 	return nil
 }
 
-func GetCandle(key, secret, market, symbol, period string, timeStart time.Time) (candle *model.Candle) {
-	candle = model.GetCandle(market, symbol, period, timeStart)
+func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (candle *model.Candle) {
+	candle = model.GetCandle(market, symbol, `1d`, timeCandle)
 	if candle != nil && candle.N > 0 {
 		return
 	}
 	candle = &model.Candle{}
 	model.AppDB.Where(`market = ? and symbol = ? and period = ? and start = ?`,
-		market, symbol, period, timeStart).First(candle)
+		market, symbol, `1d`, timeCandle.String()[0:19]).First(candle)
 	if candle.N > 0 {
 		return
 	}
-	d, _ := time.ParseDuration(`-` + period)
-	last := timeStart.Add(d)
+	dBegin, _ := time.ParseDuration(`-456h`)
+	dEnd, _ := time.ParseDuration(`24h`)
+	begin := timeCandle.Add(dBegin)
+	end := timeCandle.Add(dEnd)
+	fmt.Println(begin.String() + `api========>` + end.String())
 	switch market {
 	case model.Bitmex:
-		candles := getCandlesBitmex(key, secret, symbol, period, last, 2)
+		candles := getCandlesBitmex(key, secret, symbol, `1d`, begin, end, 20)
 		for _, value := range candles {
 			c := model.GetCandle(value.Market, value.Symbol, value.Period, value.Start)
 			if c == nil || c.N == 0 {
-				model.SetCandle(market, symbol, period, value.Start, value)
+				candleDB := &model.Candle{}
+				model.AppDB.Where(`market = ? and symbol = ? and period = ? and start = ?`,
+					market, symbol, `1d`, value.Start.String()[0:10]).First(candleDB)
+				candleDB.Start = time.Date(candleDB.Start.Year(), candleDB.Start.Month(), candleDB.Start.Day(),
+					0, 0, 0, 0, util.GetNow().Location())
+				if candleDB.N > 0 {
+					value.N = candleDB.N
+				}
+				model.SetCandle(market, symbol, `1d`, value.Start, value)
 			}
 		}
 	}
-	//candleCurrent := model.GetCandle(market, symbol, period, timeStart)
-	//candlePrev := model.GetCandle(market, symbol, period, last)
-	//if candlePrev == nil || candlePrev.N == 0 {
-	//
-	//}
-	model.AppDB.Where(`market = ? and symbol = ? and period = ? and start = ?`,
-		market, symbol, period, last).First(candle)
-	return model.GetCandle(market, symbol, period, timeStart)
+	candle = model.GetCandle(market, symbol, `1d`, timeCandle)
+	if candle == nil {
+		util.Notice(fmt.Sprintf(`error: can not get candle %s %s`, `1d`, timeCandle.String()))
+		return
+	}
+	candle.N = (candle.PriceHigh - candle.PriceLow) / 20
+	for i := 1; i < 20; i++ {
+		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
+		index := timeCandle.Add(d)
+		candleCurrent := model.GetCandle(market, symbol, `1d`, index)
+		if candleCurrent == nil {
+			util.Notice(fmt.Sprintf(`error: can not get candle %s %s`, `1d`, index.String()))
+			continue
+		}
+		if candleCurrent.N > 0 {
+			candle.N += candleCurrent.N / 20
+		} else {
+			candle.N = candle.N + (candleCurrent.PriceHigh-candleCurrent.PriceLow)/20
+		}
+	}
+	fmt.Println(candle.Start.String())
+	model.AppDB.Save(&candle)
+	model.SetCandle(market, symbol, `1d`, timeCandle, candle)
+	return candle
 }
 
 func GetBtcBalance(key, secret, market string) (balance float64) {

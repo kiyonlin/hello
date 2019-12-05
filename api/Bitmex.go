@@ -631,7 +631,7 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 }
 
 // binSize [1m,5m,1h,1d]
-func getCandlesBitmex(key, secret, symbol, binSize string, startTime time.Time, count int) (
+func getCandlesBitmex(key, secret, symbol, binSize string, startTime, endTime time.Time, count int) (
 	candles map[string]*model.Candle) {
 	candles = make(map[string]*model.Candle)
 	postData := make(map[string]interface{})
@@ -644,6 +644,7 @@ func getCandlesBitmex(key, secret, symbol, binSize string, startTime time.Time, 
 	postData[`binSize`] = binSize
 	postData[`count`] = strconv.Itoa(count)
 	postData[`startTime`] = startTime.Format(time.RFC3339)
+	postData[`endTime`] = endTime.Format(time.RFC3339)
 	response := SignedRequestBitmex(key, secret, `GET`, `/trade/bucketed`, postData)
 	candleJson, err := util.NewJSON(response)
 	if err == nil {
@@ -666,6 +667,9 @@ func getCandlesBitmex(key, secret, symbol, binSize string, startTime time.Time, 
 				}
 				if item[`timestamp`] != nil {
 					candle.Start, _ = time.Parse(time.RFC3339, item[`timestamp`].(string))
+					candle.Start = time.Date(candle.Start.Year(), candle.Start.Month(), candle.Start.Day(),
+						candle.Start.Hour(), candle.Start.Minute(), candle.Start.Second(), candle.Start.Nanosecond(),
+						util.GetNow().Location())
 					candles[candle.Start.Format(time.RFC3339)] = candle
 				}
 			}
