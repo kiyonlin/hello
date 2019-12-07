@@ -97,7 +97,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
 		priceX -= 5 * p2
-	} else if accountFM.Free < setting.AmountLimit/-10 && accountFM.Free > setting.AmountLimit/10 {
+	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
 		p1 = accountFM.Free / setting.AmountLimit
 		p2 = 0
 		a1 = setting.AmountLimit - accountBM.Free
