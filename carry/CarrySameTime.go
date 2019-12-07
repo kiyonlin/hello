@@ -22,7 +22,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	startTime := util.GetNowUnixMillion()
 	_, tickBM := model.AppMarkets.GetBidAsk(symbol, model.Bitmex)
 	_, tickFM := model.AppMarkets.GetBidAsk(symbol, model.Fmex)
-	//accountBM := model.AppAccounts.GetAccount(model.Bitmex, symbol)
+	accountBM := model.AppAccounts.GetAccount(model.Bitmex, symbol)
 	accountFM := model.AppAccounts.GetAccount(model.Fmex, symbol)
 	if accountFM == nil {
 		api.RefreshAccount(``, ``, model.Fmex)
@@ -30,7 +30,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		return
 	}
 	if tickFM == nil || tickBM == nil || tickFM.Asks == nil || tickFM.Bids == nil || tickBM.Asks == nil ||
-		tickBM.Bids == nil {
+		tickBM.Bids == nil || accountBM == nil {
 		util.Notice(`error2 fm/bm tick or account is nil`)
 		return
 	}
@@ -55,7 +55,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
 		return
 	}
-	placeBothOrders(symbol, tickBM, tickFM, accountFM, setting)
+	placeBothOrders(symbol, tickBM, tickFM, accountFM, accountBM, setting)
 }
 
 func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
@@ -82,7 +82,7 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 }
 
 func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *model.Account,
-	setting *model.Setting) {
+	accountBM *model.Account, setting *model.Setting) {
 	p1 := 0.0
 	p2 := 0.0
 	a1 := setting.AmountLimit
@@ -91,18 +91,18 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	zf := api.GetFundingRate(model.Fmex, symbol)
 	priceX := setting.PriceX + 1.5*(zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
 	py := priceX
-	if accountFM.Free > setting.AmountLimit/10 && -1*accountFM.Free < setting.AmountLimit/-10 {
+	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
 		p1 = 0
-		p2 = setting.GridPriceDistance * -1 * accountFM.Free / setting.AmountLimit
+		p2 = accountBM.Free / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
-		priceX -= 3 * p2
-	} else if accountFM.Free < setting.AmountLimit/-10 && -1*accountFM.Free > setting.AmountLimit/10 {
-		p1 = setting.GridPriceDistance * accountFM.Free / setting.AmountLimit
+		priceX -= 5 * p2
+	} else if accountFM.Free < setting.AmountLimit/-10 && accountFM.Free > setting.AmountLimit/10 {
+		p1 = accountFM.Free / setting.AmountLimit
 		p2 = 0
-		a1 = setting.AmountLimit + accountFM.Free
-		a2 = -1 * accountFM.Free
-		priceX += 3 * p1
+		a1 = setting.AmountLimit - accountBM.Free
+		a2 = accountBM.Free
+		priceX += 5 * p1
 	}
 	model.CarryInfo = fmt.Sprintf("[搬砖参数] zb:%f zf:%f p1:%f p2:%f py:%f px:%f abm:%f afm:%f\n",
 		zb, zf, p1, p2, py, priceX, -1*accountFM.Free, accountFM.Free)
