@@ -93,10 +93,7 @@ func parseAccount(account *model.Account, item map[string]interface{}) {
 		return
 	}
 	if item[`symbol`] != nil {
-		switch item[`symbol`].(string) {
-		case `XBTUSD`:
-			account.Currency = `btcusd_p`
-		}
+		account.Currency = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
 	}
 	if item[`currentQty`] != nil {
 		free, err := item[`currentQty`].(json.Number).Float64()
@@ -121,10 +118,7 @@ func parseQuote(item map[string]interface{}) (bid, ask *model.Tick, quoteTime ti
 	bid = &model.Tick{Side: model.OrderSideBuy}
 	ask = &model.Tick{Side: model.OrderSideSell}
 	if item[`symbol`] != nil {
-		switch item[`symbol`].(string) {
-		case `XBTUSD`:
-			symbol = `btcusd_p`
-		}
+		symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
 		bid.Symbol = symbol
 		ask.Symbol = symbol
 	}
@@ -164,10 +158,7 @@ func parseTick(item map[string]interface{}) (tick *model.Tick) {
 	}
 	tick = &model.Tick{}
 	if item[`symbol`] != nil {
-		switch item[`symbol`].(string) {
-		case `XBTUSD`:
-			tick.Symbol = `btcusd_p`
-		}
+		tick.Symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
 	}
 	if item[`id`] != nil {
 		id, err := item[`id`].(json.Number).Int64()
@@ -198,12 +189,7 @@ func parseOrderBM(order *model.Order, item map[string]interface{}) {
 		order.OrderId = item[`orderID`].(string)
 	}
 	if item[`symbol`] != nil {
-		symbol := item[`symbol`].(string)
-		switch symbol {
-		case `XBTUSD`:
-			symbol = `btcusd_p`
-		}
-		order.Symbol = symbol
+		order.Symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
 	}
 	if item[`side`] != nil {
 		order.OrderSide = strings.ToLower(item[`side`].(string))
@@ -480,11 +466,7 @@ func handleTrade(markets *model.Markets, action string, data []interface{}) {
 				}
 			}
 			if item[`symbol`] != nil {
-				switch item[`symbol`].(string) {
-				case `XBTUSD`:
-					deal.Symbol = `btcusd_p`
-
-				}
+				deal.Symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
 			}
 			if item[`side`] != nil {
 				deal.Side = item[`side`].(string)
@@ -566,10 +548,7 @@ func CancelOrderBitmex(key, secret, orderId string) (result bool, errCode, msg s
 func queryOrderBitmex(key, secret, symbol, orderId string) (orders []*model.Order) {
 	orders = make([]*model.Order, 0)
 	postData := make(map[string]interface{})
-	switch symbol {
-	case `btcusd_p`:
-		symbol = `XBTUSD`
-	}
+	symbol = model.DialectSymbol[model.Bitmex][symbol]
 	postData[`symbol`] = symbol
 	postData[`reverse`] = `true`
 	postData[`filter`] = fmt.Sprintf(`{"orderID":"%s"}`, orderId)
@@ -607,9 +586,7 @@ func getAccountBitmex(key, secret string, accounts *model.Accounts) {
 
 func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, execInst, symbol, price, amount string) {
 	postData := make(map[string]interface{})
-	if symbol == `btcusd_p` {
-		symbol = `XBTUSD`
-	}
+	symbol = model.DialectSymbol[model.Bitmex][symbol]
 	postData["symbol"] = symbol
 	postData["side"] = strings.ToUpper(orderSide[0:1]) + orderSide[1:]
 	postData["orderQty"] = amount
@@ -635,11 +612,8 @@ func getCandlesBitmex(key, secret, symbol, binSize string, startTime, endTime ti
 	candles map[string]*model.Candle) {
 	candles = make(map[string]*model.Candle)
 	postData := make(map[string]interface{})
-	symbolBitmex := symbol
-	if symbol == `btcusd_p` {
-		symbolBitmex = `XBTUSD`
-	}
-	postData[`symbol`] = symbolBitmex
+	symbol = model.DialectSymbol[model.Bitmex][symbol]
+	postData[`symbol`] = symbol
 	postData[`reverse`] = `false`
 	postData[`binSize`] = binSize
 	postData[`count`] = strconv.Itoa(count)
@@ -695,9 +669,7 @@ func getBtcBalanceBitmex(key, secret string) (balance float64) {
 
 func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 	postData := make(map[string]interface{})
-	if symbol == `btcusd_p` {
-		symbol = `XBTUSD`
-	}
+	symbol = model.DialectSymbol[model.Bitmex][symbol]
 	postData[`symbol`] = symbol
 	response := SignedRequestBitmex(``, ``, `GET`, `/instrument`, postData)
 	instrumentJson, err := util.NewJSON(response)

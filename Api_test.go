@@ -76,24 +76,15 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
-	model.NewConfig()
-	_ = configor.Load(model.AppConfig, "./config.yml")
-	today := util.GetNow()
-	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	rate := api.GetFundingRate(model.Fmex, `btcusd_p`)
-	fmt.Println(rate)
-	rate = api.GetFundingRate(model.Fmex, `btcusd_p`)
-	api.GetBtcBalance(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
-
-	fmt.Println(rate)
-	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-	//	model.Fmex, `btcusd_p`, `8330017131911`)
-	//api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`, model.Bitmex)
-	//order := api.QueryOrderById(`HHCJIVMpxYEahfxGZH9NoFzD`,
-	//	`T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-	//	model.Bitmex, `btcusd_p`, `c05bea31-932c-7d9b-2339-6d322e796b56`)
-	//order := api.PlaceOrder(`82330bc7090f43a287994f0781f7ff58`, `6d5e010418d247b3a21dcc766566036d`,
-	//	model.OrderSideBuy, model.OrderTypeLimit, model.Fmex, `btcusd_p`, ``, ``,
-	//	7777, 1, true)
+	a := 9
+	b := 4
+	sum := a + b // 求和
+	sub := a - b //做差
+	mul := a * b // 乘法
+	div := a / b // 除
+	fmt.Println(a, "+", b, "=", sum)
+	fmt.Println(sub, mul, div)
+	mod := a % b
+	fmt.Println(mod)
 
 }

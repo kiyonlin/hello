@@ -15,12 +15,14 @@ import (
 
 func UnGzip(byte []byte) []byte {
 	r, err := gzip.NewReader(bytes.NewBuffer(byte))
-	defer r.Close()
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
 	}
 	undatas, _ := ioutil.ReadAll(r)
+	if r != nil {
+		r.Close()
+	}
 	return undatas
 }
 func ToJson(params *url.Values) string {
@@ -69,13 +71,18 @@ func FormatNum(input float64, decimal float64) (num float64, str string) {
 		base := float64(int(math.Round(input*2))) / 2
 		return FormatNum(base, 1)
 	}
+	if decimal == 1.5 {
+		base := float64(int(math.Round(input*20))) / 20
+		return FormatNum(base, 2)
+	}
 	format := `%.` + strconv.Itoa(int(decimal)) + `f`
 	str = fmt.Sprintf(format, input)
 	num, _ = strconv.ParseFloat(str, 64)
 	return num, str
 }
 
-func StartMidNightTimer(f func()) {
+//StartMidNightTimer
+func _(f func()) {
 	go func() {
 		for {
 			now := time.Now()

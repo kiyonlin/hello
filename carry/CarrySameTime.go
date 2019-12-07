@@ -109,8 +109,8 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
 	fmba := getDepthAmountBuy(calcAmtPriceBuy, priceDistance, tickFM)
 	fmsa := getDepthAmountSell(calcAmtPriceSell, priceDistance, tickFM)
-	calcAmtPriceBuyNew := tickBM.Asks[0].Price*1000.5/1000 + setting.GridPriceDistance - p1 - priceX
-	calcAmtPriceSellNew := tickBM.Bids[0].Price*999.5/1000 - setting.GridPriceDistance + p2 - priceX
+	calcAmtPriceBuyNew := tickBM.Asks[0].Price*1002/1000 + setting.GridPriceDistance - p1 - priceX
+	calcAmtPriceSellNew := tickBM.Bids[0].Price*998/1000 - setting.GridPriceDistance + p2 - priceX
 	fmbaNew := getDepthAmountBuy(calcAmtPriceBuyNew, priceDistance, tickFM)
 	fmsaNew := getDepthAmountSell(calcAmtPriceSellNew, priceDistance, tickFM)
 	fmb1 := tickFM.Bids[0].Price + priceX
@@ -128,9 +128,10 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`new bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
-				bmLastOrder.RefreshType))
+			util.Notice(fmt.Sprintf(`情况1 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
+				fmb1:%f bmAsk0:%f p1:%f fmba:%f`,
+				bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
+				bmLastOrder.RefreshType, fmb1, tickBM.Asks[0].Price, p1, fmbaNew))
 		}
 	} else if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
 		tickBM.Bids[0].Amount*7 < tickBM.Asks[0].Amount && tickBM.Asks[0].Amount > 700000 {
@@ -146,9 +147,10 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
-				bmLastOrder.RefreshType))
+			util.Notice(fmt.Sprintf(`情况2 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
+				fmb1:%f bmBid0:%f p1:%f fmba:%f bmB0Amt:%f bmA0Amt:%f`,
+				bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX, bmLastOrder.RefreshType,
+				fmb1, tickBM.Bids[0].Price, p1, fmba, tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 		}
 	} else if tickBM.Bids[0].Price-fms1 >= setting.GridPriceDistance-p2+tickBM.Bids[0].Price/500 &&
 		fmsaNew >= setting.RefreshLimitLow {
@@ -163,9 +165,10 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`new bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
-				bmLastOrder.RefreshType))
+			util.Notice(fmt.Sprintf(`情况3 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
+				fms1:%f, bmb0:%f p2:%f`,
+				bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
+				bmLastOrder.RefreshType, fms1, tickBM.Bids[0].Price, p2))
 		}
 	} else if tickBM.Asks[0].Price-fms1 >= setting.GridPriceDistance-p2 && fmsa >= setting.RefreshLimitLow &&
 		tickBM.Asks[0].Amount*7 < tickBM.Bids[0].Amount && tickBM.Bids[0].Amount > 700000 {
@@ -181,9 +184,10 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
-			util.Notice(fmt.Sprintf(`bm order %s at %f amount %f return %s zb %f zf %f px:%f orderParam:%s`,
-				bmLastOrder.OrderSide, bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
-				bmLastOrder.RefreshType))
+			util.Notice(fmt.Sprintf(`情况4 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
+				bmAsk0:%f fms1:%f p2:%f fmsa:%f bmB0Amt:%f bmA0Amt:%f`,
+				bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX, bmLastOrder.RefreshType,
+				tickBM.Asks[0].Price, fms1, p2, fmsa, tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 		}
 	}
 }

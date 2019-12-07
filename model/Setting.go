@@ -47,6 +47,15 @@ func GetFunctionMarkets(function string) []string {
 	}
 	return markets
 }
+func SetSetting(function, market, symbol string, setting *Setting) {
+	if marketSymbolSetting[function] == nil {
+		marketSymbolSetting[function] = make(map[string]map[string]*Setting)
+	}
+	if marketSymbolSetting[function][market] == nil {
+		marketSymbolSetting[function][market] = make(map[string]*Setting)
+	}
+	marketSymbolSetting[function][market][symbol] = setting
+}
 
 func GetSetting(function, market, symbol string) *Setting {
 	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {

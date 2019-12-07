@@ -130,6 +130,19 @@ type Config struct {
 	UpdatePriceTime map[string]int64   // symbol -time
 }
 
+var DialectSymbol = map[string]map[string]string{ // market - standard symbol - dialect symbol
+	Bitmex: {
+		`btcusd_p`: `XBTUSD`,
+		`ethusd_p`: `ETHUSD`,
+	},
+}
+
+var StandardSymbol = map[string]map[string]string{ // market - dialect symbol - standard symbol
+	Bitmex: {
+		`XBTUSD`: `btcusd_p`,
+		`ETHUSD`: `ethusd_p`,
+	},
+}
 var dictMap = map[string]map[string]string{ // market - union name - market name
 	Fcoin: {
 		OrderTypeLimit:  `limit`,

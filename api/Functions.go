@@ -45,6 +45,8 @@ func GetMinAmount(market, symbol string) float64 {
 		switch symbol {
 		case `btcusd_p`:
 			return 1
+		case `ethusd_p`:
+			return 1
 		}
 
 	}
@@ -92,6 +94,8 @@ func GetPriceDecimal(market, symbol string) float64 {
 		switch symbol {
 		case `btcusd_p`:
 			return 0.5
+		case `ethusd_p`:
+			return 1.5
 		}
 	}
 	return 8
@@ -126,6 +130,8 @@ func GetAmountDecimal(market, symbol string) float64 {
 	case model.Bitmex:
 		switch symbol {
 		case `btcusd_p`:
+			return 0
+		case `ethusd_p`:
 			return 0
 		}
 	}
@@ -229,7 +235,7 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 	dEnd, _ := time.ParseDuration(`24h`)
 	begin := timeCandle.Add(dBegin)
 	end := timeCandle.Add(dEnd)
-	fmt.Println(begin.String() + `api========>` + end.String())
+	//fmt.Println(begin.String() + `api========>` + end.String())
 	switch market {
 	case model.Bitmex:
 		candles := getCandlesBitmex(key, secret, symbol, `1d`, begin, end, 20)
