@@ -63,16 +63,18 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 		bmLastOrder = nil
 	}
 	price := bmLastOrder.Price
-	if bmLastOrder.RefreshType == PostOnly {
+	priceType := `保持价格`
+	if bmLastOrder.RefreshType == PostOnly && bmLastOrder.OrderId != `` {
 		price = tickBM.Bids[0].Price
 		if bmLastOrder.OrderSide == model.OrderSideSell {
 			price = tickBM.Asks[0].Price
 		}
+		priceType = `买卖1价格`
 	}
 	refreshType := bmLastOrder.RefreshType
-	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f orderParam:%s`,
-		bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
-		bmLastOrder.Symbol, price, bmLastOrder.Amount-bmLastOrder.DealAmount, bmLastOrder.RefreshType))
+	util.Notice(fmt.Sprintf(`complement last bm order %s %s %s %s %f %f orderParam:<%s> %s`,
+		bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market, bmLastOrder.Symbol,
+		price, bmLastOrder.Amount-bmLastOrder.DealAmount, bmLastOrder.RefreshType, priceType))
 	bmLastOrder = api.PlaceOrder(``, ``, bmLastOrder.OrderSide, bmLastOrder.OrderType, bmLastOrder.Market,
 		bmLastOrder.Symbol, ``, setting.AccountType, refreshType,
 		price, bmLastOrder.Amount-bmLastOrder.DealAmount, true)
