@@ -5,6 +5,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"time"
 )
 
@@ -83,7 +84,56 @@ var ProcessTurtle = func(market, symbol string) {
 	if setting == nil {
 		return
 	}
-	fmt.Println(turtleData.amount)
+	currentN := math.Round(setting.Chance)
+	var order *model.Order
+	if currentN == 0 { // check to open
+		if tick.Asks[0].Price > turtleData.highDays20 {
+			order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeMarket, market, symbol,
+				``, setting.AccountType, ``, tick.Asks[0].Price, turtleData.amount, false)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
+				setting.Chance = 1
+				setting.GridAmount = turtleData.amount
+			}
+		}
+		if tick.Bids[0].Price < turtleData.lowDays20 {
+			order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeMarket, market, symbol,
+				``, setting.AccountType, ``, tick.Bids[0].Price, turtleData.amount, false)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
+				setting.Chance = -1
+				setting.GridAmount = turtleData.amount
+			}
+		}
+	} else if currentN > 0 {
+		// 加仓一个单位
+		if tick.Asks[0].Price > setting.PriceX+turtleData.n/2 && setting.Chance < setting.AmountLimit {
+			order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeMarket, market, symbol,
+				``, setting.AccountType, ``, tick.Asks[0].Price, turtleData.amount, false)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
+				setting.Chance = setting.Chance + 1
+				setting.GridAmount = setting.GridAmount + turtleData.amount
+			}
+		}
+		if tick.Bids[0].Price < turtleData.lowDays10 || tick.Bids[0].Price < setting.PriceX-2*turtleData.n { // 平多
+
+		}
+	} else if currentN < 0 {
+		// 加仓一个单位
+		if tick.Bids[0].Price < setting.PriceX-turtleData.n/2 && setting.Chance < setting.AmountLimit {
+			//order = api.PlaceOrder()
+		}
+		if tick.Asks[0].Price > turtleData.highDays10 || tick.Asks[0].Price > setting.PriceX+2*turtleData.n { // 平空
+
+		}
+	}
+	if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
+		setting.PriceX = order.DealPrice // TO DO check deal amount, price for market price
+		model.SetSetting(model.FunctionTurtle, market, symbol, setting)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+			`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+		order.RefreshType = model.FunctionTurtle
+		model.AppDB.Save(&order)
+	}
 
 	model.SetSetting(model.FunctionTurtle, market, symbol, setting)
 }

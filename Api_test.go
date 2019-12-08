@@ -8,6 +8,7 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"math"
 	"testing"
 	"time"
 )
@@ -76,15 +77,7 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
-	a := 9
-	b := 4
-	sum := a + b // 求和
-	sub := a - b //做差
-	mul := a * b // 乘法
-	div := a / b // 除
-	fmt.Println(a, "+", b, "=", sum)
-	fmt.Println(sub, mul, div)
-	mod := a % b
-	fmt.Println(mod)
+	a := 1.999
+	fmt.Println(math.Round(a))
 
 }

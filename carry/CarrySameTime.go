@@ -105,7 +105,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 		priceX += 5 * p1
 	}
 	model.CarryInfo = fmt.Sprintf("[搬砖参数] zb:%f zf:%f p1:%f p2:%f py:%f px:%f abm:%f afm:%f\n",
-		zb, zf, p1, p2, py, priceX, -1*accountFM.Free, accountFM.Free)
+		zb, zf, p1, p2, py, priceX, accountBM.Free, accountFM.Free)
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
@@ -117,8 +117,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	fmsaNew := getDepthAmountSell(calcAmtPriceSellNew, priceDistance, tickFM)
 	fmb1 := tickFM.Bids[0].Price + priceX
 	fms1 := tickFM.Asks[0].Price + priceX
-	if fmb1-tickBM.Asks[0].Price >= setting.GridPriceDistance-p1+tickBM.Asks[0].Price/500 &&
-		fmbaNew >= setting.RefreshLimitLow {
+	if fmb1 >= calcAmtPriceBuyNew+priceX && fmbaNew >= setting.RefreshLimitLow {
 		amount := math.Min(math.Min(0.5*fmbaNew, a1), setting.GridAmount)
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, model.Fmex,
@@ -135,7 +134,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
 				bmLastOrder.RefreshType, fmb1, tickBM.Asks[0].Price, p1, fmbaNew))
 		}
-	} else if fmb1-tickBM.Bids[0].Price >= setting.GridPriceDistance-p1 && fmba >= setting.RefreshLimitLow &&
+	} else if fmb1 >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
 		tickBM.Bids[0].Amount*7 < tickBM.Asks[0].Amount && tickBM.Asks[0].Amount > 700000 {
 		amount := math.Min(math.Min(fmba*0.5, a1), setting.GridAmount)
 		if amount > 1 {
@@ -154,8 +153,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX, bmLastOrder.RefreshType,
 				fmb1, tickBM.Bids[0].Price, p1, fmba, tickBM.Bids[0].Amount, tickBM.Asks[0].Amount))
 		}
-	} else if tickBM.Bids[0].Price-fms1 >= setting.GridPriceDistance-p2+tickBM.Bids[0].Price/500 &&
-		fmsaNew >= setting.RefreshLimitLow {
+	} else if fms1 <= calcAmtPriceSellNew+priceX && fmsaNew >= setting.RefreshLimitLow {
 		amount := math.Min(math.Min(0.5*fmsaNew, a2), setting.GridAmount)
 		if amount > 0 {
 			api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, model.Fmex,
@@ -172,7 +170,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				bmLastOrder.Price, bmLastOrder.Amount, bmLastOrder.OrderId, zb, zf, priceX,
 				bmLastOrder.RefreshType, fms1, tickBM.Bids[0].Price, p2))
 		}
-	} else if tickBM.Asks[0].Price-fms1 >= setting.GridPriceDistance-p2 && fmsa >= setting.RefreshLimitLow &&
+	} else if fms1 <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
 		tickBM.Asks[0].Amount*7 < tickBM.Bids[0].Amount && tickBM.Bids[0].Amount > 700000 {
 		amount := math.Min(math.Min(fmsa*0.5, a2), setting.GridAmount)
 		if amount > 1 {
