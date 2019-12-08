@@ -22,7 +22,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	startTime := util.GetNowUnixMillion()
 	_, tickBM := model.AppMarkets.GetBidAsk(symbol, model.Bitmex)
 	_, tickFM := model.AppMarkets.GetBidAsk(symbol, model.Fmex)
-	accountBM := model.AppAccounts.GetAccount(model.Bitmex, symbol)
+	//accountBM := model.AppAccounts.GetAccount(model.Bitmex, symbol)
 	accountFM := model.AppAccounts.GetAccount(model.Fmex, symbol)
 	if accountFM == nil {
 		api.RefreshAccount(``, ``, model.Fmex)
@@ -30,7 +30,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		return
 	}
 	if tickFM == nil || tickBM == nil || tickFM.Asks == nil || tickFM.Bids == nil || tickBM.Asks == nil ||
-		tickBM.Bids == nil || accountBM == nil {
+		tickBM.Bids == nil {
 		util.Notice(`error2 fm/bm tick or account is nil`)
 		return
 	}
@@ -55,7 +55,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
 		return
 	}
-	placeBothOrders(symbol, tickBM, tickFM, accountFM, accountBM, setting)
+	placeBothOrders(symbol, tickBM, tickFM, accountFM, setting)
 }
 
 func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
@@ -81,8 +81,8 @@ func reOrder(tickBM *model.BidAsk, setting *model.Setting) {
 	bmLastOrder.RefreshType = refreshType
 }
 
-func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *model.Account,
-	accountBM *model.Account, setting *model.Setting) {
+// accountBM.free被设置成-1 * accountFM.free
+func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *model.Account, setting *model.Setting) {
 	p1 := 0.0
 	p2 := 0.0
 	a1 := setting.AmountLimit
@@ -91,21 +91,21 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	zf := api.GetFundingRate(model.Fmex, symbol)
 	priceX := setting.PriceX + 1.5*(zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
 	py := priceX
-	if accountFM.Free > setting.AmountLimit/10 && accountBM.Free < setting.AmountLimit/-10 {
+	if accountFM.Free > setting.AmountLimit/10 && -1*accountFM.Free < setting.AmountLimit/-10 {
 		p1 = 0
-		p2 = accountBM.Free / setting.AmountLimit
+		p2 = -1 * accountFM.Free / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
 		priceX -= 5 * p2
-	} else if accountFM.Free < setting.AmountLimit/-10 && accountBM.Free > setting.AmountLimit/10 {
+	} else if accountFM.Free < setting.AmountLimit/-10 && -1*accountFM.Free > setting.AmountLimit/10 {
 		p1 = accountFM.Free / setting.AmountLimit
 		p2 = 0
-		a1 = setting.AmountLimit - accountBM.Free
-		a2 = accountBM.Free
+		a1 = setting.AmountLimit + accountFM.Free
+		a2 = -1 * accountFM.Free
 		priceX += 5 * p1
 	}
 	model.CarryInfo = fmt.Sprintf("[搬砖参数] zb:%f zf:%f p1:%f p2:%f py:%f px:%f abm:%f afm:%f\n",
-		zb, zf, p1, p2, py, priceX, accountBM.Free, accountFM.Free)
+		zb, zf, p1, p2, py, priceX, -1*accountFM.Free, accountFM.Free)
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX

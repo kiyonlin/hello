@@ -8,7 +8,6 @@ import (
 	"hello/api"
 	"hello/model"
 	"hello/util"
-	"math"
 	"testing"
 	"time"
 )
@@ -77,7 +76,9 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
-	a := 1.999
-	fmt.Println(math.Round(a))
+	model.NewConfig()
+	_ = configor.Load(model.AppConfig, "./config.yml")
+	api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+		model.Bitmex)
 
 }
