@@ -92,7 +92,6 @@ var ProcessTurtle = func(market, symbol string) {
 	setTurtling(true)
 	defer setTurtling(false)
 	turtleData := GetTurtleData(market, symbol)
-
 	currentN := model.GetCurrentN(model.FunctionTurtle)
 	key := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, market, symbol)
 	model.CarryInfo[key] = fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%d 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
