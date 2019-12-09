@@ -590,7 +590,9 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 	postData["symbol"] = symbol
 	postData["side"] = strings.ToUpper(orderSide[0:1]) + orderSide[1:]
 	postData["orderQty"] = amount
-	postData[`price`] = price
+	if orderType != model.OrderTypeMarket {
+		postData[`price`] = price
+	}
 	postData["ordType"] = strings.ToUpper(orderType[0:1]) + orderType[1:]
 	if execInst != `` {
 		postData[`execInst`] = execInst
@@ -612,8 +614,8 @@ func getCandlesBitmex(key, secret, symbol, binSize string, startTime, endTime ti
 	candles map[string]*model.Candle) {
 	candles = make(map[string]*model.Candle)
 	postData := make(map[string]interface{})
-	symbol = model.DialectSymbol[model.Bitmex][symbol]
-	postData[`symbol`] = symbol
+	symbolNew := model.DialectSymbol[model.Bitmex][symbol]
+	postData[`symbol`] = symbolNew
 	postData[`reverse`] = `false`
 	postData[`binSize`] = binSize
 	postData[`count`] = strconv.Itoa(count)

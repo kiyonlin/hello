@@ -289,7 +289,10 @@ func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
-	msg := model.CarryInfo
+	msg := ``
+	for _, value := range model.CarryInfo {
+		msg += value + "\n"
+	}
 	for rows.Next() {
 		_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,

@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
+	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"testing"
@@ -43,11 +44,11 @@ func Test_initTurtleN(t *testing.T) {
 	yesterday = time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
 	//api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Bitmex, `btcusd_p`, yesterday)
-	for i := 10; i > 0; i-- {
+	for i := 100; i > 0; i-- {
 		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		index := yesterday.Add(d)
 		api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-			model.Bitmex, `btcusd_p`, index)
+			model.Bitmex, `ethusd_p`, index)
 	}
 	//go carry.CheckPastRefresh()
 	//for true {
@@ -78,7 +79,16 @@ func Test_initTurtleN(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	api.RefreshAccount(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-		model.Bitmex)
-
+	var err error
+	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+	carry.GetTurtleData(model.Bitmex, `btcusd_p`)
+	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
+	//bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
+	//api.PlaceOrder(bitmexKey, bitmexSecret,
+	//	model.OrderSideSell, model.OrderTypeMarket, model.Bitmex, `btcusd_p`,
+	//	``, ``, ``, 11111, 1, false)
 }

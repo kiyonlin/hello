@@ -19,7 +19,7 @@ var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `
 var ConnectionResetTime = int64(0)
 var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
 var candles = make(map[string]*Candle)    // market+symbol+period+rfc3339, candle
-var CarryInfo string                      // carry between bitmex and fmex
+var CarryInfo = make(map[string]string)   // function - msg
 
 //const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0

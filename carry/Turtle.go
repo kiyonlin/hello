@@ -10,7 +10,7 @@ import (
 )
 
 type TurtleData struct {
-	initTime   time.Time
+	turtleTime time.Time
 	highDays10 float64
 	lowDays10  float64
 	highDays20 float64
@@ -19,9 +19,15 @@ type TurtleData struct {
 	amount     float64
 }
 
+var turtling = false
+
+func setTurtling(value bool) {
+	turtling = value
+}
+
 var dataSet = make(map[string]map[string]map[string]*TurtleData) // market - symbol - 2019-12-06 - *turtleData
 
-func getTurtleData(market, symbol string) (turtleData *TurtleData) {
+func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	today := util.GetNow()
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	todayStr := today.String()[0:10]
@@ -34,11 +40,11 @@ func getTurtleData(market, symbol string) (turtleData *TurtleData) {
 	if dataSet[market][symbol][todayStr] != nil {
 		return dataSet[market][symbol][todayStr]
 	}
-	turtleData = &TurtleData{}
+	turtleData = &TurtleData{turtleTime: today}
 	for i := 1; i <= 20; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		day := today.Add(duration)
-		candle := model.GetCandle(market, symbol, `1d`, day)
+		candle := api.GetDayCandle(key, secret, market, symbol, day)
 		if candle == nil {
 			continue
 		}
@@ -59,16 +65,17 @@ func getTurtleData(market, symbol string) (turtleData *TurtleData) {
 			p := api.GetBtcBalance(``, ``, market)
 			switch symbol {
 			case `btcusd_p`:
-				turtleData.amount = 0.01 * p / turtleData.n * candle.PriceOpen * candle.PriceOpen
+				turtleData.amount = 0.01 * p / turtleData.n * candle.PriceOpen * candle.PriceOpen / 1000
 			case `ethusd_p`:
-				turtleData.amount = 10000 * p / turtleData.n
+				turtleData.amount = 10000 * p / turtleData.n / 1000
 			}
 		}
 	}
+	dataSet[market][symbol][todayStr] = turtleData
 	return
 }
 
-//setting.AmountLimit 同一方向上最多加仓的N的倍数
+//setting.AmountLimit 同一方向上加仓次数限制
 //setting.GridAmount 当前已经持仓数量
 //setting.Chance 当前开仓的个数
 //setting.PriceX 上一次开仓的价格
@@ -79,15 +86,25 @@ var ProcessTurtle = func(market, symbol string) {
 		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
 		return
 	}
-	turtleData := getTurtleData(market, symbol)
 	setting := model.GetSetting(model.FunctionTurtle, market, symbol)
-	if setting == nil {
+	if setting == nil || turtling {
 		return
 	}
+	setTurtling(true)
+	defer setTurtling(false)
+	turtleData := GetTurtleData(market, symbol)
 	currentN := math.Round(setting.Chance)
+	limitN := math.Round(setting.AmountLimit)
+	key := fmt.Sprintf("%s_%s_%s\n", model.FunctionTurtle, market, symbol)
+	model.CarryInfo[key] = fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%f 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
+		"20日最高:%f 20日最低:%f 10日最高:%f 10日最低:%f n:%f 数量:%f",
+		turtleData.turtleTime.String(), key, limitN, setting.GridAmount, setting.PriceX, turtleData.highDays20,
+		turtleData.lowDays20, turtleData.highDays10, turtleData.lowDays10, turtleData.n, turtleData.amount)
 	var order *model.Order
-	if currentN == 0 { // check to open
+	if currentN == 0 { // 开初始多仓
 		if tick.Asks[0].Price > turtleData.highDays20 {
+			util.Notice(fmt.Sprintf(`开初始多仓 当前价格%f>20日最高%f %s`,
+				tick.Asks[0].Price, turtleData.highDays20, model.CarryInfo[key]))
 			order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeMarket, market, symbol,
 				``, setting.AccountType, ``, tick.Asks[0].Price, turtleData.amount, false)
 			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
@@ -96,6 +113,8 @@ var ProcessTurtle = func(market, symbol string) {
 			}
 		}
 		if tick.Bids[0].Price < turtleData.lowDays20 {
+			util.Notice(fmt.Sprintf(`开初始空仓 当前价格%f<20日最低%f %s`,
+				tick.Bids[0].Price, turtleData.lowDays20, model.CarryInfo[key]))
 			order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeMarket, market, symbol,
 				``, setting.AccountType, ``, tick.Bids[0].Price, turtleData.amount, false)
 			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
@@ -105,28 +124,51 @@ var ProcessTurtle = func(market, symbol string) {
 		}
 	} else if currentN > 0 {
 		// 加仓一个单位
-		if tick.Asks[0].Price > setting.PriceX+turtleData.n/2 && setting.Chance < setting.AmountLimit {
+		if tick.Asks[0].Price > setting.PriceX+turtleData.n/2 && currentN < limitN {
+			util.Notice(fmt.Sprintf(`加多仓 当前价格%f>%f+0.5*%f %s`,
+				tick.Asks[0].Price, setting.PriceX, turtleData.n, model.CarryInfo[key]))
 			order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeMarket, market, symbol,
 				``, setting.AccountType, ``, tick.Asks[0].Price, turtleData.amount, false)
 			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 				setting.Chance = setting.Chance + 1
 				setting.GridAmount = setting.GridAmount + turtleData.amount
 			}
-		}
-		if tick.Bids[0].Price < turtleData.lowDays10 || tick.Bids[0].Price < setting.PriceX-2*turtleData.n { // 平多
-
+		} // 平多
+		if tick.Bids[0].Price < turtleData.lowDays10 || tick.Bids[0].Price < setting.PriceX-2*turtleData.n {
+			util.Notice(fmt.Sprintf(`平多 当前价格%f<10日最低%f || < %f-2*%f %s`,
+				tick.Bids[0].Price, turtleData.lowDays10, setting.PriceX, turtleData.n, model.CarryInfo[key]))
+			order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeMarket, market, symbol,
+				``, setting.AccountType, ``, tick.Bids[0].Price, setting.GridAmount, false)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
+				setting.Chance = 0
+				setting.GridAmount = 0
+			}
 		}
 	} else if currentN < 0 {
 		// 加仓一个单位
-		if tick.Bids[0].Price < setting.PriceX-turtleData.n/2 && setting.Chance < setting.AmountLimit {
-			//order = api.PlaceOrder()
-		}
-		if tick.Asks[0].Price > turtleData.highDays10 || tick.Asks[0].Price > setting.PriceX+2*turtleData.n { // 平空
-
+		if tick.Bids[0].Price < setting.PriceX-turtleData.n/2 && math.Abs(currentN) < limitN {
+			util.Notice(fmt.Sprintf(`加空仓 当前价格%f<%f-0.5*%f %s`,
+				tick.Bids[0].Price, setting.PriceX, turtleData.n, model.CarryInfo[key]))
+			order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeMarket, market, symbol,
+				``, setting.AccountType, ``, tick.Bids[0].Price, turtleData.amount, false)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
+				setting.Chance = setting.Chance - 1
+				setting.GridAmount = setting.GridAmount + turtleData.amount
+			}
+		} // 平空
+		if tick.Asks[0].Price > turtleData.highDays10 || tick.Asks[0].Price > setting.PriceX+2*turtleData.n {
+			util.Notice(fmt.Sprintf(`平空 当前价格%f>10日最高%f || > %f-2*%f %s`,
+				tick.Asks[0].Price, turtleData.highDays10, setting.PriceX, turtleData.n, model.CarryInfo[key]))
+			order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeMarket, market, symbol,
+				``, setting.AccountType, ``, tick.Asks[0].Price, setting.GridAmount, false)
+			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
+				setting.Chance = 0
+				setting.GridAmount = 0
+			}
 		}
 	}
 	if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
-		setting.PriceX = order.DealPrice // TO DO check deal amount, price for market price
+		setting.PriceX = order.DealPrice
 		model.SetSetting(model.FunctionTurtle, market, symbol, setting)
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
@@ -134,6 +176,5 @@ var ProcessTurtle = func(market, symbol string) {
 		order.RefreshType = model.FunctionTurtle
 		model.AppDB.Save(&order)
 	}
-
 	model.SetSetting(model.FunctionTurtle, market, symbol, setting)
 }
