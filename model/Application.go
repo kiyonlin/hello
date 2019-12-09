@@ -126,6 +126,7 @@ type Config struct {
 	HandleGrid      string
 	Mail            string
 	Port            string
+	TurtleLimitMain int
 	SymbolPrice     map[string]float64 // symbol - price
 	UpdatePriceTime map[string]int64   // symbol -time
 }
