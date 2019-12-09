@@ -98,7 +98,7 @@ var ProcessTurtle = func(market, symbol string) {
 	key := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, market, symbol)
 	model.CarryInfo[key] = fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%f 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
 		"20日最高:%f 20日最低:%f 10日最高:%f 10日最低:%f n:%f 数量:%f",
-		turtleData.turtleTime.String(), key, limitN, setting.GridAmount, setting.PriceX, turtleData.highDays20,
+		turtleData.turtleTime.String()[0:10], key, limitN, setting.GridAmount, setting.PriceX, turtleData.highDays20,
 		turtleData.lowDays20, turtleData.highDays10, turtleData.lowDays10, turtleData.n, turtleData.amount)
 	var order *model.Order
 	if currentN == 0 { // 开初始多仓
