@@ -401,14 +401,9 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		return strings.ToUpper(symbol)
 	case Bitmex:
 		if subType == SubscribeDeal {
-			if symbol == `btcusd_p` {
-				return `trade:XBTUSD`
-			}
+			return `trade:` + DialectSymbol[Bitmex][symbol]
 		} else if subType == SubscribeDepth {
-			if symbol == `btcusd_p` {
-				//return `orderBookL2_25:XBTUSD`
-				return `quote:XBTUSD`
-			}
+			return `quote:` + DialectSymbol[Bitmex][symbol]
 		}
 		return ``
 	case Coinbig:
