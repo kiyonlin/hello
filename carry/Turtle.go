@@ -28,7 +28,7 @@ func setTurtling(value bool) {
 var dataSet = make(map[string]map[string]map[string]*TurtleData) // market - symbol - 2019-12-06 - *turtleData
 
 func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
-	today := util.GetNow()
+	today := time.Now().In(time.UTC)
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	todayStr := today.String()[0:10]
 	if dataSet[market] == nil {
