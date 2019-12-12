@@ -621,10 +621,13 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 	postData[`count`] = strconv.Itoa(count)
 	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
 	postData[`startTime`] = start.Format(time.RFC3339)
+	//fmt.Println(start.Format(time.RFC3339))
 	end = time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
+	//fmt.Println(end.Format(time.RFC3339))
 	postData[`endTime`] = end.Format(time.RFC3339)
 	response := SignedRequestBitmex(key, secret, `GET`, `/trade/bucketed`, postData)
 	candleJson, err := util.NewJSON(response)
+	duration, _ := time.ParseDuration(`-24h`)
 	if err == nil {
 		candleJsons, err := candleJson.Array()
 		if err == nil {
@@ -644,11 +647,10 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 					candle.PriceLow, _ = item[`low`].(json.Number).Float64()
 				}
 				if item[`timestamp`] != nil {
-					candle.Start, _ = time.Parse(time.RFC3339, item[`timestamp`].(string))
-					candle.Start = time.Date(candle.Start.Year(), candle.Start.Month(), candle.Start.Day(),
-						candle.Start.Hour(), candle.Start.Minute(), candle.Start.Second(), candle.Start.Nanosecond(),
-						util.GetNow().Location())
-					candles[candle.Start.Format(time.RFC3339)] = candle
+					start, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
+					start = start.Add(duration)
+					candle.UTCDate = start.Format(time.RFC3339)[0:10]
+					candles[candle.UTCDate] = candle
 				}
 			}
 		}

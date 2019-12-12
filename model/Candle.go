@@ -8,7 +8,7 @@ type Candle struct {
 	Ts          int64
 	PriceFmex   float64
 	PriceBitmex float64
-	Start       time.Time
+	UTCDate     string
 	Period      string //[1m,5m,1h,1d]
 	PriceOpen   float64
 	PriceClose  float64

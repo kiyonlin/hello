@@ -40,15 +40,18 @@ func Test_initTurtleN(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	yesterday := util.GetNow()
-	yesterday = time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
+	model.AppDB.AutoMigrate(&model.Candle{})
+	today := time.Now().In(time.UTC)
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	//api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
 	//	model.Bitmex, `btcusd_p`, yesterday)
+	fmt.Println(today.String())
 	for i := 100; i > 0; i-- {
 		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
-		index := yesterday.Add(d)
+		index := today.Add(d)
+		fmt.Println(index.String())
 		api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-			model.Bitmex, `ethusd_p`, index)
+			model.Bitmex, `btcusd_p`, index)
 	}
 	//go carry.CheckPastRefresh()
 	//for true {

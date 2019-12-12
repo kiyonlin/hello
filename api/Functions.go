@@ -221,12 +221,12 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 }
 
 func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (candle *model.Candle) {
-	candle = model.GetCandle(market, symbol, `1d`, timeCandle)
+	candle = model.GetCandle(market, symbol, `1d`, timeCandle.Format(time.RFC3339)[0:10])
 	if candle != nil && candle.N > 0 {
 		return
 	}
 	candle = &model.Candle{}
-	model.AppDB.Where(`market = ? and symbol = ? and period = ? and start = ?`,
+	model.AppDB.Where(`market = ? and symbol = ? and period = ? and utc_date = ?`,
 		market, symbol, `1d`, timeCandle.String()[0:19]).First(candle)
 	if candle.N > 0 {
 		return
@@ -240,21 +240,19 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 	case model.Bitmex:
 		candles := getCandlesBitmex(key, secret, symbol, `1d`, begin, end, 20)
 		for _, value := range candles {
-			c := model.GetCandle(value.Market, value.Symbol, value.Period, value.Start)
+			c := model.GetCandle(value.Market, value.Symbol, value.Period, value.UTCDate)
 			if c == nil || c.N == 0 {
 				candleDB := &model.Candle{}
-				model.AppDB.Where(`market = ? and symbol = ? and period = ? and start = ?`,
-					market, symbol, `1d`, value.Start.String()[0:10]).First(candleDB)
-				candleDB.Start = time.Date(candleDB.Start.Year(), candleDB.Start.Month(), candleDB.Start.Day(),
-					0, 0, 0, 0, util.GetNow().Location())
+				model.AppDB.Where(`market = ? and symbol = ? and period = ? and utc_date = ?`,
+					market, symbol, `1d`, value.UTCDate).First(candleDB)
 				if candleDB.N > 0 {
 					value.N = candleDB.N
 				}
-				model.SetCandle(market, symbol, `1d`, value.Start, value)
+				model.SetCandle(market, symbol, `1d`, value.UTCDate, value)
 			}
 		}
 	}
-	candle = model.GetCandle(market, symbol, `1d`, timeCandle)
+	candle = model.GetCandle(market, symbol, `1d`, timeCandle.Format(time.RFC3339)[0:10])
 	if candle == nil {
 		util.Notice(fmt.Sprintf(`error: can not get candle %s %s`, `1d`, timeCandle.String()))
 		return
@@ -263,7 +261,7 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 	for i := 1; i < 20; i++ {
 		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		index := timeCandle.Add(d)
-		candleCurrent := model.GetCandle(market, symbol, `1d`, index)
+		candleCurrent := model.GetCandle(market, symbol, `1d`, index.Format(time.RFC3339)[0:10])
 		if candleCurrent == nil {
 			util.Notice(fmt.Sprintf(`error: can not get candle %s %s`, `1d`, index.String()))
 			continue
@@ -274,9 +272,9 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 			candle.N = candle.N + (candleCurrent.PriceHigh-candleCurrent.PriceLow)/20
 		}
 	}
-	fmt.Println(candle.Start.String())
+	//fmt.Println(candle.Start.String())
 	model.AppDB.Save(&candle)
-	model.SetCandle(market, symbol, `1d`, timeCandle, candle)
+	model.SetCandle(market, symbol, `1d`, timeCandle.Format(time.RFC3339)[0:10], candle)
 	return candle
 }
 

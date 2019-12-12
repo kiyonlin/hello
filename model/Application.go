@@ -256,23 +256,23 @@ func SetBtcBalance(market string, timeBalance time.Time, balance float64) {
 	btcBalance[market+timeBalance.Format(time.RFC3339)[0:19]] = balance
 }
 
-func GetCandle(market, symbol, period string, timeCandle time.Time) (candle *Candle) {
+func GetCandle(market, symbol, period, utcDate string) (candle *Candle) {
 	infoLock.Lock()
 	defer infoLock.Unlock()
 	if candles == nil {
 		candles = make(map[string]*Candle)
 	}
-	key := market + symbol + period + timeCandle.Format(time.RFC3339)[0:19]
+	key := market + symbol + period + utcDate
 	return candles[key]
 }
 
-func SetCandle(market, symbol, period string, timeCandle time.Time, candle *Candle) {
+func SetCandle(market, symbol, period, utcDate string, candle *Candle) {
 	infoLock.Lock()
 	defer infoLock.Unlock()
 	if candles == nil {
 		candles = make(map[string]*Candle)
 	}
-	key := market + symbol + period + timeCandle.Format(time.RFC3339)[0:19]
+	key := market + symbol + period + utcDate
 	candles[key] = candle
 }
 
