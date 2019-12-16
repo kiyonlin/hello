@@ -106,15 +106,15 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	}
 	model.CarryInfo[model.FunctionCarry] = fmt.Sprintf("[搬砖参数] zb:%f zf:%f p1:%f p2:%f py:%f px:%f abm:%f afm:%f\n",
 		zb, zf, p1, p2, py, priceX, -1*accountFM.Free, accountFM.Free)
-	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
+	//priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
-	fmba := getDepthAmountBuy(calcAmtPriceBuy, priceDistance, tickFM)
-	fmsa := getDepthAmountSell(calcAmtPriceSell, priceDistance, tickFM)
+	fmba := getDepthAmountBuy(calcAmtPriceBuy, 0, tickFM)
+	fmsa := getDepthAmountSell(calcAmtPriceSell, 0, tickFM)
 	calcAmtPriceBuyNew := tickBM.Asks[0].Price*1002/1000 + setting.GridPriceDistance - p1 - priceX
 	calcAmtPriceSellNew := tickBM.Bids[0].Price*998/1000 - setting.GridPriceDistance + p2 - priceX
-	fmbaNew := getDepthAmountBuy(calcAmtPriceBuyNew, priceDistance, tickFM)
-	fmsaNew := getDepthAmountSell(calcAmtPriceSellNew, priceDistance, tickFM)
+	fmbaNew := getDepthAmountBuy(calcAmtPriceBuyNew, 0, tickFM)
+	fmsaNew := getDepthAmountSell(calcAmtPriceSellNew, 0, tickFM)
 	fmb1 := tickFM.Bids[0].Price + priceX
 	fms1 := tickFM.Asks[0].Price + priceX
 	if fmb1 >= calcAmtPriceBuyNew+priceX && fmbaNew >= setting.RefreshLimitLow {
