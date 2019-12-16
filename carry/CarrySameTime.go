@@ -55,7 +55,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
 		return
 	}
-	util.Notice(fmt.Sprintf(`bm delay %d fm delay %d`, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
+	//util.Notice(fmt.Sprintf(`bm delay %d fm delay %d`, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
 	placeBothOrders(symbol, tickBM, tickFM, accountFM, setting)
 }
 
