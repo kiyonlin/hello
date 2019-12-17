@@ -80,9 +80,12 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 //setting.PriceX 上一次开仓的价格
 var ProcessTurtle = func(market, symbol string) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	now := util.GetNowUnixMillion()
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || model.AppConfig.Handle != `1` ||
-		model.AppPause || util.GetNowUnixMillion()-int64(tick.Ts) > 500 {
-		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
+		model.AppPause || now-int64(tick.Ts) > 1000 {
+		if tick != nil {
+			util.Notice(fmt.Sprintf(`[tick not good]%s %s %d`, market, symbol, now-int64(tick.Ts)))
+		}
 		return
 	}
 	setting := model.GetSetting(model.FunctionTurtle, market, symbol)
