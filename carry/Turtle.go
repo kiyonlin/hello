@@ -95,15 +95,14 @@ var ProcessTurtle = func(market, symbol string) {
 	setTurtling(true)
 	defer setTurtling(false)
 	turtleData := GetTurtleData(market, symbol)
-	currentN := model.GetCurrentN(model.FunctionTurtle)
 	showMsg := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, market, symbol)
 	model.CarryInfo[showMsg] = fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%d 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
 		"20日最高:%f 20日最低:%f 10日最高:%f 10日最低:%f n:%f 数量:%f 当前开仓个数:%f",
 		turtleData.turtleTime.String()[0:10], showMsg, model.AppConfig.TurtleLimitMain, setting.GridAmount, setting.PriceX,
 		turtleData.highDays20, turtleData.lowDays20, turtleData.highDays10, turtleData.lowDays10, turtleData.n,
-		turtleData.amount, currentN)
+		turtleData.amount, setting.Chance)
 	var order *model.Order
-	if currentN == 0 { // 开初始多仓
+	if setting.Chance == 0 { // 开初始多仓
 		if tick.Asks[0].Price > turtleData.highDays20 {
 			util.Notice(fmt.Sprintf(`开初始多仓 当前价格%f>20日最高%f %s`,
 				tick.Asks[0].Price, turtleData.highDays20, model.CarryInfo[showMsg]))
@@ -124,9 +123,10 @@ var ProcessTurtle = func(market, symbol string) {
 				setting.GridAmount = turtleData.amount
 			}
 		}
-	} else if currentN > 0 {
+	} else if setting.Chance > 0 {
 		// 加仓一个单位
-		if tick.Asks[0].Price > setting.PriceX+turtleData.n/2 && currentN < float64(model.AppConfig.TurtleLimitMain) {
+		if tick.Asks[0].Price > setting.PriceX+turtleData.n/2 &&
+			setting.Chance < float64(model.AppConfig.TurtleLimitMain) {
 			util.Notice(fmt.Sprintf(`加多仓 当前价格%f>%f+0.5*%f %s`,
 				tick.Asks[0].Price, setting.PriceX, turtleData.n, model.CarryInfo[showMsg]))
 			order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeMarket, market, symbol,
@@ -146,10 +146,10 @@ var ProcessTurtle = func(market, symbol string) {
 				setting.GridAmount = 0
 			}
 		}
-	} else if currentN < 0 {
+	} else if setting.Chance < 0 {
 		// 加仓一个单位
 		if tick.Bids[0].Price < setting.PriceX-turtleData.n/2 &&
-			math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
+			math.Abs(setting.Chance) < float64(model.AppConfig.TurtleLimitMain) {
 			util.Notice(fmt.Sprintf(`加空仓 当前价格%f<%f-0.5*%f %s`,
 				tick.Bids[0].Price, setting.PriceX, turtleData.n, model.CarryInfo[key]))
 			order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeMarket, market, symbol,

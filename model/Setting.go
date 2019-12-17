@@ -64,20 +64,6 @@ func GetSetting(function, market, symbol string) *Setting {
 	return marketSymbolSetting[function][market][symbol]
 }
 
-func GetCurrentN(function string) (currentN float64) {
-	if marketSymbolSetting[function] == nil {
-		return 0
-	}
-	for _, value := range marketSymbolSetting[function] {
-		for _, setting := range value {
-			if setting != nil {
-				currentN += setting.Chance
-			}
-		}
-	}
-	return currentN
-}
-
 func GetFunctions(market, symbol string) map[string]CarryHandler {
 	if handlers == nil {
 		LoadSettings()
