@@ -140,7 +140,7 @@ var ProcessTurtle = func(market, symbol string) {
 			util.Notice(fmt.Sprintf(`平多 当前价格%f<10日最低%f || < %f-2*%f %s`,
 				tick.Bids[0].Price, turtleData.lowDays10, setting.PriceX, turtleData.n, model.CarryInfo[key]))
 			order = api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeMarket, market, symbol,
-				``, setting.AccountType, ``, tick.Bids[0].Price, setting.GridAmount, false)
+				``, setting.AccountType, ``, tick.Bids[0].Price, turtleData.amount, false)
 			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 				setting.Chance = 0
 				setting.GridAmount = 0
@@ -163,7 +163,7 @@ var ProcessTurtle = func(market, symbol string) {
 			util.Notice(fmt.Sprintf(`平空 当前价格%f>10日最高%f || > %f-2*%f %s`,
 				tick.Asks[0].Price, turtleData.highDays10, setting.PriceX, turtleData.n, model.CarryInfo[key]))
 			order = api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeMarket, market, symbol,
-				``, setting.AccountType, ``, tick.Asks[0].Price, setting.GridAmount, false)
+				``, setting.AccountType, ``, tick.Asks[0].Price, turtleData.amount, false)
 			if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 				setting.Chance = 0
 				setting.GridAmount = 0
