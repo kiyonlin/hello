@@ -43,6 +43,7 @@ const CarryStatusFail = "fail"
 const CarryStatusWorking = "working"
 const OrderTypeLimit = `limit`
 const OrderTypeMarket = `market`
+const OrderTypeStop = `stop`
 const OrderSideBuy = `buy`
 const OrderSideSell = `sell`
 const OrderSideLiquidateLong = `liquidateLong`
