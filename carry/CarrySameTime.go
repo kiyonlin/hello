@@ -49,7 +49,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		reOrder(tickBM, setting)
 		return
 	}
-	if int(startTime)-tickBM.Ts > 600 || int(startTime)-tickFM.Ts > 600 || model.AppConfig.Handle != `1` ||
+	if int(startTime)-tickBM.Ts > 600 || int(startTime)-tickFM.Ts > 500 || model.AppConfig.Handle != `1` ||
 		model.AppPause {
 		util.Notice(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d`,
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
@@ -90,7 +90,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 	a2 := setting.AmountLimit
 	zb := api.GetFundingRate(model.Bitmex, symbol)
 	zf := api.GetFundingRate(model.Fmex, symbol)
-	priceX := setting.PriceX + 1.5*(zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
+	priceX := setting.PriceX + 1.2*(zf-zb)*(tickFM.Bids[0].Price+tickFM.Asks[0].Price)/2
 	py := priceX
 	if accountFM.Free > setting.AmountLimit/10 && -1*accountFM.Free < setting.AmountLimit/-10 {
 		p1 = 0
