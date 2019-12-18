@@ -6,7 +6,6 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
-	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"testing"
@@ -88,10 +87,10 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	carry.GetTurtleData(model.Bitmex, `btcusd_p`)
-	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
-	//bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
-	//api.PlaceOrder(bitmexKey, bitmexSecret,
-	//	model.OrderSideSell, model.OrderTypeMarket, model.Bitmex, `btcusd_p`,
-	//	``, ``, ``, 11111, 1, false)
+	//carry.GetTurtleData(model.Bitmex, `btcusd_p`)
+	bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
+	bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
+	api.PlaceOrder(bitmexKey, bitmexSecret,
+		model.OrderSideSell, model.OrderTypeStop, model.Bitmex, `btcusd_p`,
+		``, ``, ``, 5999, 1, false)
 }
