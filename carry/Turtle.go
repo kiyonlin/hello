@@ -43,12 +43,15 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		return dataSet[market][symbol][todayStr]
 	}
 	turtleData = &TurtleData{turtleTime: today}
-	model.AppDB.Model(&turtleData.orderLong).Where(
+	var orderLong, orderShort model.Order
+	model.AppDB.Model(&orderLong).Where(
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
-		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideBuy).Last(&turtleData.orderLong)
-	model.AppDB.Model(&turtleData.orderShort).Where(
+		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideBuy).Last(&orderLong)
+	model.AppDB.Model(&orderShort).Where(
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
-		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&turtleData.orderShort)
+		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&orderShort)
+	turtleData.orderLong = &orderLong
+	turtleData.orderShort = &orderShort
 	for i := 1; i <= 20; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		day := today.Add(duration)
