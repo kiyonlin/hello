@@ -590,7 +590,7 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 	postData["symbol"] = symbol
 	postData["side"] = strings.ToUpper(orderSide[0:1]) + orderSide[1:]
 	postData["orderQty"] = amount
-	if orderType != model.OrderTypeMarket {
+	if orderType != model.OrderTypeMarket && orderType != model.OrderTypeStop {
 		postData[`price`] = price
 	}
 	postData["ordType"] = strings.ToUpper(orderType[0:1]) + orderType[1:]

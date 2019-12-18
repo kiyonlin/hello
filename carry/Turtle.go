@@ -213,6 +213,7 @@ var ProcessTurtle = func(market, symbol string) {
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			order.RefreshType = model.FunctionTurtle
 			model.AppDB.Save(&order)
+			turtleData.orderLong = order
 		}
 	}
 	if turtleData.orderShort == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
@@ -221,6 +222,7 @@ var ProcessTurtle = func(market, symbol string) {
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			order.RefreshType = model.FunctionTurtle
 			model.AppDB.Save(&order)
+			turtleData.orderShort = order
 		}
 	}
 }
