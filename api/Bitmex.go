@@ -516,6 +516,7 @@ func CancelOrderBitmex(key, secret, orderId string) (result bool, errCode, msg s
 	postData := make(map[string]interface{})
 	postData[`orderID`] = orderId
 	response := SignedRequestBitmex(key, secret, `DELETE`, `/order`, postData)
+	fmt.Println(string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderArray, arrayErr := orderJson.Array()

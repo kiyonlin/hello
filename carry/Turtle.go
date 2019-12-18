@@ -50,8 +50,12 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	model.AppDB.Model(&orderShort).Where(
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&orderShort)
-	turtleData.orderLong = &orderLong
-	turtleData.orderShort = &orderShort
+	if orderLong.OrderId != `` {
+		turtleData.orderLong = &orderLong
+	}
+	if orderShort.OrderId != `` {
+		turtleData.orderShort = &orderShort
+	}
 	for i := 1; i <= 20; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		day := today.Add(duration)
