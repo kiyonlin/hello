@@ -171,7 +171,7 @@ var feeIndex int
 
 func MaintainTransFee(key, secret string) {
 	for true {
-		d, _ := time.ParseDuration("-24h")
+		d, _ := time.ParseDuration("-48h")
 		lastDays2 := util.GetNow().Add(d)
 		//d, _ = time.ParseDuration(`-1h`)
 		//lastHour := util.GetNow().Add(d)
