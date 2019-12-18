@@ -595,11 +595,12 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 		postData[`price`] = price
 	}
 	postData["ordType"] = strings.ToUpper(orderType[0:1]) + orderType[1:]
-	if orderType == model.OrderTypeStop {
-		postData[`stopPx`] = price
-	}
 	if execInst != `` {
 		postData[`execInst`] = execInst
+	}
+	if orderType == model.OrderTypeStop {
+		postData[`stopPx`] = price
+		postData[`execInst`] = `LastPrice`
 	}
 	response := SignedRequestBitmex(key, secret, `POST`, `/order`, postData)
 	util.Notice(string(response))
