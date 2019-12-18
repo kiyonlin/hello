@@ -121,6 +121,8 @@ var ProcessTurtle = func(market, symbol string) {
 		turtleData.amount, setting.Chance)
 	priceLong := 0.0
 	priceShort := 0.0
+	amountLong := turtleData.amount
+	amountShort := turtleData.amount
 	updateSetting := false
 	if setting.Chance == 0 { // 开初始多仓
 		priceLong = turtleData.highDays20
@@ -155,6 +157,7 @@ var ProcessTurtle = func(market, symbol string) {
 		} // 平多
 		if tick.Bids[0].Price < priceShort {
 			setting.Chance = 0
+			amountShort = setting.GridAmount
 			setting.GridAmount = 0
 			setting.PriceX = priceShort
 			updateSetting = true
@@ -175,6 +178,7 @@ var ProcessTurtle = func(market, symbol string) {
 		} // 平空
 		if tick.Asks[0].Price > priceLong {
 			setting.Chance = 0
+			amountShort = setting.GridAmount
 			setting.GridAmount = 0
 			setting.PriceX = priceShort
 			updateSetting = true
@@ -194,7 +198,7 @@ var ProcessTurtle = func(market, symbol string) {
 	}
 	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
 		order := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeStop, market, symbol,
-			``, setting.AccountType, ``, priceLong, turtleData.amount, false)
+			``, setting.AccountType, ``, priceLong, amountLong, false)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			order.RefreshType = model.FunctionTurtle
 			model.AppDB.Save(&order)
@@ -203,7 +207,7 @@ var ProcessTurtle = func(market, symbol string) {
 	}
 	if turtleData.orderShort == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
 		order := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeStop, market, symbol,
-			``, setting.AccountType, ``, priceShort, turtleData.amount, false)
+			``, setting.AccountType, ``, priceShort, amountShort, false)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			order.RefreshType = model.FunctionTurtle
 			model.AppDB.Save(&order)
