@@ -91,19 +91,6 @@ func Test_RefreshAccount(t *testing.T) {
 	carry.GetTurtleData(model.Bitmex, `btcusd_p`)
 	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
 	//bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
-	//res, _ := api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`,
-	//	`405d96b8-2dab-4aa1-ace5-7a2fc3fc0674`, true)
-	//fmt.Println(res)
-	//res, _ = api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`,
-	//	`fdace938-9770-0ad9-b3a8-34c5dcc8c29c`, true)
-	//fmt.Println(res)
-	//res, _ = api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `ethusd_p`,
-	//	`a73d267f-6823-4ad0-6f91-135669d64a73`, true)
-	//fmt.Println(res)
-	//res, _ = api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `ethusd_p`,
-	//	`45bf98f3-dfd0-0dba-3874-be28dedae2fe`, true)
-	//fmt.Println(res)
-
 	//api.PlaceOrder(bitmexKey, bitmexSecret,
 	//	model.OrderSideSell, model.OrderTypeStop, model.Bitmex, `btcusd_p`,
 	//	``, ``, ``, 5999, 1, false)

@@ -178,7 +178,7 @@ var ProcessTurtle = func(market, symbol string) {
 		if tick.Bids[0].Price < priceShort && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
 			setting.Chance = setting.Chance - 1
 			setting.GridAmount = setting.GridAmount + turtleData.amount
-			setting.PriceX = priceLong
+			setting.PriceX = priceShort
 			updateSetting = true
 			util.Notice(fmt.Sprintf(`加空一个单位 chance:%f amount:%f price:%f currentN-limit:%f %d`,
 				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
@@ -187,7 +187,7 @@ var ProcessTurtle = func(market, symbol string) {
 			setting.Chance = 0
 			amountShort = setting.GridAmount
 			setting.GridAmount = 0
-			setting.PriceX = priceShort
+			setting.PriceX = priceLong
 			updateSetting = true
 			util.Notice(fmt.Sprintf(`平空 chance:%f amount:%f price:%f currentN-limit:%f %d`,
 				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
@@ -204,6 +204,8 @@ var ProcessTurtle = func(market, symbol string) {
 		return
 	}
 	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
+		util.Notice(fmt.Sprintf(`下止损多单chance:%f amount:%f price:%f currentN-limit:%f %d`,
+			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeStop, market, symbol,
 			``, setting.AccountType, ``, priceLong, amountLong, false)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
@@ -213,6 +215,8 @@ var ProcessTurtle = func(market, symbol string) {
 		}
 	}
 	if turtleData.orderShort == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
+		util.Notice(fmt.Sprintf(`下止损空单chance:%f amount:%f price:%f currentN-limit:%f %d`,
+			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeStop, market, symbol,
 			``, setting.AccountType, ``, priceShort, amountShort, false)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
