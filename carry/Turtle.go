@@ -83,6 +83,15 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	return
 }
 
+func cancelOldTurtle(turtleData *TurtleData, market, symbol string) {
+	if turtleData.orderShort != nil && turtleData.orderShort.OrderId != `` {
+		api.MustCancel(key, secret, market, symbol, turtleData.orderShort.OrderId, true)
+	}
+	if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
+		api.MustCancel(key, secret, market, symbol, turtleData.orderLong.OrderId, true)
+	}
+}
+
 //setting.GridAmount 当前已经持仓数量
 //setting.Chance 当前开仓的个数
 //setting.PriceX 上一次开仓的价格
@@ -119,18 +128,24 @@ var ProcessTurtle = func(market, symbol string) {
 		if tick.Asks[0].Price > priceLong {
 			setting.Chance = 1
 			setting.GridAmount = turtleData.amount
+			cancelOldTurtle(turtleData, market, symbol)
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
 			setting.PriceX = priceLong
 			updateSetting = true
+			util.Notice(fmt.Sprintf(`破20日高点 chance:%f amount:%f price:%f`,
+				setting.Chance, setting.GridAmount, setting.PriceX))
 		}
 		if tick.Bids[0].Price < priceShort {
 			setting.Chance = -1
 			setting.GridAmount = turtleData.amount
+			cancelOldTurtle(turtleData, market, symbol)
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
 			setting.PriceX = priceShort
 			updateSetting = true
+			util.Notice(fmt.Sprintf(`破20日低点 chance:%f amount:%f price:%f`,
+				setting.Chance, setting.GridAmount, setting.PriceX))
 		}
 	} else if setting.Chance > 0 {
 		priceLong = setting.PriceX + turtleData.n/2
@@ -139,18 +154,24 @@ var ProcessTurtle = func(market, symbol string) {
 		if tick.Asks[0].Price > priceLong && currentN < float64(model.AppConfig.TurtleLimitMain) {
 			setting.Chance = setting.Chance + 1
 			setting.GridAmount = setting.GridAmount + turtleData.amount
+			cancelOldTurtle(turtleData, market, symbol)
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
 			setting.PriceX = priceLong
 			updateSetting = true
+			util.Notice(fmt.Sprintf(`加多一个单位 chance:%f amount:%f price:%f currentN-limit:%f %d`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		} // 平多
 		if tick.Bids[0].Price < priceShort {
 			setting.Chance = 0
 			setting.GridAmount = 0
+			cancelOldTurtle(turtleData, market, symbol)
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
 			setting.PriceX = priceShort
 			updateSetting = true
+			util.Notice(fmt.Sprintf(`平多 chance:%f amount:%f price:%f currentN-limit:%f %d`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		}
 	} else if setting.Chance < 0 {
 		priceLong = math.Min(turtleData.highDays10, setting.PriceX+2*turtleData.n)
@@ -159,19 +180,32 @@ var ProcessTurtle = func(market, symbol string) {
 		if tick.Bids[0].Price < priceShort && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
 			setting.Chance = setting.Chance - 1
 			setting.GridAmount = setting.GridAmount + turtleData.amount
+			cancelOldTurtle(turtleData, market, symbol)
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
 			setting.PriceX = priceLong
 			updateSetting = true
+			util.Notice(fmt.Sprintf(`加空一个单位 chance:%f amount:%f price:%f currentN-limit:%f %d`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		} // 平空
 		if tick.Asks[0].Price > priceLong {
 			setting.Chance = 0
 			setting.GridAmount = 0
+			cancelOldTurtle(turtleData, market, symbol)
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
 			setting.PriceX = priceShort
 			updateSetting = true
+			util.Notice(fmt.Sprintf(`平空 chance:%f amount:%f price:%f currentN-limit:%f %d`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		}
+	}
+	if updateSetting {
+		model.SetSetting(model.FunctionTurtle, market, symbol, setting)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+			`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+		return
 	}
 	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
 		order := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeStop, market, symbol,
@@ -188,11 +222,5 @@ var ProcessTurtle = func(market, symbol string) {
 			order.RefreshType = model.FunctionTurtle
 			model.AppDB.Save(&order)
 		}
-	}
-	if updateSetting {
-		model.SetSetting(model.FunctionTurtle, market, symbol, setting)
-		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-			market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-			`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
 	}
 }
