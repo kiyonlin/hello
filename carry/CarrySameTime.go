@@ -26,17 +26,17 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	accountFM := model.AppAccounts.GetAccount(model.Fmex, symbol)
 	if accountFM == nil {
 		api.RefreshAccount(``, ``, model.Fmex)
-		util.Notice(`error1 account is nil, refresh and return`)
+		util.Info(`error1 account is nil, refresh and return`)
 		return
 	}
 	if tickFM == nil || tickBM == nil || tickFM.Asks == nil || tickFM.Bids == nil || tickBM.Asks == nil ||
 		tickBM.Bids == nil {
-		util.Notice(`error2 fm/bm tick or account is nil`)
+		util.Info(`error2 fm/bm tick or account is nil`)
 		return
 	}
 	if tickFM.Asks.Len() < 15 || tickFM.Bids.Len() < 15 || tickBM.Asks.Len() < 1 ||
 		tickBM.Bids.Len() < 1 {
-		util.Notice(`error3 fm/bm depth tick length not good`)
+		util.Info(`error3 fm/bm depth tick length not good`)
 		return
 	}
 	if carrySameTiming {
@@ -51,7 +51,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 	}
 	if int(startTime)-tickBM.Ts > 600 || int(startTime)-tickFM.Ts > 500 || model.AppConfig.Handle != `1` ||
 		model.AppPause {
-		util.Notice(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d`,
+		util.Info(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d`,
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
 		return
 	}

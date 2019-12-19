@@ -108,7 +108,7 @@ var ProcessTurtle = func(market, symbol string) {
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || model.AppConfig.Handle != `1` ||
 		model.AppPause || now-int64(tick.Ts) > 1000 {
 		if tick != nil {
-			util.Notice(fmt.Sprintf(`[tick not good]%s %s %d`, market, symbol, now-int64(tick.Ts)))
+			util.Info(fmt.Sprintf(`[tick not good]%s %s %d`, market, symbol, now-int64(tick.Ts)))
 		}
 		return
 	}
@@ -139,16 +139,16 @@ var ProcessTurtle = func(market, symbol string) {
 			setting.GridAmount = turtleData.amount
 			setting.PriceX = priceLong
 			updateSetting = true
-			util.Notice(fmt.Sprintf(`破20日高点 chance:%f amount:%f price:%f`,
-				setting.Chance, setting.GridAmount, setting.PriceX))
+			util.Notice(fmt.Sprintf(`破20日高点 chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+				setting.Chance, setting.GridAmount, currentN, priceShort, priceLong, setting.PriceX, turtleData.n))
 		}
 		if tick.Bids[0].Price < priceShort {
 			setting.Chance = -1
 			setting.GridAmount = turtleData.amount
 			setting.PriceX = priceShort
 			updateSetting = true
-			util.Notice(fmt.Sprintf(`破20日低点 chance:%f amount:%f price:%f`,
-				setting.Chance, setting.GridAmount, setting.PriceX))
+			util.Notice(fmt.Sprintf(`破20日低点 chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+				setting.Chance, setting.GridAmount, currentN, priceShort, priceLong, setting.PriceX, turtleData.n))
 		}
 	} else if setting.Chance > 0 {
 		priceLong = setting.PriceX + turtleData.n/2
@@ -159,8 +159,9 @@ var ProcessTurtle = func(market, symbol string) {
 			setting.GridAmount = setting.GridAmount + turtleData.amount
 			setting.PriceX = priceLong
 			updateSetting = true
-			util.Notice(fmt.Sprintf(`加多一个单位 chance:%f amount:%f price:%f currentN-limit:%f %d`,
-				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
+			util.Notice(fmt.Sprintf(`加多 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
+				setting.PriceX, turtleData.n))
 		} // 平多
 		if tick.Bids[0].Price < priceShort {
 			setting.Chance = 0
@@ -168,8 +169,9 @@ var ProcessTurtle = func(market, symbol string) {
 			setting.GridAmount = 0
 			setting.PriceX = priceShort
 			updateSetting = true
-			util.Notice(fmt.Sprintf(`平多 chance:%f amount:%f price:%f currentN-limit:%f %d`,
-				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
+			util.Notice(fmt.Sprintf(`平多 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
+				setting.PriceX, turtleData.n))
 		}
 	} else if setting.Chance < 0 {
 		priceLong = math.Min(turtleData.highDays10, setting.PriceX+2*turtleData.n)
@@ -180,8 +182,9 @@ var ProcessTurtle = func(market, symbol string) {
 			setting.GridAmount = setting.GridAmount + turtleData.amount
 			setting.PriceX = priceShort
 			updateSetting = true
-			util.Notice(fmt.Sprintf(`加空一个单位 chance:%f amount:%f price:%f currentN-limit:%f %d`,
-				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
+			util.Notice(fmt.Sprintf(`加空 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
+				setting.PriceX, turtleData.n))
 		} // 平空
 		if tick.Asks[0].Price > priceLong {
 			setting.Chance = 0
@@ -189,8 +192,9 @@ var ProcessTurtle = func(market, symbol string) {
 			setting.GridAmount = 0
 			setting.PriceX = priceLong
 			updateSetting = true
-			util.Notice(fmt.Sprintf(`平空 chance:%f amount:%f price:%f currentN-limit:%f %d`,
-				setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
+			util.Notice(fmt.Sprintf(`平空 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
+				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
+				setting.PriceX, turtleData.n))
 		}
 	}
 	if updateSetting {
