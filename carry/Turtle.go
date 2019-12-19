@@ -86,7 +86,9 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 			}
 		}
 	}
-	dataSet[market][symbol][todayStr] = turtleData
+	if turtleData.amount > 0 && turtleData.n > 0 {
+		dataSet[market][symbol][todayStr] = turtleData
+	}
 	return
 }
 
@@ -119,6 +121,9 @@ var ProcessTurtle = func(market, symbol string) {
 	setTurtling(true)
 	defer setTurtling(false)
 	turtleData := GetTurtleData(market, symbol)
+	if turtleData == nil || turtleData.n == 0 || turtleData.amount == 0 {
+		return
+	}
 	currentN := model.GetCurrentN(model.FunctionTurtle)
 	showMsg := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, market, symbol)
 	model.CarryInfo[showMsg] = fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%d 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
