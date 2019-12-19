@@ -97,13 +97,13 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 		p2 = -1 * accountFM.Free / setting.AmountLimit
 		a1 = accountFM.Free
 		a2 = setting.AmountLimit - accountFM.Free
-		priceX -= 5 * p2
+		priceX -= 4 * p2
 	} else if accountFM.Free < setting.AmountLimit/-10 && -1*accountFM.Free > setting.AmountLimit/10 {
 		p1 = accountFM.Free / setting.AmountLimit
 		p2 = 0
 		a1 = setting.AmountLimit + accountFM.Free
 		a2 = -1 * accountFM.Free
-		priceX += 5 * p1
+		priceX += 4 * p1
 	}
 	model.CarryInfo[model.FunctionCarry] = fmt.Sprintf("[搬砖参数] zb:%f zf:%f p1:%f p2:%f py:%f px:%f abm:%f afm:%f\n",
 		zb, zf, p1, p2, py, priceX, -1*accountFM.Free, accountFM.Free)
