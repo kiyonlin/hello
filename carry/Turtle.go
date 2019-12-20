@@ -51,10 +51,10 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&orderShort)
 	if orderLong.OrderId != `` {
-		turtleData.orderLong = &orderLong
+		api.MustCancel(key, secret, market, symbol, orderLong.OrderId, true)
 	}
 	if orderShort.OrderId != `` {
-		turtleData.orderShort = &orderShort
+		api.MustCancel(key, secret, market, symbol, orderShort.OrderId, true)
 	}
 	for i := 1; i <= 20; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
@@ -90,15 +90,6 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		dataSet[market][symbol][todayStr] = turtleData
 	}
 	return
-}
-
-func cancelOldTurtle(turtleData *TurtleData, market, symbol string) {
-	if turtleData.orderShort != nil && turtleData.orderShort.OrderId != `` {
-		api.MustCancel(key, secret, market, symbol, turtleData.orderShort.OrderId, true)
-	}
-	if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
-		api.MustCancel(key, secret, market, symbol, turtleData.orderLong.OrderId, true)
-	}
 }
 
 //setting.GridAmount 当前已经持仓数量
@@ -203,7 +194,12 @@ var ProcessTurtle = func(market, symbol string) {
 		}
 	}
 	if updateSetting {
-		cancelOldTurtle(turtleData, market, symbol)
+		if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
+			api.MustCancel(key, secret, market, symbol, turtleData.orderLong.OrderId, true)
+		}
+		if turtleData.orderShort != nil && turtleData.orderShort.OrderId != `` {
+			api.MustCancel(key, secret, market, symbol, turtleData.orderShort.OrderId, true)
+		}
 		turtleData.orderLong = nil
 		turtleData.orderShort = nil
 		model.SetSetting(model.FunctionTurtle, market, symbol, setting)
