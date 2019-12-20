@@ -149,6 +149,7 @@ var ProcessTurtle = func(market, symbol string) {
 	} else if setting.Chance > 0 {
 		priceLong = setting.PriceX + turtleData.n/2
 		priceShort = math.Max(turtleData.lowDays10, setting.PriceX-2*turtleData.n)
+		amountShort = setting.GridAmount
 		// 加仓一个单位
 		if tick.Asks[0].Price > priceLong && currentN < float64(model.AppConfig.TurtleLimitMain) {
 			setting.Chance = setting.Chance + 1
@@ -161,7 +162,6 @@ var ProcessTurtle = func(market, symbol string) {
 		} // 平多
 		if tick.Bids[0].Price < priceShort {
 			setting.Chance = 0
-			amountShort = setting.GridAmount
 			setting.GridAmount = 0
 			setting.PriceX = priceShort
 			updateSetting = true
@@ -172,6 +172,7 @@ var ProcessTurtle = func(market, symbol string) {
 	} else if setting.Chance < 0 {
 		priceLong = math.Min(turtleData.highDays10, setting.PriceX+2*turtleData.n)
 		priceShort = setting.PriceX - turtleData.n/2
+		amountLong = setting.GridAmount
 		// 加仓一个单位
 		if tick.Bids[0].Price < priceShort && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
 			setting.Chance = setting.Chance - 1
@@ -184,7 +185,6 @@ var ProcessTurtle = func(market, symbol string) {
 		} // 平空
 		if tick.Asks[0].Price > priceLong {
 			setting.Chance = 0
-			amountShort = setting.GridAmount
 			setting.GridAmount = 0
 			setting.PriceX = priceLong
 			updateSetting = true
