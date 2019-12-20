@@ -188,12 +188,13 @@ func MaintainTransFee(key, secret string) {
 			for _, value := range orders {
 				order := api.QueryOrderById(key, secret, value.Market, value.Symbol, value.OrderId)
 				if order == nil {
-					continue
+					value.Status = model.CarryStatusFail
+				} else {
+					value.Fee = order.Fee
+					value.FeeIncome = order.FeeIncome
+					value.DealAmount = order.DealAmount
+					value.Status = order.Status
 				}
-				value.Fee = order.Fee
-				value.FeeIncome = order.FeeIncome
-				value.DealAmount = order.DealAmount
-				value.Status = order.Status
 				model.AppDB.Save(&value)
 				util.Info(fmt.Sprintf(`save order %s %s %s %s`,
 					value.Symbol, value.OrderSide, value.OrderTime.String(), value.Status))

@@ -554,6 +554,7 @@ func queryOrderBitmex(key, secret, symbol, orderId string) (orders []*model.Orde
 	postData[`reverse`] = `true`
 	postData[`filter`] = fmt.Sprintf(`{"orderID":"%s"}`, orderId)
 	response := SignedRequestBitmex(key, secret, `GET`, `/order`, postData)
+	util.Notice(string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderArray, _ := orderJson.Array()
