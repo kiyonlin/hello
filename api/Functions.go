@@ -172,24 +172,26 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (
 	msg = `market not supported ` + market
 	switch market {
 	case model.Huobi:
-		result, errCode, msg = CancelOrderHuobi(orderId)
+		result, errCode, msg = cancelOrderHuobi(orderId)
 	case model.OKEX:
-		result, errCode, msg = CancelOrderOkex(symbol, orderId)
+		result, errCode, msg = cancelOrderOkex(symbol, orderId)
 	case model.OKFUTURE:
-		result, errCode, msg = CancelOrderOkfuture(symbol, orderId)
+		result, errCode, msg = cancelOrderOkfuture(symbol, orderId)
 	case model.Binance:
-		result, errCode, msg = CancelOrderBinance(symbol, orderId)
+		result, errCode, msg = cancelOrderBinance(symbol, orderId)
 	case model.Fcoin:
-		result, errCode, msg = CancelOrderFcoin(key, secret, orderId)
+		result, errCode, msg = cancelOrderFcoin(key, secret, orderId)
 	case model.Coinpark:
-		result, errCode, msg = CancelOrderCoinpark(orderId)
+		result, errCode, msg = cancelOrderCoinpark(orderId)
 	case model.Bitmex:
-		result, errCode, msg = CancelOrderBitmex(key, secret, orderId)
+		result, errCode, msg = cancelOrderBitmex(key, secret, orderId)
 	case model.Fmex:
-		result, errCode, msg, order = CancelOrderFmex(key, secret, orderId)
+		result, errCode, msg, order = cancelOrderFmex(key, secret, orderId)
 		if order != nil {
 			order.Symbol = symbol
 		}
+	case model.Bybit:
+		result, errCode, msg = cancelOrderBybit(key, secret, symbol, orderId)
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
 	return result, errCode, msg, order
@@ -305,6 +307,8 @@ func GetFundingRate(market, symbol string) (fundingRate float64) {
 		fundingRate, expireTime = getFundingRateFmex(symbol)
 	case model.Bitmex:
 		fundingRate, expireTime = getFundingRateBitmex(symbol)
+	case model.Bybit:
+		fundingRate, expireTime = getFundingRateBybit(symbol)
 	}
 	model.SetFundingRate(market, symbol, fundingRate, expireTime)
 	util.Notice(fmt.Sprintf(`after update funding %s %s rate %f expire %d`,
@@ -339,6 +343,13 @@ func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.O
 	case model.Fmex:
 		order = queryOrderFmex(key, secret, orderId)
 		return order
+	case model.Bybit:
+		orders := queryOrderBybit(key, secret, symbol, orderId)
+		for _, value := range orders {
+			if value.OrderId == orderId {
+				return value
+			}
+		}
 	}
 	return &model.Order{OrderId: orderId, Symbol: symbol, Market: market, DealAmount: dealAmount, DealPrice: dealPrice,
 		Status: status}
@@ -460,6 +471,11 @@ func RefreshAccount(key, secret, market string) {
 		getAccountCoinpark(model.AppAccounts)
 	case model.Bitmex:
 		getAccountBitmex(key, secret, model.AppAccounts)
+	case model.Bybit:
+		symbols := model.GetMarketSymbols(model.Bybit)
+		for symbol := range symbols {
+			getAccountBybit(key, secret, symbol, model.AppAccounts)
+		}
 	}
 }
 
@@ -535,6 +551,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		}
 	case model.Bitmex:
 		placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+	case model.Bybit:
+		placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	}
 	if order.OrderId == "0" || order.OrderId == "" {
 		order.Status = model.CarryStatusFail

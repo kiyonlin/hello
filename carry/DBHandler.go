@@ -227,6 +227,8 @@ func createMarketDepthServer(markets *model.Markets, market string) chan struct{
 		channel, err = api.WsDepthServeCoinpark(markets, WSErrHandler)
 	case model.Bitmex:
 		channel, err = api.WsDepthServeBitmex(markets, WSErrHandler)
+	case model.Bybit:
+		channel, err = api.WsDepthServeBybit(markets, WSErrHandler)
 	}
 	if err != nil {
 		util.SocketInfo(market + ` can not create depth server ` + err.Error())

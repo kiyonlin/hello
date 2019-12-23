@@ -199,7 +199,7 @@ func placeOrderFcoin(order *model.Order, key, secret, orderSide, orderType, symb
 	}
 }
 
-func CancelOrderFcoin(key, secret, orderId string) (result bool, errCode, msg string) {
+func cancelOrderFcoin(key, secret, orderId string) (result bool, errCode, msg string) {
 	responseBody := SignedRequestFcoin(key, secret, `POST`, `/orders/`+orderId+`/submit-cancel`, nil)
 	responseJson, err := util.NewJSON([]byte(responseBody))
 	status := -1

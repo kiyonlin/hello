@@ -206,7 +206,7 @@ func placeOrderHuobi(order *model.Order, orderSide, orderType, symbol, price, am
 		symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
 }
 
-func CancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
+func cancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 	path := fmt.Sprintf("/v1/order/orders/%s/submitcancel", orderId)
 	responseBody := SignedRequestHuobi(`POST`, path, nil)
 	orderJson, err := util.NewJSON(responseBody)

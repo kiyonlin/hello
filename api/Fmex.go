@@ -215,7 +215,7 @@ func queryOrdersFmex(key, secret, symbol string) (orders []*model.Order) {
 	return orders
 }
 
-func CancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg string, order *model.Order) {
+func cancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg string, order *model.Order) {
 	responseBody := SignedRequestFmex(key, secret, `POST`, `v3/contracts/orders/`+orderId+`/cancel`, nil)
 	responseJson, err := util.NewJSON([]byte(responseBody))
 	status := -1
@@ -334,7 +334,7 @@ func getAccountFmex(key, secret string) (account []*model.Account) {
 						Free:                         free,
 						ProfitReal:                   profitReal,
 						Margin:                       margin,
-						AccountUpdateTime:            time.Unix(0, updateTime*1000000),
+						Ts:                           updateTime,
 						BankruptcyPrice:              bankruptcyPrice,
 						LiquidationPrice:             liquidationPrice,
 						EntryPrice:                   entryPrice,

@@ -143,7 +143,7 @@ func placeOrderBinance(order *model.Order, orderSide, orderType, symbol, price, 
 		symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
 }
 
-func CancelOrderBinance(symbol string, orderId string) (result bool, errCode, msg string) {
+func cancelOrderBinance(symbol string, orderId string) (result bool, errCode, msg string) {
 	postData := url.Values{}
 	postData.Set("symbol", strings.ToUpper(strings.Replace(symbol, "_", "", 1)))
 	postData.Set("orderId", orderId)

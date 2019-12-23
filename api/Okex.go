@@ -166,7 +166,7 @@ func placeOrderOkex(order *model.Order, orderSide, orderType, symbol, price, amo
 		symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
 }
 
-func CancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg string) {
+func cancelOrderOkex(symbol string, orderId string) (result bool, errCode, msg string) {
 	postData := url.Values{}
 	postData.Set("order_id", orderId)
 	postData.Set("symbol", symbol)

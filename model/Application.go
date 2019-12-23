@@ -24,6 +24,7 @@ var CarryInfo = make(map[string]string)   // function - msg
 //const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
 const OKEXOtherContractFaceValue = 10.0
+const Bybit = `bybit`
 const OKEX = "okex"
 const OKFUTURE = `okfuture`
 const Huobi = "huobi"
@@ -115,6 +116,8 @@ type Config struct {
 	CoinparkSecret  string
 	BitmexKey       string
 	BitmexSecret    string
+	BybitKey        string
+	BybitSecret     string
 	FcoinKey        string
 	FcoinSecret     string
 	CarryDistance   float64 // carry价差触发条件
@@ -137,11 +140,19 @@ var DialectSymbol = map[string]map[string]string{ // market - standard symbol - 
 		`btcusd_p`: `XBTUSD`,
 		`ethusd_p`: `ETHUSD`,
 	},
+	Bybit: {
+		`btcusd_p`: `BTCUSD`,
+		`ethusd_p`: `ETHUSD`,
+	},
 }
 
 var StandardSymbol = map[string]map[string]string{ // market - dialect symbol - standard symbol
 	Bitmex: {
 		`XBTUSD`: `btcusd_p`,
+		`ETHUSD`: `ethusd_p`,
+	},
+	Bybit: {
+		`BTCUSD`: `btcusd_p`,
 		`ETHUSD`: `ethusd_p`,
 	},
 }
@@ -236,6 +247,16 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`4`: CarryStatusFail,    //用户撤销,
 		`5`: CarryStatusSuccess, //部分撤回,
 		`6`: CarryStatusFail,    //成交失败
+	},
+	Bybit: {
+		`Created`:         CarryStatusWorking,
+		`New`:             CarryStatusWorking,
+		`PartiallyFilled`: CarryStatusWorking,
+		`Filled`:          CarryStatusSuccess,
+		`Cancelled`:       CarryStatusFail,
+		`Rejected`:        CarryStatusFail,
+		`PendingCancel`:   CarryStatusWorking,
+		`Deactivated`:     CarryStatusFail,
 	},
 }
 
@@ -408,6 +429,13 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 			return `quote:` + DialectSymbol[Bitmex][symbol]
 		}
 		return ``
+	case Bybit:
+		subSymbol := strings.ToUpper(symbol[0:strings.Index(symbol, `_`)])
+		if subType == SubscribeDeal {
+			return `trade.` + subSymbol
+		} else if subType == SubscribeDepth {
+			return `orderBookL2_25.` + subSymbol
+		}
 	case Coinbig:
 		switch symbol {
 		case `btc_usdt`:
@@ -498,9 +526,13 @@ func NewConfig() {
 	if AppConfig.Env == `test` {
 		AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
 		AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
+		AppConfig.WSUrls[Bybit] = `wss://stream-testnet.bybit.com/realtime`
+		AppConfig.RestUrls[Bybit] = `https://testnet.bybit.com/user/api-management`
 	} else {
 		AppConfig.WSUrls[Fmex] = `wss://api.fmex.com/v2/ws`
 		AppConfig.RestUrls[Fmex] = `https://api.fmex.com/`
+		AppConfig.WSUrls[Bybit] = `wss://stream.bybit.com/realtime`
+		AppConfig.RestUrls[Bybit] = `https://www.bybit.com/app/user/api-management`
 	}
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
@@ -590,7 +622,7 @@ func GetWSSubscribes(market, subType string) []interface{} {
 			subscribes = append(subscribes, GetWSSubscribe(market, symbol, SubscribeDeal))
 		}
 	}
-	if market == Bitmex {
+	if market == Bitmex || market == Bybit {
 		//subscribes = append(subscribes, `order`)
 		subscribes = append(subscribes, `position`)
 	}

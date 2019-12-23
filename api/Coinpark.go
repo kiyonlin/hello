@@ -56,16 +56,16 @@ func WsDepthServeCoinpark(markets *model.Markets, errHandler ErrHandler) (chan s
 				bidAsk.Bids = make([]model.Tick, len(bidArray))
 				for i, value := range bidArray {
 					str := value.(map[string]interface{})["price"].(string)
-					price, _ := strconv.ParseFloat(str, 10)
+					price, _ := strconv.ParseFloat(str, 64)
 					str = value.(map[string]interface{})["volume"].(string)
-					amount, _ := strconv.ParseFloat(str, 10)
+					amount, _ := strconv.ParseFloat(str, 64)
 					bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 				}
 				for i, value := range askArray {
 					str := value.(map[string]interface{})["price"].(string)
-					price, _ := strconv.ParseFloat(str, 10)
+					price, _ := strconv.ParseFloat(str, 64)
 					str = value.(map[string]interface{})["volume"].(string)
-					amount, _ := strconv.ParseFloat(str, 10)
+					amount, _ := strconv.ParseFloat(str, 64)
 					bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 				}
 				sort.Sort(bidAsk.Asks)
@@ -107,7 +107,7 @@ func getBuyPriceCoinpark(symbol string) (float64, error) {
 	accountJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		strPrice, _ := accountJson.GetPath("result", `last`).String()
-		return strconv.ParseFloat(strPrice, 10)
+		return strconv.ParseFloat(strPrice, 64)
 	}
 	return 0, err
 }
@@ -215,7 +215,7 @@ func queryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status s
 	return dealAmount, dealPrice, status
 }
 
-func CancelOrderCoinpark(orderId string) (result bool, code, msg string) {
+func cancelOrderCoinpark(orderId string) (result bool, code, msg string) {
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/cancelTrade","body":{"orders_id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	util.Notice(orderId + `[cancel order]` + string(responseBody))

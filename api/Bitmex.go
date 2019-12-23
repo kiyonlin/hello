@@ -512,7 +512,7 @@ func SignedRequestBitmex(key, secret, method, path string, body map[string]inter
 	return responseBody
 }
 
-func CancelOrderBitmex(key, secret, orderId string) (result bool, errCode, msg string) {
+func cancelOrderBitmex(key, secret, orderId string) (result bool, errCode, msg string) {
 	postData := make(map[string]interface{})
 	postData[`orderID`] = orderId
 	response := SignedRequestBitmex(key, secret, `DELETE`, `/order`, postData)

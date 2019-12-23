@@ -240,7 +240,7 @@ func queryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice fl
 	return dealAmount, dealPrice, model.CarryStatusFail
 }
 
-func CancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, msg string) {
+func cancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, msg string) {
 	//future_cancel.do
 	postData := url.Values{}
 	postData.Set(`symbol`, getSymbol(symbol))

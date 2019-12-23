@@ -206,7 +206,7 @@ func calcTrend(tick *model.BidAsk) (trend string) {
 func calcHighestScore(setting *model.Setting, tick *model.BidAsk) (scoreBid, scoreAsk *model.Score) {
 	coins := strings.Split(setting.Symbol, `_`)
 	perUsdt, _ := api.GetPrice(``, ``, coins[1]+`_usdt`)
-	rankFt, err := strconv.ParseFloat(setting.FunctionParameter, 10)
+	rankFt, err := strconv.ParseFloat(setting.FunctionParameter, 64)
 	if err != nil {
 		util.Notice(`rank function parameter err ` + setting.FunctionParameter)
 		return nil, nil
@@ -272,7 +272,7 @@ func calcOrderScore(order *model.Order, setting *model.Setting, tick *model.BidA
 	}
 	coins := strings.Split(setting.Symbol, `_`)
 	perUsdt, _ := api.GetPrice(``, ``, coins[1]+`_usdt`)
-	rankFt, err := strconv.ParseFloat(setting.FunctionParameter, 10)
+	rankFt, err := strconv.ParseFloat(setting.FunctionParameter, 64)
 	if err != nil {
 		util.Notice(`rank function parameter err ` + setting.FunctionParameter)
 		return &model.Score{Point: 0}
