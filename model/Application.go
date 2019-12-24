@@ -536,12 +536,12 @@ func NewConfig() {
 		AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
 		AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
 		AppConfig.WSUrls[Bybit] = `wss://stream-testnet.bybit.com/realtime`
-		AppConfig.RestUrls[Bybit] = `https://testnet.bybit.com/user/api-management`
+		AppConfig.RestUrls[Bybit] = `https://api-testnet.bybit.com`
 	} else {
 		AppConfig.WSUrls[Fmex] = `wss://api.fmex.com/v2/ws`
 		AppConfig.RestUrls[Fmex] = `https://api.fmex.com/`
 		AppConfig.WSUrls[Bybit] = `wss://stream.bybit.com/realtime`
-		AppConfig.RestUrls[Bybit] = `https://www.bybit.com/app/user/api-management`
+		AppConfig.RestUrls[Bybit] = `https://api.bybit.com`
 	}
 	AppConfig.WSUrls[Coinbig] = "wss://ws.coinbig.com/ws"
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"

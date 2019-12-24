@@ -286,17 +286,19 @@ func SignedRequestBybit(key, secret, method, path string, body map[string]interf
 		body = make(map[string]interface{})
 	}
 	body[`api_key`] = key
+	body[`timestamp`] = strconv.FormatInt(util.GetNowUnixMillion(), 10)
 	uri := model.AppConfig.RestUrls[model.Bybit] + path
-	if method == `GET` && len(body) > 0 {
-		uri += `?` + util.ComposeParams(body)
-	}
-	toBeSign := util.ComposeParams(body)
+	paramStr := util.ComposeParams(body)
 	hash := hmac.New(sha256.New, []byte(secret))
-	hash.Write([]byte(toBeSign))
+	hash.Write([]byte(paramStr))
 	sign := hex.EncodeToString(hash.Sum(nil))
-	headers := map[string]string{`api_key`: key, `timestamp`: strconv.FormatInt(util.GetNowUnixMillion(), 10),
-		`sign`: sign, "Content-Type": "application/json"}
-	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers)
+	body[`sign`] = sign
+	params := make(map[string]string)
+	for key, value := range body {
+		params[key] = value.(string)
+	}
+	//headers := map[string]string{`api_key`: key, `timestamp`: body[`timestamp`].(string), `sign`: sign}
+	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), params)
 	return responseBody
 }
 
@@ -399,6 +401,7 @@ func getFundingRateBybit(symbol string) (fundingRate float64, update int64) {
 	postData[`symbol`] = symbol
 	response := SignedRequestBybit(``, ``, `GET`,
 		`/open-api/funding/prev-funding-rate`, postData)
+	fmt.Println(string(response))
 	instrumentJson, err := util.NewJSON(response)
 	if err == nil {
 		retCode := instrumentJson.Get(`ret_code`).MustFloat64()
