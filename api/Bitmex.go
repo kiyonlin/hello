@@ -76,7 +76,7 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 			go handleTrade(markets, action, data)
 		case `orderBookL2_25`:
 			go handleOrderBook(markets, action, data)
-		case `orderBook10`:
+		case `orderBookL2`:
 			go handleOrderBook(markets, action, data)
 		case `order`:
 			go handleOrder(markets, action, data)
