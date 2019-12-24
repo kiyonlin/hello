@@ -473,6 +473,7 @@ func RefreshAccount(key, secret, market string) {
 		getAccountBitmex(key, secret, model.AppAccounts)
 	case model.Bybit:
 		symbols := model.GetMarketSymbols(model.Bybit)
+		symbols[`btcusd_p`] = true
 		for symbol := range symbols {
 			getAccountBybit(key, secret, symbol, model.AppAccounts)
 		}
@@ -560,7 +561,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		order.Status = model.CarryStatusWorking
 	}
 	end := util.GetNowUnixMillion()
-	util.Notice(fmt.Sprintf(`...%s %s %s return order %d distance %d`,
+	util.Notice(fmt.Sprintf(`...%s %s %s return order at %d distance %d`,
 		orderSide, market, symbol, end, end-start))
 	if saveDB {
 		go model.AppDB.Save(&order)

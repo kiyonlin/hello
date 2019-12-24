@@ -49,7 +49,7 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		reOrder(tickBM, setting)
 		return
 	}
-	if int(startTime)-tickBM.Ts > 600 || int(startTime)-tickFM.Ts > 500 || model.AppConfig.Handle != `1` ||
+	if int(startTime)-tickBM.Ts > 500 || int(startTime)-tickFM.Ts > 500 || model.AppConfig.Handle != `1` ||
 		model.AppPause {
 		util.Info(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d`,
 			startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
@@ -127,7 +127,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				symbol, ``, setting.AccountType, ``, tickBM.Asks[0].Price*1.001, amount, true)
 			bmLastOrder.RefreshType = ``
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 700)
+				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
 			util.Notice(fmt.Sprintf(`情况1 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
@@ -146,7 +146,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				tickBM.Bids[0].Price, amount, true)
 			bmLastOrder.RefreshType = PostOnly
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 700)
+				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
 			util.Notice(fmt.Sprintf(`情况2 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
@@ -163,7 +163,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				symbol, ``, setting.AccountType, ``, tickBM.Bids[0].Price*0.999, amount, true)
 			bmLastOrder.RefreshType = ``
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 700)
+				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
 			util.Notice(fmt.Sprintf(`情况3 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
@@ -182,7 +182,7 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 				tickBM.Asks[0].Price, amount, true)
 			bmLastOrder.RefreshType = PostOnly
 			if bmLastOrder != nil && bmLastOrder.OrderId != `` && bmLastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 700)
+				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, model.Fmex)
 			}
 			util.Notice(fmt.Sprintf(`情况4 bm at %f amount %f return %s zb %f zf %f px:%f orderParam:%s
