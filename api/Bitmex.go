@@ -410,13 +410,16 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 		sort.Sort(asks)
 		sort.Sort(sort.Reverse(bids))
+		if bids[0].Price > asks[0].Price {
+			bidAsks.Ts = int(util.GetNowUnixMillion())
+		}
 		bidAsks.Bids = bids
 		bidAsks.Asks = asks
-		bidAsks.Ts = int(util.GetNowUnixMillion())
-		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
-		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-			if handler != nil && function != model.FunctionMaker {
-				go handler(model.Bitmex, symbol)
+		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
+			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+				if handler != nil && function != model.FunctionMaker {
+					go handler(model.Bitmex, symbol)
+				}
 			}
 		}
 	}
