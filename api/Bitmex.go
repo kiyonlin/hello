@@ -79,7 +79,7 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		case `orderBookL2`:
 			go handleOrderBook(markets, action, data)
 		case `orderBook10`:
-			go handleOrderBook(markets, action, data)
+			go handOrderBook10(markets, data)
 		case `order`:
 			go handleOrder(markets, action, data)
 			//model.HandlerMap[model.FunctionBMCarryHang](``, ``)
@@ -216,6 +216,51 @@ func parseOrderBM(order *model.Order, item map[string]interface{}) {
 		order.DealPrice, _ = item[`avgPx`].(json.Number).Float64()
 	}
 	return
+}
+
+func handOrderBook10(markets *model.Markets, data []interface{}) {
+	if data == nil || len(data) < 1 {
+		return
+	}
+	bidAsk := &model.BidAsk{}
+	symbol := ``
+	item := data[0].(map[string]interface{})
+	if item[`symbol`] != nil {
+		symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
+	}
+	if item[`timestamp`] != nil {
+		tickTime, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
+		bidAsk.Ts = int(tickTime.UnixNano() / 1000000)
+	}
+	if item[`bids`] != nil {
+		bidItems := item[`bids`].([]interface{})
+		bids := make([]model.Tick, len(bidItems))
+		for key, value := range bidItems {
+			if value == nil {
+				continue
+			}
+			bidPair := value.([]float64)
+			if len(bidPair) == 2 {
+				bids[key] = model.Tick{Side: model.OrderSideBuy, Symbol: symbol, Price: bidPair[0], Amount: bidPair[1]}
+			}
+		}
+	}
+	if item[`asks`] != nil {
+		askItems := item[`asks`].([]interface{})
+		asks := make([]model.Tick, len(askItems))
+		for key, value := range askItems {
+			if value == nil {
+				continue
+			}
+			askPair := value.([]float64)
+			if len(askPair) == 2 {
+				asks[key] = model.Tick{Side: model.OrderSideSell, Symbol: symbol, Price: askPair[0], Amount: askPair[1]}
+			}
+		}
+	}
+	sort.Sort(bidAsk.Asks)
+	sort.Sort(sort.Reverse(bidAsk.Bids))
+	markets.SetBidAsk(symbol, model.Bitmex, bidAsk)
 }
 
 func handleQuote(markets *model.Markets, action string, data []interface{}) {
