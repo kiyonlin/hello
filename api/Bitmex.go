@@ -71,10 +71,15 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		}
 		switch table {
 		case `quote`:
+			util.Notice(table + `---------` + string(event))
 			go handleQuote(markets, action, data)
 		case `trade`:
 			go handleTrade(markets, action, data)
 		case `orderBookL2_25`:
+			util.Notice(table + `---------` + string(event))
+			go handleOrderBook(markets, action, data)
+		case `orderBook10`:
+			util.Notice(table + `---------` + string(event))
 			go handleOrderBook(markets, action, data)
 		case `order`:
 			go handleOrder(markets, action, data)
