@@ -18,7 +18,7 @@ func setCarrySameTiming(value bool) {
 	carrySameTiming = value
 }
 
-var ProcessCarrySameTime = func(ignore, symbol string) {
+var ProcessCarrySameTime = func(market, symbol string) {
 	startTime := util.GetNowUnixMillion()
 	_, tickBM := model.AppMarkets.GetBidAsk(symbol, model.Bitmex)
 	_, tickFM := model.AppMarkets.GetBidAsk(symbol, model.Fmex)
@@ -49,8 +49,8 @@ var ProcessCarrySameTime = func(ignore, symbol string) {
 		reOrder(tickBM, setting)
 		return
 	}
-	util.Info(fmt.Sprintf(`>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> now:%d tickBM delta:>>>%d<<< tickFM delta:%d`,
-		startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
+	util.Info(fmt.Sprintf(`%s>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> now:%d tickBM delta:>>>%d<<< tickFM delta:%d`,
+		market, startTime, int(startTime)-tickBM.Ts, int(startTime)-tickFM.Ts))
 	if int(startTime)-tickBM.Ts > 500 || int(startTime)-tickFM.Ts > 500 || model.AppConfig.Handle != `1` ||
 		model.AppPause {
 		util.Info(fmt.Sprintf(`error4 now:%d tickBM delta:%d tickFM delta:%d`,
