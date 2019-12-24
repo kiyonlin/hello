@@ -105,8 +105,8 @@ func placeBothOrders(symbol string, tickBM, tickFM *model.BidAsk, accountFM *mod
 		a2 = -1 * accountFM.Free
 		priceX += 4 * p1
 	}
-	model.CarryInfo[model.FunctionCarry] = fmt.Sprintf("[搬砖参数] zb:%f zf:%f p1:%f p2:%f py:%f px:%f abm:%f afm:%f\n",
-		zb, zf, p1, p2, py, priceX, -1*accountFM.Free, accountFM.Free)
+	model.SetCarryInfo(model.FunctionCarry, fmt.Sprintf("[搬砖参数] zb:%f zf:%f p1:%f p2:%f py:%f px:%f abm:%f afm:%f\n",
+		zb, zf, p1, p2, py, priceX, -1*accountFM.Free, accountFM.Free))
 	//priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(model.Fmex, symbol))
 	calcAmtPriceBuy := tickBM.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
 	calcAmtPriceSell := tickBM.Asks[0].Price - setting.GridPriceDistance + p2 - priceX

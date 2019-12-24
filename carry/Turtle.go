@@ -117,11 +117,11 @@ var ProcessTurtle = func(market, symbol string) {
 	}
 	currentN := model.GetCurrentN(model.FunctionTurtle)
 	showMsg := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, market, symbol)
-	model.CarryInfo[showMsg] = fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%d 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
+	model.SetCarryInfo(showMsg, fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%d 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
 		"20日最高:%f 20日最低:%f 10日最高:%f 10日最低:%f n:%f 数量:%f 当前开仓个数:%f %f",
 		turtleData.turtleTime.String()[0:10], showMsg, model.AppConfig.TurtleLimitMain, setting.GridAmount, setting.PriceX,
 		turtleData.highDays20, turtleData.lowDays20, turtleData.highDays10, turtleData.lowDays10, turtleData.n,
-		turtleData.amount, setting.Chance, currentN)
+		turtleData.amount, setting.Chance, currentN))
 	priceLong := 0.0
 	priceShort := 0.0
 	amountLong := turtleData.amount

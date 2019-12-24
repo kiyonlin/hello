@@ -260,6 +260,15 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 	},
 }
 
+func SetCarryInfo(key, value string) {
+	infoLock.Lock()
+	defer infoLock.Unlock()
+	if CarryInfo == nil {
+		CarryInfo = make(map[string]string)
+	}
+	CarryInfo[key] = value
+}
+
 func GetBtcBalance(market string, timeBalance time.Time) (balance float64) {
 	infoLock.Lock()
 	defer infoLock.Unlock()
