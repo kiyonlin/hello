@@ -264,7 +264,13 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	}
 	sort.Sort(bidAsk.Asks)
 	sort.Sort(sort.Reverse(bidAsk.Bids))
-	markets.SetBidAsk(symbol, model.Bitmex, bidAsk)
+	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
+		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+			if handler != nil && function != model.FunctionMaker {
+				go handler(model.Bitmex, symbol)
+			}
+		}
+	}
 }
 
 func handleQuote(markets *model.Markets, action string, data []interface{}) {
