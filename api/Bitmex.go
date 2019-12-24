@@ -239,10 +239,11 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 			if value == nil {
 				continue
 			}
-			bidPair := value.([]interface{})
-			if len(bidPair) == 2 {
-				bids[key] = model.Tick{Side: model.OrderSideBuy, Symbol: symbol, Price: bidPair[0].(float64),
-					Amount: bidPair[1].(float64)}
+			pair := value.([]interface{})
+			if len(pair) == 2 {
+				price, _ := pair[0].(json.Number).Float64()
+				amount, _ := pair[1].(json.Number).Float64()
+				bids[key] = model.Tick{Side: model.OrderSideBuy, Symbol: symbol, Price: price, Amount: amount}
 			}
 		}
 	}
@@ -253,10 +254,11 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 			if value == nil {
 				continue
 			}
-			askPair := value.([]interface{})
-			if len(askPair) == 2 {
-				asks[key] = model.Tick{Side: model.OrderSideSell, Symbol: symbol, Price: askPair[0].(float64),
-					Amount: askPair[1].(float64)}
+			pair := value.([]interface{})
+			if len(pair) == 2 {
+				price, _ := pair[0].(json.Number).Float64()
+				amount, _ := pair[1].(json.Number).Float64()
+				asks[key] = model.Tick{Side: model.OrderSideSell, Symbol: symbol, Price: price, Amount: amount}
 			}
 		}
 	}
