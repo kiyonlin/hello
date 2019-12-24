@@ -411,7 +411,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 		sort.Sort(asks)
 		sort.Sort(sort.Reverse(bids))
-		if bids[0].Price > asks[0].Price {
+		if bids != nil && asks != nil && len(bids) > 0 && len(asks) > 0 && bids[0].Price > asks[0].Price {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 		}
 		bidAsks.Bids = bids
