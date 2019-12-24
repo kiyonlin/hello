@@ -234,7 +234,7 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	}
 	if item[`bids`] != nil {
 		bidItems := item[`bids`].([]interface{})
-		bids := make([]model.Tick, len(bidItems))
+		bidAsk.Bids = make([]model.Tick, len(bidItems))
 		for key, value := range bidItems {
 			if value == nil {
 				continue
@@ -243,13 +243,13 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 			if len(pair) == 2 {
 				price, _ := pair[0].(json.Number).Float64()
 				amount, _ := pair[1].(json.Number).Float64()
-				bids[key] = model.Tick{Side: model.OrderSideBuy, Symbol: symbol, Price: price, Amount: amount}
+				bidAsk.Bids[key] = model.Tick{Side: model.OrderSideBuy, Symbol: symbol, Price: price, Amount: amount}
 			}
 		}
 	}
 	if item[`asks`] != nil {
 		askItems := item[`asks`].([]interface{})
-		asks := make([]model.Tick, len(askItems))
+		bidAsk.Asks = make([]model.Tick, len(askItems))
 		for key, value := range askItems {
 			if value == nil {
 				continue
@@ -258,7 +258,7 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 			if len(pair) == 2 {
 				price, _ := pair[0].(json.Number).Float64()
 				amount, _ := pair[1].(json.Number).Float64()
-				asks[key] = model.Tick{Side: model.OrderSideSell, Symbol: symbol, Price: price, Amount: amount}
+				bidAsk.Asks[key] = model.Tick{Side: model.OrderSideSell, Symbol: symbol, Price: price, Amount: amount}
 			}
 		}
 	}
