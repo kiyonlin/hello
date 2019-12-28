@@ -88,11 +88,13 @@ func Test_RefreshAccount(t *testing.T) {
 		return
 	}
 	//api.GetFundingRate(model.Bybit, `btcusd_p`)
-	api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
+	//api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
 	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
 	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
 	//bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
 	//api.QueryOrderById(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `296d2bf4-7b7b-e89f-6b56-e49f5a65b82e`)
+	//api.CancelAllBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, `btcusd_p`)
+	//api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret,model.Bybit,`btcusd_p`, `1234`)
 	api.PlaceOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.OrderSideBuy, model.OrderTypeMarket,
 		model.Bybit, `btcusd_p`, ``, ``, ``, 0, 1, false)
 	//res, _ := api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `394c8c53-427d-820c-8f45-737017f939d6`, true)

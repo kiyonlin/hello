@@ -293,12 +293,12 @@ func SignedRequestBybit(key, secret, method, path string, body map[string]interf
 	hash.Write([]byte(paramStr))
 	sign := hex.EncodeToString(hash.Sum(nil))
 	body[`sign`] = sign
-	params := make(map[string]string)
-	for key, value := range body {
-		params[key] = value.(string)
+	paramStr = util.ComposeParams(body)
+	headers := map[string]string{"Content-Type": "application/json"}
+	if method == `GET` {
+		uri = uri + `?` + paramStr
 	}
-	//headers := map[string]string{`api_key`: key, `timestamp`: body[`timestamp`].(string), `sign`: sign}
-	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), params)
+	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers)
 	return responseBody
 }
 
@@ -307,6 +307,7 @@ func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode
 	postData[`order_id`] = orderId
 	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
 	response := SignedRequestBybit(key, secret, `POST`, `/v2/private/order/cancel`, postData)
+	fmt.Println(string(response))
 	orderJson, err := util.NewJSON(response)
 	result = false
 	if err == nil {
@@ -369,9 +370,7 @@ func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, time
 	amount string) {
 	postData := make(map[string]interface{})
 	symbol = model.DialectSymbol[model.Bybit][symbol]
-	postData["symbol"] = symbol
 	postData["side"] = strings.ToUpper(orderSide[0:1]) + orderSide[1:]
-	postData["qty"] = amount
 	postData["order_type"] = strings.ToUpper(orderType[0:1]) + orderType[1:]
 	if orderType != model.OrderTypeMarket && orderType != model.OrderTypeStop {
 		postData[`price`] = price
@@ -379,6 +378,8 @@ func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, time
 	if timeInForce == `` {
 		timeInForce = `GoodTillCancel`
 	}
+	postData["symbol"] = symbol
+	postData["qty"] = amount
 	postData[`time_in_force`] = timeInForce
 	response := SignedRequestBybit(key, secret, `POST`, `/v2/private/order/create`, postData)
 	util.Notice(string(response))
