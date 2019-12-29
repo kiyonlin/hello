@@ -296,6 +296,9 @@ func GetBtcBalance(key, secret, market string) (balance float64) {
 }
 
 func GetFundingRate(market, symbol string) (fundingRate float64) {
+	if model.AppConfig.Env == `test` {
+		return 0
+	}
 	rate, expireTime := model.GetFundingRate(market, symbol)
 	now := util.GetNow().Unix()
 	if now-60 < expireTime {
