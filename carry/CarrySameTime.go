@@ -33,7 +33,6 @@ var ProcessCarrySameTime = func(market, symbol string) {
 		util.Info(`error1 account is nil, refresh and return`)
 		return
 	}
-	util.Notice(`get accounts >>>>>>>>>>>>>>>>>>>>>>>>>>>`)
 	if tickRelated == nil || tick == nil || tickRelated.Asks == nil || tickRelated.Bids == nil || tick.Asks == nil ||
 		tick.Bids == nil {
 		util.Info(fmt.Sprintf(`error2 %s or %s tick or account is nil`, market, setting.MarketRelated))
