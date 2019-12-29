@@ -52,8 +52,8 @@ var ProcessCarrySameTime = func(market, symbol string) {
 		reOrder(tick, setting)
 		return
 	}
-	if int(startTime)-tick.Ts > 500 || int(startTime)-tickRelated.Ts > 500 || model.AppConfig.Handle != `1` ||
-		model.AppPause {
+	if (model.AppConfig.Env != `test` && (int(startTime)-tick.Ts > 500 || int(startTime)-tickRelated.Ts > 500)) ||
+		model.AppConfig.Handle != `1` || model.AppPause {
 		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
 			startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
 			int(startTime)-tickRelated.Ts))
