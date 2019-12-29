@@ -343,11 +343,12 @@ func getAccountBybit(key, secret, symbol string, accounts *model.Accounts) {
 	postData := make(map[string]interface{})
 	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
 	response := SignedRequestBybit(key, secret, `GET`, `/v2/private/position/list`, postData)
+	util.Info(fmt.Sprintf(string(response)))
 	positionJson, err := util.NewJSON(response)
 	if err == nil {
 		positionJson = positionJson.Get(`result`)
 		if positionJson != nil {
-			account := &model.Account{Market: model.Bybit, Ts: util.GetNowUnixMillion()}
+			account := &model.Account{Market: model.Bybit, Ts: util.GetNowUnixMillion(), Currency: symbol}
 			item, _ := positionJson.Map()
 			parseAccountBybit(account, item)
 			accounts.SetAccount(model.Bybit, account.Currency, account)
