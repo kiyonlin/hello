@@ -516,6 +516,13 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
 		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price,
 		OrderTime: util.GetNow()}
+	if model.AppConfig.Env == `test` {
+		order.Status = model.CarryStatusSuccess
+		order.OrderId = `bybit 123`
+		order.DealPrice = price
+		order.DealAmount = amount
+		return
+	}
 	switch market {
 	case model.Huobi:
 		placeOrderHuobi(order, orderSide, orderType, symbol, strPrice, strAmount)
@@ -550,23 +557,9 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Bitmex:
-		if model.AppConfig.Env == `test` {
-			order.Status = model.CarryStatusSuccess
-			order.OrderId = `bybit 123`
-			order.DealPrice = price
-			order.DealAmount = amount
-		} else {
-			placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
-		}
+		placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	case model.Bybit:
-		if model.AppConfig.Env == `test` {
-			order.Status = model.CarryStatusSuccess
-			order.OrderId = `bybit 123`
-			order.DealPrice = price
-			order.DealAmount = amount
-		} else {
-			placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
-		}
+		placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	}
 	if order.OrderId == "0" || order.OrderId == "" {
 		order.Status = model.CarryStatusFail
