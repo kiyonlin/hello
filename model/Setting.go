@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+	"hello/util"
 	"strings"
 	"time"
 )
@@ -133,7 +135,12 @@ func LoadSettings() {
 		if handlers[market][symbol] == nil {
 			handlers[market][symbol] = make(map[string]CarryHandler)
 		}
-		handlers[market][symbol][function] = HandlerMap[function]
+		if handlers[market][symbol][function] == nil {
+			handlers[market][symbol][function] = HandlerMap[function]
+		} else {
+			handlers[market][symbol][fmt.Sprintf(`%s_%d`, function, util.GetNow().UnixNano())] =
+				HandlerMap[function]
+		}
 	}
 	for _, setting := range relatedSettings {
 		AppSettings = append(AppSettings, *setting)
