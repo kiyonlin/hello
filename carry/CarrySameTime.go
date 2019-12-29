@@ -137,7 +137,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
-			util.Notice(fmt.Sprintf(`情况1%f amount %f return %s %s money price: %f
+			util.Notice(fmt.Sprintf(`情况1 %f amount %f return %s %s money price: %f
 				%s:%f px:%f orderParam:%s relatedB1:%f Ask0:%f p1:%f relatedBa:%f`,
 				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
 				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fmb1,
@@ -157,7 +157,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
-			util.Notice(fmt.Sprintf(`情况2%f amount %f return %s %s money fee %f %s:%f px:%f orderParam:%s
+			util.Notice(fmt.Sprintf(`情况 2%f amount %f return %s %s money fee %f %s:%f px:%f orderParam:%s
 				relatedB1:%f Bid0:%f p1:%f relatedBa:%f B0Amt:%f A0Amt:%f`,
 				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
 				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType,
@@ -175,7 +175,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
-			util.Notice(fmt.Sprintf(`情况3%f amount %f return %s %s money price: %f %s:%f px:%f orderParam:%s
+			util.Notice(fmt.Sprintf(`情况 3 %f amount %f return %s %s money price: %f %s:%f px:%f orderParam:%s
 				relatedS1:%f, b0:%f p2:%f`, lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market,
 				zFee, setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fms1,
 				tick.Bids[0].Price, p2))
@@ -194,7 +194,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
-			util.Notice(fmt.Sprintf(`情况4%f amount %f return %s %s money price %f %s:%f px:%f 
+			util.Notice(fmt.Sprintf(`情况4 %f amount %f return %s %s money price %f %s:%f px:%f 
 				orderParam:%s Ask0:%f relatedS1:%f p2:%f relatedSa:%f B0Amt:%f A0Amt:%f`,
 				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
 				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType,

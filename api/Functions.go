@@ -521,7 +521,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		OrderTime: util.GetNow()}
 	if model.AppConfig.Env == `test` {
 		order.Status = model.CarryStatusSuccess
-		order.OrderId = `bybit 123`
+		order.OrderId = fmt.Sprintf(`%s%s%d`, market, symbol, util.GetNow().UnixNano())
 		order.DealPrice = price
 		order.DealAmount = amount
 		return
