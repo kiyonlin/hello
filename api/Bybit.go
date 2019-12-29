@@ -223,34 +223,19 @@ func parseAccountBybit(account *model.Account, item map[string]interface{}) {
 		}
 	}
 	if item[`entry_price`] != nil {
-		price, err := item[`entry_price`].(json.Number).Float64()
-		if err == nil {
-			account.EntryPrice = price
-		}
+		account.EntryPrice, _ = strconv.ParseFloat(item[`entry_price`].(string), 64)
 	}
 	if item[`liq_price`] != nil {
-		price, err := item[`liq_price`].(json.Number).Float64()
-		if err == nil {
-			account.LiquidationPrice = price
-		}
+		account.LiquidationPrice, _ = strconv.ParseFloat(item[`liq_price`].(string), 64)
 	}
 	if item[`bust_price`] != nil {
-		price, err := item[`bust_price`].(json.Number).Float64()
-		if err == nil {
-			account.BankruptcyPrice = price
-		}
+		account.BankruptcyPrice, _ = strconv.ParseFloat(item[`bust_price`].(string), 64)
 	}
 	if item[`position_margin`] != nil {
-		margin, err := item[`position_margin`].(json.Number).Float64()
-		if err == nil {
-			account.Margin = margin
-		}
+		account.Margin, _ = strconv.ParseFloat(item[`position_margin`].(string), 64)
 	}
 	if item[`realised_pnl`] != nil {
-		pnlReal, err := item[`realised_pnl`].(json.Number).Float64()
-		if err == nil {
-			account.ProfitReal = pnlReal
-		}
+		account.ProfitReal, _ = strconv.ParseFloat(item[`realised_pnl`].(string), 64)
 	}
 	if item[`unrealised_pnl`] != nil {
 		pnlUnreal, err := item[`unrealised_pnl`].(json.Number).Float64()
@@ -302,7 +287,7 @@ func SignedRequestBybit(key, secret, method, path string, body map[string]interf
 	return responseBody
 }
 
-func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode, msg string) {
+func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode, msg string, order *model.Order) {
 	postData := make(map[string]interface{})
 	postData[`order_id`] = orderId
 	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
@@ -317,9 +302,16 @@ func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode
 		}
 		errCode = strconv.FormatInt(retCode, 10)
 		msg = orderJson.Get(`ret_msg`).MustString()
+		if orderJson.Get(`result`) != nil {
+			item, _ := orderJson.Get(`result`).Map()
+			if item != nil {
+				order = &model.Order{}
+				parseOrderBybit(order, item)
+			}
+		}
 		return
 	}
-	return false, ``, ``
+	return false, ``, ``, nil
 }
 
 func queryOrderBybit(key, secret, symbol, orderId string) (orders []*model.Order) {
@@ -396,7 +388,7 @@ func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, time
 	return
 }
 
-func getFundingRateBybit(symbol string) (fundingRate float64, update int64) {
+func getFundingRateBybit(symbol string) (fundingRate float64, expire int64) {
 	postData := make(map[string]interface{})
 	symbol = model.DialectSymbol[model.Bybit][symbol]
 	postData[`symbol`] = symbol
@@ -417,11 +409,9 @@ func getFundingRateBybit(symbol string) (fundingRate float64, update int64) {
 			}
 			if instrument[`symbol`] != nil && instrument[`symbol`] == symbol &&
 				instrument[`funding_rate`] != nil && instrument[`funding_rate_timestamp`] != nil {
-				fundingRate, err = instrument[`funding_rate`].(json.Number).Float64()
-				updateTime, err := time.Parse(time.RFC3339, instrument[`funding_rate_timestamp`].(string))
-				if err == nil {
-					update = updateTime.Unix()
-				}
+				fundingRate, _ = strconv.ParseFloat(instrument[`funding_rate`].(string), 64)
+				expire, _ = instrument[`funding_rate_timestamp`].(json.Number).Int64()
+				expire += 28800
 			}
 		}
 	}
@@ -429,6 +419,9 @@ func getFundingRateBybit(symbol string) (fundingRate float64, update int64) {
 }
 
 func parseOrderBybit(order *model.Order, item map[string]interface{}) {
+	if order == nil {
+		return
+	}
 	if item[`order_id`] != nil {
 		order.OrderId = item[`order_id`].(string)
 	}
@@ -446,6 +439,9 @@ func parseOrderBybit(order *model.Order, item map[string]interface{}) {
 	}
 	if item[`price`] != nil {
 		order.Price, _ = item[`price`].(json.Number).Float64()
+	}
+	if item[`last_exec_price`] != nil {
+		order.DealPrice, _ = item[`last_exec_price`].(json.Number).Float64()
 	}
 	if item[`cum_exec_qty`] != nil {
 		order.DealAmount, _ = item[`cum_exec_qty`].(json.Number).Float64()

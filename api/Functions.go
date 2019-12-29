@@ -191,7 +191,7 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (
 			order.Symbol = symbol
 		}
 	case model.Bybit:
-		result, errCode, msg = cancelOrderBybit(key, secret, symbol, orderId)
+		result, errCode, msg, order = cancelOrderBybit(key, secret, symbol, orderId)
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
 	return result, errCode, msg, order
@@ -553,7 +553,14 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	case model.Bitmex:
 		placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	case model.Bybit:
-		placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+		if model.AppConfig.Env != `test` {
+			order.Status = model.CarryStatusSuccess
+			order.OrderId = `bybit 123`
+			order.DealPrice = price
+			order.DealAmount = amount
+		} else {
+			placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+		}
 	}
 	if order.OrderId == "0" || order.OrderId == "" {
 		order.Status = model.CarryStatusFail

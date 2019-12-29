@@ -89,19 +89,23 @@ func Test_RefreshAccount(t *testing.T) {
 	}
 	//api.GetFundingRate(model.Bybit, `btcusd_p`)
 	//api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
+	api.GetFundingRate(model.Bybit, `btcusd_p`)
 	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
 	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
 	//bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
 	//api.QueryOrderById(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `296d2bf4-7b7b-e89f-6b56-e49f5a65b82e`)
-	//api.CancelAllBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, `btcusd_p`)
+	//order := api.PlaceOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.OrderSideSell,
+	//	model.OrderTypeLimit, model.Bybit, `btcusd_p`, ``,
+	//	``, ``, 8888, 1, false)
+	//res, code, msg, order := api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit,
+	//	`btcusd_p`, order.OrderId)
+	//fmt.Println(fmt.Sprintf(`%v %s %s %f`, res, code, msg, order.DealPrice))
 	//api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret,model.Bybit,`btcusd_p`, `1234`)
-	api.PlaceOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.OrderSideBuy, model.OrderTypeMarket,
-		model.Bybit, `btcusd_p`, ``, ``, ``, 0, 1, false)
+	//order := api.QueryOrderById(model.AppConfig.BybitKey,model.AppConfig.BybitSecret, model.Bybit,
+	//	`btcusd_p`, `002501d9-5a42-4187-b9e4-f01a2941b421`)
+	//fmt.Println(order.Price)
+	//model.AppDB.Save(order)
 	//res, _ := api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `394c8c53-427d-820c-8f45-737017f939d6`, true)
-	//fmt.Println(res)
-	//api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `ethusd_p`, `db712498-e57b-dbc0-d574-a59f97e277b7`, true)
-	//fmt.Println(res)
-	//api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `ethusd_p`, `9fbe361b-d434-3012-9bae-0a85f2005c3b`, true)
 	//fmt.Println(res)
 	////api.PlaceOrder(bitmexKey, bitmexSecret,
 	//	model.OrderSideSell, model.OrderTypeStop, model.Bitmex, `btcusd_p`,
