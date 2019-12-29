@@ -473,7 +473,6 @@ func RefreshAccount(key, secret, market string) {
 		getAccountBitmex(key, secret, model.AppAccounts)
 	case model.Bybit:
 		symbols := model.GetMarketSymbols(model.Bybit)
-		symbols[`btcusd_p`] = true
 		for symbol := range symbols {
 			getAccountBybit(key, secret, symbol, model.AppAccounts)
 		}

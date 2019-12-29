@@ -292,7 +292,6 @@ func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode
 	postData[`order_id`] = orderId
 	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
 	response := SignedRequestBybit(key, secret, `POST`, `/v2/private/order/cancel`, postData)
-	fmt.Println(string(response))
 	orderJson, err := util.NewJSON(response)
 	result = false
 	if err == nil {
@@ -344,7 +343,6 @@ func getAccountBybit(key, secret, symbol string, accounts *model.Accounts) {
 	postData := make(map[string]interface{})
 	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
 	response := SignedRequestBybit(key, secret, `GET`, `/v2/private/position/list`, postData)
-	fmt.Println(string(response))
 	positionJson, err := util.NewJSON(response)
 	if err == nil {
 		positionJson = positionJson.Get(`result`)
@@ -394,7 +392,6 @@ func getFundingRateBybit(symbol string) (fundingRate float64, expire int64) {
 	postData[`symbol`] = symbol
 	response := SignedRequestBybit(``, ``, `GET`,
 		`/open-api/funding/prev-funding-rate`, postData)
-	fmt.Println(string(response))
 	instrumentJson, err := util.NewJSON(response)
 	if err == nil {
 		retCode := instrumentJson.Get(`ret_code`).MustFloat64()

@@ -87,9 +87,9 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
 	//api.GetFundingRate(model.Bybit, `btcusd_p`)
 	//api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
-	api.GetFundingRate(model.Bybit, `btcusd_p`)
 	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
 	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
 	//bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
