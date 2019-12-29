@@ -550,9 +550,16 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			time.Sleep(time.Minute * 3)
 		}
 	case model.Bitmex:
-		placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+		if model.AppConfig.Env == `test` {
+			order.Status = model.CarryStatusSuccess
+			order.OrderId = `bybit 123`
+			order.DealPrice = price
+			order.DealAmount = amount
+		} else {
+			placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+		}
 	case model.Bybit:
-		if model.AppConfig.Env != `test` {
+		if model.AppConfig.Env == `test` {
 			order.Status = model.CarryStatusSuccess
 			order.OrderId = `bybit 123`
 			order.DealPrice = price
