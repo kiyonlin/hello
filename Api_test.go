@@ -79,6 +79,10 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
+	a := []string{`1`, `2`}
+	for key, value := range a {
+		fmt.Println(fmt.Sprintf(`%d %s`, key, value))
+	}
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	var err error
