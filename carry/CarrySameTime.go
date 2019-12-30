@@ -54,12 +54,11 @@ var ProcessCarrySameTime = func(market, symbol string) {
 	}
 	if (int(startTime)-tick.Ts > 500 || int(startTime)-tickRelated.Ts > 500) ||
 		model.AppConfig.Handle != `1` || model.AppPause {
-		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
-			startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
-			int(startTime)-tickRelated.Ts))
+		//util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
+		//	startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
+		//	int(startTime)-tickRelated.Ts))
 		return
 	}
-	util.Info(fmt.Sprintf(`----------bybit %d`, int(startTime)-tickRelated.Ts))
 	placeBothOrders(market, symbol, tick, tickRelated, accountRelated, setting)
 }
 
