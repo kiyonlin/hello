@@ -59,6 +59,7 @@ var ProcessCarrySameTime = func(market, symbol string) {
 			int(startTime)-tickRelated.Ts))
 		return
 	}
+	util.Info(fmt.Sprintf(`----------bybit %d`, int(startTime)-tickRelated.Ts))
 	placeBothOrders(market, symbol, tick, tickRelated, accountRelated, setting)
 }
 
