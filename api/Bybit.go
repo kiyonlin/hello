@@ -71,7 +71,7 @@ func WsDepthServeBybit(markets *model.Markets, errHandler ErrHandler) (chan stru
 			return
 		}
 		if strings.Contains(topic, `orderBook_200.100ms.`) {
-			symbol := model.StandardSymbol[model.Bybit][topic[strings.Index(topic, `.`)+1:]]
+			symbol := model.StandardSymbol[model.Bybit][topic[strings.LastIndex(topic, `.`)+1:]]
 			go handleOrderBookBybit(markets, symbol, ts, depthJson)
 		} else if topic == `position` {
 			go handleAccountBybit(depthJson.Get(`data`))
