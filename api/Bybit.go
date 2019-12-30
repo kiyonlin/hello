@@ -70,7 +70,7 @@ func WsDepthServeBybit(markets *model.Markets, errHandler ErrHandler) (chan stru
 			util.SocketInfo(`bybit parse err` + string(event))
 			return
 		}
-		if strings.Contains(topic, `orderBookL2_25.`) {
+		if strings.Contains(topic, `orderBook_200.100ms.`) {
 			symbol := model.StandardSymbol[model.Bybit][topic[strings.Index(topic, `.`)+1:]]
 			go handleOrderBookBybit(markets, symbol, ts, depthJson)
 		} else if topic == `position` {
