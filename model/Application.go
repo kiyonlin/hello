@@ -445,7 +445,7 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		if subType == SubscribeDeal {
 			return `trade.` + subSymbol
 		} else if subType == SubscribeDepth {
-			return `orderBookL2_25.` + subSymbol
+			return `orderBook_200.100ms.` + subSymbol
 		}
 	case Coinbig:
 		switch symbol {
