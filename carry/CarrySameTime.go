@@ -111,9 +111,9 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 		priceX += 4 * p1
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, market, setting.MarketRelated),
-		fmt.Sprintf("[搬砖参数] %s money price:%f %s:%f p1:%f p2:%f py:%f px:%f ask:%f askRelated free:%f\n",
+		fmt.Sprintf("[搬砖参数] %s money price:%f %s:%f p1:%f p2:%f py:%f px:%f related free:%f\n",
 			market, zFee, setting.MarketRelated, zFeeRelated,
-			p1, p2, py, priceX, -1*accountRelated.Free, accountRelated.Free))
+			p1, p2, py, priceX, accountRelated.Free))
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(setting.MarketRelated, symbol))
 	calcAmtPriceBuy := tick.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
 	calcAmtPriceSell := tick.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
@@ -138,10 +138,10 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
 			util.Notice(fmt.Sprintf(`情况1 %f amount %f return %s %s money price: %f
-				%s:%f px:%f orderParam:%s relatedB1:%f Ask0:%f p1:%f relatedBa:%f`,
+				%s:%f px:%f orderParam:%s relatedB1:%f Ask0:%f p1:%f relatedBa:%f related fee:%f`,
 				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
 				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fmb1,
-				tick.Asks[0].Price, p1, fmbaNew))
+				tick.Asks[0].Price, p1, fmbaNew, accountRelated.Free))
 		}
 	} else if fmb1+priceDistance >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
 		tick.Bids[0].Amount*7 < tick.Asks[0].Amount && tick.Asks[0].Amount > 700000 {
@@ -158,10 +158,10 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
 			util.Notice(fmt.Sprintf(`情况 2%f amount %f return %s %s money fee %f %s:%f px:%f orderParam:%s
-				relatedB1:%f Bid0:%f p1:%f relatedBa:%f B0Amt:%f A0Amt:%f`,
+				relatedB1:%f Bid0:%f p1:%f relatedBa:%f B0Amt:%f A0Amt:%f related fee:%f`,
 				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
 				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType,
-				fmb1, tick.Bids[0].Price, p1, fmba, tick.Bids[0].Amount, tick.Asks[0].Amount))
+				fmb1, tick.Bids[0].Price, p1, fmba, tick.Bids[0].Amount, tick.Asks[0].Amount, accountRelated.Free))
 		}
 	} else if fms1-priceDistance <= calcAmtPriceSellNew+priceX && fmsaNew >= setting.RefreshLimitLow {
 		amount := math.Min(math.Min(0.8*fmsaNew, a2), setting.GridAmount)
@@ -176,9 +176,9 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
 			util.Notice(fmt.Sprintf(`情况 3 %f amount %f return %s %s money price: %f %s:%f px:%f orderParam:%s
-				relatedS1:%f, b0:%f p2:%f`, lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market,
+				relatedS1:%f, b0:%f p2:%f  related fee:%f`, lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market,
 				zFee, setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fms1,
-				tick.Bids[0].Price, p2))
+				tick.Bids[0].Price, p2, accountRelated.Free))
 		}
 	} else if fms1-priceDistance <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
 		tick.Asks[0].Amount*7 < tick.Bids[0].Amount && tick.Bids[0].Amount > 700000 {
@@ -195,10 +195,10 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
 			util.Notice(fmt.Sprintf(`情况4 %f amount %f return %s %s money price %f %s:%f px:%f 
-				orderParam:%s Ask0:%f relatedS1:%f p2:%f relatedSa:%f B0Amt:%f A0Amt:%f`,
+				orderParam:%s Ask0:%f relatedS1:%f p2:%f relatedSa:%f B0Amt:%f A0Amt:%f related fee:%f`,
 				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
 				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType,
-				tick.Asks[0].Price, fms1, p2, fmsa, tick.Bids[0].Amount, tick.Asks[0].Amount))
+				tick.Asks[0].Price, fms1, p2, fmsa, tick.Bids[0].Amount, tick.Asks[0].Amount, accountRelated.Free))
 		}
 	}
 }
