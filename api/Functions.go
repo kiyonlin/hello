@@ -524,6 +524,13 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		order.OrderId = fmt.Sprintf(`%s%s%d`, market, symbol, util.GetNow().UnixNano())
 		order.DealPrice = price
 		order.DealAmount = amount
+		account := model.AppAccounts.GetAccount(market, symbol)
+		if orderSide == model.OrderSideSell {
+			account.Free -= amount
+		} else {
+			account.Free += amount
+		}
+		model.AppAccounts.SetAccount(market, symbol, account)
 		if saveDB {
 			go model.AppDB.Save(&order)
 		}
