@@ -433,6 +433,9 @@ func _(key, secret, market string, coins map[string]bool) {
 
 func RefreshAccount(key, secret, market string) {
 	util.SocketInfo(`refresh all accounts in market ` + market)
+	if model.AppConfig.Env == `test` {
+		return
+	}
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:

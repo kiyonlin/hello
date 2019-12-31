@@ -1,6 +1,7 @@
 package model
 
 import (
+	"hello/util"
 	"sync"
 	"time"
 )
@@ -52,7 +53,11 @@ func (accounts *Accounts) GetAccount(marketName string, currency string) *Accoun
 	accounts.Lock.Lock()
 	defer accounts.Lock.Unlock()
 	if accounts.Data[marketName] == nil {
-		return nil
+		accounts.Data[marketName] = make(map[string]*Account)
+	}
+	if accounts.Data[marketName][currency] == nil && AppConfig.Env == `test` {
+		accounts.Data[marketName][currency] = &Account{
+			Market: marketName, Ts: util.GetNowUnixMillion(), Currency: currency}
 	}
 	return accounts.Data[marketName][currency]
 }

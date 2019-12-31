@@ -28,7 +28,6 @@ var ProcessCarrySameTime = func(market, symbol string) {
 	_, tickRelated := model.AppMarkets.GetBidAsk(symbol, setting.MarketRelated)
 	//account := model.AppAccounts.GetAccount(market, symbol)
 	accountRelated := model.AppAccounts.GetAccount(setting.MarketRelated, symbol)
-	util.Info(fmt.Sprintf(`account %s %s %f`, setting.MarketRelated, accountRelated.Currency, accountRelated.Free))
 	if accountRelated == nil {
 		api.RefreshAccount(``, ``, setting.MarketRelated)
 		util.Info(`error1 account is nil, refresh and return`)
@@ -112,7 +111,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 		priceX += 4 * p1
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, market, setting.MarketRelated),
-		fmt.Sprintf("[搬砖参数] %s money price:%f %s:%f p1:%f p2:%f py:%f px:%f ask:%f askRelated:%f\n",
+		fmt.Sprintf("[搬砖参数] %s money price:%f %s:%f p1:%f p2:%f py:%f px:%f ask:%f askRelated free:%f\n",
 			market, zFee, setting.MarketRelated, zFeeRelated,
 			p1, p2, py, priceX, -1*accountRelated.Free, accountRelated.Free))
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(setting.MarketRelated, symbol))
