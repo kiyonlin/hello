@@ -28,6 +28,7 @@ var ProcessCarrySameTime = func(market, symbol string) {
 	_, tickRelated := model.AppMarkets.GetBidAsk(symbol, setting.MarketRelated)
 	//account := model.AppAccounts.GetAccount(market, symbol)
 	accountRelated := model.AppAccounts.GetAccount(setting.MarketRelated, symbol)
+	util.Info(fmt.Sprintf(`account %s %s %f`, setting.MarketRelated, accountRelated.Currency, accountRelated.Free))
 	if accountRelated == nil {
 		api.RefreshAccount(``, ``, setting.MarketRelated)
 		util.Info(`error1 account is nil, refresh and return`)
