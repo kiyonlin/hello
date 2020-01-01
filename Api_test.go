@@ -79,10 +79,6 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
-	a := []string{`1`, `2`}
-	for key, value := range a {
-		fmt.Println(fmt.Sprintf(`%d %s`, key, value))
-	}
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	var err error
@@ -92,7 +88,10 @@ func Test_RefreshAccount(t *testing.T) {
 		return
 	}
 	//api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
-	api.GetFundingRate(model.Bybit, `btcusd_p`)
+	rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
+	fmt.Println(rate)
+	rate = api.GetFundingRate(model.Bybit, `btcusd_p`)
+	fmt.Println(rate)
 	//api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
 	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
 	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
