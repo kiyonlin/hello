@@ -295,13 +295,14 @@ func GetBtcBalance(key, secret, market string) (balance float64) {
 	return
 }
 
-func GetFundingRate(market, symbol string) (fundingRate float64) {
-	rate, expireTime := model.GetFundingRate(market, symbol)
+func GetFundingRate(market, symbol string) (fundingRate float64, expireTime int64) {
+	fundingRate, expireTime = model.GetFundingRate(market, symbol)
 	now := util.GetNow().Unix()
 	if now-60 < expireTime {
-		return rate
+		return
 	}
-	util.Notice(fmt.Sprintf(`before update funding %s %s rate %f expire %d`, market, symbol, rate, expireTime))
+	util.Notice(fmt.Sprintf(`before update funding %s %s rate %f expire %d`,
+		market, symbol, fundingRate, expireTime))
 	switch market {
 	case model.Fmex:
 		fundingRate, expireTime = getFundingRateFmex(symbol)
@@ -313,7 +314,7 @@ func GetFundingRate(market, symbol string) (fundingRate float64) {
 	model.SetFundingRate(market, symbol, fundingRate, expireTime)
 	util.Notice(fmt.Sprintf(`after update funding %s %s rate %f expire %d`,
 		market, symbol, fundingRate, expireTime))
-	return fundingRate
+	return
 }
 
 func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.Order) {

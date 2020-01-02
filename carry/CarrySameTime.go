@@ -92,8 +92,15 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 	p2 := 0.0
 	a1 := setting.AmountLimit
 	a2 := setting.AmountLimit
-	zFee := api.GetFundingRate(market, symbol)
-	zFeeRelated := api.GetFundingRate(setting.MarketRelated, symbol)
+	zFee, expired := api.GetFundingRate(market, symbol)
+	zFeeRelated, expiredRelated := api.GetFundingRate(setting.MarketRelated, symbol)
+	if setting.MarketRelated == model.Bybit {
+		if expired > expiredRelated {
+			zFee = 0
+		} else {
+			zFeeRelated = 0
+		}
+	}
 	priceX := setting.PriceX + 1.2*(zFeeRelated-zFee)*(tickRelated.Bids[0].Price+tickRelated.Asks[0].Price)/2
 	py := priceX
 	if accountRelated.Free > setting.AmountLimit/10 && -1*accountRelated.Free < setting.AmountLimit/-10 {
@@ -111,7 +118,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 		priceX += 4 * p1
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, market, setting.MarketRelated),
-		fmt.Sprintf("[搬砖参数] %s money price:%f %s:%f p1:%f p2:%f py:%f px:%f related free:%f\n",
+		fmt.Sprintf("[搬砖参数] %s资金费率:%f %s资金费率%f p1:%f p2:%f py:%f px:%f related free:%f\n",
 			market, zFee, setting.MarketRelated, zFeeRelated,
 			p1, p2, py, priceX, accountRelated.Free))
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(setting.MarketRelated, symbol))
