@@ -280,7 +280,8 @@ func SignedRequestBybit(key, secret, method, path string, body map[string]interf
 	sign := hex.EncodeToString(hash.Sum(nil))
 	body[`sign`] = sign
 	paramStr = util.ComposeParams(body)
-	headers := map[string]string{"Content-Type": "application/json"}
+	//headers := map[string]string{"Content-Type": "application/json"}
+	headers := map[string]string{`api_key`: key, `sign`: sign, "Content-Type": "application/json"}
 	if method == `GET` {
 		uri = uri + `?` + paramStr
 	}

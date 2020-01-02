@@ -538,8 +538,10 @@ func NewConfig() {
 	if AppConfig.Env == `test` {
 		AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
 		AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
-		AppConfig.WSUrls[Bybit] = `wss://stream-testnet.bybit.com/realtime`
-		AppConfig.RestUrls[Bybit] = `https://api-testnet.bybit.com`
+		//AppConfig.WSUrls[Bybit] = `wss://stream-testnet.bybit.com/realtime`
+		//AppConfig.RestUrls[Bybit] = `https://api-testnet.bybit.com`
+		AppConfig.WSUrls[Bybit] = `wss://stream.bybit.com/realtime`
+		AppConfig.RestUrls[Bybit] = `https://api.bybit.com`
 	} else {
 		AppConfig.WSUrls[Fmex] = `wss://api.fmex.com/v2/ws`
 		AppConfig.RestUrls[Fmex] = `https://api.fmex.com/`
