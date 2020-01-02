@@ -145,13 +145,13 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
 			util.Notice(fmt.Sprintf(`情况1 %f amount %f return %s %s money price: %f
-				%s:%f px:%f orderParam:%s relatedB1:%f Ask0:%f p1:%f relatedBa:%f related fee:%f`,
+				%s:%f px:%f orderParam:%s relatedB1:%f Ask0:%f p1:%f relatedBa:%f %s:%f`,
 				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
 				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fmb1,
-				tick.Asks[0].Price, p1, fmbaNew, accountRelated.Free))
+				tick.Asks[0].Price, p1, fmbaNew, setting.MarketRelated, accountRelated.Free))
 		}
 	} else if fmb1+priceDistance >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
-		tick.Bids[0].Amount*7 < tick.Asks[0].Amount && tick.Asks[0].Amount > 700000 {
+		tick.Bids[0].Amount*8 < tick.Asks[0].Amount && tick.Asks[0].Amount > 800000 {
 		amount := math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, setting.MarketRelated,
@@ -164,11 +164,11 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
-			util.Notice(fmt.Sprintf(`情况 2%f amount %f return %s %s money fee %f %s:%f px:%f orderParam:%s
-				relatedB1:%f Bid0:%f p1:%f relatedBa:%f B0Amt:%f A0Amt:%f related fee:%f`,
-				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
-				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType,
-				fmb1, tick.Bids[0].Price, p1, fmba, tick.Bids[0].Amount, tick.Asks[0].Amount, accountRelated.Free))
+			util.Notice(fmt.Sprintf(`情况2 %f amount %f return %s %s money fee %f %s:%f px:%f orderParam:%s
+				relatedB1:%f Bid0:%f p1:%f relatedBa:%f B0Amt:%f A0Amt:%f %s:%f`,
+				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee, setting.MarketRelated,
+				zFeeRelated, priceX, lastOrder.RefreshType, fmb1, tick.Bids[0].Price, p1, fmba,
+				tick.Bids[0].Amount, tick.Asks[0].Amount, setting.MarketRelated, accountRelated.Free))
 		}
 	} else if fms1-priceDistance <= calcAmtPriceSellNew+priceX && fmsaNew >= setting.RefreshLimitLow {
 		amount := math.Min(math.Min(0.8*fmsaNew, a2), setting.GridAmount)
@@ -182,13 +182,13 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
-			util.Notice(fmt.Sprintf(`情况 3 %f amount %f return %s %s money price: %f %s:%f px:%f orderParam:%s
-				relatedS1:%f, b0:%f p2:%f  related fee:%f`, lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market,
+			util.Notice(fmt.Sprintf(`情况3 %f amount %f return %s %s money price: %f %s:%f px:%f orderParam:%s
+				relatedS1:%f, b0:%f p2:%f %s:%f`, lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market,
 				zFee, setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fms1,
-				tick.Bids[0].Price, p2, accountRelated.Free))
+				tick.Bids[0].Price, p2, setting.MarketRelated, accountRelated.Free))
 		}
 	} else if fms1-priceDistance <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
-		tick.Asks[0].Amount*7 < tick.Bids[0].Amount && tick.Bids[0].Amount > 700000 {
+		tick.Asks[0].Amount*8 < tick.Bids[0].Amount && tick.Bids[0].Amount > 800000 {
 		amount := math.Min(math.Min(fmsa*0.8, a2), setting.GridAmount)
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, setting.MarketRelated,
@@ -202,10 +202,10 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			}
 			util.Notice(fmt.Sprintf(`情况4 %f amount %f return %s %s money price %f %s:%f px:%f 
-				orderParam:%s Ask0:%f relatedS1:%f p2:%f relatedSa:%f B0Amt:%f A0Amt:%f related fee:%f`,
-				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
-				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType,
-				tick.Asks[0].Price, fms1, p2, fmsa, tick.Bids[0].Amount, tick.Asks[0].Amount, accountRelated.Free))
+				orderParam:%s Ask0:%f relatedS1:%f p2:%f relatedSa:%f B0Amt:%f A0Amt:%f %s:%f`,
+				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee, setting.MarketRelated,
+				zFeeRelated, priceX, lastOrder.RefreshType, tick.Asks[0].Price, fms1, p2, fmsa,
+				tick.Bids[0].Amount, tick.Asks[0].Amount, setting.MarketRelated, accountRelated.Free))
 		}
 	}
 }
