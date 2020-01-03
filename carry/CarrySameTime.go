@@ -151,7 +151,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				tick.Asks[0].Price, p1, fmbaNew, setting.MarketRelated, accountRelated.Free))
 		}
 	} else if fmb1+priceDistance >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
-		tick.Bids[0].Amount*8 < tick.Asks[0].Amount && tick.Asks[0].Amount > 800000 {
+		tick.Bids[0].Amount*9 < tick.Asks[0].Amount && tick.Asks[0].Amount > 900000 {
 		amount := math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, setting.MarketRelated,
@@ -188,7 +188,7 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 				tick.Bids[0].Price, p2, setting.MarketRelated, accountRelated.Free))
 		}
 	} else if fms1-priceDistance <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
-		tick.Asks[0].Amount*8 < tick.Bids[0].Amount && tick.Bids[0].Amount > 800000 {
+		tick.Asks[0].Amount*9 < tick.Bids[0].Amount && tick.Bids[0].Amount > 900000 {
 		amount := math.Min(math.Min(fmsa*0.8, a2), setting.GridAmount)
 		if amount > 1 {
 			go api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, setting.MarketRelated,
