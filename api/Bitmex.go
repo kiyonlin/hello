@@ -666,7 +666,7 @@ func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, exe
 		postData[`execInst`] = `LastPrice`
 	}
 	response := SignedRequestBitmex(key, secret, `POST`, `/order`, postData)
-	util.Notice(string(response))
+	util.Notice(`---- place bitmex` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		item, err := orderJson.Map()
