@@ -389,6 +389,13 @@ func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, time
 	return
 }
 
+func GetRiskLimit() {
+	postData := make(map[string]interface{})
+	response := SignedRequestBybit(``, ``, `GET`,
+		`/open-api/wallet/risk-limit/list`, postData)
+	fmt.Println(string(response))
+}
+
 func getFundingRateBybit(symbol string) (fundingRate float64, expire int64) {
 	postData := make(map[string]interface{})
 	symbol = model.DialectSymbol[model.Bybit][symbol]

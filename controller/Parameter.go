@@ -286,15 +286,28 @@ func GetBalance(c *gin.Context) {
 }
 
 func GetParameters(c *gin.Context) {
+	msg := ``
+	var orders model.Order
+	now := util.GetNow()
+	today := fmt.Sprintf(`%d-%d-%d`, now.Year(), now.Month(), now.Day())
+	orderRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,sum(deal_amount),
+		round(sum(price*deal_amount)/sum(deal_amount),1),count(id)`).Where(`
+		deal_amount>? and date(order_time)=?`, 0, today).Group(`market,symbol,order_side`).Rows()
+	for orderRows.Next() {
+		var market, symbol, orderSide, dealAmount, dealPrice, count string
+		_ = orderRows.Scan(&market, &symbol, &orderSide, &dealAmount, &dealPrice, &count)
+		msg += fmt.Sprintf("[%s成交状况]%s %s %s 成交数量:%s 均价:%s 次数:%s\n",
+			today, market, symbol, orderSide, dealAmount, dealPrice, count)
+	}
+	orderRows.Close()
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
-	msg := ``
 	for _, value := range model.CarryInfo {
 		msg += value + "\n"
 	}
 	for rows.Next() {
-		_ = rows.Scan(&setting)
+		//_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
 			gridPriceDistance, priceX string
 		valid := false
