@@ -483,6 +483,20 @@ func RefreshAccount(key, secret, market string) {
 	}
 }
 
+func IsValid(order *model.Order) (valid bool) {
+	if order == nil || order.OrderId == `` || order.Status == model.CarryStatusFail {
+		return false
+	}
+	return true
+}
+
+func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam string,
+	price, amount float64, saveDB bool, channel chan model.Order) {
+	order := PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam, price,
+		amount, saveDB)
+	channel <- *order
+}
+
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
@@ -494,7 +508,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	if amount < 0.0001 {
 		util.Notice(`can not place order with amount 0`)
 		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
+			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``, RefreshType: orderParam,
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
 	//valid := false
@@ -518,7 +532,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}
 	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price,
+		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price, RefreshType: orderParam,
 		OrderTime: util.GetNow()}
 	if model.AppConfig.Env == `test` {
 		order.Status = model.CarryStatusSuccess

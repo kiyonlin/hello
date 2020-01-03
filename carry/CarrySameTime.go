@@ -6,13 +6,53 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"sync"
 	"time"
 )
 
 const PostOnly = `ParticipateDoNotInitiate`
 
 var carrySameTiming = false
-var lastOrder = &model.Order{}
+var carrySameTimeLock sync.Mutex
+
+var lastOrders = make(map[string]map[string]*model.Order)
+var carryChannels = make(map[string]chan model.Order)
+
+func setLastOrder(key, market string, order *model.Order) {
+	defer carrySameTimeLock.Unlock()
+	carrySameTimeLock.Lock()
+	if lastOrders == nil {
+		lastOrders = make(map[string]map[string]*model.Order)
+	}
+	if lastOrders[key] == nil {
+		lastOrders[key] = make(map[string]*model.Order)
+	}
+	lastOrders[key][market] = order
+}
+
+func getLastOrder(key, market string) (order *model.Order) {
+	defer carrySameTimeLock.Unlock()
+	carrySameTimeLock.Lock()
+	if lastOrders == nil {
+		lastOrders = make(map[string]map[string]*model.Order)
+	}
+	if lastOrders[key] == nil {
+		lastOrders[key] = make(map[string]*model.Order)
+	}
+	return lastOrders[key][market]
+}
+
+func getCarryChannel(key string) (carryChannel chan model.Order) {
+	defer carrySameTimeLock.Unlock()
+	carrySameTimeLock.Lock()
+	if carryChannels == nil {
+		carryChannels = make(map[string]chan model.Order)
+	}
+	if carryChannels[key] == nil {
+		carryChannels[key] = make(chan model.Order, 0)
+	}
+	return carryChannels[key]
+}
 
 func setCarrySameTiming(value bool) {
 	carrySameTiming = value
@@ -43,15 +83,6 @@ var ProcessCarrySameTime = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`error3 %s or %s depth tick length not good`, market, setting.MarketRelated))
 		return
 	}
-	if carrySameTiming {
-		return
-	}
-	setCarrySameTiming(true)
-	defer setCarrySameTiming(false)
-	if lastOrder != nil && lastOrder.Status == model.CarryStatusFail {
-		reOrder(tick, setting)
-		return
-	}
 	if (int(startTime)-tick.Ts > 500 || int(startTime)-tickRelated.Ts > 10000) ||
 		model.AppConfig.Handle != `1` || model.AppPause {
 		//util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
@@ -59,34 +90,50 @@ var ProcessCarrySameTime = func(market, symbol string) {
 		//	int(startTime)-tickRelated.Ts))
 		return
 	}
-	placeBothOrders(market, symbol, tick, tickRelated, accountRelated, setting)
+	if carrySameTiming {
+		return
+	}
+	setCarrySameTiming(true)
+	defer setCarrySameTiming(false)
+	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
+	orderMarket := getLastOrder(key, market)
+	orderRelated := getLastOrder(key, setting.MarketRelated)
+	if (api.IsValid(orderMarket) && api.IsValid(orderRelated)) ||
+		(!api.IsValid(orderMarket) && !api.IsValid(orderRelated)) {
+		placeBothOrders(market, symbol, key, tick, tickRelated, accountRelated, setting)
+	} else if !api.IsValid(orderMarket) {
+		reOrder(key, market, orderMarket, tick, setting)
+	} else if !api.IsValid(orderRelated) {
+		reOrder(key, market, orderRelated, tick, setting)
+	}
 }
 
-func reOrder(tick *model.BidAsk, setting *model.Setting) {
+func reOrder(key, market string, lastOrder *model.Order, tick *model.BidAsk, setting *model.Setting) {
 	if lastOrder.Amount-lastOrder.DealAmount < 1 {
-		lastOrder = nil
+		setLastOrder(key, market, nil)
+		setLastOrder(key, setting.MarketRelated, nil)
+		return
 	}
 	price := lastOrder.Price
 	priceType := `保持价格`
-	if lastOrder.RefreshType == PostOnly && lastOrder.OrderId != `` {
+	if lastOrder.RefreshType == PostOnly {
 		price = tick.Bids[0].Price
 		if lastOrder.OrderSide == model.OrderSideSell {
 			price = tick.Asks[0].Price
 		}
 		priceType = `买卖1价格`
 	}
-	refreshType := lastOrder.RefreshType
-	util.Notice(fmt.Sprintf(`complement last %s order %s %s %s %s %f %f orderParam:<%s> %s`,
+	util.Notice(fmt.Sprintf(`---- reorder: %s order %s %s %s %s %f %f orderParam:<%s> %s`,
 		lastOrder.Market, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market, lastOrder.Symbol,
 		price, lastOrder.Amount-lastOrder.DealAmount, lastOrder.RefreshType, priceType))
 	lastOrder = api.PlaceOrder(``, ``, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market,
-		lastOrder.Symbol, ``, setting.AccountType, refreshType,
+		lastOrder.Symbol, ``, setting.AccountType, lastOrder.RefreshType,
 		price, lastOrder.Amount-lastOrder.DealAmount, true)
-	lastOrder.RefreshType = refreshType
+	setLastOrder(key, lastOrder.Market, lastOrder)
 }
 
 // account.free被设置成-1 * accountRelated.free
-func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, accountRelated *model.Account,
+func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk, accountRelated *model.Account,
 	setting *model.Setting) {
 	p1 := 0.0
 	p2 := 0.0
@@ -132,80 +179,72 @@ func placeBothOrders(market, symbol string, tick, tickRelated *model.BidAsk, acc
 	fmsaNew := getDepthAmountSell(calcAmtPriceSellNew, 0, tickRelated)
 	fmb1 := tickRelated.Bids[0].Price + priceX
 	fms1 := tickRelated.Asks[0].Price + priceX
+	amount := 0.0
+	orderSide := ``
+	orderSideRelated := ``
+	orderPrice := 0.0
+	orderPriceRelated := 0.0
+	carryType := 0
+	orderParam := ``
 	if fmb1+priceDistance >= calcAmtPriceBuyNew+priceX && fmbaNew >= setting.RefreshLimitLow {
-		amount := math.Min(math.Min(0.8*fmbaNew, a1), setting.GridAmount)
-		if amount > 1 {
-			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, setting.MarketRelated,
-				symbol, ``, setting.AccountType, ``, calcAmtPriceBuyNew, amount, true)
-			lastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market,
-				symbol, ``, setting.AccountType, ``, tick.Asks[0].Price*1.001, amount, true)
-			lastOrder.RefreshType = ``
-			if lastOrder != nil && lastOrder.OrderId != `` && lastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 500)
-				api.RefreshAccount(``, ``, setting.MarketRelated)
-			}
-			util.Notice(fmt.Sprintf(`情况1 %f amount %f return %s %s money price: %f
-				%s:%f px:%f orderParam:%s relatedB1:%f Ask0:%f p1:%f relatedBa:%f %s:%f`,
-				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee,
-				setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fmb1,
-				tick.Asks[0].Price, p1, fmbaNew, setting.MarketRelated, accountRelated.Free))
-		}
+		amount = math.Min(math.Min(0.8*fmbaNew, a1), setting.GridAmount)
+		orderSideRelated = model.OrderSideSell
+		orderSide = model.OrderSideBuy
+		orderPriceRelated = calcAmtPriceBuyNew
+		orderPrice = tick.Asks[0].Price * 1.001
+		carryType = 1
 	} else if fmb1+priceDistance >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
 		tick.Bids[0].Amount*9 < tick.Asks[0].Amount && tick.Asks[0].Amount > 900000 {
-		amount := math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
-		if amount > 1 {
-			go api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, setting.MarketRelated,
-				symbol, ``, setting.AccountType, ``, calcAmtPriceBuy, amount, true)
-			lastOrder = api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, market,
-				symbol, ``, setting.AccountType, PostOnly,
-				tick.Bids[0].Price, amount, true)
-			lastOrder.RefreshType = PostOnly
-			if lastOrder != nil && lastOrder.OrderId != `` && lastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 500)
-				api.RefreshAccount(``, ``, setting.MarketRelated)
-			}
-			util.Notice(fmt.Sprintf(`情况2 %f amount %f return %s %s money fee %f %s:%f px:%f orderParam:%s
-				relatedB1:%f Bid0:%f p1:%f relatedBa:%f B0Amt:%f A0Amt:%f %s:%f`,
-				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee, setting.MarketRelated,
-				zFeeRelated, priceX, lastOrder.RefreshType, fmb1, tick.Bids[0].Price, p1, fmba,
-				tick.Bids[0].Amount, tick.Asks[0].Amount, setting.MarketRelated, accountRelated.Free))
-		}
+		amount = math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
+		orderSideRelated = model.OrderSideSell
+		orderPriceRelated = calcAmtPriceBuy
+		orderSide = model.OrderSideBuy
+		orderPrice = tick.Bids[0].Price
+		orderParam = PostOnly
+		carryType = 2
 	} else if fms1-priceDistance <= calcAmtPriceSellNew+priceX && fmsaNew >= setting.RefreshLimitLow {
-		amount := math.Min(math.Min(0.8*fmsaNew, a2), setting.GridAmount)
-		if amount > 0 {
-			api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, setting.MarketRelated,
-				symbol, ``, setting.AccountType, ``, calcAmtPriceSellNew, amount, true)
-			lastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market,
-				symbol, ``, setting.AccountType, ``, tick.Bids[0].Price*0.999, amount, true)
-			lastOrder.RefreshType = ``
-			if lastOrder != nil && lastOrder.OrderId != `` && lastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 500)
-				api.RefreshAccount(``, ``, setting.MarketRelated)
-			}
-			util.Notice(fmt.Sprintf(`情况3 %f amount %f return %s %s money price: %f %s:%f px:%f orderParam:%s
-				relatedS1:%f, b0:%f p2:%f %s:%f`, lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market,
-				zFee, setting.MarketRelated, zFeeRelated, priceX, lastOrder.RefreshType, fms1,
-				tick.Bids[0].Price, p2, setting.MarketRelated, accountRelated.Free))
-		}
+		amount = math.Min(math.Min(0.8*fmsaNew, a2), setting.GridAmount)
+		orderSideRelated = model.OrderSideBuy
+		orderSide = model.OrderSideSell
+		orderPrice = tick.Bids[0].Price * 0.999
+		orderPriceRelated = calcAmtPriceSellNew
+		carryType = 3
 	} else if fms1-priceDistance <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
 		tick.Asks[0].Amount*9 < tick.Bids[0].Amount && tick.Bids[0].Amount > 900000 {
-		amount := math.Min(math.Min(fmsa*0.8, a2), setting.GridAmount)
-		if amount > 1 {
-			go api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, setting.MarketRelated,
-				symbol, ``, setting.AccountType, ``, calcAmtPriceSell, amount, true)
-			lastOrder = api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, market,
-				symbol, ``, setting.AccountType, PostOnly,
-				tick.Asks[0].Price, amount, true)
-			lastOrder.RefreshType = PostOnly
-			if lastOrder != nil && lastOrder.OrderId != `` && lastOrder.Status != model.CarryStatusFail {
-				time.Sleep(time.Millisecond * 500)
-				api.RefreshAccount(``, ``, setting.MarketRelated)
+		amount = math.Min(math.Min(fmsa*0.8, a2), setting.GridAmount)
+		orderSideRelated = model.OrderSideBuy
+		orderSide = model.OrderSideSell
+		orderPriceRelated = calcAmtPriceSell
+		orderParam = PostOnly
+		orderPrice = tick.Asks[0].Price
+		carryType = 4
+	}
+	if amount > 1 {
+		util.Notice(fmt.Sprintf(`情况%d %s-%s, 资金费率: %f-%f priceX:%f fmb1:%f fms1:%f fmba:%f fmsa:%f fmbaNew:%f
+			fmsaNew:%f tickA0:%f tickB0:%f p1:%f p2:%f 持仓:%f`,
+			carryType, market, setting.MarketRelated, zFee, zFeeRelated, priceX, fmb1, fms1, fmba, fmsa, fmbaNew,
+			fmsaNew, tick.Asks[0].Price, tick.Bids[0].Price, p1, p2, accountRelated.Free))
+		setLastOrder(key, market, nil)
+		setLastOrder(key, setting.MarketRelated, nil)
+		carryChannel := getCarryChannel(key)
+		go api.PlaceSyncOrders(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol,
+			``, setting.AccountType, ``, orderPriceRelated, amount, true, carryChannel)
+		go api.PlaceSyncOrders(``, ``, orderSide, model.OrderTypeLimit, market, symbol, ``,
+			setting.AccountType, orderParam, orderPrice, amount, true, carryChannel)
+		for true {
+			order := <-carryChannel
+			util.Notice(fmt.Sprintf(`---- get order %s %s %s`, order.Market, order.OrderId, order.Status))
+			setLastOrder(key, order.Market, &order)
+			if getLastOrder(key, market) != nil && getLastOrder(key, setting.Market) != nil {
+				util.Notice(`---- get both, break`)
+				break
 			}
-			util.Notice(fmt.Sprintf(`情况4 %f amount %f return %s %s money price %f %s:%f px:%f 
-				orderParam:%s Ask0:%f relatedS1:%f p2:%f relatedSa:%f B0Amt:%f A0Amt:%f %s:%f`,
-				lastOrder.Price, lastOrder.Amount, lastOrder.OrderId, market, zFee, setting.MarketRelated,
-				zFeeRelated, priceX, lastOrder.RefreshType, tick.Asks[0].Price, fms1, p2, fmsa,
-				tick.Bids[0].Amount, tick.Asks[0].Amount, setting.MarketRelated, accountRelated.Free))
+		}
+		orderMarket := getLastOrder(key, market)
+		orderRelated := getLastOrder(key, setting.MarketRelated)
+		if api.IsValid(orderMarket) && api.IsValid(orderRelated) {
+			time.Sleep(time.Millisecond * 500)
+			api.RefreshAccount(``, ``, setting.MarketRelated)
 		}
 	}
 }
