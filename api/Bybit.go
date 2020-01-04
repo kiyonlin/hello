@@ -375,7 +375,7 @@ func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, time
 	postData["qty"] = amount
 	postData[`time_in_force`] = timeInForce
 	response := SignedRequestBybit(key, secret, `POST`, `/v2/private/order/create`, postData)
-	util.Notice(`place bitmex` + string(response))
+	util.Notice(`place bybit` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderJson = orderJson.Get(`result`)

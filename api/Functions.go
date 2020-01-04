@@ -48,7 +48,11 @@ func GetMinAmount(market, symbol string) float64 {
 		case `ethusd_p`:
 			return 1
 		}
-
+	case model.Bybit:
+		switch symbol {
+		case `btcusd_p`:
+			return 1
+		}
 	}
 	return 0
 }
@@ -97,6 +101,11 @@ func GetPriceDecimal(market, symbol string) float64 {
 		case `ethusd_p`:
 			return 1.5
 		}
+	case model.Bybit:
+		switch symbol {
+		case `btcusd_p`:
+			return 0.5
+		}
 	}
 	return 8
 }
@@ -132,6 +141,11 @@ func GetAmountDecimal(market, symbol string) float64 {
 		case `btcusd_p`:
 			return 0
 		case `ethusd_p`:
+			return 0
+		}
+	case model.Bybit:
+		switch symbol {
+		case `btcusd_p`:
 			return 0
 		}
 	}
