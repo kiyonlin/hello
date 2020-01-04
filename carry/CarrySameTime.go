@@ -235,7 +235,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			order := <-carryChannel
 			util.Notice(fmt.Sprintf(`---- get order %s %s %s`, order.Market, order.OrderId, order.Status))
 			setLastOrder(key, order.Market, &order)
-			if getLastOrder(key, market) != nil && getLastOrder(key, setting.Market) != nil {
+			if getLastOrder(key, market) != nil && getLastOrder(key, setting.MarketRelated) != nil {
 				util.Notice(`---- get both, break`)
 				break
 			}
