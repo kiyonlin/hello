@@ -117,9 +117,9 @@ func reOrder(key, market string, lastOrder *model.Order, tick *model.BidAsk, set
 	price := lastOrder.Price
 	priceType := `保持价格`
 	if lastOrder.RefreshType == PostOnly {
-		price = tick.Bids[0].Price
+		price = tick.Asks[0].Price - api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
 		if lastOrder.OrderSide == model.OrderSideSell {
-			price = tick.Asks[0].Price
+			price = tick.Bids[0].Price + api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
 		}
 		priceType = `买卖1价格`
 	}
@@ -169,8 +169,10 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			util.GetNow().String(), market, zFee, setting.MarketRelated, zFeeRelated,
 			p1, p2, py, priceX, accountRelated.Free, util.GetNow().String()))
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(setting.MarketRelated, symbol))
-	calcAmtPriceBuy := tick.Bids[0].Price + setting.GridPriceDistance - p1 - priceX
-	calcAmtPriceSell := tick.Asks[0].Price - setting.GridPriceDistance + p2 - priceX
+	calcAmtPriceBuy := tick.Asks[0].Price - api.GetPriceDistance(market, symbol) +
+		setting.GridPriceDistance - p1 - priceX
+	calcAmtPriceSell := tick.Bids[0].Price + api.GetPriceDistance(market, symbol) -
+		setting.GridPriceDistance + p2 - priceX
 	fmba := getDepthAmountBuy(calcAmtPriceBuy, 0, tickRelated)
 	fmsa := getDepthAmountSell(calcAmtPriceSell, 0, tickRelated)
 	calcAmtPriceBuyNew := tick.Asks[0].Price*1002/1000 + setting.GridPriceDistance - p1 - priceX

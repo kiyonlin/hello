@@ -11,6 +11,15 @@ import (
 	"time"
 )
 
+func GetPriceDistance(market, symbol string) float64 {
+	switch symbol {
+	case `btcusd_p`:
+		return 0.5
+	}
+	util.Notice(market)
+	return 0
+}
+
 func GetMinAmount(market, symbol string) float64 {
 	switch market {
 	case model.Fcoin:
@@ -40,6 +49,8 @@ func GetMinAmount(market, symbol string) float64 {
 		switch symbol {
 		case `btcusd_p`:
 			return 1
+		case `ethusd_p`:
+			return 1
 		}
 	case model.Bitmex:
 		switch symbol {
@@ -51,6 +62,8 @@ func GetMinAmount(market, symbol string) float64 {
 	case model.Bybit:
 		switch symbol {
 		case `btcusd_p`:
+			return 1
+		case `ethusd_p`:
 			return 1
 		}
 	}
@@ -105,6 +118,8 @@ func GetPriceDecimal(market, symbol string) float64 {
 		switch symbol {
 		case `btcusd_p`:
 			return 0.5
+		case `ethusd_p`:
+			return 1.5
 		}
 	}
 	return 8
@@ -146,6 +161,8 @@ func GetAmountDecimal(market, symbol string) float64 {
 	case model.Bybit:
 		switch symbol {
 		case `btcusd_p`:
+			return 0
+		case `ethusd_p`:
 			return 0
 		}
 	}
