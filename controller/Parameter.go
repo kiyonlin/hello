@@ -302,12 +302,14 @@ func GetParameters(c *gin.Context) {
 	orderRows.Close()
 	//turtle last orders
 	turtleRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,price,deal_price,deal_amount`).
-		Where(`deal_amount>? and refresh_function`, 0, model.FunctionTurtle).
+		Where(`deal_amount>? and refresh_type`, 0, model.FunctionTurtle).
 		Order(`order_time desc`).Limit(10).Rows()
-	for turtleRows.Next() {
-		var market, symbol, orderSide, price, dealPrice, dealAmount string
-		msg += fmt.Sprintf("[turtle订单]%s %s %s 下单价格:%s 成交价格:%s 成交数量:%s\n",
-			market, symbol, orderSide, price, dealPrice, dealAmount)
+	if turtleRows != nil {
+		for turtleRows.Next() {
+			var market, symbol, orderSide, price, dealPrice, dealAmount string
+			msg += fmt.Sprintf("[turtle订单]%s %s %s 下单价格:%s 成交价格:%s 成交数量:%s\n",
+				market, symbol, orderSide, price, dealPrice, dealAmount)
+		}
 	}
 	for _, value := range model.CarryInfo {
 		msg += value + "\n"
