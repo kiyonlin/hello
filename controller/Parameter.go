@@ -302,14 +302,16 @@ func GetParameters(c *gin.Context) {
 	orderRows.Close()
 	//turtle last orders
 	turtleRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,price,deal_price,deal_amount`).
-		Where(`deal_amount>? and refresh_type`, 0, model.FunctionTurtle).
+		Where(`deal_amount>? and refresh_type=?`, 0, model.FunctionTurtle).
 		Order(`order_time desc`).Limit(10).Rows()
 	if turtleRows != nil {
 		for turtleRows.Next() {
 			var market, symbol, orderSide, price, dealPrice, dealAmount string
+			_ = turtleRows.Scan(&market, &symbol, &orderSide, &price, &dealPrice, &dealAmount)
 			msg += fmt.Sprintf("[turtle订单]%s %s %s 下单价格:%s 成交价格:%s 成交数量:%s\n",
 				market, symbol, orderSide, price, dealPrice, dealAmount)
 		}
+		turtleRows.Close()
 	}
 	for _, value := range model.CarryInfo {
 		msg += value + "\n"
@@ -317,19 +319,21 @@ func GetParameters(c *gin.Context) {
 	var setting model.Setting
 	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
 		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
-	for rows.Next() {
-		//_ = rows.Scan(&setting)
-		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
-			gridPriceDistance, priceX string
-		valid := false
-		_ = rows.Scan(&market, &symbol, &function, &gridAmount, &gridPriceDistance, &parameter, &amountLimit,
-			&refreshLimitLow, &refreshLimit, &valid, &priceX)
-		msg += fmt.Sprintf("%s %s %s parameter:%s A总:%s 下单数量:%s 价差：%s refreshlimitlow:%s "+
-			"refreshlimit:%s %v priceX:%s\n",
-			market, symbol, function, parameter, amountLimit, gridAmount, gridPriceDistance, refreshLimitLow,
-			refreshLimit, valid, priceX)
+	if rows != nil {
+		for rows.Next() {
+			//_ = rows.Scan(&setting)
+			var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
+				gridPriceDistance, priceX string
+			valid := false
+			_ = rows.Scan(&market, &symbol, &function, &gridAmount, &gridPriceDistance, &parameter, &amountLimit,
+				&refreshLimitLow, &refreshLimit, &valid, &priceX)
+			msg += fmt.Sprintf("%s %s %s parameter:%s A总:%s 下单数量:%s 价差：%s refreshlimitlow:%s "+
+				"refreshlimit:%s %v priceX:%s\n",
+				market, symbol, function, parameter, amountLimit, gridAmount, gridPriceDistance, refreshLimitLow,
+				refreshLimit, valid, priceX)
+		}
+		rows.Close()
 	}
-	rows.Close()
 	msg += model.AppConfig.ToString()
 	c.String(http.StatusOK, msg)
 }
