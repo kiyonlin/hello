@@ -287,19 +287,37 @@ func GetBalance(c *gin.Context) {
 
 func GetParameters(c *gin.Context) {
 	msg := ``
-	var orders model.Order
 	now := util.GetNow()
-	today := fmt.Sprintf(`%d-%d-%d`, now.Year(), now.Month(), now.Day())
-	orderRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,sum(deal_amount),
-		round(sum(deal_price*deal_amount)/sum(deal_amount),1),count(id)`).Where(`
-		deal_amount>? and date(order_time)=?`, 0, today).Group(`market,symbol,order_side`).Rows()
-	for orderRows.Next() {
-		var market, symbol, orderSide, dealAmount, dealPrice, count string
-		_ = orderRows.Scan(&market, &symbol, &orderSide, &dealAmount, &dealPrice, &count)
-		msg += fmt.Sprintf("[%s成交状况]%s %s %s 成交数量:%s 均价:%s 次数:%s\n",
-			today, market, symbol, orderSide, dealAmount, dealPrice, count)
+	var orders model.Order
+	d, _ := time.ParseDuration("-72h")
+	day := util.GetNow().Add(d)
+	dayStr := fmt.Sprintf(`%d-%d-%d`, day.Year(), day.Month(), day.Day())
+	earnRows, _ := model.AppDB.Model(&orders).
+		Select(`date(order_time), order_side, symbol, sum(deal_amount / deal_price), sum(fee)`).
+		Where(`deal_amount>? and order_time>?`, 0, dayStr).
+		Group(`order_side, date(order_time), symbol`).
+		Order(`date(order_time) desc`).Rows()
+	if earnRows != nil {
+		for earnRows.Next() {
+			var date, orderSide, symbol, coinAmount, fee string
+			_ = earnRows.Scan(&date, &orderSide, &symbol, &coinAmount, &fee)
+			msg += fmt.Sprintf("[实际收支]%s %s %s数量:%s 支出手续费:%s\n", date, orderSide, symbol, coinAmount, fee)
+		}
+		earnRows.Close()
 	}
-	orderRows.Close()
+	today := fmt.Sprintf(`%d-%d-%d`, now.Year(), now.Month(), now.Day())
+	orderRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,sum(deal_amount),count(id),
+		round(sum(deal_amount)/sum(deal_amount/deal_price),1),sum(deal_amount/deal_price),sum(fee)`).Where(`
+		deal_amount>? and date(order_time)=?`, 0, today).Group(`market,symbol,order_side`).Rows()
+	if orderRows != nil {
+		for orderRows.Next() {
+			var market, symbol, orderSide, dealAmount, dealPrice, count, coinAmount, fee string
+			_ = orderRows.Scan(&market, &symbol, &orderSide, &dealAmount, &count, &dealPrice, &coinAmount, &fee)
+			msg += fmt.Sprintf("[%s成交状况]%s %s %s 成交数量:%s 次数:%s 均价:%s coin数量:%s fee:%s\n",
+				today, market, symbol, orderSide, dealAmount, count, dealPrice, coinAmount, fee)
+		}
+		orderRows.Close()
+	}
 	//turtle last orders
 	turtleRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,price,deal_price,deal_amount`).
 		Where(`deal_amount>? and refresh_type=?`, 0, model.FunctionTurtle).
