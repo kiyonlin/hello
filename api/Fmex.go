@@ -298,8 +298,8 @@ func parseOrderFmex(order *model.Order, orderMap map[string]interface{}) {
 	if orderMap[`status`] != nil {
 		order.Status = model.GetOrderStatus(model.Fmex, orderMap[`status`].(string))
 	}
-	if order.DealPrice == 0 && order.DealAmount > 0 {
-		order.DealPrice = order.Price
+	if orderMap[`fill_price`] != nil {
+		order.DealPrice, _ = orderMap[`fill_price`].(json.Number).Float64()
 	}
 	order.OrderId = orderMap[`id`].(json.Number).String()
 	order.DealAmount = order.Amount - order.UnfilledQuantity
