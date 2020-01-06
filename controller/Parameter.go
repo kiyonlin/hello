@@ -293,15 +293,16 @@ func GetParameters(c *gin.Context) {
 	day := util.GetNow().Add(d)
 	dayStr := fmt.Sprintf(`%d-%d-%d`, day.Year(), day.Month(), day.Day())
 	earnRows, _ := model.AppDB.Model(&orders).
-		Select(`date(order_time), order_side, symbol, sum(deal_amount / deal_price), sum(fee)`).
+		Select(`date(order_time), order_side, symbol, sum(deal_amount),sum(deal_amount / deal_price), sum(fee)`).
 		Where(`deal_amount>? and order_time>?`, 0, dayStr).
 		Group(`order_side, date(order_time), symbol`).
 		Order(`date(order_time) desc`).Rows()
 	if earnRows != nil {
 		for earnRows.Next() {
-			var date, orderSide, symbol, coinAmount, fee string
-			_ = earnRows.Scan(&date, &orderSide, &symbol, &coinAmount, &fee)
-			msg += fmt.Sprintf("[实际收支]%s %s %s数量:%s 支出手续费:%s\n", date, orderSide, symbol, coinAmount, fee)
+			var date, orderSide, symbol, dealAmount, coinAmount, fee string
+			_ = earnRows.Scan(&date, &orderSide, &symbol, &dealAmount, &coinAmount, &fee)
+			msg += fmt.Sprintf("[实际收支]%s %s %s合约数:%s 代币数:%s 支出手续费:%s\n",
+				date, orderSide, symbol, dealAmount, coinAmount, fee)
 		}
 		earnRows.Close()
 	}
