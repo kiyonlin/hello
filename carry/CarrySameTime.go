@@ -116,7 +116,7 @@ func reOrder(key, market string, lastOrder *model.Order, tick *model.BidAsk, set
 	}
 	price := lastOrder.Price
 	priceType := `保持价格`
-	if lastOrder.RefreshType == PostOnly {
+	if lastOrder.RefreshType == PostOnly && lastOrder.OrderId != `` {
 		price = tick.Asks[0].Price - api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
 		if lastOrder.OrderSide == model.OrderSideSell {
 			price = tick.Bids[0].Price + api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
