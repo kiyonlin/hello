@@ -194,6 +194,7 @@ func MaintainTransFee(key, secret string) {
 				value.FeeIncome = order.FeeIncome
 				value.DealAmount = order.DealAmount
 				value.Status = order.Status
+				value.DealPrice = order.DealPrice
 				model.AppDB.Save(&value)
 				util.Info(fmt.Sprintf(`save order %s %s %s %s`,
 					value.Symbol, value.OrderSide, value.OrderTime.String(), value.Status))
