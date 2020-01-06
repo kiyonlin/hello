@@ -468,5 +468,8 @@ func parseOrderBybit(order *model.Order, item map[string]interface{}) {
 	if order.Status != model.CarryStatusSuccess && order.Status != model.CarryStatusFail {
 		order.Status = model.CarryStatusWorking
 	}
+	if order.DealAmount > 0 && order.DealPrice == 0 {
+		order.DealPrice = order.Price
+	}
 	return
 }

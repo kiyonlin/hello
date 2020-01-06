@@ -291,7 +291,7 @@ func GetParameters(c *gin.Context) {
 	now := util.GetNow()
 	today := fmt.Sprintf(`%d-%d-%d`, now.Year(), now.Month(), now.Day())
 	orderRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,sum(deal_amount),
-		round(sum(price*deal_amount)/sum(deal_amount),1),count(id)`).Where(`
+		round(sum(deal_price*deal_amount)/sum(deal_amount),1),count(id)`).Where(`
 		deal_amount>? and date(order_time)=?`, 0, today).Group(`market,symbol,order_side`).Rows()
 	for orderRows.Next() {
 		var market, symbol, orderSide, dealAmount, dealPrice, count string
@@ -300,12 +300,21 @@ func GetParameters(c *gin.Context) {
 			today, market, symbol, orderSide, dealAmount, dealPrice, count)
 	}
 	orderRows.Close()
-	var setting model.Setting
-	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
-		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
+	//turtle last orders
+	turtleRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,price,deal_price,deal_amount`).
+		Where(`deal_amount>? and refresh_function`, 0, model.FunctionTurtle).
+		Order(`order_time desc`).Limit(10).Rows()
+	for turtleRows.Next() {
+		var market, symbol, orderSide, price, dealPrice, dealAmount string
+		msg += fmt.Sprintf("[turtle订单]%s %s %s 下单价格:%s 成交价格:%s 成交数量:%s\n",
+			market, symbol, orderSide, price, dealPrice, dealAmount)
+	}
 	for _, value := range model.CarryInfo {
 		msg += value + "\n"
 	}
+	var setting model.Setting
+	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
+		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
 	for rows.Next() {
 		//_ = rows.Scan(&setting)
 		var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
