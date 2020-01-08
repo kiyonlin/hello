@@ -116,6 +116,19 @@ var ProcessTurtle = func(market, symbol string) {
 		return
 	}
 	currentN := model.GetCurrentN(model.FunctionTurtle)
+	if currentN == float64(model.AppConfig.TurtleLimitMain) && turtleData.orderLong != nil {
+		if api.IsValid(turtleData.orderLong) {
+			api.MustCancel(key, secret, market, symbol, turtleData.orderLong.OrderId, true)
+		}
+		turtleData.orderLong = nil
+		return
+	} else if currentN == -1*float64(model.AppConfig.TurtleLimitMain) && turtleData.orderShort != nil {
+		if api.IsValid(turtleData.orderShort) {
+			api.MustCancel(key, secret, market, symbol, turtleData.orderShort.OrderId, true)
+		}
+		turtleData.orderShort = nil
+		return
+	}
 	showMsg := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, market, symbol)
 	model.SetCarryInfo(showMsg, fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%d 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
 		"20日最高:%f 20日最低:%f 10日最高:%f 10日最低:%f n:%f 数量:%f 当前开仓个数:%f %f",
@@ -202,6 +215,7 @@ var ProcessTurtle = func(market, symbol string) {
 		}
 		turtleData.orderLong = nil
 		turtleData.orderShort = nil
+		setting.UpdatedAt = util.GetNow()
 		model.SetSetting(model.FunctionTurtle, market, symbol, setting)
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
