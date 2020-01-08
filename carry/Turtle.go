@@ -223,7 +223,7 @@ var ProcessTurtle = func(market, symbol string) {
 		return
 	}
 	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
-		util.Notice(fmt.Sprintf(`下止损多单chance:%f amount:%f price:%f currentN-limit:%f %d`,
+		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(key, secret, model.OrderSideBuy, model.OrderTypeStop, market, symbol,
 			``, setting.AccountType, ``, priceLong, amountLong, false)
@@ -234,7 +234,7 @@ var ProcessTurtle = func(market, symbol string) {
 		}
 	}
 	if turtleData.orderShort == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
-		util.Notice(fmt.Sprintf(`下止损空单chance:%f amount:%f price:%f currentN-limit:%f %d`,
+		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(key, secret, model.OrderSideSell, model.OrderTypeStop, market, symbol,
 			``, setting.AccountType, ``, priceShort, amountShort, false)

@@ -90,7 +90,6 @@ var ProcessCarrySameTime = func(market, symbol string) {
 		//	int(startTime)-tickRelated.Ts))
 		return
 	}
-	//util.Info(fmt.Sprintf(`fm delay %d`, int(startTime)-tickRelated.Ts))
 	if carrySameTiming {
 		return
 	}
