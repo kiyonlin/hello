@@ -49,6 +49,7 @@ func GetFunctionMarkets(function string) []string {
 	}
 	return markets
 }
+
 func SetSetting(function, market, symbol string, setting *Setting) {
 	if marketSymbolSetting[function] == nil {
 		marketSymbolSetting[function] = make(map[string]map[string]*Setting)
