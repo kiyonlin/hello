@@ -257,7 +257,8 @@ func handleAccountBybit(dataJson *simplejson.Json) {
 			item := value.(map[string]interface{})
 			parseAccountBybit(account, item)
 		}
-		util.Info(`---- set bybit account from position socket`)
+		accountEvent, _ := dataJson.String()
+		util.Info(`---- set bybit account from position socket` + accountEvent)
 		model.AppAccounts.SetAccount(model.Bybit, account.Currency, account)
 	}
 }
