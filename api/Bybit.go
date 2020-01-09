@@ -257,6 +257,7 @@ func handleAccountBybit(dataJson *simplejson.Json) {
 			item := value.(map[string]interface{})
 			parseAccountBybit(account, item)
 		}
+		util.Info(`---- set bybit account from position socket`)
 		model.AppAccounts.SetAccount(model.Bybit, account.Currency, account)
 	}
 }
@@ -345,7 +346,7 @@ func getAccountBybit(key, secret, symbol string, accounts *model.Accounts) {
 	postData := make(map[string]interface{})
 	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
 	response := SignedRequestBybit(key, secret, `GET`, `/v2/private/position/list`, postData)
-	util.Info(fmt.Sprintf(string(response)))
+	util.Notice(fmt.Sprintf(string(response)))
 	positionJson, err := util.NewJSON(response)
 	if err == nil {
 		positionJson = positionJson.Get(`result`)
