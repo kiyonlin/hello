@@ -410,7 +410,7 @@ func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.O
 //}
 
 func RefreshCoinAccount(key, secret, setMarket, symbol, setCoin, accountType string) {
-	util.Notice(fmt.Sprintf(`[RefreshCoinAccount]%s %s %s %s`, setMarket, symbol, setCoin, accountType))
+	//util.Notice(fmt.Sprintf(`[RefreshCoinAccount]%s %s %s %s`, setMarket, symbol, setCoin, accountType))
 	switch setMarket {
 	case model.Fcoin:
 		if accountType == model.AccountTypeLever {
