@@ -528,7 +528,7 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 	for ; i < retry; i++ {
 		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam, price,
 			amount, saveDB)
-		if IsValid(order) {
+		if order != nil && order.OrderId != `` {
 			break
 		} else {
 			util.Notice(fmt.Sprintf(`fail to place order %d time, re order`, i))
@@ -536,6 +536,9 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 	}
 	if i == retry {
 		util.Notice(fmt.Sprintf(`fatal err: fail to order for %d times`, i))
+	}
+	if order == nil {
+		order = &model.Order{}
 	}
 	channel <- *order
 }
