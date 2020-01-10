@@ -443,7 +443,11 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		if bidAsks == nil {
 			continue
 		}
-		util.SocketInfo(fmt.Sprintf(`bm len %d`, bidAsks.Asks.Len()))
+		if bidAsks.Asks == nil {
+			util.SocketInfo(fmt.Sprintf(`bm len %s`, symbol))
+		} else {
+			util.SocketInfo(fmt.Sprintf(`bm len %s %d`, symbol, bidAsks.Asks.Len()))
+		}
 		sort.Sort(bidAsks.Asks)
 		sort.Sort(sort.Reverse(bidAsks.Bids))
 		util.SocketInfo(fmt.Sprintf(`----- %f %f %f %f %f`, bidAsks.Bids[0].Price,
