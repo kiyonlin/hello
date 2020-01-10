@@ -201,7 +201,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderSideRelated = model.OrderSideSell
 		orderPriceRelated = calcAmtPriceBuy
 		orderSide = model.OrderSideBuy
-		orderPrice = tick.Bids[0].Price
+		orderPrice = tick.Asks[0].Price - api.GetPriceDistance(market, symbol)
 		orderParam = PostOnly
 		carryType = 2
 	} else if fms1-priceDistance <= calcAmtPriceSellNew+priceX && fmsaNew >= setting.RefreshLimitLow {
@@ -218,7 +218,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderSide = model.OrderSideSell
 		orderPriceRelated = calcAmtPriceSell
 		orderParam = PostOnly
-		orderPrice = tick.Asks[0].Price
+		orderPrice = tick.Bids[0].Price + api.GetPriceDistance(market, symbol)
 		carryType = 4
 	}
 	if amount > 1 {
