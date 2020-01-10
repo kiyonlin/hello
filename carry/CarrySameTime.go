@@ -135,6 +135,10 @@ func reOrder(key, market string, lastOrder *model.Order, tick *model.BidAsk, set
 // account.free被设置成-1 * accountRelated.free
 func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk, accountRelated *model.Account,
 	setting *model.Setting) {
+	util.Notice(fmt.Sprintf(`%d-%d %f %f %f %f %f - %f %f %f %f %f`,
+		tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
+		tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
+		tick.Asks[3].Price, tick.Asks[4].Price))
 	p1 := 0.0
 	p2 := 0.0
 	a1 := setting.AmountLimit

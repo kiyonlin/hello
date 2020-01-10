@@ -292,10 +292,11 @@ func handleQuote(markets *model.Markets, action string, data []interface{}) {
 		}
 	}
 	for symbol, bidAsks := range symbolTicks {
-		markets.SetBidAsk(symbol, model.Bitmex, bidAsks)
-		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-			if handler != nil && function != model.FunctionMaker {
-				go handler(model.Bitmex, symbol)
+		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
+			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+				if handler != nil && function != model.FunctionMaker {
+					go handler(model.Bitmex, symbol)
+				}
 			}
 		}
 	}
