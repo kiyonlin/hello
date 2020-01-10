@@ -343,7 +343,6 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 }
 
 func handleOrderBook(markets *model.Markets, action string, data []interface{}) {
-	//markets.GetBidAsk(symbol, market)
 	symbolTicks := make(map[string]*model.BidAsk)
 	for _, value := range data {
 		tick := parseTick(value.(map[string]interface{}))
@@ -352,11 +351,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 		switch action {
 		case `partial`:
-			if symbolTicks[tick.Symbol] == nil {
-				symbolTicks[tick.Symbol] = &model.BidAsk{Ts: int(util.GetNowUnixMillion())}
-				symbolTicks[tick.Symbol].Asks = model.Ticks{}
-				symbolTicks[tick.Symbol].Bids = model.Ticks{}
-			}
+			symbolTicks[tick.Symbol] = &model.BidAsk{Ts: int(util.GetNowUnixMillion())}
+			symbolTicks[tick.Symbol].Asks = model.Ticks{}
+			symbolTicks[tick.Symbol].Bids = model.Ticks{}
 			if tick.Side == model.OrderSideBuy {
 				symbolTicks[tick.Symbol].Bids = append(symbolTicks[tick.Symbol].Bids, *tick)
 			}
@@ -423,22 +420,22 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 				continue
 			}
 			if tick.Side == model.OrderSideBuy {
-				bids := model.Ticks{}
+				newBids := model.Ticks{}
 				for _, bid := range symbolTicks[tick.Symbol].Bids {
 					if bid.Id != tick.Id {
-						bids = append(bids, bid)
+						newBids = append(newBids, bid)
 					}
 				}
-				symbolTicks[tick.Symbol].Bids = bids
+				symbolTicks[tick.Symbol].Bids = newBids
 			}
 			if tick.Side == model.OrderSideSell {
-				asks := model.Ticks{}
+				newAsks := model.Ticks{}
 				for _, ask := range symbolTicks[tick.Symbol].Asks {
 					if ask.Id != tick.Id {
-						asks = append(asks, ask)
+						newAsks = append(newAsks, ask)
 					}
 				}
-				symbolTicks[tick.Symbol].Asks = asks
+				symbolTicks[tick.Symbol].Asks = newAsks
 			}
 		}
 	}
@@ -446,35 +443,20 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		if bidAsks == nil {
 			continue
 		}
-		bids := model.Ticks{}
-		asks := model.Ticks{}
-		for _, value := range bidAsks.Bids {
-			if value.Side == model.OrderSideSell {
-				asks = append(asks, value)
-			}
-			if value.Side == model.OrderSideBuy {
-				bids = append(bids, value)
-			}
-		}
-		for _, value := range bidAsks.Asks {
-			if value.Side == model.OrderSideSell {
-				asks = append(asks, value)
-			}
-			if value.Side == model.OrderSideBuy {
-				bids = append(bids, value)
-			}
-		}
-		sort.Sort(asks)
-		sort.Sort(sort.Reverse(bids))
-		if bids != nil && asks != nil && len(bids) > 0 && len(asks) > 0 && bids[0].Price > asks[0].Price {
+		sort.Sort(bidAsks.Asks)
+		sort.Sort(sort.Reverse(bidAsks.Bids))
+		if bidAsks.Bids != nil && bidAsks.Asks != nil && len(bidAsks.Bids) > 0 && len(bidAsks.Asks) > 0 &&
+			bidAsks.Asks[0].Price > bidAsks.Bids[0].Price {
+			util.SocketInfo(fmt.Sprintf(`----- %f %f %f %f %f`, bidAsks.Bids[0].Price,
+				bidAsks.Bids[1].Price, bidAsks.Bids[2].Price, bidAsks.Bids[3].Price, bidAsks.Bids[4].Price))
+			util.SocketInfo(fmt.Sprintf(`_____ %f %f %f %f %f`, bidAsks.Asks[0].Price,
+				bidAsks.Asks[1].Price, bidAsks.Asks[2].Price, bidAsks.Asks[3].Price, bidAsks.Asks[4].Price))
 			bidAsks.Ts = int(util.GetNowUnixMillion())
-		}
-		bidAsks.Bids = bids
-		bidAsks.Asks = asks
-		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-				if handler != nil && function != model.FunctionMaker {
-					go handler(model.Bitmex, symbol)
+			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
+				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+					if handler != nil && function != model.FunctionMaker {
+						go handler(model.Bitmex, symbol)
+					}
 				}
 			}
 		}

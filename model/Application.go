@@ -437,7 +437,7 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		} else if subType == SubscribeDepth {
 			//return `quote:` + DialectSymbol[Bitmex][symbol]
 			//return `orderBookL2:` + DialectSymbol[Bitmex][symbol]
-			return `orderBook10:` + DialectSymbol[Bitmex][symbol]
+			return `orderBookL2_25:` + DialectSymbol[Bitmex][symbol]
 		}
 		return ``
 	case Bybit:
