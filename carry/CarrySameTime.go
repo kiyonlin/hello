@@ -65,10 +65,6 @@ var ProcessCarrySameTime = func(market, symbol string) {
 		return
 	}
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
-	util.Notice(fmt.Sprintf(`%d-%d %f %f %f %f %f - %f %f %f %f %f`,
-		tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
-		tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
-		tick.Asks[3].Price, tick.Asks[4].Price))
 	_, tickRelated := model.AppMarkets.GetBidAsk(symbol, setting.MarketRelated)
 	//account := model.AppAccounts.GetAccount(market, symbol)
 	accountRelated := model.AppAccounts.GetAccount(setting.MarketRelated, symbol)
@@ -232,6 +228,10 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			fmsaNew, tick.Asks[0].Price, tick.Bids[0].Price, tick.Asks[0].Amount, tick.Bids[0].Amount,
 			tickRelated.Asks[0].Price, tickRelated.Bids[0].Price, tickRelated.Asks[0].Amount, tickRelated.Bids[0].Amount,
 			p1, p2, accountRelated.Free))
+		util.Notice(fmt.Sprintf(`%d-%d %f %f %f %f %f - %f %f %f %f %f`,
+			tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
+			tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
+			tick.Asks[3].Price, tick.Asks[4].Price))
 		setLastOrder(key, market, nil)
 		setLastOrder(key, setting.MarketRelated, nil)
 		carryChannel := getCarryChannel(key)
