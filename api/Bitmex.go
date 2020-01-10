@@ -351,9 +351,11 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		}
 		switch action {
 		case `partial`:
-			symbolTicks[tick.Symbol] = &model.BidAsk{Ts: int(util.GetNowUnixMillion())}
-			symbolTicks[tick.Symbol].Asks = model.Ticks{}
-			symbolTicks[tick.Symbol].Bids = model.Ticks{}
+			if symbolTicks[tick.Symbol] == nil {
+				symbolTicks[tick.Symbol] = &model.BidAsk{Ts: int(util.GetNowUnixMillion())}
+				symbolTicks[tick.Symbol].Asks = model.Ticks{}
+				symbolTicks[tick.Symbol].Bids = model.Ticks{}
+			}
 			if tick.Side == model.OrderSideBuy {
 				symbolTicks[tick.Symbol].Bids = append(symbolTicks[tick.Symbol].Bids, *tick)
 			}
@@ -442,11 +444,6 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 	for symbol, bidAsks := range symbolTicks {
 		if bidAsks == nil {
 			continue
-		}
-		if bidAsks.Asks == nil {
-			util.SocketInfo(fmt.Sprintf(`bm len %s`, symbol))
-		} else {
-			util.SocketInfo(fmt.Sprintf(`bm len %s %d`, symbol, bidAsks.Asks.Len()))
 		}
 		sort.Sort(bidAsks.Asks)
 		sort.Sort(sort.Reverse(bidAsks.Bids))
