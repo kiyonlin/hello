@@ -59,6 +59,7 @@ func setCarrySameTiming(value bool) {
 }
 
 var ProcessCarrySameTime = func(market, symbol string) {
+	util.Notice(`inside same`)
 	startTime := util.GetNowUnixMillion()
 	setting := model.GetSetting(model.FunctionCarry, market, symbol)
 	if setting == nil || setting.MarketRelated == `` {
