@@ -232,9 +232,9 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		setLastOrder(key, setting.MarketRelated, nil)
 		carryChannel := getCarryChannel(key)
 		go api.PlaceSyncOrders(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol,
-			``, setting.AccountType, ``, orderPriceRelated, amount, true, carryChannel)
+			``, setting.AccountType, ``, orderPriceRelated, amount, true, carryChannel, 10)
 		go api.PlaceSyncOrders(``, ``, orderSide, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, orderParam, orderPrice, amount, true, carryChannel)
+			setting.AccountType, orderParam, orderPrice, amount, true, carryChannel, 10)
 		for true {
 			order := <-carryChannel
 			util.Notice(fmt.Sprintf(`---- get order %s %s %s`, order.Market, order.OrderId, order.Status))

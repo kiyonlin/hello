@@ -522,9 +522,19 @@ func IsValid(order *model.Order) (valid bool) {
 }
 
 func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam string,
-	price, amount float64, saveDB bool, channel chan model.Order) {
-	order := PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam, price,
-		amount, saveDB)
+	price, amount float64, saveDB bool, channel chan model.Order, retry int) {
+	var order *model.Order
+	i := 0
+	for ; i < retry; i++ {
+		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam, price,
+			amount, saveDB)
+		if IsValid(order) {
+			break
+		}
+	}
+	if i == retry {
+		util.Notice(fmt.Sprintf(`fatal err: fail to order for %d times`, i))
+	}
 	channel <- *order
 }
 
