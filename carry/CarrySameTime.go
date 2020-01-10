@@ -59,7 +59,6 @@ func setCarrySameTiming(value bool) {
 }
 
 var ProcessCarrySameTime = func(market, symbol string) {
-	util.Notice(`inside same`)
 	startTime := util.GetNowUnixMillion()
 	setting := model.GetSetting(model.FunctionCarry, market, symbol)
 	if setting == nil || setting.MarketRelated == `` {
@@ -94,7 +93,6 @@ var ProcessCarrySameTime = func(market, symbol string) {
 	if carrySameTiming {
 		return
 	}
-	util.Notice(`samesamesame`)
 	setCarrySameTiming(true)
 	defer setCarrySameTiming(false)
 	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
