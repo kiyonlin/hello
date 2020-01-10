@@ -530,6 +530,8 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 			amount, saveDB)
 		if IsValid(order) {
 			break
+		} else {
+			util.Notice(fmt.Sprintf(`fail to place order %d time, re order`, i))
 		}
 	}
 	if i == retry {
