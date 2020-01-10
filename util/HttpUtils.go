@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"net/smtp"
 	"sort"
 	"strings"
+	"time"
 )
 
 func ComposeParams(body map[string]interface{}) (params string) {
@@ -82,7 +84,9 @@ func HttpRequest(method string, reqUrl string, body string, requestHeaders map[s
 			req.Header.Add(k, v)
 		}
 	}
-	resp, err := http.DefaultClient.Do(req)
+	ctx, cncl := context.WithTimeout(context.Background(), time.Second*2)
+	defer cncl()
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		SocketInfo("can not process request " + err.Error())
 		return nil, err

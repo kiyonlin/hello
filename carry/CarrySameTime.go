@@ -221,6 +221,10 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPrice = tick.Bids[0].Price + api.GetPriceDistance(market, symbol)
 		carryType = 4
 	}
+	util.Notice(fmt.Sprintf(`------------ %d-%d %f %f %f %f %f - %f %f %f %f %f`,
+		tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
+		tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
+		tick.Asks[3].Price, tick.Asks[4].Price))
 	if amount > 1 {
 		util.Notice(fmt.Sprintf(`情况%d %s-%s, 资金费率: %f-%f priceX:%f fmb1:%f fms1:%f fmba:%f fmsa:%f fmbaNew:%f
 			fmsaNew:%f tick price:%f-%f tick amount:%f-%f tickRelatedPrice:%f-%f tickRelatedAmount:%f-%f p1:%f p2:%f 持仓:%f`,
@@ -228,10 +232,6 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			fmsaNew, tick.Asks[0].Price, tick.Bids[0].Price, tick.Asks[0].Amount, tick.Bids[0].Amount,
 			tickRelated.Asks[0].Price, tickRelated.Bids[0].Price, tickRelated.Asks[0].Amount, tickRelated.Bids[0].Amount,
 			p1, p2, accountRelated.Free))
-		util.Notice(fmt.Sprintf(`------------ %d-%d %f %f %f %f %f - %f %f %f %f %f`,
-			tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
-			tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
-			tick.Asks[3].Price, tick.Asks[4].Price))
 		setLastOrder(key, market, nil)
 		setLastOrder(key, setting.MarketRelated, nil)
 		carryChannel := getCarryChannel(key)

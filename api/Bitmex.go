@@ -353,7 +353,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		switch action {
 		case `partial`:
 			if symbolTicks[tick.Symbol] == nil {
-				symbolTicks[tick.Symbol] = &model.BidAsk{Ts: int(util.GetNowUnixMillion())}
+				symbolTicks[tick.Symbol] = &model.BidAsk{}
 				symbolTicks[tick.Symbol].Asks = model.Ticks{}
 				symbolTicks[tick.Symbol].Bids = model.Ticks{}
 			}
