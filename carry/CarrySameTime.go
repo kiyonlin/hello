@@ -93,6 +93,7 @@ var ProcessCarrySameTime = func(market, symbol string) {
 	if carrySameTiming {
 		return
 	}
+	util.Notice(`samesamesame`)
 	setCarrySameTiming(true)
 	defer setCarrySameTiming(false)
 	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
