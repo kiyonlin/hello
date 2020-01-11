@@ -141,9 +141,9 @@ func SignedRequestFmex(key, secret, method, path string, body map[string]interfa
 		`FC-ACCESS-SIGNATURE`: sign, `FC-ACCESS-TIMESTAMP`: currentTime, "Content-Type": "application/json"}
 	var responseBody []byte
 	if body == nil {
-		responseBody, _ = util.HttpRequest(method, uri, ``, headers)
+		responseBody, _ = util.HttpRequest(method, uri, ``, headers, 60)
 	} else {
-		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers)
+		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 60)
 	}
 	return responseBody
 }

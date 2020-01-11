@@ -120,7 +120,7 @@ func sendSignRequest(method, path string, postData *url.Values, waitMillionSecon
 		postData.Set("api_key", model.AppConfig.OkexKey)
 		postData.Set("sign", getSign(postData))
 	}
-	responseBody, _ := util.HttpRequest(method, path, postData.Encode(), headers)
+	responseBody, _ := util.HttpRequest(method, path, postData.Encode(), headers, 60)
 	util.SocketInfo(fmt.Sprintf(`[%s] %s returns: %s`, path, postData.Encode(), string(responseBody)))
 	return responseBody
 }
@@ -296,7 +296,7 @@ func _(symbol string) (buy float64, err error) {
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
 	responseBody, _ := util.HttpRequest("GET", model.AppConfig.RestUrls[model.OKEX]+
-		"/ticker.do?symbol="+symbol, "", headers)
+		"/ticker.do?symbol="+symbol, "", headers, 60)
 	tickerJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		strBuy, _ := tickerJson.GetPath("ticker", "buy").String()

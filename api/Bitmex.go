@@ -11,8 +11,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var socketLockBitmex sync.Mutex
 
 var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) error {
 	var err error = nil
@@ -49,6 +52,8 @@ var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) erro
 func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte) {
+		socketLockBitmex.Lock()
+		defer socketLockBitmex.Unlock()
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping bitmex server every 5 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := sendToWs(model.Bitmex, []byte(`ping`)); err != nil {
@@ -365,7 +370,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			}
 		case `update`:
 			if symbolTicks[tick.Symbol] == nil {
-				_, symbolTicks[tick.Symbol] = markets.GetBidAsk(tick.Symbol, model.Bitmex)
+				_, symbolTicks[tick.Symbol] = markets.CopyBidAsk(tick.Symbol, model.Bitmex)
 			}
 			if symbolTicks[tick.Symbol] == nil {
 				continue
@@ -404,7 +409,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			symbolTicks[tick.Symbol].Bids = newBids
 		case `insert`:
 			if symbolTicks[tick.Symbol] == nil {
-				_, symbolTicks[tick.Symbol] = markets.GetBidAsk(tick.Symbol, model.Bitmex)
+				_, symbolTicks[tick.Symbol] = markets.CopyBidAsk(tick.Symbol, model.Bitmex)
 			}
 			if symbolTicks[tick.Symbol] == nil {
 				continue
@@ -417,7 +422,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			}
 		case `delete`:
 			if symbolTicks[tick.Symbol] == nil {
-				_, symbolTicks[tick.Symbol] = markets.GetBidAsk(tick.Symbol, model.Bitmex)
+				_, symbolTicks[tick.Symbol] = markets.CopyBidAsk(tick.Symbol, model.Bitmex)
 			}
 			if symbolTicks[tick.Symbol] == nil {
 				continue
@@ -548,9 +553,9 @@ func SignedRequestBitmex(key, secret, method, path string, body map[string]inter
 		`api-signature`: sign, "Content-Type": "application/json"}
 	var responseBody []byte
 	if body == nil {
-		responseBody, _ = util.HttpRequest(method, uri, ``, headers)
+		responseBody, _ = util.HttpRequest(method, uri, ``, headers, 60)
 	} else {
-		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers)
+		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 60)
 	}
 	return responseBody
 }

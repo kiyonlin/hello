@@ -145,7 +145,7 @@ J2k98epEs68Y+OjaRp0uP8821WkP5tLM1Q==
 		headers = map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
 		postBody = util.ToJson(urlValues)
 	}
-	responseBody, _ := util.HttpRequest(method, requestUrl, postBody, headers)
+	responseBody, _ := util.HttpRequest(method, requestUrl, postBody, headers, 60)
 	return responseBody
 }
 

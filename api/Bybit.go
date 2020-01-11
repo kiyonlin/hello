@@ -13,8 +13,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var socketLockBybit sync.Mutex
 
 var subscribeHandlerBybit = func(subscribes []interface{}, subType string) error {
 	var err error = nil
@@ -51,6 +54,8 @@ var subscribeHandlerBybit = func(subscribes []interface{}, subType string) error
 func WsDepthServeBybit(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte) {
+		socketLockBybit.Lock()
+		defer socketLockBybit.Unlock()
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping ws server every 5 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := sendToWs(model.Bybit, []byte(`{"op":"ping"}`)); err != nil {
@@ -137,7 +142,7 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 			}
 		}
 	} else if action == `delta` {
-		_, bidAsk = markets.GetBidAsk(symbol, model.Bybit)
+		_, bidAsk = markets.CopyBidAsk(symbol, model.Bybit)
 		data := response.Get(`data`)
 		if bidAsk == nil || data == nil {
 			return
@@ -196,7 +201,6 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 	}
 	if bidAsk != nil {
 		bidAsk.Ts = int(ts / 1000)
-		//util.Info(fmt.Sprintf(`---------%d`, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 		sort.Sort(bidAsk.Asks)
 		sort.Sort(sort.Reverse(bidAsk.Bids))
 		markets.SetBidAsk(symbol, model.Bybit, bidAsk)
@@ -287,7 +291,7 @@ func SignedRequestBybit(key, secret, method, path string, body map[string]interf
 	if method == `GET` {
 		uri = uri + `?` + paramStr
 	}
-	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers)
+	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 5)
 	return responseBody
 }
 

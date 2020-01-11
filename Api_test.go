@@ -79,6 +79,17 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
+	bidAsk := &model.BidAsk{}
+	to := &model.BidAsk{}
+	bidAsk.Bids = make([]model.Tick, 1)
+	to.Bids = make([]model.Tick, 1)
+	tick := model.Tick{Symbol: `1`}
+	bidAsk.Bids[0] = tick
+	to.Bids[0] = bidAsk.Bids[0]
+	fmt.Println(`from ` + bidAsk.Bids[0].Symbol + `to ` + to.Bids[0].Symbol)
+	to.Bids[0].Symbol = `2`
+	fmt.Println(`from ` + bidAsk.Bids[0].Symbol + `to ` + to.Bids[0].Symbol)
+
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	var err error

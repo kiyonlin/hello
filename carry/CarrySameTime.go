@@ -221,8 +221,8 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPrice = tick.Bids[0].Price + api.GetPriceDistance(market, symbol)
 		carryType = 4
 	}
-	if util.GetNow().Minute() == 1 {
-		util.Notice(fmt.Sprintf(`------------ %d-%d %f %f %f %f %f - %f %f %f %f %f`,
+	if tick.Bids[0].Price >= tick.Asks[0].Price {
+		util.Notice(fmt.Sprintf(`>>>>fatal error %d-%d %f %f %f %f %f - %f %f %f %f %f`,
 			tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
 			tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
 			tick.Asks[3].Price, tick.Asks[4].Price))

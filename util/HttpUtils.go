@@ -68,7 +68,7 @@ func ComposeParams(body map[string]interface{}) (params string) {
 //}
 
 //	method: GET, POST, DELETE
-func HttpRequest(method string, reqUrl string, body string, requestHeaders map[string]string) ([]byte, error) {
+func HttpRequest(method string, reqUrl string, body string, requestHeaders map[string]string, timeout int) ([]byte, error) {
 	req, _ := http.NewRequest(method, reqUrl, strings.NewReader(body))
 	//buf := &bytes.Buffer{}
 	//w := multipart.NewWriter(buf)
@@ -83,10 +83,6 @@ func HttpRequest(method string, reqUrl string, body string, requestHeaders map[s
 		for k, v := range requestHeaders {
 			req.Header.Add(k, v)
 		}
-	}
-	timeout := 60
-	if strings.Contains(reqUrl, `bybit`) {
-		timeout = 5
 	}
 	ctx, cncl := context.WithTimeout(context.Background(), time.Second*time.Duration(timeout))
 	defer cncl()

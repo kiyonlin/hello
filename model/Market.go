@@ -231,6 +231,26 @@ func (markets *Markets) GetPrice(symbol string) (result bool, price float64) {
 	return false, 0
 }
 
+func (markets *Markets) CopyBidAsk(symbol, market string) (result bool, bidAsk *BidAsk) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.bidAsks == nil || markets.bidAsks[symbol] == nil || markets.bidAsks[symbol][market] == nil ||
+		markets.bidAsks[symbol][market].Asks == nil || markets.bidAsks[symbol][market].Bids == nil ||
+		markets.bidAsks[symbol][market].Asks.Len() == 0 || markets.bidAsks[symbol][market].Bids.Len() == 0 {
+		return false, nil
+	}
+	bidAsk = &BidAsk{}
+	bidAsk.Bids = make([]Tick, markets.bidAsks[symbol][market].Bids.Len())
+	bidAsk.Asks = make([]Tick, markets.bidAsks[symbol][market].Asks.Len())
+	for key, value := range markets.bidAsks[symbol][market].Bids {
+		bidAsk.Bids[key] = value
+	}
+	for key, value := range markets.bidAsks[symbol][market].Asks {
+		bidAsk.Asks[key] = value
+	}
+	return true, bidAsk
+}
+
 func (markets *Markets) GetBidAsk(symbol, market string) (result bool, bidAsk *BidAsk) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
