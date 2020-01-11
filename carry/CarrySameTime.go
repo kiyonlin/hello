@@ -78,8 +78,8 @@ var ProcessCarrySameTime = func(market, symbol string) {
 		util.Info(fmt.Sprintf(`error2 %s or %s tick or account is nil`, market, setting.MarketRelated))
 		return
 	}
-	if tickRelated.Asks.Len() < 10 || tickRelated.Bids.Len() < 10 || tick.Asks.Len() < 10 ||
-		tick.Bids.Len() < 10 {
+	if tickRelated.Asks.Len() < 10 || tickRelated.Bids.Len() < 10 || tick.Asks.Len() < 10 || tick.Bids.Len() < 10 ||
+		tick.Bids[0].Price >= tick.Asks[0].Price || tickRelated.Bids[0].Price >= tickRelated.Asks[0].Price {
 		util.Info(fmt.Sprintf(`error3 %s or %s depth tick length not good`, market, setting.MarketRelated))
 		return
 	}

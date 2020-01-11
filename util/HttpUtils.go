@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"hello/model"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -84,7 +85,11 @@ func HttpRequest(method string, reqUrl string, body string, requestHeaders map[s
 			req.Header.Add(k, v)
 		}
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), time.Second*2)
+	timeout := 60
+	if strings.Contains(reqUrl, model.Bybit) {
+		timeout = 5
+	}
+	ctx, cncl := context.WithTimeout(context.Background(), time.Second*time.Duration(timeout))
 	defer cncl()
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
