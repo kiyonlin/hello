@@ -165,9 +165,9 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		priceX += 4 * p1
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, market, setting.MarketRelated),
-		fmt.Sprintf("[搬砖参数] %s %s资金费率:%f %s资金费率%f p1:%f p2:%f py:%f px:%f related free:%f %s \n",
+		fmt.Sprintf("[搬砖参数] %s %s资金费率:%f %s资金费率%f p1:%f p2:%f py:%f px:%f related free:%f %s 延时 %dms\n",
 			util.GetNow().String(), market, zFee, setting.MarketRelated, zFeeRelated,
-			p1, p2, py, priceX, accountRelated.Free, util.GetNow().String()))
+			p1, p2, py, priceX, accountRelated.Free, util.GetNow().String(), util.GetNowUnixMillion()-int64(tick.Ts)))
 	priceDistance := 0.1 / math.Pow(10, api.GetPriceDecimal(setting.MarketRelated, symbol))
 	calcAmtPriceBuy := tick.Asks[0].Price - api.GetPriceDistance(market, symbol) +
 		setting.GridPriceDistance - p1 - priceX
