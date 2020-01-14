@@ -76,10 +76,10 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 	if tickRelated == nil || tick == nil || tickRelated.Asks == nil || tickRelated.Bids == nil || tick.Asks == nil ||
 		tick.Bids == nil {
 		if tick == nil {
-			util.Notice(fmt.Sprintf(`error2 %s tick is nil`, market))
+			util.Info(fmt.Sprintf(`error2 %s tick is nil`, market))
 		}
 		if tickRelated == nil {
-			util.Notice(fmt.Sprintf(`error2 %s tick is nil`, setting.MarketRelated))
+			util.Info(fmt.Sprintf(`error2 %s tick is nil`, setting.MarketRelated))
 		}
 		return
 	}
@@ -90,9 +90,9 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 	}
 	if (int(startTime)-tick.Ts > 200 || int(startTime)-tickRelated.Ts > 400) ||
 		model.AppConfig.Handle != `1` || model.AppPause {
-		//util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
-		//	startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
-		//	int(startTime)-tickRelated.Ts))
+		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
+			startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
+			int(startTime)-tickRelated.Ts))
 		return
 	}
 	if carrySameTiming {
