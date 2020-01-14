@@ -95,7 +95,7 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 //setting.GridAmount 当前已经持仓数量
 //setting.Chance 当前开仓的个数
 //setting.PriceX 上一次开仓的价格
-var ProcessTurtle = func(market, symbol string) {
+var ProcessTurtle = func(market, symbol, function string) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	now := util.GetNowUnixMillion()
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || model.AppConfig.Handle != `1` ||

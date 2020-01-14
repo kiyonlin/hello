@@ -92,7 +92,7 @@ func getBalance(key, secret, market, symbol, accountType string) (left, right, l
 	return leftAccount.Free, rightAccount.Free, leftAccount.Frozen, rightAccount.Frozen, nil
 }
 
-var ProcessMake = func(market, symbol string) {
+var ProcessMake = func(market, symbol, function string) {
 	if model.AppConfig.Handle != `1` || model.AppConfig.HandleMaker != `1` || marketMaking || model.AppPause {
 		return
 	}

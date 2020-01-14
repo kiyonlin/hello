@@ -120,8 +120,8 @@ func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan s
 		sort.Sort(bidAsks.Asks)
 		sort.Sort(sort.Reverse(bidAsks.Bids))
 		if markets.SetBidAsk(symbol, model.OKFUTURE, bidAsks) {
-			for _, handler := range model.GetFunctions(model.OKFUTURE, symbol) {
-				go handler(model.OKFUTURE, symbol)
+			for function, handler := range model.GetFunctions(model.OKFUTURE, symbol) {
+				go handler(model.OKFUTURE, symbol, function)
 			}
 		}
 	}

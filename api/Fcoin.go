@@ -94,7 +94,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
 					if handler != nil && function == model.FunctionMaker {
 						util.Notice(fmt.Sprintf(`[try makerl]%s`, symbol))
-						handler(model.Fcoin, symbol)
+						handler(model.Fcoin, symbol, function)
 					}
 				}
 			}
@@ -121,7 +121,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
 					for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
 						if handler != nil && function != model.FunctionMaker {
-							go handler(model.Fcoin, symbol)
+							go handler(model.Fcoin, symbol, function)
 						}
 					}
 				}

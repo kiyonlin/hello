@@ -24,7 +24,7 @@ func setCarrying(value bool) {
 	carrying = value
 }
 
-var ProcessCarryOrder = func(market, symbol string) {
+var ProcessCarryOrder = func(market, symbol, function string) {
 	carryLock.Lock()
 	defer carryLock.Unlock()
 	orders := model.AppMarkets.GetBmPendingOrders()

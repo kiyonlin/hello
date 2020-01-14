@@ -382,7 +382,7 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 	refreshOrders.hanging = in
 }
 
-var ProcessRefresh = func(market, symbol string) {
+var ProcessRefresh = func(market, symbol, function string) {
 	start := util.GetNowUnixMillion()
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {

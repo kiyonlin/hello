@@ -128,7 +128,7 @@ func (hangFarOrders *HangFarOrders) setFarOrders(symbol string, bidOrders, askOr
 	hangFarOrders.askOrders[symbol] = askOrders
 }
 
-var ProcessHangFar = func(market, symbol string) {
+var ProcessHangFar = func(market, symbol, function string) {
 	start := util.GetNowUnixMillion()
 	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||

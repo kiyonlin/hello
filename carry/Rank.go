@@ -70,7 +70,7 @@ func (rank *Rank) setOrders(symbol string, orders []*model.Order) {
 	rank.orders[symbol] = orders
 }
 
-var ProcessRank = func(market, symbol string) {
+var ProcessRank = func(market, symbol, function string) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 11 ||
 		tick.Bids.Len() < 11 {
