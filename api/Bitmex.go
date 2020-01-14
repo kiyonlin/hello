@@ -467,7 +467,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			len(bidAsks.Asks) == len(bidAsks.Bids) && bidAsks.Asks[0].Price > bidAsks.Bids[0].Price {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-				util.SocketInfo(`set bm success ` + model.AppMarkets.ToStringBidAsk(bidAsks))
+				util.SocketInfo(action + `set bm success ` + model.AppMarkets.ToStringBidAsk(bidAsks))
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 					if handler != nil && function != model.FunctionMaker && model.AppConfig.Env != `test` {
 						go handler(model.Bitmex, symbol, function)
