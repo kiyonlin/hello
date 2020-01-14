@@ -467,11 +467,11 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 					bidAsks.Bids.Len(), bidAsks.Asks.Len(), bidAsks.Bids[4].Amount, bidAsks.Bids[3].Amount,
 					bidAsks.Bids[2].Amount, bidAsks.Bids[1].Amount, bidAsks.Bids[0].Amount, bidAsks.Asks[0].Amount,
 					bidAsks.Asks[1].Amount, bidAsks.Asks[2].Amount, bidAsks.Asks[3].Amount, bidAsks.Asks[4].Amount))
-				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-					if handler != nil && function != model.FunctionMaker {
-						go handler(model.Bitmex, symbol, function)
-					}
-				}
+				//for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+				//	if handler != nil && function != model.FunctionMaker {
+				//		go handler(model.Bitmex, symbol, function)
+				//	}
+				//}
 			}
 		}
 	}
