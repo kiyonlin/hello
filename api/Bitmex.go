@@ -80,6 +80,7 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		case `trade`:
 			go handleTrade(markets, action, data)
 		case `orderBookL2_25`:
+			util.SocketInfo(`fm book25 ` + string(event))
 			go handleOrderBook(markets, action, data)
 		case `orderBookL2`:
 			go handleOrderBook(markets, action, data)
@@ -458,10 +459,14 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			bidAsks.Asks[0].Price > bidAsks.Bids[0].Price {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-				//	util.Notice(fmt.Sprintf(`%d-%d %f %f %f %f %f - %f %f %f %f %f`,
-				//		bidAsks.Bids.Len(), bidAsks.Asks.Len(), bidAsks.Bids[4].Price, bidAsks.Bids[3].Price,
-				//		bidAsks.Bids[2].Price, bidAsks.Bids[1].Price, bidAsks.Bids[0].Price, bidAsks.Asks[0].Price,
-				//		bidAsks.Asks[1].Price, bidAsks.Asks[2].Price, bidAsks.Asks[3].Price, bidAsks.Asks[4].Price))
+				util.SocketInfo(fmt.Sprintf(`---------------%d-%d %f %f %f %f %f - %f %f %f %f %f`,
+					bidAsks.Bids.Len(), bidAsks.Asks.Len(), bidAsks.Bids[4].Price, bidAsks.Bids[3].Price,
+					bidAsks.Bids[2].Price, bidAsks.Bids[1].Price, bidAsks.Bids[0].Price, bidAsks.Asks[0].Price,
+					bidAsks.Asks[1].Price, bidAsks.Asks[2].Price, bidAsks.Asks[3].Price, bidAsks.Asks[4].Price))
+				util.SocketInfo(fmt.Sprintf(`%d-%d %f %f %f %f %f - %f %f %f %f %f`,
+					bidAsks.Bids.Len(), bidAsks.Asks.Len(), bidAsks.Bids[4].Amount, bidAsks.Bids[3].Amount,
+					bidAsks.Bids[2].Amount, bidAsks.Bids[1].Amount, bidAsks.Bids[0].Amount, bidAsks.Asks[0].Amount,
+					bidAsks.Asks[1].Amount, bidAsks.Asks[2].Amount, bidAsks.Asks[3].Amount, bidAsks.Asks[4].Amount))
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 					if handler != nil && function != model.FunctionMaker {
 						go handler(model.Bitmex, symbol, function)

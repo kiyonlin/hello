@@ -32,7 +32,8 @@ func newConnection(url string) (*websocket.Conn, error) {
 	//for i := 0; i < 10; i++ {
 	util.SocketInfo("try to connect " + url)
 	dialer := &websocket.Dialer{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:             http.ProxyFromEnvironment,
+		EnableCompression: true,
 	}
 	c, _, connErr = dialer.Dial(url, nil)
 	if connErr == nil {
