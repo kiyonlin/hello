@@ -59,6 +59,8 @@ func setCarrySameTiming(value bool) {
 }
 
 var ProcessCarrySameTime = func(market, symbol, functionName string) {
+	setCarrySameTiming(true)
+	defer setCarrySameTiming(false)
 	startTime := util.GetNowUnixMillion()
 	setting := model.GetSetting(functionName, market, symbol)
 	if setting == nil || setting.MarketRelated == `` {
@@ -98,8 +100,6 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 	if carrySameTiming {
 		return
 	}
-	setCarrySameTiming(true)
-	defer setCarrySameTiming(false)
 	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
 	orderMarket := getLastOrder(key, market)
 	orderRelated := getLastOrder(key, setting.MarketRelated)
@@ -262,8 +262,8 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderMarket := getLastOrder(key, market)
 		orderRelated := getLastOrder(key, setting.MarketRelated)
 		if api.IsValid(orderMarket) && api.IsValid(orderRelated) {
+			time.Sleep(time.Millisecond * 500)
 			if setting.MarketRelated != model.Bybit {
-				time.Sleep(time.Millisecond * 500)
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			} else {
 				if orderRelated.OrderSide == model.OrderSideSell {
