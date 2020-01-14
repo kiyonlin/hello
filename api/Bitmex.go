@@ -52,8 +52,6 @@ var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) erro
 func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte) {
-		socketLockBitmex.Lock()
-		defer socketLockBitmex.Unlock()
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping bitmex server every 5 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := sendToWs(model.Bitmex, []byte(`ping`)); err != nil {
@@ -351,6 +349,9 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 }
 
 func handleOrderBook(markets *model.Markets, action string, data []interface{}) {
+	socketLockBitmex.Lock()
+	defer socketLockBitmex.Unlock()
+	start := util.GetNowUnixMillion()
 	symbolTicks := make(map[string]*model.BidAsk)
 	for _, value := range data {
 		tick := parseTick(value.(map[string]interface{}))
@@ -468,14 +469,6 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 				util.SocketInfo(`set bm success ` + model.AppMarkets.ToStringBidAsk(bidAsks))
-				//util.SocketInfo(fmt.Sprintf(`---------------%d-%d %f %f %f %f [ %f - %f ] %f %f %f %f`,
-				//	bidAsks.Bids.Len(), bidAsks.Asks.Len(), bidAsks.Bids[4].Price, bidAsks.Bids[3].Price,
-				//	bidAsks.Bids[2].Price, bidAsks.Bids[1].Price, bidAsks.Bids[0].Price, bidAsks.Asks[0].Price,
-				//	bidAsks.Asks[1].Price, bidAsks.Asks[2].Price, bidAsks.Asks[3].Price, bidAsks.Asks[4].Price))
-				//util.SocketInfo(fmt.Sprintf(`%d-%d %f %f %f %f %f - %f %f %f %f %f`,
-				//	bidAsks.Bids.Len(), bidAsks.Asks.Len(), bidAsks.Bids[4].Amount, bidAsks.Bids[3].Amount,
-				//	bidAsks.Bids[2].Amount, bidAsks.Bids[1].Amount, bidAsks.Bids[0].Amount, bidAsks.Asks[0].Amount,
-				//	bidAsks.Asks[1].Amount, bidAsks.Asks[2].Amount, bidAsks.Asks[3].Amount, bidAsks.Asks[4].Amount))
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 					if handler != nil && function != model.FunctionMaker && model.AppConfig.Env != `test` {
 						go handler(model.Bitmex, symbol, function)
@@ -484,6 +477,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			}
 		}
 	}
+	util.SocketInfo(fmt.Sprintf(`deal time %s %d`, action, util.GetNowUnixMillion()-start))
 }
 
 func handleAccount(action string, data []interface{}) {
