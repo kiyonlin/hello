@@ -459,7 +459,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			bidAsks.Asks[0].Price > bidAsks.Bids[0].Price {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-				util.SocketInfo(fmt.Sprintf(`---------------%d-%d %f %f %f %f %f - %f %f %f %f %f`,
+				util.SocketInfo(fmt.Sprintf(`---------------%d-%d %f %f %f %f [ %f - %f ] %f %f %f %f`,
 					bidAsks.Bids.Len(), bidAsks.Asks.Len(), bidAsks.Bids[4].Price, bidAsks.Bids[3].Price,
 					bidAsks.Bids[2].Price, bidAsks.Bids[1].Price, bidAsks.Bids[0].Price, bidAsks.Asks[0].Price,
 					bidAsks.Asks[1].Price, bidAsks.Asks[2].Price, bidAsks.Asks[3].Price, bidAsks.Asks[4].Price))
