@@ -75,7 +75,12 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 	}
 	if tickRelated == nil || tick == nil || tickRelated.Asks == nil || tickRelated.Bids == nil || tick.Asks == nil ||
 		tick.Bids == nil {
-		util.Info(fmt.Sprintf(`error2 %s or %s tick or account is nil`, market, setting.MarketRelated))
+		if tick == nil {
+			util.Notice(fmt.Sprintf(`error2 %s tick is nil`, market))
+		}
+		if tickRelated == nil {
+			util.Notice(fmt.Sprintf(`error2 %s tick is nil`, setting.MarketRelated))
+		}
 		return
 	}
 	if tickRelated.Asks.Len() < 10 || tickRelated.Bids.Len() < 10 || tick.Asks.Len() < 10 || tick.Bids.Len() < 10 ||
