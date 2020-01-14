@@ -295,9 +295,9 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 	//	util.Info(fmt.Sprintf(`[fatal error]%s %s bid %f > ask %f amount %f %f`,
 	//		symbol, marketName, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount))
 	//} else {
-	if markets.bidAsks[symbol][marketName] != nil {
-		util.SocketInfo(fmt.Sprintf(`set bid ask %d`, markets.bidAsks[symbol][marketName].Ts-bidAsk.Ts))
-	}
+	//if markets.bidAsks[symbol][marketName] != nil {
+	//	util.SocketInfo(fmt.Sprintf(`set bid ask %d`, markets.bidAsks[symbol][marketName].Ts-bidAsk.Ts))
+	//}
 	if markets.bidAsks[symbol][marketName] == nil || markets.bidAsks[symbol][marketName].Ts <= bidAsk.Ts {
 		//util.SocketInfo(fmt.Sprintf(`...%s %s socket delay %d`,
 		//	symbol, marketName, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
