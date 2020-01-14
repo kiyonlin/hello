@@ -466,6 +466,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		if bidAsks.Bids != nil && bidAsks.Asks != nil && len(bidAsks.Bids) > 0 &&
 			len(bidAsks.Asks) == len(bidAsks.Bids) && bidAsks.Asks[0].Price > bidAsks.Bids[0].Price {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
+			util.SocketInfo(`try to set bidask ` + action)
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 				if action == `delete` || action == `insert` {
 					util.SocketInfo(action + `set bm success ` + model.AppMarkets.ToStringBidAsk(bidAsks))
