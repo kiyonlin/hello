@@ -79,17 +79,6 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
-	bidAsk := &model.BidAsk{}
-	to := &model.BidAsk{}
-	bidAsk.Bids = make([]model.Tick, 1)
-	to.Bids = make([]model.Tick, 1)
-	tick := model.Tick{Symbol: `1`}
-	bidAsk.Bids[0] = tick
-	to.Bids[0] = bidAsk.Bids[0]
-	fmt.Println(`from ` + bidAsk.Bids[0].Symbol + `to ` + to.Bids[0].Symbol)
-	to.Bids[0].Symbol = `2`
-	fmt.Println(`from ` + bidAsk.Bids[0].Symbol + `to ` + to.Bids[0].Symbol)
-
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	var err error
@@ -98,17 +87,17 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.GetRiskLimit()
 	//rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
 	//fmt.Println(rate)
 	//api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
 	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
-	//bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
-	//bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
+	bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
+	bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
 	//api.QueryOrderById(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `296d2bf4-7b7b-e89f-6b56-e49f5a65b82e`)
-	//order := api.PlaceOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.OrderSideSell,
-	//	model.OrderTypeLimit, model.Bybit, `btcusd_p`, ``,
-	//	``, ``, 8888, 1, false)
+	order := api.PlaceOrder(bitmexKey, bitmexSecret, model.OrderSideBuy,
+		model.OrderTypeStop, model.Bitmex, `btcusd_p`, ``,
+		``, ``, 6666, 1, false)
+	fmt.Println(order.OrderId)
 	//res, code, msg, order := api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit,
 	//	`btcusd_p`, order.OrderId)
 	//fmt.Println(fmt.Sprintf(`%v %s %s %f`, res, code, msg, order.DealPrice))

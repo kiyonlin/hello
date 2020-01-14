@@ -270,6 +270,7 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	sort.Sort(bidAsk.Asks)
 	sort.Sort(sort.Reverse(bidAsk.Bids))
 	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
+		util.Notice(fmt.Sprintf(`bm delay %d`, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 			if handler != nil && function != model.FunctionMaker {
 				go handler(model.Bitmex, symbol)
