@@ -231,6 +231,20 @@ func (markets *Markets) GetPrice(symbol string) (result bool, price float64) {
 	return false, 0
 }
 
+func (markets *Markets) ToStringBidAsk(bidAsk *BidAsk) (result string) {
+	if bidAsk == nil || bidAsk.Bids == nil || bidAsk.Asks == nil {
+		return ``
+	}
+	for i := bidAsk.Bids.Len() - 1; i >= 0; i-- {
+		result += fmt.Sprintf(`%f,`, bidAsk.Bids[i].Price)
+	}
+	result += `--|--`
+	for i := 0; i < bidAsk.Asks.Len(); i++ {
+		result += fmt.Sprintf(`%f,`, bidAsk.Asks[i].Price)
+	}
+	return
+}
+
 func (markets *Markets) CopyBidAsk(symbol, market string) (result bool, bidAsk *BidAsk) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
