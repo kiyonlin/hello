@@ -127,7 +127,7 @@ func LoadSettings() {
 		if AppSettings[i].MarketRelated != `` {
 			marketsRelated := strings.Split(AppSettings[i].MarketRelated, `,`)
 			for _, value := range marketsRelated {
-				relatedSettings[symbol] = &Setting{Market: value, Symbol: AppSettings[i].Symbol, Valid: true}
+				AppSettings = append(AppSettings, Setting{Market: value, Symbol: AppSettings[i].Symbol, Valid: true})
 			}
 		}
 		if handlers[market] == nil {
