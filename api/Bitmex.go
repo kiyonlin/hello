@@ -52,6 +52,8 @@ var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) erro
 func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte) {
+		socketLockBitmex.Lock()
+		defer socketLockBitmex.Unlock()
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping bitmex server every 5 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := sendToWs(model.Bitmex, []byte(`ping`)); err != nil {
@@ -78,7 +80,7 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		case `trade`:
 			go handleTrade(markets, action, data)
 		case `orderBookL2_25`:
-			util.SocketInfo(`fm book25 ` + string(event))
+			//util.SocketInfo(`fm book25 ` + string(event))
 			go handleOrderBook(markets, action, data)
 		case `orderBookL2`:
 			go handleOrderBook(markets, action, data)
@@ -349,9 +351,6 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 }
 
 func handleOrderBook(markets *model.Markets, action string, data []interface{}) {
-	socketLockBitmex.Lock()
-	defer socketLockBitmex.Unlock()
-	start := util.GetNowUnixMillion()
 	symbolTicks := make(map[string]*model.BidAsk)
 	for _, value := range data {
 		tick := parseTick(value.(map[string]interface{}))
@@ -477,7 +476,6 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			}
 		}
 	}
-	util.SocketInfo(fmt.Sprintf(`deal time %s %d`, action, util.GetNowUnixMillion()-start))
 }
 
 func handleAccount(action string, data []interface{}) {
