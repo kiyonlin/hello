@@ -240,8 +240,8 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		util.Notice(fmt.Sprintf(`情况%d %s-%s, 资金费率: %f-%f priceX:%f fmb1:%f fms1:%f fmba:%f fmsa:%f fmbaNew:%f
 			fmsaNew:%f tick price:%f-%f tick amount:%f-%f tickRelatedPrice:%f-%f tickRelatedAmount:%f-%f p1:%f p2:%f 持仓:%f`,
 			carryType, market, setting.MarketRelated, zFee, zFeeRelated, priceX, fmb1, fms1, fmba, fmsa, fmbaNew,
-			fmsaNew, tick.Asks[0].Price, tick.Bids[0].Price, tick.Asks[0].Amount, tick.Bids[0].Amount,
-			tickRelated.Asks[0].Price, tickRelated.Bids[0].Price, tickRelated.Asks[0].Amount, tickRelated.Bids[0].Amount,
+			fmsaNew, tick.Bids[0].Price, tick.Asks[0].Price, tick.Bids[0].Amount, tick.Asks[0].Amount,
+			tickRelated.Bids[0].Price, tickRelated.Asks[0].Price, tickRelated.Bids[0].Amount, tickRelated.Asks[0].Amount,
 			p1, p2, accountRelated.Free))
 		setLastOrder(key, market, nil)
 		setLastOrder(key, setting.MarketRelated, nil)
