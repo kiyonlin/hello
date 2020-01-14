@@ -59,6 +59,9 @@ func setCarrySameTiming(value bool) {
 }
 
 var ProcessCarrySameTime = func(market, symbol, functionName string) {
+	if carrySameTiming {
+		return
+	}
 	setCarrySameTiming(true)
 	defer setCarrySameTiming(false)
 	startTime := util.GetNowUnixMillion()
@@ -95,9 +98,6 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
 			startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
 			int(startTime)-tickRelated.Ts))
-		return
-	}
-	if carrySameTiming {
 		return
 	}
 	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
