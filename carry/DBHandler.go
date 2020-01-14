@@ -298,6 +298,8 @@ func Maintain() {
 	//model.HandlerMap[model.FunctionCarry] = ProcessCarry
 	model.HandlerMap[model.FunctionTurtle] = ProcessTurtle
 	model.HandlerMap[model.FunctionCarry] = ProcessCarrySameTime
+	model.HandlerMap[model.FunctionCarry+`_`+model.Fmex] = ProcessCarrySameTime
+	model.HandlerMap[model.FunctionCarry+`_`+model.Bybit] = ProcessCarrySameTime
 	model.HandlerMap[model.FunctionHang] = ProcessHang
 	model.HandlerMap[model.FunctionRank] = ProcessRank
 	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar
