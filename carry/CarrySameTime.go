@@ -153,7 +153,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			zFeeRelated = 0
 		}
 	}
-	priceX := setting.PriceX + 1.2*(zFeeRelated-zFee)*(tickRelated.Bids[0].Price+tickRelated.Asks[0].Price)/2
+	priceX := setting.PriceX + 1.1*(zFeeRelated-zFee)*(tickRelated.Bids[0].Price+tickRelated.Asks[0].Price)/2
 	py := priceX
 	if accountRelated.Free > setting.AmountLimit/10 && -1*accountRelated.Free < setting.AmountLimit/-10 {
 		p1 = 0

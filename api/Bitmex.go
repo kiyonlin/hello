@@ -412,23 +412,23 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		case `insert`:
 			if symbolTicks[tick.Symbol] == nil {
 				_, symbolTicks[tick.Symbol] = markets.CopyBidAsk(tick.Symbol, model.Bitmex)
-				util.SocketInfo(`copy bm from ` + model.AppMarkets.ToStringBidAsk(symbolTicks[tick.Symbol]))
+				//util.SocketInfo(`copy bm from ` + model.AppMarkets.ToStringBidAsk(symbolTicks[tick.Symbol]))
 			}
 			if symbolTicks[tick.Symbol] == nil {
 				continue
 			}
 			if tick.Side == model.OrderSideBuy {
 				symbolTicks[tick.Symbol].Bids = append(symbolTicks[tick.Symbol].Bids, *tick)
-				util.SocketInfo(fmt.Sprintf(`+++++buy %f`, tick.Price))
+				//util.SocketInfo(fmt.Sprintf(`+++++buy %f`, tick.Price))
 			}
 			if tick.Side == model.OrderSideSell {
 				symbolTicks[tick.Symbol].Asks = append(symbolTicks[tick.Symbol].Asks, *tick)
-				util.SocketInfo(fmt.Sprintf(`++++sell %f`, tick.Price))
+				//util.SocketInfo(fmt.Sprintf(`++++sell %f`, tick.Price))
 			}
 		case `delete`:
 			if symbolTicks[tick.Symbol] == nil {
 				_, symbolTicks[tick.Symbol] = markets.CopyBidAsk(tick.Symbol, model.Bitmex)
-				util.SocketInfo(`copy bm from ` + model.AppMarkets.ToStringBidAsk(symbolTicks[tick.Symbol]))
+				//util.SocketInfo(`copy bm from ` + model.AppMarkets.ToStringBidAsk(symbolTicks[tick.Symbol]))
 			}
 			if symbolTicks[tick.Symbol] == nil {
 				continue
@@ -438,9 +438,10 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 				for _, bid := range symbolTicks[tick.Symbol].Bids {
 					if bid.Id != tick.Id {
 						newBids = append(newBids, bid)
-					} else {
-						util.SocketInfo(fmt.Sprintf(`-----buy %s %f`, tick.Id, bid.Price))
 					}
+					//else {
+					//	util.SocketInfo(fmt.Sprintf(`-----buy %s %f`, tick.Id, bid.Price))
+					//}
 				}
 				symbolTicks[tick.Symbol].Bids = newBids
 			}
@@ -449,9 +450,10 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 				for _, ask := range symbolTicks[tick.Symbol].Asks {
 					if ask.Id != tick.Id {
 						newAsks = append(newAsks, ask)
-					} else {
-						util.SocketInfo(fmt.Sprintf(`----sell %s %f`, tick.Id, ask.Price))
 					}
+					//else {
+					//	util.SocketInfo(fmt.Sprintf(`----sell %s %f`, tick.Id, ask.Price))
+					//}
 				}
 				symbolTicks[tick.Symbol].Asks = newAsks
 			}
@@ -466,9 +468,9 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		if bidAsks.Bids != nil && bidAsks.Asks != nil {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-				if action == `delete` || action == `insert` {
-					util.SocketInfo(action + `set bm success ` + model.AppMarkets.ToStringBidAsk(bidAsks))
-				}
+				//if action == `delete` || action == `insert` {
+				//	util.SocketInfo(action + `set bm success ` + model.AppMarkets.ToStringBidAsk(bidAsks))
+				//}
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 					if handler != nil && function != model.FunctionMaker && model.AppConfig.Env != `test` {
 						go handler(model.Bitmex, symbol, function)
