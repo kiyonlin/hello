@@ -203,10 +203,12 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 		bidAsk.Ts = int(ts / 1000)
 		sort.Sort(bidAsk.Asks)
 		sort.Sort(sort.Reverse(bidAsk.Bids))
-		markets.SetBidAsk(symbol, model.Bybit, bidAsk)
+		if !markets.SetBidAsk(symbol, model.Bybit, bidAsk) {
+			util.Info(`fail to set new by tick update`)
+		}
 		for function, handler := range model.GetFunctions(model.Bybit, symbol) {
 			if handler != nil && function != model.FunctionMaker {
-				//go handler(model.Bybit, symbol)
+				go handler(model.Bybit, symbol, function)
 			}
 		}
 	}
@@ -393,13 +395,6 @@ func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, time
 		}
 	}
 	return
-}
-
-func GetRiskLimit() {
-	postData := make(map[string]interface{})
-	response := SignedRequestBybit(``, ``, `GET`,
-		`/open-api/wallet/risk-limit/list`, postData)
-	fmt.Println(string(response))
 }
 
 func getFundingRateBybit(symbol string) (fundingRate float64, expire int64) {
