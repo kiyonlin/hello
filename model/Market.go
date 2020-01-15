@@ -3,7 +3,9 @@ package model
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"hello/api"
 	"hello/util"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -330,19 +332,24 @@ func (markets *Markets) RequireDepthChanReset(market string) bool {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
 	needReset := true
-	for _, value := range markets.bidAsks {
-		if value[market] != nil && float64(util.GetNowUnixMillion()-int64(value[market].Ts)) < AppConfig.Delay {
+	now := util.GetNowUnixMillion()
+	for symbol, value := range markets.bidAsks {
+		priceStep := api.GetPriceDistance(market, symbol) * 2
+		if market == Bitmex {
+			_, restBid, restAsk := api.GetOrderBook(``, ``, symbol)
+			bidAsk := value[market]
+			if bidAsk != nil && bidAsk.Bids != nil && bidAsk.Asks != nil && bidAsk.Bids.Len() > 0 &&
+				bidAsk.Asks.Len() > 0 && (math.Abs(bidAsk.Bids[0].Price-restBid.Price) >= priceStep ||
+				math.Abs(bidAsk.Asks[0].Price-restAsk.Price) >= priceStep) {
+				util.SocketInfo(`******* need to reset channel` + market + symbol)
+				return true
+			}
+		}
+		if value[market] != nil && float64(now-int64(value[market].Ts)) < AppConfig.Delay {
 			//util.Notice(market + ` no need to reconnect`)
 			needReset = false
 			break
 		}
-		//end := int64(util.GetNowUnixMillion() / 1000)
-		//for i := end - int64(AppConfig.Delay/1000); i <= end; i++ {
-		//	if markets.trade[i] != nil && markets.trade[i][symbol] != nil && markets.trade[i][symbol][market] != nil {
-		//		needReset = false
-		//		break
-		//	}
-		//}
 	}
 	if needReset {
 		util.SocketInfo(fmt.Sprintf(`socket need reset %v`, needReset))

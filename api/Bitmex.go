@@ -766,3 +766,32 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 	}
 	return
 }
+
+func GetOrderBook(key, secret, symbol string) (result bool, bid, ask *model.Tick) {
+	postData := make(map[string]interface{})
+	postData[`symbol`] = model.DialectSymbol[model.Bitmex][symbol]
+	postData[`depth`] = `1`
+	response := SignedRequestBitmex(key, secret, `GET`, `/orderBook/L2`, postData)
+	bookJson, err := util.NewJSON(response)
+	if err == nil && bookJson != nil {
+		bidAsks, err := bookJson.Array()
+		if err == nil {
+			for _, value := range bidAsks {
+				tick := parseTick(value.(map[string]interface{}))
+				if tick == nil {
+					continue
+				}
+				if tick.Side == model.OrderSideSell && (ask == nil || tick.Price < ask.Price) {
+					ask = tick
+				}
+				if tick.Side == model.OrderSideBuy && (bid == nil || tick.Price > bid.Price) {
+					bid = tick
+				}
+			}
+		}
+	}
+	if bid != nil && ask != nil {
+		result = true
+	}
+	return result, bid, ask
+}

@@ -93,11 +93,7 @@ func Test_RefreshAccount(t *testing.T) {
 	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
 	bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
 	bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
-	//api.QueryOrderById(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `296d2bf4-7b7b-e89f-6b56-e49f5a65b82e`)
-	order := api.PlaceOrder(bitmexKey, bitmexSecret, model.OrderSideBuy,
-		model.OrderTypeStop, model.Bitmex, `btcusd_p`, ``,
-		``, ``, 6666, 1, false)
-	fmt.Println(order.OrderId)
+	api.GetOrderBook(bitmexKey, bitmexSecret, `btcusd_p`)
 	//res, code, msg, order := api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit,
 	//	`btcusd_p`, order.OrderId)
 	//fmt.Println(fmt.Sprintf(`%v %s %s %f`, res, code, msg, order.DealPrice))
