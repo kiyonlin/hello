@@ -47,10 +47,19 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 	return needReset
 }
 
-func GetPriceDistance(_, symbol string) float64 {
+func GetPriceDistance(market, symbol string) float64 {
 	switch symbol {
 	case `btcusd_p`:
-		return 0.5
+		switch market {
+		case model.Bitmex, model.Bybit, model.Fmex:
+			return 0.5
+		}
+	case `ethusd_p`:
+		switch market {
+		case model.Bitmex, model.Bybit, model.Fmex:
+			return 0.05
+		}
+
 	}
 	return 0
 }
