@@ -31,7 +31,8 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 			if bidAsk.Bids != nil && bidAsk.Asks != nil && bidAsk.Bids.Len() > 0 &&
 				bidAsk.Asks.Len() > 0 && (math.Abs(bidAsk.Bids[0].Price-restBid.Price) >= priceStep ||
 				math.Abs(bidAsk.Asks[0].Price-restAsk.Price) >= priceStep) {
-				util.SocketInfo(`******* need to reset channel` + market + symbol)
+				util.SocketInfo(fmt.Sprintf(`******* %s %s need to reset channel rest %f-%f ws %f-%f`,
+					market, symbol, restBid.Price, restAsk.Price, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price))
 				return true
 			}
 		}
@@ -46,12 +47,11 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 	return needReset
 }
 
-func GetPriceDistance(market, symbol string) float64 {
+func GetPriceDistance(_, symbol string) float64 {
 	switch symbol {
 	case `btcusd_p`:
 		return 0.5
 	}
-	util.Notice(market)
 	return 0
 }
 
