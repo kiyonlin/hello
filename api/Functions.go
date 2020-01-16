@@ -8,8 +8,43 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var channelLock sync.Mutex
+
+func RequireDepthChanReset(markets *model.Markets, market string) bool {
+	channelLock.Lock()
+	defer channelLock.Unlock()
+	needReset := true
+	now := util.GetNowUnixMillion()
+	symbols := markets.GetSymbols()
+	for symbol := range symbols {
+		priceStep := GetPriceDistance(market, symbol) * 2
+		_, bidAsk := markets.GetBidAsk(symbol, market)
+		if bidAsk == nil {
+			continue
+		}
+		if market == model.Bitmex {
+			_, restBid, restAsk := GetOrderBook(``, ``, symbol)
+			if bidAsk.Bids != nil && bidAsk.Asks != nil && bidAsk.Bids.Len() > 0 &&
+				bidAsk.Asks.Len() > 0 && (math.Abs(bidAsk.Bids[0].Price-restBid.Price) >= priceStep ||
+				math.Abs(bidAsk.Asks[0].Price-restAsk.Price) >= priceStep) {
+				util.SocketInfo(`******* need to reset channel` + market + symbol)
+				return true
+			}
+		}
+		if float64(now-int64(bidAsk.Ts)) < model.AppConfig.Delay {
+			//util.Notice(market + ` no need to reconnect`)
+			needReset = false
+		}
+	}
+	if needReset {
+		util.SocketInfo(fmt.Sprintf(`socket need reset %v`, needReset))
+	}
+	return needReset
+}
 
 func GetPriceDistance(market, symbol string) float64 {
 	switch symbol {

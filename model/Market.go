@@ -3,9 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"hello/api"
 	"hello/util"
-	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -328,31 +326,10 @@ func (markets *Markets) PutDepthChan(marketName string, index int, channel chan 
 	markets.wsDepth[marketName][index] = channel
 }
 
-func (markets *Markets) RequireDepthChanReset(market string) bool {
-	markets.lock.Lock()
-	defer markets.lock.Unlock()
-	needReset := true
-	now := util.GetNowUnixMillion()
-	for symbol, value := range markets.bidAsks {
-		priceStep := api.GetPriceDistance(market, symbol) * 2
-		if market == Bitmex {
-			_, restBid, restAsk := api.GetOrderBook(``, ``, symbol)
-			bidAsk := value[market]
-			if bidAsk != nil && bidAsk.Bids != nil && bidAsk.Asks != nil && bidAsk.Bids.Len() > 0 &&
-				bidAsk.Asks.Len() > 0 && (math.Abs(bidAsk.Bids[0].Price-restBid.Price) >= priceStep ||
-				math.Abs(bidAsk.Asks[0].Price-restAsk.Price) >= priceStep) {
-				util.SocketInfo(`******* need to reset channel` + market + symbol)
-				return true
-			}
-		}
-		if value[market] != nil && float64(now-int64(value[market].Ts)) < AppConfig.Delay {
-			//util.Notice(market + ` no need to reconnect`)
-			needReset = false
-			break
-		}
+func (markets *Markets) GetSymbols() (symbols map[string]bool) {
+	symbols = make(map[string]bool)
+	for symbol := range markets.bidAsks {
+		symbols[symbol] = true
 	}
-	if needReset {
-		util.SocketInfo(fmt.Sprintf(`socket need reset %v`, needReset))
-	}
-	return needReset
+	return
 }
