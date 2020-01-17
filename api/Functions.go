@@ -28,7 +28,7 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 		}
 		if market == model.Bitmex {
 			_, restBid, restAsk := GetOrderBook(``, ``, symbol)
-			if bidAsk.Bids != nil && bidAsk.Asks != nil && bidAsk.Bids.Len() > 0 &&
+			if bidAsk.Bids != nil && bidAsk.Asks != nil && bidAsk.Bids.Len() > 0 && bidAsk.Bids.Len() > 0 &&
 				bidAsk.Asks.Len() > 0 && (math.Abs(bidAsk.Bids[0].Price-restBid.Price) >= priceStep ||
 				math.Abs(bidAsk.Asks[0].Price-restAsk.Price) >= priceStep) {
 				util.SocketInfo(fmt.Sprintf(`******* %s %s need to reset channel rest %f-%f ws %f-%f`,
@@ -59,7 +59,6 @@ func GetPriceDistance(market, symbol string) float64 {
 		case model.Bitmex, model.Bybit, model.Fmex:
 			return 0.05
 		}
-
 	}
 	return 0
 }
