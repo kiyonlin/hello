@@ -592,8 +592,6 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam string,
 	price, amount float64, saveDB bool) (order *model.Order) {
 	start := util.GetNowUnixMillion()
-	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%f price:%f`,
-		orderSide, market, symbol, start, amount, price))
 	if amount < 0.0001 {
 		util.Notice(`can not place order with amount 0`)
 		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
@@ -617,6 +615,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	//}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(market, symbol))
 	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
+	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%s price:%s`,
+		orderSide, market, symbol, start, strAmount, strPrice))
 	if amountType == model.AmountTypeContractNumber {
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
+	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"testing"
@@ -93,18 +94,16 @@ func Test_RefreshAccount(t *testing.T) {
 	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
 	bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
 	bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
-	api.GetOrderBook(bitmexKey, bitmexSecret, `btcusd_p`)
 	//res, code, msg, order := api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit,
 	//	`btcusd_p`, order.OrderId)
 	//fmt.Println(fmt.Sprintf(`%v %s %s %f`, res, code, msg, order.DealPrice))
 	//api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret,model.Bybit,`btcusd_p`, `1234`)
-	//order := api.QueryOrderById(model.AppConfig.BybitKey,model.AppConfig.BybitSecret, model.Bybit,
-	//	`btcusd_p`, `002501d9-5a42-4187-b9e4-f01a2941b421`)
 	//fmt.Println(order.Price)
 	//model.AppDB.Save(order)
 	//res, _ := api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `394c8c53-427d-820c-8f45-737017f939d6`, true)
 	//fmt.Println(res)
-	////api.PlaceOrder(bitmexKey, bitmexSecret,
-	//	model.OrderSideSell, model.OrderTypeStop, model.Bitmex, `btcusd_p`,
-	//	``, ``, ``, 5999, 1, false)
+	order := api.PlaceOrder(bitmexKey, bitmexSecret,
+		model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, `btcusd_p`,
+		``, ``, carry.PostOnly, 5999, 1, true)
+	fmt.Println(fmt.Sprintf(`order id %s status %s deal amount %f`, order.OrderId, order.Status, order.DealAmount))
 }
