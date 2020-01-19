@@ -207,7 +207,7 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 		bidAsk.Ts = int(ts / 1000)
 		sort.Sort(bidAsk.Asks)
 		sort.Sort(sort.Reverse(bidAsk.Bids))
-		fmt.Println(markets.ToStringBidAsk(bidAsk))
+		util.SocketInfo(markets.ToStringBidAsk(bidAsk))
 		if !markets.SetBidAsk(symbol, model.Bybit, bidAsk) {
 			util.Info(`fail to set new by tick update`)
 		}
