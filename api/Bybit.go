@@ -78,9 +78,9 @@ func WsDepthServeBybit(markets *model.Markets, errHandler ErrHandler) (chan stru
 		if strings.Contains(topic, `orderBookL2_25.`) {
 			util.SocketInfo(string(event))
 			symbol := model.StandardSymbol[model.Bybit][topic[strings.LastIndex(topic, `.`)+1:]]
-			go handleOrderBookBybit(markets, symbol, ts, depthJson)
+			handleOrderBookBybit(markets, symbol, ts, depthJson)
 		} else if topic == `position` {
-			go handleAccountBybit(depthJson.Get(`data`))
+			handleAccountBybit(depthJson.Get(`data`))
 		}
 	}
 	return WebSocketServe(model.Bybit, model.AppConfig.WSUrls[model.Bybit], model.SubscribeDepth,
