@@ -182,21 +182,21 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 				}
 			}
 		}
-		deleteMap := make(map[string]bool)
+		deleteMap := make(map[string]*model.Tick)
 		for _, value := range arrayDelete {
 			tick := parseTickBybit(value.(map[string]interface{}))
 			util.SocketInfo(fmt.Sprintf(`----- %s %f %f`, tick.Side, tick.Price, tick.Amount))
-			deleteMap[tick.Id] = true
+			deleteMap[tick.Id] = tick
 		}
 		bidNew := make([]model.Tick, 0)
 		askNew := make([]model.Tick, 0)
 		for _, value := range bidAsk.Bids {
-			if deleteMap[value.Id] == false {
+			if deleteMap[value.Id] == nil || deleteMap[value.Id].Side == model.OrderSideSell {
 				bidNew = append(bidNew, value)
 			}
 		}
 		for _, value := range bidAsk.Asks {
-			if deleteMap[value.Id] == false {
+			if deleteMap[value.Id] == nil || deleteMap[value.Id].Side == model.OrderSideBuy {
 				askNew = append(askNew, value)
 			}
 		}
