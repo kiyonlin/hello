@@ -76,7 +76,7 @@ func WsDepthServeBybit(markets *model.Markets, errHandler ErrHandler) (chan stru
 			return
 		}
 		if strings.Contains(topic, `orderBookL2_25.`) {
-			util.SocketInfo(string(event))
+			//util.SocketInfo(string(event))
 			symbol := model.StandardSymbol[model.Bybit][topic[strings.LastIndex(topic, `.`)+1:]]
 			handleOrderBookBybit(markets, symbol, ts, depthJson)
 		} else if topic == `position` {
@@ -162,11 +162,11 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 			if tick.Side == model.OrderSideSell {
 				bidAsk.Asks = append(bidAsk.Asks, *tick)
 			}
-			util.SocketInfo(fmt.Sprintf(`+++++ %s %f %f`, tick.Side, tick.Price, tick.Amount))
+			//util.SocketInfo(fmt.Sprintf(`+++++ %s %f %f`, tick.Side, tick.Price, tick.Amount))
 		}
 		for _, value := range arrayUpdate {
 			tick := parseTickBybit(value.(map[string]interface{}))
-			util.SocketInfo(fmt.Sprintf(`update %s %f %f`, tick.Side, tick.Price, tick.Amount))
+			//util.SocketInfo(fmt.Sprintf(`update %s %f %f`, tick.Side, tick.Price, tick.Amount))
 			if tick.Side == model.OrderSideBuy {
 				for key, bid := range bidAsk.Bids {
 					if tick.Id == bid.Id {
@@ -185,7 +185,7 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 		deleteMap := make(map[string]*model.Tick)
 		for _, value := range arrayDelete {
 			tick := parseTickBybit(value.(map[string]interface{}))
-			util.SocketInfo(fmt.Sprintf(`----- %s %f %f`, tick.Side, tick.Price, tick.Amount))
+			//util.SocketInfo(fmt.Sprintf(`----- %s %f %f`, tick.Side, tick.Price, tick.Amount))
 			deleteMap[tick.Id] = tick
 		}
 		bidNew := make([]model.Tick, 0)
@@ -207,7 +207,7 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 		bidAsk.Ts = int(ts / 1000)
 		sort.Sort(bidAsk.Asks)
 		sort.Sort(sort.Reverse(bidAsk.Bids))
-		util.SocketInfo(markets.ToStringBidAsk(bidAsk))
+		//util.SocketInfo(markets.ToStringBidAsk(bidAsk))
 		if !markets.SetBidAsk(symbol, model.Bybit, bidAsk) {
 			util.Info(`fail to set new by tick update`)
 		}
