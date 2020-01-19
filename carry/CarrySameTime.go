@@ -93,7 +93,7 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 		util.Info(fmt.Sprintf(`error3 %s or %s depth tick length not good`, market, setting.MarketRelated))
 		return
 	}
-	if (int(startTime)-tick.Ts > 200 || int(startTime)-tickRelated.Ts > 400) ||
+	if (int(startTime)-tick.Ts > 200 || int(startTime)-tickRelated.Ts > 200) ||
 		model.AppConfig.Handle != `1` || model.AppPause {
 		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
 			startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
