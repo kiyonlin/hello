@@ -6,7 +6,6 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
-	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"testing"
@@ -102,8 +101,9 @@ func Test_RefreshAccount(t *testing.T) {
 	//model.AppDB.Save(order)
 	//res, _ := api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `394c8c53-427d-820c-8f45-737017f939d6`, true)
 	//fmt.Println(res)
+	model.AppConfig.Env = `not_test`
 	order := api.PlaceOrder(bitmexKey, bitmexSecret,
 		model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, `btcusd_p`,
-		``, ``, carry.PostOnly, 5999, 1, true)
+		``, ``, model.PostOnly, 5999, 1, true)
 	fmt.Println(fmt.Sprintf(`order id %s status %s deal amount %f`, order.OrderId, order.Status, order.DealAmount))
 }

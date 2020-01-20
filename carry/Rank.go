@@ -43,14 +43,14 @@ func (rank *Rank) setCheckTime(symbol string) {
 	rank.checkTime[symbol] = util.GetNowUnixMillion()
 }
 
-func (rank *Rank) getScore(orderSide, symbol string) (score *model.Score) {
-	rank.lock.Lock()
-	defer rank.lock.Unlock()
-	if rank.score == nil {
-		return nil
-	}
-	return rank.score[symbol]
-}
+//func (rank *Rank) getScore(orderSide, symbol string) (score *model.Score) {
+//	rank.lock.Lock()
+//	defer rank.lock.Unlock()
+//	if rank.score == nil {
+//		return nil
+//	}
+//	return rank.score[symbol]
+//}
 
 func (rank *Rank) getOrders(symbol string) (order []*model.Order) {
 	rank.lock.Lock()
@@ -70,7 +70,7 @@ func (rank *Rank) setOrders(symbol string, orders []*model.Order) {
 	rank.orders[symbol] = orders
 }
 
-var ProcessRank = func(market, symbol, function string) {
+var ProcessRank = func(market, symbol string, function interface{}) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 11 ||
 		tick.Bids.Len() < 11 {

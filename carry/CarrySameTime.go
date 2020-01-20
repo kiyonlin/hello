@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const PostOnly = `ParticipateDoNotInitiate`
-
 var carrySameTiming = false
 var carrySameTimeLock sync.Mutex
 
@@ -58,14 +56,14 @@ func setCarrySameTiming(value bool) {
 	carrySameTiming = value
 }
 
-var ProcessCarrySameTime = func(market, symbol, functionName string) {
+var ProcessCarrySameTime = func(market, symbol string, functionName interface{}) {
 	if carrySameTiming {
 		return
 	}
 	setCarrySameTiming(true)
 	defer setCarrySameTiming(false)
 	startTime := util.GetNowUnixMillion()
-	setting := model.GetSetting(functionName, market, symbol)
+	setting := model.GetSetting(functionName.(string), market, symbol)
 	if setting == nil || setting.MarketRelated == `` {
 		return
 	}
@@ -90,7 +88,9 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 	}
 	if tickRelated.Asks.Len() < 10 || tickRelated.Bids.Len() < 10 || tick.Asks.Len() < 10 || tick.Bids.Len() < 10 ||
 		tick.Bids[0].Price >= tick.Asks[0].Price || tickRelated.Bids[0].Price >= tickRelated.Asks[0].Price {
-		util.Info(fmt.Sprintf(`error3 %s or %s depth tick length not good`, market, setting.MarketRelated))
+		util.Info(fmt.Sprintf(`error3 %s %d %d %f-%f or %s %d %d %f-%fdepth tick length not good`,
+			market, tick.Bids.Len(), tick.Asks.Len(), tick.Bids[0].Price, tick.Asks[0].Price, setting.MarketRelated,
+			tickRelated.Bids.Len(), tickRelated.Asks.Len(), tickRelated.Bids[0].Price, tickRelated.Asks[0].Price))
 		return
 	}
 	if (int(startTime)-tick.Ts > 200 || int(startTime)-tickRelated.Ts > 200) ||
@@ -101,41 +101,41 @@ var ProcessCarrySameTime = func(market, symbol, functionName string) {
 		return
 	}
 	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
-	orderMarket := getLastOrder(key, market)
-	orderRelated := getLastOrder(key, setting.MarketRelated)
-	if (api.IsValid(orderMarket) && api.IsValid(orderRelated)) ||
-		(!api.IsValid(orderMarket) && !api.IsValid(orderRelated)) {
-		placeBothOrders(market, symbol, key, tick, tickRelated, accountRelated, setting)
-	} else if !api.IsValid(orderMarket) {
-		reOrder(key, market, orderMarket, tick, setting)
-	} else if !api.IsValid(orderRelated) {
-		reOrder(key, market, orderRelated, tick, setting)
-	}
+	//orderMarket := getLastOrder(key, market)
+	//orderRelated := getLastOrder(key, setting.MarketRelated)
+	//if (api.IsValid(orderMarket) && api.IsValid(orderRelated)) ||
+	//	(!api.IsValid(orderMarket) && !api.IsValid(orderRelated)) {
+	placeBothOrders(market, symbol, key, tick, tickRelated, accountRelated, setting)
+	//} else if !api.IsValid(orderMarket) {
+	//	reOrder(key, market, orderMarket, tick, setting)
+	//} else if !api.IsValid(orderRelated) {
+	//	reOrder(key, market, orderRelated, tick, setting)
+	//}
 }
 
-func reOrder(key, market string, lastOrder *model.Order, tick *model.BidAsk, setting *model.Setting) {
-	if lastOrder.Amount-lastOrder.DealAmount < 1 {
-		setLastOrder(key, market, nil)
-		setLastOrder(key, setting.MarketRelated, nil)
-		return
-	}
-	price := lastOrder.Price
-	priceType := `保持价格`
-	if lastOrder.RefreshType == PostOnly && lastOrder.OrderId != `` {
-		price = tick.Asks[0].Price - api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
-		if lastOrder.OrderSide == model.OrderSideSell {
-			price = tick.Bids[0].Price + api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
-		}
-		priceType = `买卖1价格`
-	}
-	util.Notice(fmt.Sprintf(`---- reorder: %s order %s %s %s %s %f %f orderParam:<%s> %s`,
-		lastOrder.Market, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market, lastOrder.Symbol,
-		price, lastOrder.Amount-lastOrder.DealAmount, lastOrder.RefreshType, priceType))
-	lastOrder = api.PlaceOrder(``, ``, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market,
-		lastOrder.Symbol, ``, setting.AccountType, lastOrder.RefreshType,
-		price, lastOrder.Amount-lastOrder.DealAmount, true)
-	setLastOrder(key, lastOrder.Market, lastOrder)
-}
+//func reOrder(key, market string, lastOrder *model.Order, tick *model.BidAsk, setting *model.Setting) {
+//	if lastOrder.Amount-lastOrder.DealAmount < 1 {
+//		setLastOrder(key, market, nil)
+//		setLastOrder(key, setting.MarketRelated, nil)
+//		return
+//	}
+//	price := lastOrder.Price
+//	priceType := `保持价格`
+//	if lastOrder.RefreshType == PostOnly && lastOrder.OrderId != `` {
+//		price = tick.Asks[0].Price - api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
+//		if lastOrder.OrderSide == model.OrderSideSell {
+//			price = tick.Bids[0].Price + api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
+//		}
+//		priceType = `买卖1价格`
+//	}
+//	util.Notice(fmt.Sprintf(`---- reorder: %s order %s %s %s %s %f %f orderParam:<%s> %s`,
+//		lastOrder.Market, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market, lastOrder.Symbol,
+//		price, lastOrder.Amount-lastOrder.DealAmount, lastOrder.RefreshType, priceType))
+//	lastOrder = api.PlaceOrder(``, ``, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market,
+//		lastOrder.Symbol, ``, setting.AccountType, lastOrder.RefreshType,
+//		price, lastOrder.Amount-lastOrder.DealAmount, true)
+//	setLastOrder(key, lastOrder.Market, lastOrder)
+//}
 
 // account.free被设置成-1 * accountRelated.free
 func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk, accountRelated *model.Account,
@@ -211,7 +211,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPriceRelated = calcAmtPriceBuy
 		orderSide = model.OrderSideBuy
 		orderPrice = tick.Asks[0].Price - api.GetPriceDistance(market, symbol)
-		orderParam = PostOnly
+		orderParam = model.PostOnly
 		carryType = 2
 	} else if fms1-priceDistance <= calcAmtPriceSellNew+priceX && fmsaNew >= setting.RefreshLimitLow {
 		amount = math.Min(math.Min(0.8*fmsaNew, a2), setting.GridAmount)
@@ -226,7 +226,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderSideRelated = model.OrderSideBuy
 		orderSide = model.OrderSideSell
 		orderPriceRelated = calcAmtPriceSell
-		orderParam = PostOnly
+		orderParam = model.PostOnly
 		orderPrice = tick.Bids[0].Price + api.GetPriceDistance(market, symbol)
 		carryType = 4
 	}
@@ -241,9 +241,9 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		setLastOrder(key, setting.MarketRelated, nil)
 		carryChannel := getCarryChannel(key)
 		go api.PlaceSyncOrders(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol,
-			``, setting.AccountType, ``, orderPriceRelated, amount, true, carryChannel, 10)
+			``, setting.AccountType, ``, orderPriceRelated, amount, true, carryChannel, 100)
 		go api.PlaceSyncOrders(``, ``, orderSide, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, orderParam, orderPrice, amount, true, carryChannel, 10)
+			setting.AccountType, orderParam, orderPrice, amount, true, carryChannel, 100)
 		for true {
 			order := <-carryChannel
 			util.Notice(fmt.Sprintf(`---- get order %s %s %s`, order.Market, order.OrderId, order.Status))

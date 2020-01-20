@@ -66,9 +66,12 @@ const FunctionHangContract = `hang_contract`
 const FunctionRank = `rank`
 const FunctionHangRevert = `hang_revert`
 const FunctionBMCarryHang = `bm_carry_hang`
+const FunctionPostonlyHandler = `postonly`
 
 //const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`
+
+const PostOnly = `ParticipateDoNotInitiate`
 
 //const FunRefreshMiddle = `refresh_parameter_middle`
 //const FunRefreshSide = `refresh_parameter_side`
@@ -640,8 +643,10 @@ func GetWSSubscribes(market, subType string) []interface{} {
 		}
 	}
 	if market == Bitmex || market == Bybit {
-		//subscribes = append(subscribes, `order`)
 		subscribes = append(subscribes, `position`)
+	}
+	if market == Bitmex {
+		subscribes = append(subscribes, `order`)
 	}
 	return subscribes
 }

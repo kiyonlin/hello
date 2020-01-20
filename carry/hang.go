@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var ProcessHang = func(market, symbol, function string) {
+var ProcessHang = func(market, symbol string, function interface{}) {
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 11 ||
 		tick.Bids.Len() < 11 {

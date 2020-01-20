@@ -44,7 +44,7 @@ func (hangContractOrders *HangContractOrders) setHangContractOrders(symbol strin
 	hangContractOrders.orders[symbol] = orders
 }
 
-var ProcessHangContract = func(market, symbol, function string) {
+var ProcessHangContract = func(market, symbol string, function interface{}) {
 	startTime := util.GetNowUnixMillion()
 	start, end := model.AppMarkets.GetTrends(symbol)
 	if start == nil || end == nil || start[market] == nil || end[market] == nil {

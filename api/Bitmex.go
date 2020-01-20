@@ -88,7 +88,6 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 			handOrderBook10(markets, data)
 		case `order`:
 			handleOrder(markets, action, data)
-			//model.HandlerMap[model.FunctionBMCarryHang](``, ``)
 		case `position`:
 			handleAccount(action, data)
 		}
@@ -221,6 +220,9 @@ func parseOrderBM(order *model.Order, item map[string]interface{}) {
 	if item[`avgPx`] != nil {
 		order.DealPrice, _ = item[`avgPx`].(json.Number).Float64()
 	}
+	if item[`execInst`] != nil && item[`execInst`] == model.PostOnly {
+		order.RefreshType = model.PostOnly
+	}
 	return
 }
 
@@ -323,13 +325,19 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 				orders[order.OrderId] = order
 			}
 		case `insert`:
-			if orders == nil {
-				orders = markets.GetBmPendingOrders()
-			}
+			//if orders == nil {
+			//	orders = markets.GetBmPendingOrders()
+			//}
 			order := &model.Order{Market: model.Bitmex}
 			parseOrderBM(order, value.(map[string]interface{}))
-			if order.OrderId != `` {
-				orders[order.OrderId] = order
+			//if order.OrderId != `` {
+			//	orders[order.OrderId] = order
+			//}
+			symbol := `all`
+			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+				if handler != nil && function == model.FunctionPostonlyHandler && model.AppConfig.Env != `test` {
+					go handler(model.Bitmex, symbol, order)
+				}
 			}
 		case `update`:
 			if orders == nil {
@@ -347,7 +355,7 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 			}
 		}
 	}
-	markets.SetBMPendingOrders(orders)
+	//markets.SetBMPendingOrders(orders)
 }
 
 func handleOrderBook(markets *model.Markets, action string, data []interface{}) {

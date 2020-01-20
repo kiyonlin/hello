@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type CarryHandler func(market, symbol, function string)
+type CarryHandler func(market, symbol string, function interface{})
 
 type Setting struct {
 	Valid             bool

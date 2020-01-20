@@ -217,7 +217,7 @@ func (refreshOrders *RefreshOrders) SetLastChancePrice(market, symbol string, pr
 	refreshOrders.lastChancePrice[market][symbol] = price
 }
 
-func (refreshOrders *RefreshOrders) CheckLastChancePrice(market, symbol string, price, priceDistance float64) (same bool) {
+func (refreshOrders *RefreshOrders) CheckLastChancePrice(market, symbol string, _, _ float64) (same bool) {
 	defer refreshOrders.lock.Unlock()
 	refreshOrders.lock.Lock()
 	if refreshOrders.lastChancePrice == nil || refreshOrders.lastChancePrice[market] == nil {
@@ -303,7 +303,7 @@ func (refreshOrders *RefreshOrders) CheckAmountLimit(market, symbol string, amou
 	return false, amountIndex
 }
 
-func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amount, amountLimit float64) {
+func (refreshOrders *RefreshOrders) AddRefreshAmount(market, symbol string, amount, _ float64) {
 	defer refreshOrders.lock.Unlock()
 	refreshOrders.lock.Lock()
 	if refreshOrders.amountLimit == nil {
@@ -382,7 +382,7 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 	refreshOrders.hanging = in
 }
 
-var ProcessRefresh = func(market, symbol, function string) {
+var ProcessRefresh = func(market, symbol string, function interface{}) {
 	start := util.GetNowUnixMillion()
 	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if !result {
