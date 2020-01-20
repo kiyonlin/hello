@@ -300,8 +300,8 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 	//	util.SocketInfo(fmt.Sprintf(`set bid ask %d`, markets.bidAsks[symbol][marketName].Ts-bidAsk.Ts))
 	//}
 	if markets.bidAsks[symbol][marketName] == nil || markets.bidAsks[symbol][marketName].Ts <= bidAsk.Ts {
-		util.SocketInfo(fmt.Sprintf(`...%s %s socket delay %d`,
-			symbol, marketName, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
+		//util.SocketInfo(fmt.Sprintf(`...%s %s socket delay %d`,
+		//	symbol, marketName, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 		markets.bidAsks[symbol][marketName] = bidAsk
 		return true
 	}

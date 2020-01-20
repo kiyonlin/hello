@@ -333,10 +333,13 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 			//if order.OrderId != `` {
 			//	orders[order.OrderId] = order
 			//}
+			if order.OrderId == `` {
+				continue
+			}
 			symbol := `all`
 			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 				if handler != nil && function == model.FunctionPostonlyHandler && model.AppConfig.Env != `test` {
-					go handler(model.Bitmex, symbol, order)
+					go handler(model.Bitmex, order.Symbol, order)
 				}
 			}
 		case `update`:
