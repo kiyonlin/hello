@@ -570,12 +570,17 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 	price, amount float64, saveDB bool, channel chan model.Order, retry int) {
 	var order *model.Order
 	i := 0
-	for ; i < retry; i++ {
+	forever := false
+	if retry < 0 {
+		forever = true
+	}
+	for ; i < retry || forever; i++ {
 		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam, price,
 			amount, saveDB)
 		if order != nil && order.OrderId != `` {
 			break
 		} else {
+			time.Sleep(time.Millisecond * 100)
 			util.Notice(fmt.Sprintf(`fail to place order %d time, re order`, i))
 		}
 	}
