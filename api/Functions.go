@@ -26,7 +26,13 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 		if bidAsk == nil {
 			continue
 		}
-		if market == model.Bitmex {
+		restCheck := true
+		for function := range model.GetFunctions(model.Bitmex, `all`) {
+			if function == model.FunctionPostonlyHandler {
+				restCheck = false
+			}
+		}
+		if market == model.Bitmex && restCheck {
 			_, restBid, restAsk := GetOrderBook(``, ``, symbol)
 			if bidAsk.Bids != nil && bidAsk.Asks != nil &&
 				bidAsk.Bids.Len() > 0 && bidAsk.Asks.Len() > 0 &&
