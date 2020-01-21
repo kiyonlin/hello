@@ -104,6 +104,6 @@ func Test_RefreshAccount(t *testing.T) {
 	model.AppConfig.Env = `not_test`
 	order := api.PlaceOrder(bitmexKey, bitmexSecret,
 		model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, `btcusd_p`,
-		``, ``, model.PostOnly, 8633, 1, true)
+		``, ``, model.PostOnly, 5555, 1, true)
 	fmt.Println(fmt.Sprintf(`order id %s status %s deal amount %f`, order.OrderId, order.Status, order.DealAmount))
 }

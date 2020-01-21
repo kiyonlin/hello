@@ -9,7 +9,7 @@ import (
 )
 
 var PostonlyHandler = func(market, symbol string, order interface{}) {
-	//startTime := util.GetNowUnixMillion()
+	startTime := util.GetNowUnixMillion()
 	//_, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if order == nil || model.AppConfig.Handle != `1` {
 		return
@@ -54,9 +54,6 @@ var PostonlyHandler = func(market, symbol string, order interface{}) {
 	//	util.Notice(`fatal tick error`)
 	//}
 	amount := orderPostonly.Amount - orderPostonly.DealAmount
-	util.Notice(fmt.Sprintf(`---- reorder: %s order %s %s %s %s %f %f orderParam:<%s>`,
-		orderPostonly.Market, orderPostonly.OrderSide, orderPostonly.OrderType, orderPostonly.Market,
-		orderPostonly.Symbol, price, orderPostonly.Amount-orderPostonly.DealAmount, orderPostonly.RefreshType))
 	for true {
 		orderPostonly = api.PlaceOrder(``, ``, orderSide, model.OrderTypeLimit, market, symbol,
 			``, ``, model.PostOnly, price, amount, true)
@@ -65,4 +62,6 @@ var PostonlyHandler = func(market, symbol string, order interface{}) {
 		}
 		time.Sleep(time.Millisecond * 100)
 	}
+	util.Notice(fmt.Sprintf(`reorder: %s order %s %s %s %f %f orderParam:<%s> delay:%d`, market,
+		orderSide, model.OrderTypeLimit, symbol, price, amount, model.PostOnly, util.GetNowUnixMillion()-startTime))
 }
