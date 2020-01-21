@@ -10,7 +10,7 @@ import (
 
 var PostonlyHandler = func(market, symbol string, order interface{}) {
 	//startTime := util.GetNowUnixMillion()
-	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	//_, tick := model.AppMarkets.GetBidAsk(symbol, market)
 	if order == nil {
 		return
 	}
@@ -37,14 +37,22 @@ var PostonlyHandler = func(market, symbol string, order interface{}) {
 	}
 	orderSide := orderPostonly.OrderSide
 	price := orderPostonly.Price
-	if tick != nil && tick.Asks != nil && tick.Bids != nil && tick.Asks.Len() > 0 && tick.Bids.Len() > 0 {
-		price = tick.Asks[0].Price - api.GetPriceDistance(orderPostonly.Market, orderPostonly.Symbol)
-		if orderSide == model.OrderSideSell {
-			price = tick.Bids[0].Price + api.GetPriceDistance(orderPostonly.Market, orderPostonly.Symbol)
-		}
-	} else {
-		util.Notice(`fatal tick error`)
+	_, restBid, restAsk := api.GetOrderBook(``, ``, symbol)
+	for restBid == nil || restAsk == nil {
+		_, restBid, restAsk = api.GetOrderBook(``, ``, symbol)
 	}
+	price = restAsk.Price - api.GetPriceDistance(orderPostonly.Market, orderPostonly.Symbol)
+	if orderSide == model.OrderSideSell {
+		price = restBid.Price + api.GetPriceDistance(orderPostonly.Market, orderPostonly.Symbol)
+	}
+	//if tick != nil && tick.Asks != nil && tick.Bids != nil && tick.Asks.Len() > 0 && tick.Bids.Len() > 0 {
+	//	price = tick.Asks[0].Price - api.GetPriceDistance(orderPostonly.Market, orderPostonly.Symbol)
+	//	if orderSide == model.OrderSideSell {
+	//		price = tick.Bids[0].Price + api.GetPriceDistance(orderPostonly.Market, orderPostonly.Symbol)
+	//	}
+	//} else {
+	//	util.Notice(`fatal tick error`)
+	//}
 	amount := orderPostonly.Amount - orderPostonly.DealAmount
 	util.Notice(fmt.Sprintf(`---- reorder: %s order %s %s %s %s %f %f orderParam:<%s>`,
 		orderPostonly.Market, orderPostonly.OrderSide, orderPostonly.OrderType, orderPostonly.Market,
