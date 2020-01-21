@@ -11,7 +11,7 @@ import (
 var PostonlyHandler = func(market, symbol string, order interface{}) {
 	//startTime := util.GetNowUnixMillion()
 	//_, tick := model.AppMarkets.GetBidAsk(symbol, market)
-	if order == nil {
+	if order == nil || model.AppConfig.Handle != `1` {
 		return
 	}
 	//if tick == nil || tick.Bids == nil || tick.Asks == nil || tick.Bids.Len() < 1 || tick.Asks.Len() < 1 {
