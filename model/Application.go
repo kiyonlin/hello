@@ -444,7 +444,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 			if setting != nil {
 				return `orderBook10:` + DialectSymbol[Bitmex][symbol]
 			}
-			return `orderBookL2_25:` + DialectSymbol[Bitmex][symbol]
+			//return `orderBookL2_25:` + DialectSymbol[Bitmex][symbol]
+			return `orderBook10:` + DialectSymbol[Bitmex][symbol]
 		}
 		return ``
 	case Bybit:
