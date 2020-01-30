@@ -79,6 +79,8 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
+	a := 1.0 / 9.0
+	fmt.Println(a)
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	var err error

@@ -202,6 +202,12 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 	orderPriceRelated := 0.0
 	carryType := 0
 	orderParam := ``
+	amountLine := 900000.0
+	bidAskRate := 1.0 / 9.0
+	if setting.MarketRelated == model.Bybit {
+		amountLine = 100000
+		bidAskRate = 1.0 / 10.0
+	}
 	if fmb1+priceDistance >= calcAmtPriceBuyNew+priceX && fmbaNew >= setting.RefreshLimitLow {
 		amount = math.Min(math.Min(0.8*fmbaNew, a1), setting.GridAmount)
 		orderSideRelated = model.OrderSideSell
@@ -210,7 +216,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPrice = tick.Asks[0].Price * 1.001
 		carryType = 1
 	} else if fmb1+priceDistance >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
-		tick.Bids[0].Amount*9 < tick.Asks[0].Amount && tick.Asks[0].Amount > 900000 {
+		tick.Bids[0].Amount < bidAskRate*tick.Asks[0].Amount && tick.Asks[0].Amount > amountLine {
 		amount = math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
 		orderSideRelated = model.OrderSideSell
 		orderPriceRelated = calcAmtPriceBuy
@@ -226,7 +232,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPriceRelated = calcAmtPriceSellNew
 		carryType = 3
 	} else if fms1-priceDistance <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
-		tick.Asks[0].Amount*9 < tick.Bids[0].Amount && tick.Bids[0].Amount > 900000 {
+		tick.Asks[0].Amount < tick.Bids[0].Amount*bidAskRate && tick.Bids[0].Amount > amountLine {
 		amount = math.Min(math.Min(fmsa*0.8, a2), setting.GridAmount)
 		orderSideRelated = model.OrderSideBuy
 		orderSide = model.OrderSideSell
