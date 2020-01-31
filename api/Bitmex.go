@@ -272,11 +272,17 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	}
 	sort.Sort(bidAsk.Asks)
 	sort.Sort(sort.Reverse(bidAsk.Bids))
-	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
-		if model.AppConfig.Env == "test" && symbol == "XBTUSD" {
-			util.SocketInfo(fmt.Sprintf(`+++++%f-%f bm delay %d`,
-				bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
+	if model.AppConfig.Env == "test" && symbol == "btcusd_p" && bidAsk.Bids != nil && bidAsk.Asks != nil &&
+		bidAsk.Bids.Len() > 0 && bidAsk.Asks.Len() > 0 {
+		_, originalBidAsk := markets.GetBidAsk(symbol, model.Bitmex)
+		if originalBidAsk != nil && originalBidAsk.Bids != nil && originalBidAsk.Asks != nil &&
+			(originalBidAsk.Bids[0].Price != bidAsk.Bids[0].Price || originalBidAsk.Asks[0].Price != bidAsk.Asks[0].Price) {
+			util.SocketInfo(fmt.Sprintf(`+++++%f-%f %f-%fbm delay %d`,
+				bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount,
+				util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 		}
+	}
+	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
 		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 			if handler != nil && function != model.FunctionMaker {
 				handler(model.Bitmex, symbol, function)
@@ -481,11 +487,17 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		sort.Sort(sort.Reverse(bidAsks.Bids))
 		if bidAsks.Bids != nil && bidAsks.Asks != nil {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
-			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-				if model.AppConfig.Env == "test" && symbol == "XBTUSD" {
-					util.SocketInfo(fmt.Sprintf(`-----%f-%f bm increase delay %d`,
-						bidAsks.Bids[0].Price, bidAsks.Asks[0].Price, util.GetNowUnixMillion()-int64(bidAsks.Ts)))
+			if model.AppConfig.Env == "test" && symbol == "btcusd_p" &&
+				bidAsks.Bids.Len() > 0 && bidAsks.Asks.Len() > 0 {
+				_, originalBidAsk := markets.GetBidAsk(symbol, model.Bitmex)
+				if originalBidAsk != nil && originalBidAsk.Bids != nil && originalBidAsk.Asks != nil &&
+					(originalBidAsk.Bids[0].Price != bidAsks.Bids[0].Price || originalBidAsk.Asks[0].Price != bidAsks.Asks[0].Price) {
+					util.SocketInfo(fmt.Sprintf(`+++++%f-%f %f-%fbm delay %d`,
+						bidAsks.Bids[0].Price, bidAsks.Asks[0].Price, bidAsks.Bids[0].Amount, bidAsks.Asks[0].Amount,
+						util.GetNowUnixMillion()-int64(bidAsks.Ts)))
 				}
+			}
+			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 					if handler != nil && function != model.FunctionMaker && model.AppConfig.Env != `test` {
 						handler(model.Bitmex, symbol, function)
