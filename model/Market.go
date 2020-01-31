@@ -306,6 +306,10 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 		return true
 	}
 	//}
+	if AppConfig.Env == "test" {
+		markets.bidAsks[symbol][marketName] = bidAsk
+		return true
+	}
 	return false
 }
 
