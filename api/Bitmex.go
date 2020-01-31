@@ -16,6 +16,7 @@ import (
 )
 
 var socketLockBitmex sync.Mutex
+var prePriceB, prePriceA, prePriceB10, prePriceA10 float64
 
 var subscribeHandlerBitmex = func(subscribes []interface{}, subType string) error {
 	var err error = nil
@@ -274,12 +275,12 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	sort.Sort(sort.Reverse(bidAsk.Bids))
 	if model.AppConfig.Env == "test" && symbol == "btcusd_p" && bidAsk.Bids != nil && bidAsk.Asks != nil &&
 		bidAsk.Bids.Len() > 0 && bidAsk.Asks.Len() > 0 {
-		_, originalBidAsk := markets.GetBidAsk(symbol, model.Bitmex)
-		if originalBidAsk != nil && originalBidAsk.Bids != nil && originalBidAsk.Asks != nil &&
-			(originalBidAsk.Bids[0].Price != bidAsk.Bids[0].Price || originalBidAsk.Asks[0].Price != bidAsk.Asks[0].Price) {
-			util.SocketInfo(fmt.Sprintf(`-----%f-%f %f-%fbm delay %d %f-%f`,
+		if prePriceB10 != bidAsk.Bids[0].Price || prePriceA10 != bidAsk.Asks[0].Price {
+			util.SocketInfo(fmt.Sprintf(`++++++%f-%f %f-%fbm delay %d %f-%f`,
 				bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount,
-				util.GetNowUnixMillion()-int64(bidAsk.Ts), originalBidAsk.Bids[0].Price, originalBidAsk.Asks[0].Price))
+				util.GetNowUnixMillion()-int64(bidAsk.Ts), prePriceB10, prePriceA10))
+			prePriceB10 = bidAsk.Bids[0].Price
+			prePriceA10 = bidAsk.Asks[0].Price
 		}
 	}
 	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
@@ -489,13 +490,12 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if model.AppConfig.Env == "test" && symbol == "btcusd_p" &&
 				bidAsks.Bids.Len() > 0 && bidAsks.Asks.Len() > 0 {
-				_, originalBidAsk := markets.GetBidAsk(symbol, model.Bitmex)
-				if originalBidAsk != nil && originalBidAsk.Bids != nil && originalBidAsk.Asks != nil &&
-					(originalBidAsk.Bids[0].Price != bidAsks.Bids[0].Price ||
-						originalBidAsk.Asks[0].Price != bidAsks.Asks[0].Price) {
-					util.SocketInfo(fmt.Sprintf(`+++++%f-%f %f-%fbm delay %d %f-%f`,
+				if prePriceB != bidAsks.Bids[0].Price || prePriceA != bidAsks.Asks[0].Price {
+					util.SocketInfo(fmt.Sprintf(`------%f-%f %f-%fbm delay %d %f-%f`,
 						bidAsks.Bids[0].Price, bidAsks.Asks[0].Price, bidAsks.Bids[0].Amount, bidAsks.Asks[0].Amount,
-						util.GetNowUnixMillion()-int64(bidAsks.Ts), originalBidAsk.Bids[0].Price, originalBidAsk.Asks[0].Price))
+						util.GetNowUnixMillion()-int64(bidAsks.Ts), prePriceB, prePriceA))
+					prePriceB = bidAsks.Bids[0].Price
+					prePriceA = bidAsks.Asks[0].Price
 				}
 			}
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
