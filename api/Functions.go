@@ -21,22 +21,9 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 	now := util.GetNowUnixMillion()
 	symbols := markets.GetSymbols()
 	for symbol := range symbols {
-		priceStep := GetPriceDistance(market, symbol) * 2
 		_, bidAsk := markets.GetBidAsk(symbol, market)
 		if bidAsk == nil {
 			continue
-		}
-		if market == model.Bitmex {
-			_, restBid, restAsk := GetOrderBook(``, ``, symbol)
-			if bidAsk.Bids != nil && bidAsk.Asks != nil &&
-				bidAsk.Bids.Len() > 0 && bidAsk.Asks.Len() > 0 &&
-				restBid != nil && restAsk != nil &&
-				(math.Abs(bidAsk.Bids[0].Price-restBid.Price) >= priceStep ||
-					math.Abs(bidAsk.Asks[0].Price-restAsk.Price) >= priceStep) {
-				util.SocketInfo(fmt.Sprintf(`******* %s %s need to reset channel rest %f-%f ws %f-%f`,
-					market, symbol, restBid.Price, restAsk.Price, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price))
-				return true
-			}
 		}
 		if float64(now-int64(bidAsk.Ts)) < model.AppConfig.Delay {
 			//util.Notice(market + ` no need to reconnect`)
