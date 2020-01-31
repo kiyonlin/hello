@@ -273,8 +273,8 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	sort.Sort(bidAsk.Asks)
 	sort.Sort(sort.Reverse(bidAsk.Bids))
 	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
-		if model.AppConfig.Env == "test" {
-			util.SocketInfo(fmt.Sprintf(`----->>>>>%f-%f bm delay %d`,
+		if model.AppConfig.Env == "test" && symbol == "XBTUSD" {
+			util.SocketInfo(fmt.Sprintf(`+++++%f-%f bm delay %d`,
 				bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 		}
 		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
@@ -482,8 +482,8 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		if bidAsks.Bids != nil && bidAsks.Asks != nil {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-				if model.AppConfig.Env == "test" {
-					util.SocketInfo(fmt.Sprintf(`-----<<<<<%f-%f bm increase delay %d`,
+				if model.AppConfig.Env == "test" && symbol == "XBTUSD" {
+					util.SocketInfo(fmt.Sprintf(`-----%f-%f bm increase delay %d`,
 						bidAsks.Bids[0].Price, bidAsks.Asks[0].Price, util.GetNowUnixMillion()-int64(bidAsks.Ts)))
 				}
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
