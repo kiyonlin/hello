@@ -277,9 +277,9 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 		_, originalBidAsk := markets.GetBidAsk(symbol, model.Bitmex)
 		if originalBidAsk != nil && originalBidAsk.Bids != nil && originalBidAsk.Asks != nil &&
 			(originalBidAsk.Bids[0].Price != bidAsk.Bids[0].Price || originalBidAsk.Asks[0].Price != bidAsk.Asks[0].Price) {
-			util.SocketInfo(fmt.Sprintf(`+++++%f-%f %f-%fbm delay %d`,
+			util.SocketInfo(fmt.Sprintf(`-----%f-%f %f-%fbm delay %d %f-%f`,
 				bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount,
-				util.GetNowUnixMillion()-int64(bidAsk.Ts)))
+				util.GetNowUnixMillion()-int64(bidAsk.Ts), originalBidAsk.Bids[0].Price, originalBidAsk.Asks[0].Price))
 		}
 	}
 	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
@@ -491,10 +491,11 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 				bidAsks.Bids.Len() > 0 && bidAsks.Asks.Len() > 0 {
 				_, originalBidAsk := markets.GetBidAsk(symbol, model.Bitmex)
 				if originalBidAsk != nil && originalBidAsk.Bids != nil && originalBidAsk.Asks != nil &&
-					(originalBidAsk.Bids[0].Price != bidAsks.Bids[0].Price || originalBidAsk.Asks[0].Price != bidAsks.Asks[0].Price) {
-					util.SocketInfo(fmt.Sprintf(`+++++%f-%f %f-%fbm delay %d`,
+					(originalBidAsk.Bids[0].Price != bidAsks.Bids[0].Price ||
+						originalBidAsk.Asks[0].Price != bidAsks.Asks[0].Price) {
+					util.SocketInfo(fmt.Sprintf(`+++++%f-%f %f-%fbm delay %d %f-%f`,
 						bidAsks.Bids[0].Price, bidAsks.Asks[0].Price, bidAsks.Bids[0].Amount, bidAsks.Asks[0].Amount,
-						util.GetNowUnixMillion()-int64(bidAsks.Ts)))
+						util.GetNowUnixMillion()-int64(bidAsks.Ts), originalBidAsk.Bids[0].Price, originalBidAsk.Asks[0].Price))
 				}
 			}
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
