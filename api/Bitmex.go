@@ -273,10 +273,13 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	sort.Sort(bidAsk.Asks)
 	sort.Sort(sort.Reverse(bidAsk.Bids))
 	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
-		//util.Notice(fmt.Sprintf(`bm delay %d`, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
+		if model.AppConfig.Env == "test" {
+			util.SocketInfo(fmt.Sprintf(`----->>>>>%f-%f bm delay %d`,
+				bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
+		}
 		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 			if handler != nil && function != model.FunctionMaker {
-				go handler(model.Bitmex, symbol, function)
+				handler(model.Bitmex, symbol, function)
 			}
 		}
 	}
@@ -304,7 +307,7 @@ func handleQuote(markets *model.Markets, action string, data []interface{}) {
 		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 				if handler != nil && function != model.FunctionMaker {
-					go handler(model.Bitmex, symbol, function)
+					handler(model.Bitmex, symbol, function)
 				}
 			}
 		}
@@ -479,12 +482,13 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 		if bidAsks.Bids != nil && bidAsks.Asks != nil {
 			bidAsks.Ts = int(util.GetNowUnixMillion())
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
-				//if action == `delete` || action == `insert` {
-				//	util.SocketInfo(action + `set bm success ` + model.AppMarkets.ToStringBidAsk(bidAsks))
-				//}
+				if model.AppConfig.Env == "test" {
+					util.SocketInfo(fmt.Sprintf(`-----<<<<<%f-%f bm increase delay %d`,
+						bidAsks.Bids[0].Price, bidAsks.Asks[0].Price, util.GetNowUnixMillion()-int64(bidAsks.Ts)))
+				}
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 					if handler != nil && function != model.FunctionMaker && model.AppConfig.Env != `test` {
-						go handler(model.Bitmex, symbol, function)
+						handler(model.Bitmex, symbol, function)
 					}
 				}
 			}

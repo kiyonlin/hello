@@ -652,5 +652,8 @@ func GetWSSubscribes(market, subType string) []interface{} {
 	if market == Bitmex {
 		subscribes = append(subscribes, `order`)
 	}
+	if AppConfig.Env == "test" {
+		subscribes = append(subscribes, `orderBookL2_25:`+DialectSymbol[Bitmex]["btcusd_p"])
+	}
 	return subscribes
 }

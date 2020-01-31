@@ -213,7 +213,7 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 		}
 		for function, handler := range model.GetFunctions(model.Bybit, symbol) {
 			if handler != nil && function != model.FunctionMaker {
-				go handler(model.Bybit, symbol, function)
+				handler(model.Bybit, symbol, function)
 			}
 		}
 	}
