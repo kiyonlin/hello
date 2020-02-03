@@ -46,6 +46,7 @@ type Markets struct {
 	TrendEnd        map[string]map[string]*Deal           // symbol - market - deal
 	TrendStart      map[string]map[string]*Deal           // symbol - market - deal
 	bidAsks         map[string]map[string]*BidAsk         // symbol - market - bidAsk
+	lastBidAsks     map[string]map[string]*BidAsk         // symbol - market - bidAsk
 	trade           map[int64]map[string]map[string]*Deal // time in second - symbol - market - deal
 	BigDeals        map[string]map[string]*Deal           // symbol - market - Deal
 	wsDepth         map[string][]chan struct{}            // market - []depth channel
@@ -265,6 +266,17 @@ func (markets *Markets) CopyBidAsk(symbol, market string) (result bool, bidAsk *
 	return true, bidAsk
 }
 
+func (markets *Markets) GetLastBidAsk(symbol, market string) (result bool, ask *BidAsk) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.lastBidAsks == nil || markets.lastBidAsks[symbol] == nil || markets.lastBidAsks[symbol][market] == nil ||
+		markets.lastBidAsks[symbol][market].Asks == nil || markets.lastBidAsks[symbol][market].Bids == nil ||
+		markets.lastBidAsks[symbol][market].Asks.Len() == 0 || markets.lastBidAsks[symbol][market].Bids.Len() == 0 {
+		return false, nil
+	}
+	return true, markets.lastBidAsks[symbol][market]
+}
+
 func (markets *Markets) GetBidAsk(symbol, market string) (result bool, bidAsk *BidAsk) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
@@ -283,30 +295,23 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 		symbol = `bch_` + symbol[7:]
 	}
 	if markets.bidAsks == nil {
-		markets.bidAsks = map[string]map[string]*BidAsk{}
+		markets.bidAsks = make(map[string]map[string]*BidAsk)
+	}
+	if markets.lastBidAsks == nil {
+		markets.lastBidAsks = make(map[string]map[string]*BidAsk)
 	}
 	if markets.bidAsks[symbol] == nil {
-		markets.bidAsks[symbol] = map[string]*BidAsk{}
+		markets.bidAsks[symbol] = make(map[string]*BidAsk)
+	}
+	if markets.lastBidAsks[symbol] == nil {
+		markets.lastBidAsks[symbol] = make(map[string]*BidAsk)
 	}
 	if bidAsk == nil || bidAsk.Bids == nil || bidAsk.Asks == nil || bidAsk.Bids.Len() == 0 || bidAsk.Asks.Len() == 0 {
 		util.SocketInfo(`do not set nil or empty bid ask`)
 		return false
 	}
-	//if bidAsk.Bids[0].Price > bidAsk.Asks[0].Price {
-	//	util.Info(fmt.Sprintf(`[fatal error]%s %s bid %f > ask %f amount %f %f`,
-	//		symbol, marketName, bidAsk.Bids[0].Price, bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount))
-	//} else {
-	//if markets.bidAsks[symbol][marketName] != nil {
-	//	util.SocketInfo(fmt.Sprintf(`set bid ask %d`, markets.bidAsks[symbol][marketName].Ts-bidAsk.Ts))
-	//}
 	if markets.bidAsks[symbol][marketName] == nil || markets.bidAsks[symbol][marketName].Ts <= bidAsk.Ts {
-		//util.SocketInfo(fmt.Sprintf(`...%s %s socket delay %d`,
-		//	symbol, marketName, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
-		markets.bidAsks[symbol][marketName] = bidAsk
-		return true
-	}
-	//}
-	if AppConfig.Env == "test" {
+		markets.lastBidAsks[symbol][marketName] = markets.bidAsks[symbol][marketName]
 		markets.bidAsks[symbol][marketName] = bidAsk
 		return true
 	}
