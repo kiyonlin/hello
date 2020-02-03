@@ -139,16 +139,18 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 
 func checkLastBid(market, symbol, orderSide string, tick *model.BidAsk) (valid bool) {
 	_, lastTick := model.AppMarkets.GetLastBidAsk(symbol, market)
+	util.Notice(fmt.Sprintf(`tick trend fail %s a1:%f lastA1:%f b1:%f lastB1:%f`,
+		orderSide, tick.Asks[0].Price, lastTick.Asks[0].Price, tick.Bids[0].Price, lastTick.Bids[0].Price))
 	if market != model.Bitmex || lastTick == nil || lastTick.Bids == nil || lastTick.Asks == nil ||
 		lastTick.Bids.Len() == 0 || lastTick.Asks.Len() == 0 {
 		return true
 	}
-	if orderSide == model.OrderSideSell && tick.Bids[0].Price <= lastTick.Bids[0].Price {
+	if orderSide == model.OrderSideSell && tick.Bids[0].Price < lastTick.Bids[0].Price {
 		util.Notice(fmt.Sprintf(`tick trend fail %s b1:%f<lastB1:%f`,
 			orderSide, tick.Bids[0].Price, lastTick.Bids[0].Price))
 		return false
 	}
-	if orderSide == model.OrderSideBuy && tick.Asks[0].Price >= lastTick.Asks[0].Price {
+	if orderSide == model.OrderSideBuy && tick.Asks[0].Price > lastTick.Asks[0].Price {
 		util.Notice(fmt.Sprintf(`tick trend fail %s a1:%f>lastA1:%f`,
 			orderSide, tick.Asks[0].Price, lastTick.Asks[0].Price))
 		return false
