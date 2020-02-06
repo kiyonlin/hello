@@ -308,9 +308,21 @@ func (markets *Markets) SetBidAsk(symbol, marketName string, bidAsk *BidAsk) boo
 	if last == nil || markets.bidAsks[symbol][marketName].Ts <= bidAsk.Ts {
 		markets.bidAsks[symbol][marketName] = bidAsk
 		if last != nil && last.Bids[0].Price > bidAsk.Bids[0].Price {
+			if markets.lastDown == nil {
+				markets.lastDown = make(map[string]map[string]int)
+			}
+			if markets.lastDown[symbol] == nil {
+				markets.lastDown[symbol] = make(map[string]int)
+			}
 			markets.lastDown[symbol][marketName] = bidAsk.Ts
 		}
 		if last != nil && last.Asks[0].Price < bidAsk.Asks[0].Price {
+			if markets.lastUp == nil {
+				markets.lastUp = make(map[string]map[string]int)
+			}
+			if markets.lastUp[symbol] == nil {
+				markets.lastUp[symbol] = make(map[string]int)
+			}
 			markets.lastUp[symbol][marketName] = bidAsk.Ts
 		}
 		return true
