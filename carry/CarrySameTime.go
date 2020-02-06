@@ -191,7 +191,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 	if priceX > 6 {
 		priceX = priceX/2 + 3
 	} else if priceX < -6 {
-		priceX = priceX/2 - 6
+		priceX = priceX/2 - 3
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, market, setting.MarketRelated),
 		fmt.Sprintf("[搬砖参数] %s %s资金费率:%f %s资金费率%f p1:%f p2:%f py:%f px:%f related free:%f %s 延时 %dms\n"+
