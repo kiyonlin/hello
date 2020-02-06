@@ -80,9 +80,9 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 			p := api.GetBtcBalance(``, ``, market)
 			switch symbol {
 			case `btcusd_p`:
-				turtleData.amount = 0.01 * p / turtleData.n * candle.PriceOpen * candle.PriceOpen / 1000
+				turtleData.amount = 0.01 * p / turtleData.n * candle.PriceOpen * candle.PriceOpen
 			case `ethusd_p`:
-				turtleData.amount = 10000 * p / turtleData.n / 1000
+				turtleData.amount = 10000 * p / turtleData.n
 			}
 		}
 	}
