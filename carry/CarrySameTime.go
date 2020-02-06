@@ -137,20 +137,15 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 //	setLastOrder(key, lastOrder.Market, lastOrder)
 //}
 
-func checkLastBid(market, symbol, orderSide string, tick *model.BidAsk) (valid bool) {
-	_, lastTick := model.AppMarkets.GetLastBidAsk(symbol, market)
-	if market != model.Bitmex || lastTick == nil || lastTick.Bids == nil || lastTick.Asks == nil ||
-		lastTick.Bids.Len() == 0 || lastTick.Asks.Len() == 0 {
-		return true
-	}
-	if orderSide == model.OrderSideSell && tick.Bids[0].Price < lastTick.Bids[0].Price {
-		util.Notice(fmt.Sprintf(`tick trend fail %s b1:%f<lastB1:%f`,
-			orderSide, tick.Bids[0].Price, lastTick.Bids[0].Price))
+func checkLastBid(market, symbol, orderSide string) (valid bool) {
+	up, down := model.AppMarkets.GetLastUpDown(symbol, market)
+	now := util.GetNowUnixMillion()
+	if orderSide == model.OrderSideSell && now-int64(down) < 3000 {
+		util.Notice(fmt.Sprintf(`tick trend fail, last down %d`, down))
 		return false
 	}
-	if orderSide == model.OrderSideBuy && tick.Asks[0].Price > lastTick.Asks[0].Price {
-		util.Notice(fmt.Sprintf(`tick trend fail %s a1:%f>lastA1:%f`,
-			orderSide, tick.Asks[0].Price, lastTick.Asks[0].Price))
+	if orderSide == model.OrderSideBuy && now-int64(up) < 3000 {
+		util.Notice(fmt.Sprintf(`tick trend fail, last up %d`, up))
 		return false
 	}
 	return true
@@ -236,7 +231,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		carryType = 1
 	} else if fmb1+priceDistance >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
 		tick.Bids[0].Amount < bidAskRate*tick.Asks[0].Amount && tick.Asks[0].Amount > amountLine &&
-		checkLastBid(market, symbol, model.OrderSideBuy, tick) {
+		checkLastBid(market, symbol, model.OrderSideBuy) {
 		amount = math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
 		orderSideRelated = model.OrderSideSell
 		orderPriceRelated = calcAmtPriceBuy
@@ -253,7 +248,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		carryType = 3
 	} else if fms1-priceDistance <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
 		tick.Asks[0].Amount < tick.Bids[0].Amount*bidAskRate && tick.Bids[0].Amount > amountLine &&
-		checkLastBid(market, symbol, model.OrderSideSell, tick) {
+		checkLastBid(market, symbol, model.OrderSideSell) {
 		amount = math.Min(math.Min(fmsa*0.8, a2), setting.GridAmount)
 		orderSideRelated = model.OrderSideBuy
 		orderSide = model.OrderSideSell
