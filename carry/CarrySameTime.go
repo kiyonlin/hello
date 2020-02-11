@@ -167,7 +167,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			zFeeRelated = 0
 		}
 	}
-	priceX := setting.PriceX + 1.1*(zFeeRelated-zFee)*(tickRelated.Bids[0].Price+tickRelated.Asks[0].Price)/2
+	priceX := setting.PriceX + (zFeeRelated-zFee)*(tickRelated.Bids[0].Price+tickRelated.Asks[0].Price)/2
 	py := priceX
 	if accountRelated.Free > setting.AmountLimit/10 && -1*accountRelated.Free < setting.AmountLimit/-10 {
 		p1 = 0
@@ -183,10 +183,10 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		a2 = -1 * accountRelated.Free
 		priceX += 4 * p1
 	}
-	if priceX > 6 {
-		priceX = priceX/2 + 3
-	} else if priceX < -6 {
-		priceX = priceX/2 - 3
+	if priceX > 7 {
+		priceX = priceX/2 + 3.5
+	} else if priceX < -7 {
+		priceX = priceX/2 - 3.5
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, market, setting.MarketRelated),
 		fmt.Sprintf("[搬砖参数] %s %s资金费率:%f %s资金费率%f p1:%f p2:%f py:%f px:%f related free:%f %s 延时 %dms\n"+
