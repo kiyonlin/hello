@@ -165,6 +165,10 @@ var StandardSymbol = map[string]map[string]string{ // market - dialect symbol - 
 		`BTCUSD`: `btcusd_p`,
 		`ETHUSD`: `ethusd_p`,
 	},
+	OKSwap: {
+		`BTC-USD-SWAP`: `btcusd_p`,
+		`ETH-USD-SWAP`: `ethusd_p`,
+	},
 }
 var dictMap = map[string]map[string]string{ // market - union name - market name
 	Fcoin: {
