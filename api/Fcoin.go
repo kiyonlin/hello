@@ -75,54 +75,36 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 				util.SocketInfo("fcoin server ping client error " + err.Error())
 			}
 		}
-		msgType := responseJson.Get(`type`).MustString()
+		//msgType := responseJson.Get(`type`).MustString()
 		symbol := model.GetSymbol(model.Fcoin, responseJson.Get("type").MustString())
 		symbols := model.GetMarketSymbols(model.Fcoin)
 		if symbols == nil || symbols[symbol] == false {
 			//util.Notice(symbol + ` not supported`)
 			return
 		}
-		if strings.Index(msgType, `trade.`) == 0 {
-			ts, _ := responseJson.Get("ts").Int64()
-			amount := responseJson.Get(`amount`).MustFloat64()
-			side := responseJson.Get(`side`).MustString()
-			price := responseJson.Get(`price`).MustFloat64()
-			//deal := markets.GetBigDeal(symbol, model.Fcoin)
-			//if deal == nil || deal.Ts < ts {
-			if markets.SetBigDeal(symbol, model.Fcoin, &model.Deal{
-				Symbol: symbol, Market: model.Fcoin, Amount: amount, Ts: ts, Side: side, Price: price}) {
-				for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
-					if handler != nil && function == model.FunctionMaker {
-						util.Notice(fmt.Sprintf(`[try makerl]%s`, symbol))
-						handler(model.Fcoin, symbol, function)
-					}
-				}
+		if symbol != "" && symbol != "_" {
+			bidAsk := model.BidAsk{}
+			bidsLen := len(responseJson.Get("bids").MustArray()) / 2
+			bidAsk.Bids = make([]model.Tick, bidsLen)
+			for i := 0; i < bidsLen; i++ {
+				price, _ := responseJson.Get("bids").GetIndex(i * 2).Float64()
+				amount, _ := responseJson.Get("bids").GetIndex(i*2 + 1).Float64()
+				bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
 			}
-		} else {
-			if symbol != "" && symbol != "_" {
-				bidAsk := model.BidAsk{}
-				bidsLen := len(responseJson.Get("bids").MustArray()) / 2
-				bidAsk.Bids = make([]model.Tick, bidsLen)
-				for i := 0; i < bidsLen; i++ {
-					price, _ := responseJson.Get("bids").GetIndex(i * 2).Float64()
-					amount, _ := responseJson.Get("bids").GetIndex(i*2 + 1).Float64()
-					bidAsk.Bids[i] = model.Tick{Price: price, Amount: amount}
-				}
-				asksLen := len(responseJson.Get("asks").MustArray()) / 2
-				bidAsk.Asks = make([]model.Tick, asksLen)
-				for i := 0; i < asksLen; i++ {
-					price, _ := responseJson.Get("asks").GetIndex(i * 2).Float64()
-					amount, _ := responseJson.Get("asks").GetIndex(i*2 + 1).Float64()
-					bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
-				}
-				sort.Sort(bidAsk.Asks)
-				sort.Sort(sort.Reverse(bidAsk.Bids))
-				bidAsk.Ts = responseJson.Get("ts").MustInt()
-				if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
-					for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
-						if handler != nil && function != model.FunctionMaker {
-							go handler(model.Fcoin, symbol, function)
-						}
+			asksLen := len(responseJson.Get("asks").MustArray()) / 2
+			bidAsk.Asks = make([]model.Tick, asksLen)
+			for i := 0; i < asksLen; i++ {
+				price, _ := responseJson.Get("asks").GetIndex(i * 2).Float64()
+				amount, _ := responseJson.Get("asks").GetIndex(i*2 + 1).Float64()
+				bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
+			}
+			sort.Sort(bidAsk.Asks)
+			sort.Sort(sort.Reverse(bidAsk.Bids))
+			bidAsk.Ts = responseJson.Get("ts").MustInt()
+			if markets.SetBidAsk(symbol, model.Fcoin, &bidAsk) {
+				for function, handler := range model.GetFunctions(model.Fcoin, symbol) {
+					if handler != nil {
+						go handler(model.Fcoin, symbol, function)
 					}
 				}
 			}

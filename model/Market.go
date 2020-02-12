@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"hello/util"
-	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -192,34 +190,6 @@ func (markets *Markets) GetBigDeal(symbol, market string) (deal *Deal) {
 		markets.BigDeals[symbol] = make(map[string]*Deal)
 	}
 	return markets.BigDeals[symbol][market]
-}
-
-func (markets *Markets) SetBigDeal(symbol, market string, deal *Deal) bool {
-	markets.lock.Lock()
-	defer markets.lock.Unlock()
-	setting := GetSetting(FunctionMaker, market, symbol)
-	if setting == nil {
-		return false
-	}
-	params := strings.Split(setting.FunctionParameter, `_`)
-	if len(params) != 2 {
-		util.Notice(`maker param error: require d_d format param while get ` + setting.FunctionParameter)
-		return false
-	}
-	if markets.BigDeals == nil {
-		markets.BigDeals = make(map[string]map[string]*Deal)
-	}
-	if markets.BigDeals[symbol] == nil {
-		markets.BigDeals[symbol] = make(map[string]*Deal)
-	}
-	bigOrderLine, err := strconv.ParseFloat(params[0], 64)
-	oldDeal := markets.BigDeals[symbol][market]
-	if err == nil && deal.Amount >= bigOrderLine && (oldDeal == nil || deal.Ts > oldDeal.Ts) {
-		markets.BigDeals[symbol][market] = deal
-		util.Notice(fmt.Sprintf(`[get big]%f-%f`, deal.Amount, bigOrderLine))
-		return true
-	}
-	return false
 }
 
 func (markets *Markets) GetPrice(symbol string) (result bool, price float64) {

@@ -102,7 +102,7 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 				//util.Info(fmt.Sprintf(`%d %s`, util.GetNowUnixMillion()-int64(bidAsk.Ts), string(event)))
 				if markets.SetBidAsk(symbol, model.Fmex, &bidAsk) {
 					for function, handler := range model.GetFunctions(model.Fmex, symbol) {
-						if handler != nil && function != model.FunctionMaker {
+						if handler != nil {
 							go handler(model.Fmex, symbol, function)
 						}
 					}

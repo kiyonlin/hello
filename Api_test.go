@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
+	"hello/carry"
 	"hello/model"
 	"hello/util"
 	"testing"
@@ -13,21 +14,15 @@ import (
 )
 
 func Test_chan(t *testing.T) {
-	c := make(chan int, 3)
-	go func() {
-		for i := 0; i < 10; i = i + 1 {
-			c <- i
-		}
-		//close(c)
-	}()
-	for true {
-		//j:=<- c
-		//fmt.Println(j)
-		<-c
-		fmt.Println(`get one`)
+	model.NewConfig()
+	var err error
+	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
+	if err != nil {
+		util.Notice(err.Error())
+		return
 	}
-	fmt.Println("Finished")
-
+	defer model.AppDB.Close()
+	carry.MaintainMarketChan()
 }
 
 func Test_initTurtleN(t *testing.T) {

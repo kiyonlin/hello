@@ -21,12 +21,16 @@ var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
 var candles = make(map[string]*Candle)    // market+symbol+period+rfc3339, candle
 var CarryInfo = make(map[string]string)   // function - msg
 
+const KeyDefault = ``
+const SecretDefault = ``
+
 //const ArbitraryCarryUSDT = 100.0
 const OKEXBTCContractFaceValue = 100.0
 const OKEXOtherContractFaceValue = 10.0
 const Bybit = `bybit`
 const OKEX = "okex"
 const OKFUTURE = `okfuture`
+const OKSwap = `okswap`
 const Huobi = "huobi"
 const Binance = "binance"
 const Fcoin = "fcoin"
@@ -58,7 +62,6 @@ const AmountTypeCoinNumber = `coinnumber`
 
 const FunctionTurtle = `turtle`
 const FunctionGrid = `grid`
-const FunctionMaker = `maker`
 const FunctionCarry = `carry`
 const FunctionHang = `hang`
 const FunctionHangFar = `hang_far`
@@ -146,6 +149,10 @@ var DialectSymbol = map[string]map[string]string{ // market - standard symbol - 
 	Bybit: {
 		`btcusd_p`: `BTCUSD`,
 		`ethusd_p`: `ETHUSD`,
+	},
+	OKSwap: {
+		`btcusd_p`: `BTC-USD-SWAP`,
+		`ethusd_p`: `ETH-USD-SWAP`,
 	},
 }
 
@@ -392,6 +399,14 @@ func GetOrderStatus(market, marketStatus string) (status string) {
 	return orderStatusMap[market][marketStatus]
 }
 
+func GetWSSubscribePos(market, symbol string) (subscribe interface{}) {
+	switch market {
+	case OKSwap:
+		return `swap/position:` + DialectSymbol[market][symbol]
+	}
+	return ``
+}
+
 func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 	switch market {
 	case Huobi: // xrp_btc: market.xrpbtc.depth.step0
@@ -432,8 +447,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 	case Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
 		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
 		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
-	case Btcdo:
-		return strings.ToUpper(symbol)
+	case OKSwap:
+		return `swap/depth5:` + DialectSymbol[OKSwap][symbol]
 	case Bitmex:
 		if subType == SubscribeDeal {
 			return `trade:` + DialectSymbol[Bitmex][symbol]
@@ -562,6 +577,7 @@ func NewConfig() {
 	AppConfig.WSUrls[Coinpark] = "wss://push.coinpark.cc/"
 	AppConfig.WSUrls[Btcdo] = `wss://onli-quotation.btcdo.com/v1/market/?EIO=3&transport=websocket`
 	AppConfig.WSUrls[Bitmex] = `wss://www.bitmex.com/realtime/`
+	AppConfig.WSUrls[OKSwap] = `wss://real.okex.com:8443/ws/v3`
 	//AppConfig.WSUrls[Bitmex] = `wss://testnet.bitmex.com/realtime`
 	// HUOBI用于交易的API，可能不适用于行情
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
@@ -570,6 +586,7 @@ func NewConfig() {
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
+	AppConfig.RestUrls[OKSwap] = `https://www.okex.com/api/swap/v3`
 	AppConfig.RestUrls[Binance] = "https://api.binance.com"
 	AppConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	AppConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
@@ -641,9 +658,8 @@ func GetWSSubscribes(market, subType string) []interface{} {
 				subscribes = append(subscribes, subscribe)
 			}
 		}
-		setting := GetSetting(FunctionMaker, market, symbol)
-		if setting != nil {
-			subscribes = append(subscribes, GetWSSubscribe(market, symbol, SubscribeDeal))
+		if market == OKSwap {
+			subscribes = append(subscribes, GetWSSubscribePos(market, symbol))
 		}
 	}
 	if market == Bitmex || market == Bybit {

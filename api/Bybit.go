@@ -212,7 +212,7 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 			util.Info(`fail to set new by tick update`)
 		}
 		for function, handler := range model.GetFunctions(model.Bybit, symbol) {
-			if handler != nil && function != model.FunctionMaker {
+			if handler != nil {
 				handler(model.Bybit, symbol, function)
 			}
 		}

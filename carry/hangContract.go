@@ -60,7 +60,7 @@ var ProcessHangContract = func(market, symbol string, function interface{}) {
 		}
 		util.Notice(fmt.Sprintf(`[for some reason cancel hang contract]%s %s %d deal`,
 			market, symbol, timeDis))
-		CancelHangContracts(key, secret, market, symbol)
+		CancelHangContracts(model.KeyDefault, model.SecretDefault, market, symbol)
 		return
 	}
 	if hangContractOrders.hangingContract {
@@ -73,11 +73,11 @@ var ProcessHangContract = func(market, symbol string, function interface{}) {
 	delta := end[market].Price - start[market].Price
 	order := &model.Order{}
 	if deltaBM >= setting.RefreshLimit && deltaBM-delta >= setting.RefreshLimit {
-		order = createHolding(key, secret, market, symbol, setting.RefreshLimit, setting, tick)
+		order = createHolding(model.KeyDefault, model.SecretDefault, market, symbol, setting.RefreshLimit, setting, tick)
 	} else if deltaBM <= -1*setting.RefreshLimit && deltaBM-delta <= -1*setting.RefreshLimit {
-		order = createHolding(key, secret, market, symbol, -1*setting.RefreshLimit, setting, tick)
+		order = createHolding(model.KeyDefault, model.SecretDefault, market, symbol, -1*setting.RefreshLimit, setting, tick)
 	} else {
-		order = revertHolding(key, secret, market, symbol, deltaBM, delta, setting, tick)
+		order = revertHolding(model.KeyDefault, model.SecretDefault, market, symbol, deltaBM, delta, setting, tick)
 	}
 	time.Sleep(time.Millisecond * 200)
 	orders := updateContractHolding(market, symbol, setting)
@@ -100,7 +100,7 @@ var ProcessHangContract = func(market, symbol string, function interface{}) {
 }
 
 func updateContractHolding(market, symbol string, setting *model.Setting) (orders []*model.Order) {
-	api.RefreshAccount(key, secret, market)
+	api.RefreshAccount(model.KeyDefault, model.SecretDefault, market)
 	account := model.AppAccounts.GetAccount(market, symbol)
 	if account != nil && account.Direction == model.OrderSideBuy {
 		hangContractOrders.holdingLong = account.Free
@@ -110,7 +110,8 @@ func updateContractHolding(market, symbol string, setting *model.Setting) (order
 		hangContractOrders.holdingShort = account.Free
 		hangContractOrders.holdingLong = 0
 	}
-	orders = api.QueryOrders(key, secret, market, symbol, ``, setting.AccountType, 0, 0)
+	orders = api.QueryOrders(model.KeyDefault, model.SecretDefault, market, symbol, ``, setting.AccountType,
+		0, 0)
 	hangContractOrders.setHangContractOrders(symbol, orders)
 	//if hangContractOrders.holdingLong > 0 || hangContractOrders.holdingShort > 0 || len(filteredOrders) > 0 {
 	//	util.Notice(fmt.Sprintf(`====long %f ====short %f pending >100 orders: %d`,

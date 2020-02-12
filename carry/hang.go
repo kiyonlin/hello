@@ -62,7 +62,7 @@ var ProcessHang = func(market, symbol string, function interface{}) {
 		rank.setCheckTime(symbol)
 	} else if !didSmth {
 		coins := strings.Split(symbol, `_`)
-		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+		leftFree, rightFree, _, _, _ := getBalance(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType)
 		if scoreAsk.Point > point || scoreBid.Point > point {
 			if rightFree/scoreBid.Price > scoreBid.Amount {
 				order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, market,

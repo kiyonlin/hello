@@ -360,8 +360,11 @@ func GetBtcBalance(key, secret, market string) (balance float64) {
 
 func GetFundingRate(market, symbol string) (fundingRate float64, expireTime int64) {
 	fundingRate, expireTime = model.GetFundingRate(market, symbol)
-	now := util.GetNow().Unix()
-	if now-60 < expireTime {
+	now := util.GetNow()
+	if market == model.Bybit && now.Minute() < 30 && (now.Hour() == 8 || now.Hour() == 16 || now.Hour() == 0) {
+		return 0, expireTime
+	}
+	if now.Unix()-60 < expireTime {
 		return
 	}
 	util.Notice(fmt.Sprintf(`before update funding %s %s rate %f expire %d`,

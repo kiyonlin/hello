@@ -1,12 +1,14 @@
 package carry
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"hello/api"
 	"hello/model"
 	"hello/util"
+	"strings"
 	"time"
 )
 
@@ -124,11 +126,12 @@ var _ = func() {
 		symbols := model.GetMarketSymbols(market)
 		for symbol := range symbols {
 			util.Notice(fmt.Sprintf(`[cancel old orders] %s %s`, market, symbol))
-			orders := api.QueryOrders(key, secret, market, symbol, model.CarryStatusWorking,
+			orders := api.QueryOrders(model.KeyDefault, model.SecretDefault, market, symbol, model.CarryStatusWorking,
 				model.AccountTypeLever+model.AccountTypeNormal, 0, 0)
 			for _, order := range orders {
 				if order != nil && order.OrderId != `` {
-					result, errCode, msg, _ := api.CancelOrder(key, secret, market, symbol, order.OrderId)
+					result, errCode, msg, _ := api.CancelOrder(model.KeyDefault, model.SecretDefault,
+						market, symbol, order.OrderId)
 					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
 					time.Sleep(time.Millisecond * 100)
 				}
@@ -137,6 +140,44 @@ var _ = func() {
 	}
 	model.LoadSettings()
 	model.AppPause = false
+}
+
+func discountBalance(market, symbol, accountType, coin string, discountRate float64) {
+	leverMarket := market
+	if accountType == model.AccountTypeLever {
+		leverMarket = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever,
+			strings.Replace(symbol, `_`, ``, 1))
+	}
+	account := model.AppAccounts.GetAccount(leverMarket, coin)
+	if account != nil {
+		util.Notice(fmt.Sprintf(`discount account %s %s %f`, market, coin, discountRate))
+		account.Free = account.Free * discountRate
+		model.AppAccounts.SetAccount(leverMarket, coin, account)
+	}
+}
+
+func getBalance(key, secret, market, symbol, accountType string) (left, right, leftFroze, rightFroze float64, err error) {
+	leverMarket := market
+	if accountType == model.AccountTypeLever {
+		leverMarket = fmt.Sprintf(`%s_%s_%s`, market, model.AccountTypeLever,
+			strings.Replace(symbol, `_`, ``, 1))
+	}
+	coins := strings.Split(symbol, `_`)
+	leftAccount := model.AppAccounts.GetAccount(leverMarket, coins[0])
+	if leftAccount == nil {
+		util.Notice(`nil account ` + market + coins[0])
+		//time.Sleep(time.Second * 2)
+		api.RefreshAccount(key, secret, market)
+		return 0, 0, 0, 0, errors.New(`no left balance`)
+	}
+	rightAccount := model.AppAccounts.GetAccount(leverMarket, coins[1])
+	if rightAccount == nil {
+		util.Notice(`nil account ` + market + coins[1])
+		//time.Sleep(time.Second * 2)
+		api.RefreshAccount(key, secret, market)
+		return 0, 0, 0, 0, errors.New(`no right balance`)
+	}
+	return leftAccount.Free, rightAccount.Free, leftAccount.Frozen, rightAccount.Frozen, nil
 }
 
 //func RefreshAccounts() {
@@ -218,6 +259,8 @@ func createMarketDepthServer(markets *model.Markets, market string) chan struct{
 		channel, err = api.WsDepthServeOkex(markets, WSErrHandler)
 	case model.OKFUTURE:
 		channel, err = api.WsDepthServeOKFuture(markets, WSErrHandler)
+	case model.OKSwap:
+		channel, err = api.WsDepthServeOKSwap(markets, WSErrHandler)
 	case model.Binance:
 		channel, err = api.WsDepthServeBinance(markets, WSErrHandler)
 	case model.Fcoin:
@@ -246,13 +289,13 @@ func ResetChannel(market string, channel chan struct{}) {
 	for symbol := range symbols {
 		for function := range model.GetFunctions(model.Bitmex, symbol) {
 			if model.FunctionHangContract == function {
-				go CancelHangContracts(key, secret, market, symbol)
+				go CancelHangContracts(model.KeyDefault, model.SecretDefault, market, symbol)
 			}
 			if model.FunctionRefresh == function {
-				go CancelRefreshHang(key, secret, market, symbol, RefreshTypeGrid)
+				go CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, RefreshTypeGrid)
 			}
 			if model.FunctionHangFar == function {
-				go CancelHang(key, secret, market, symbol)
+				go CancelHang(model.KeyDefault, model.SecretDefault, market, symbol)
 			}
 		}
 	}
@@ -291,7 +334,6 @@ func Maintain() {
 		util.Notice(err.Error())
 		return
 	}
-	model.HandlerMap[model.FunctionMaker] = ProcessMake
 	model.HandlerMap[model.FunctionGrid] = ProcessGrid
 	//model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
@@ -314,10 +356,9 @@ func Maintain() {
 	model.AppDB.AutoMigrate(&model.Candle{})
 	model.LoadSettings()
 	go MaintainFcoinRank()
-	go CancelOldMakers(``, ``)
 	go AccountHandlerServe()
 	//go CheckPastRefresh()
-	go MaintainTransFee(key, secret)
+	go MaintainTransFee(model.KeyDefault, model.SecretDefault)
 	//go util.StartMidNightTimer(CancelAllOrders)
 	for true {
 		go MaintainMarketChan()

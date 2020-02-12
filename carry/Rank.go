@@ -135,7 +135,7 @@ var ProcessRank = func(market, symbol string, function interface{}) {
 		rank.setCheckTime(symbol)
 	} else if !didSmth && model.AppConfig.FcoinKey != `` && model.AppConfig.FcoinSecret != `` &&
 		score.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/2 {
-		leftFree, rightFree, _, _, _ := getBalance(key, secret, market, symbol, setting.AccountType)
+		leftFree, rightFree, _, _, _ := getBalance(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType)
 		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
 			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
 			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,

@@ -285,7 +285,7 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	}
 	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
 		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-			if handler != nil && function != model.FunctionMaker {
+			if handler != nil {
 				handler(model.Bitmex, symbol, function)
 			}
 		}
@@ -313,7 +313,7 @@ func handleQuote(markets *model.Markets, action string, data []interface{}) {
 	for symbol, bidAsks := range symbolTicks {
 		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-				if handler != nil && function != model.FunctionMaker {
+				if handler != nil {
 					handler(model.Bitmex, symbol, function)
 				}
 			}
@@ -500,7 +500,7 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			}
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
-					if handler != nil && function != model.FunctionMaker && model.AppConfig.Env != `test` {
+					if handler != nil && model.AppConfig.Env != `test` {
 						handler(model.Bitmex, symbol, function)
 					}
 				}

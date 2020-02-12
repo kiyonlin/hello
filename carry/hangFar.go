@@ -138,7 +138,7 @@ var ProcessHangFar = func(market, symbol string, function interface{}) {
 			timeDis = int(start) - tick.Ts
 		}
 		util.Notice(fmt.Sprintf(`[tick not good time]%s %s %d`, market, symbol, timeDis))
-		CancelHang(key, secret, market, symbol)
+		CancelHang(model.KeyDefault, model.SecretDefault, market, symbol)
 		return
 	}
 	setting := model.GetSetting(model.FunctionHangFar, market, symbol)
@@ -155,7 +155,7 @@ var ProcessHangFar = func(market, symbol string, function interface{}) {
 	}
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 || model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s is pause:%v`, model.AppConfig.Handle, model.AppPause))
-		CancelHang(key, secret, market, symbol)
+		CancelHang(model.KeyDefault, model.SecretDefault, market, symbol)
 		return
 	}
 	if hangFarOrders.hangingFar {
@@ -163,15 +163,15 @@ var ProcessHangFar = func(market, symbol string, function interface{}) {
 	}
 	hangFarOrders.setInHangingFar(true)
 	defer hangFarOrders.setInHangingFar(false)
-	if validHang(key, secret, market, symbol, pos, posDis, tick) {
+	if validHang(model.KeyDefault, model.SecretDefault, market, symbol, pos, posDis, tick) {
 		return
 	}
 	if len(hangFarOrders.needRevertOrders) > 0 {
 		util.Notice(fmt.Sprintf(`=need cancel revert= need:%d revert:%d bid:%d ask:%d`,
 			len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
 			len(hangFarOrders.bidOrders[symbol]), len(hangFarOrders.askOrders[symbol])))
-		revertCancelOrder(key, secret, market, symbol, setting.AccountType, tick)
-	} else if hang(key, secret, market, symbol, setting.AccountType, pos, amount, tick) {
+		revertCancelOrder(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType, tick)
+	} else if hang(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType, pos, amount, tick) {
 		CancelNonHang(market, symbol)
 	}
 }
@@ -200,7 +200,7 @@ func revertCancelOrder(key, secret, market, symbol, accountType string, tick *mo
 }
 
 func CancelNonHang(market, symbol string) {
-	orders := api.QueryOrders(key, secret, market, symbol, ``, ``, 0, 0)
+	orders := api.QueryOrders(model.KeyDefault, model.SecretDefault, market, symbol, ``, ``, 0, 0)
 	ordersBids, orderAsks := hangFarOrders.getFarOrders(symbol)
 	util.Notice(fmt.Sprintf(`=query orders cancel non-hang= open:%d need:%d revert:%d bid:%d ask:%d`,
 		len(orders), len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
@@ -220,7 +220,7 @@ func CancelNonHang(market, symbol string) {
 			}
 			if needCancel {
 				util.Notice(`need cancel non hang ` + order.OrderId)
-				hangFarCancel(key, secret, market, symbol, order.OrderId)
+				hangFarCancel(model.KeyDefault, model.SecretDefault, market, symbol, order.OrderId)
 			}
 		}
 	}
