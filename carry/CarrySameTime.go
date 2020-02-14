@@ -97,7 +97,7 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 		return
 	}
 	if int(startTime)-tickRelated.Ts > 1 {
-		util.Notice(fmt.Sprintf(`now-okswap=%d`, int(startTime)-tickRelated.Ts))
+		//util.Notice(fmt.Sprintf(`now-okswap=%d`, int(startTime)-tickRelated.Ts))
 		return
 	}
 	if (int(startTime)-tick.Ts > 400 || int(startTime)-tickRelated.Ts > 200) ||

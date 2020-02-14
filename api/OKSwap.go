@@ -78,7 +78,7 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 			handleDepthOkSwap(markets, depthJson.Get(`data`))
 		} else if table == `swap/position` {
 			handlePositionOKSwap(depthJson.Get(`data`))
-			util.Notice(fmt.Sprintf(`get ws okswap position %s`, string(event)))
+			util.Info(fmt.Sprintf(`get ws okswap position %s`, string(event)))
 		}
 	}
 	return WebSocketServe(model.OKSwap, model.AppConfig.WSUrls[model.OKSwap], model.SubscribeDepth,
@@ -181,10 +181,11 @@ func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
 			sort.Sort(bidAsk.Asks)
 			sort.Sort(sort.Reverse(bidAsk.Bids))
 			//util.SocketInfo(markets.ToStringBidAsk(bidAsk))
-			if !markets.SetBidAsk(symbol, model.OKSwap, bidAsk) {
-				util.Info(`fail to set new by tick update`)
+			if markets.SetBidAsk(symbol, model.OKSwap, bidAsk) {
+				util.Notice(fmt.Sprintf(`okswap update bidask %d`, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 				for function, handler := range model.GetFunctions(model.OKSwap, symbol) {
 					if handler != nil {
+						util.Notice(`handling by okswap`)
 						handler(model.OKSwap, symbol, function)
 					}
 				}
