@@ -89,7 +89,7 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 		}
 		return
 	}
-	if tickRelated.Asks.Len() < 10 || tickRelated.Bids.Len() < 10 || tick.Asks.Len() < 10 || tick.Bids.Len() < 10 ||
+	if tickRelated.Asks.Len() < 5 || tickRelated.Bids.Len() < 5 || tick.Asks.Len() < 5 || tick.Bids.Len() < 5 ||
 		tick.Bids[0].Price >= tick.Asks[0].Price || tickRelated.Bids[0].Price >= tickRelated.Asks[0].Price {
 		util.Info(fmt.Sprintf(`error3 %s %d %d %f-%f or %s %d %d %f-%fdepth tick length not good`,
 			market, tick.Bids.Len(), tick.Asks.Len(), tick.Bids[0].Price, tick.Asks[0].Price, setting.MarketRelated,
