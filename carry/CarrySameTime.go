@@ -71,13 +71,18 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 	_, tickRelated := model.AppMarkets.GetBidAsk(symbol, setting.MarketRelated)
 	//account := model.AppAccounts.GetAccount(market, symbol)
 	accountRelated := model.AppAccounts.GetAccount(setting.MarketRelated, symbol)
-	if setting.MarketRelated == model.OKSwap {
-		accountRelated = combineOKSwapAccounts(symbol)
-	}
-	if accountRelated == nil {
+	if (setting.MarketRelated != model.OKSwap && accountRelated == nil) || (setting.MarketRelated == model.OKSwap &&
+		model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideBuy+symbol) == nil &&
+		model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol) == nil) {
 		api.RefreshAccount(``, ``, setting.MarketRelated)
 		util.Info(`error1 account is nil, refresh and return`)
 		return
+	}
+	freeRelated := 0.0
+	if setting.MarketRelated == model.OKSwap {
+		freeRelated = combineOKSwapAccounts(symbol)
+	} else {
+		freeRelated = accountRelated.Free
 	}
 	if tickRelated == nil || tick == nil || tickRelated.Asks == nil || tickRelated.Bids == nil || tick.Asks == nil ||
 		tick.Bids == nil {
@@ -106,7 +111,7 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 		return
 	}
 	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
-	placeBothOrders(market, symbol, key, tick, tickRelated, accountRelated, setting)
+	placeBothOrders(market, symbol, key, tick, tickRelated, freeRelated, setting)
 }
 
 func checkLastBid(market, symbol, orderSide string) (valid bool) {
@@ -123,26 +128,22 @@ func checkLastBid(market, symbol, orderSide string) (valid bool) {
 	return true
 }
 
-func combineOKSwapAccounts(symbol string) (combinedAccount *model.Account) {
+func combineOKSwapAccounts(symbol string) (free float64) {
 	accountBuy := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideBuy+symbol)
 	accountSell := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol)
-	if accountSell == nil {
-		return accountBuy
-	} else if accountBuy == nil {
-		return accountSell
-	} else {
-		if math.Abs(accountBuy.Free) < math.Abs(accountSell.Free) {
-			combinedAccount = accountSell
-		} else {
-			combinedAccount = accountBuy
-		}
+	freeBuy := 0.0
+	freeSell := 0.0
+	if accountBuy != nil {
+		freeBuy = accountBuy.Free
 	}
-	combinedAccount.Free = accountBuy.Free - math.Abs(accountSell.Free)
-	return
+	if accountSell != nil {
+		freeSell = accountSell.Free
+	}
+	return freeBuy - math.Abs(freeSell)
 }
 
 // account.free被设置成-1 * accountRelated.free
-func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk, accountRelated *model.Account,
+func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk, freeRelated float64,
 	setting *model.Setting) {
 	p1 := 0.0
 	p2 := 0.0
@@ -159,18 +160,18 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 	}
 	priceX := setting.PriceX + (zFeeRelated-zFee)*(tickRelated.Bids[0].Price+tickRelated.Asks[0].Price)/2
 	py := priceX
-	if accountRelated.Free > setting.AmountLimit/10 && -1*accountRelated.Free < setting.AmountLimit/-10 {
+	if freeRelated > setting.AmountLimit/10 && -1*freeRelated < setting.AmountLimit/-10 {
 		p1 = 0
-		p2 = -1 * accountRelated.Free / setting.AmountLimit
-		a1 = accountRelated.Free
-		a2 = setting.AmountLimit - accountRelated.Free
+		p2 = -1 * freeRelated / setting.AmountLimit
+		a1 = freeRelated
+		a2 = setting.AmountLimit - freeRelated
 		priceX -= 4 * p2
-	} else if accountRelated.Free < setting.AmountLimit/-10 &&
-		-1*accountRelated.Free > setting.AmountLimit/10 {
-		p1 = accountRelated.Free / setting.AmountLimit
+	} else if freeRelated < setting.AmountLimit/-10 &&
+		-1*freeRelated > setting.AmountLimit/10 {
+		p1 = freeRelated / setting.AmountLimit
 		p2 = 0
-		a1 = setting.AmountLimit + accountRelated.Free
-		a2 = -1 * accountRelated.Free
+		a1 = setting.AmountLimit + freeRelated
+		a2 = -1 * freeRelated
 		priceX += 4 * p1
 	}
 	if priceX > 7 {
@@ -182,7 +183,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		fmt.Sprintf("[搬砖参数] %s %s资金费率:%f %s资金费率%f p1:%f p2:%f py:%f px:%f related free:%f %s 延时 %dms\n"+
 			"%d-%d %f %f %f %f %f - %f %f %f %f %f",
 			util.GetNow().String(), market, zFee, setting.MarketRelated, zFeeRelated,
-			p1, p2, py, priceX, accountRelated.Free, util.GetNow().String(), util.GetNowUnixMillion()-int64(tick.Ts),
+			p1, p2, py, priceX, freeRelated, util.GetNow().String(), util.GetNowUnixMillion()-int64(tick.Ts),
 			tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
 			tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
 			tick.Asks[3].Price, tick.Asks[4].Price))
@@ -254,7 +255,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			carryType, market, setting.MarketRelated, zFee, zFeeRelated, priceX, fmb1, fms1, fmba, fmsa, fmbaNew,
 			fmsaNew, tick.Bids[0].Price, tick.Asks[0].Price, tick.Bids[0].Amount, tick.Asks[0].Amount,
 			tickRelated.Bids[0].Price, tickRelated.Asks[0].Price, tickRelated.Bids[0].Amount, tickRelated.Asks[0].Amount,
-			p1, p2, accountRelated.Free))
+			p1, p2, freeRelated))
 		setLastOrder(key, market, nil)
 		setLastOrder(key, setting.MarketRelated, nil)
 		carryChannel := getCarryChannel(key)
@@ -279,11 +280,15 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			} else {
 				if orderRelated.OrderSide == model.OrderSideSell {
-					accountRelated.Free -= orderRelated.Amount
+					freeRelated -= orderRelated.Amount
 				} else {
-					accountRelated.Free += orderRelated.Amount
+					freeRelated += orderRelated.Amount
 				}
-				model.AppAccounts.SetAccount(setting.MarketRelated, symbol, accountRelated)
+				accountBybit := model.AppAccounts.GetAccount(model.Bybit, symbol)
+				if accountBybit != nil {
+					accountBybit.Free = freeRelated
+				}
+				model.AppAccounts.SetAccount(setting.MarketRelated, symbol, accountBybit)
 			}
 		}
 	}
