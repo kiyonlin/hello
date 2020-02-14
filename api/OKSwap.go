@@ -182,7 +182,6 @@ func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
 			sort.Sort(sort.Reverse(bidAsk.Bids))
 			//util.SocketInfo(markets.ToStringBidAsk(bidAsk))
 			if markets.SetBidAsk(symbol, model.OKSwap, bidAsk) {
-				util.Notice(fmt.Sprintf(`okswap update bidask %d`, util.GetNowUnixMillion()-int64(bidAsk.Ts)))
 				for function, handler := range model.GetFunctions(model.OKSwap, symbol) {
 					if handler != nil {
 						util.Notice(`handling by okswap`)

@@ -96,10 +96,6 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 			tickRelated.Bids.Len(), tickRelated.Asks.Len(), tickRelated.Bids[0].Price, tickRelated.Asks[0].Price))
 		return
 	}
-	if int(startTime)-tickRelated.Ts > 1 {
-		//util.Notice(fmt.Sprintf(`now-okswap=%d`, int(startTime)-tickRelated.Ts))
-		return
-	}
 	if (int(startTime)-tick.Ts > 400 || int(startTime)-tickRelated.Ts > 200) ||
 		model.AppConfig.Handle != `1` || model.AppPause {
 		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
