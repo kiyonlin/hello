@@ -71,6 +71,9 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 	_, tickRelated := model.AppMarkets.GetBidAsk(symbol, setting.MarketRelated)
 	//account := model.AppAccounts.GetAccount(market, symbol)
 	accountRelated := model.AppAccounts.GetAccount(setting.MarketRelated, symbol)
+	if setting.MarketRelated == model.OKSwap {
+		accountRelated = combineOKSwapAccounts(symbol)
+	}
 	if accountRelated == nil {
 		api.RefreshAccount(``, ``, setting.MarketRelated)
 		util.Info(`error1 account is nil, refresh and return`)
@@ -120,6 +123,24 @@ func checkLastBid(market, symbol, orderSide string) (valid bool) {
 		return false
 	}
 	return true
+}
+
+func combineOKSwapAccounts(symbol string) (combinedAccount *model.Account) {
+	accountBuy := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideBuy+symbol)
+	accountSell := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol)
+	if accountSell == nil {
+		return accountBuy
+	} else if accountBuy == nil {
+		return accountSell
+	} else {
+		if math.Abs(accountBuy.Free) < math.Abs(accountSell.Free) {
+			combinedAccount = accountSell
+		} else {
+			combinedAccount = accountBuy
+		}
+	}
+	combinedAccount.Free = accountBuy.Free - math.Abs(accountSell.Free)
+	return
 }
 
 // account.free被设置成-1 * accountRelated.free

@@ -60,21 +60,6 @@ func (accounts *Accounts) GetAccount(marketName string, currency string) *Accoun
 			Market: marketName, Ts: util.GetNowUnixMillion(), Currency: currency}
 	}
 	return accounts.Data[marketName][currency]
-	//if marketName == OKSwap {
-	//	if accounts.Data[marketName][OrderSideSell+currency] == nil {
-	//		return accounts.Data[marketName][OrderSideBuy+currency]
-	//	} else if accounts.Data[marketName][OrderSideBuy+currency] == nil {
-	//		return accounts.Data[marketName][OrderSideSell+currency]
-	//	} else {
-	//		account := accounts.Data[marketName][OrderSideBuy+currency]
-	//		if math.Abs(account.Free) < math.Abs(accounts.Data[marketName][OrderSideSell+currency].Free) {
-	//			account = accounts.Data[marketName][OrderSideSell+currency]
-	//		}
-	//		account.Free = accounts.Data[marketName][OrderSideBuy+currency].Free -
-	//			math.Abs(accounts.Data[marketName][OrderSideSell+currency].Free)
-	//		return account
-	//	}
-	//}
 }
 
 func (accounts *Accounts) SetAccount(marketName string, currency string, account *Account) {
