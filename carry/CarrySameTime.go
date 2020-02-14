@@ -247,6 +247,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPrice = tick.Bids[0].Price + api.GetPriceDistance(market, symbol)
 		carryType = 4
 	}
+	amount = math.Floor(amount/100) * 100
 	if amount > 1 {
 		util.Notice(fmt.Sprintf(`情况%d %s-%s, 资金费率: %f-%f priceX:%f fmb1:%f fms1:%f fmba:%f fmsa:%f fmbaNew:%f
 			fmsaNew:%f tick price:%f-%f tick amount:%f-%f tickRelatedPrice:%f-%f tickRelatedAmount:%f-%f p1:%f p2:%f 持仓:%f`,
@@ -273,11 +274,10 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderMarket := getLastOrder(key, market)
 		orderRelated := getLastOrder(key, setting.MarketRelated)
 		if api.IsValid(orderMarket) && api.IsValid(orderRelated) {
-			time.Sleep(time.Millisecond * 500)
+			time.Sleep(time.Second)
 			if setting.MarketRelated != model.Bybit {
 				api.RefreshAccount(``, ``, setting.MarketRelated)
 			} else {
-				time.Sleep(time.Millisecond * 500)
 				if orderRelated.OrderSide == model.OrderSideSell {
 					accountRelated.Free -= orderRelated.Amount
 				} else {

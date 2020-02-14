@@ -271,7 +271,12 @@ func placeOrderOKSwap(order *model.Order, key, secret, orderSide, orderType, sym
 	util.Notice(`place okswap` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
-		order.OrderId = orderJson.Get(`order_id`).MustString()
+		errCode := orderJson.Get(`error_code`).MustString()
+		if errCode == "0" {
+			order.OrderId = orderJson.Get(`order_id`).MustString()
+		} else {
+			order.Status = model.CarryStatusFail
+		}
 	}
 	return
 }
