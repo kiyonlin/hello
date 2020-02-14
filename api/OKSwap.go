@@ -78,7 +78,7 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 			handleDepthOkSwap(markets, depthJson.Get(`data`))
 		} else if table == `swap/position` {
 			handlePositionOKSwap(depthJson.Get(`data`))
-			util.Info(fmt.Sprintf(`get ws okswap position %s`, string(event)))
+			util.SocketInfo(fmt.Sprintf(`get ws okswap position %s`, string(event)))
 		}
 	}
 	return WebSocketServe(model.OKSwap, model.AppConfig.WSUrls[model.OKSwap], model.SubscribeDepth,
