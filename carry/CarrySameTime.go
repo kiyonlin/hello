@@ -93,6 +93,10 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 			tickRelated.Bids.Len(), tickRelated.Asks.Len(), tickRelated.Bids[0].Price, tickRelated.Asks[0].Price))
 		return
 	}
+	if int(startTime)-tickRelated.Ts > 1 {
+		util.Notice(fmt.Sprintf(`now-okswap=%d`, int(startTime)-tickRelated.Ts))
+		return
+	}
 	if (int(startTime)-tick.Ts > 400 || int(startTime)-tickRelated.Ts > 200) ||
 		model.AppConfig.Handle != `1` || model.AppPause {
 		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
@@ -101,41 +105,8 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 		return
 	}
 	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
-	//orderMarket := getLastOrder(key, market)
-	//orderRelated := getLastOrder(key, setting.MarketRelated)
-	//if (api.IsValid(orderMarket) && api.IsValid(orderRelated)) ||
-	//	(!api.IsValid(orderMarket) && !api.IsValid(orderRelated)) {
 	placeBothOrders(market, symbol, key, tick, tickRelated, accountRelated, setting)
-	//} else if !api.IsValid(orderMarket) {
-	//	reOrder(key, market, orderMarket, tick, setting)
-	//} else if !api.IsValid(orderRelated) {
-	//	reOrder(key, market, orderRelated, tick, setting)
-	//}
 }
-
-//func reOrder(key, market string, lastOrder *model.Order, tick *model.BidAsk, setting *model.Setting) {
-//	if lastOrder.Amount-lastOrder.DealAmount < 1 {
-//		setLastOrder(key, market, nil)
-//		setLastOrder(key, setting.MarketRelated, nil)
-//		return
-//	}
-//	price := lastOrder.Price
-//	priceType := `保持价格`
-//	if lastOrder.RefreshType == PostOnly && lastOrder.OrderId != `` {
-//		price = tick.Asks[0].Price - api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
-//		if lastOrder.OrderSide == model.OrderSideSell {
-//			price = tick.Bids[0].Price + api.GetPriceDistance(lastOrder.Market, lastOrder.Symbol)
-//		}
-//		priceType = `买卖1价格`
-//	}
-//	util.Notice(fmt.Sprintf(`---- reorder: %s order %s %s %s %s %f %f orderParam:<%s> %s`,
-//		lastOrder.Market, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market, lastOrder.Symbol,
-//		price, lastOrder.Amount-lastOrder.DealAmount, lastOrder.RefreshType, priceType))
-//	lastOrder = api.PlaceOrder(``, ``, lastOrder.OrderSide, lastOrder.OrderType, lastOrder.Market,
-//		lastOrder.Symbol, ``, setting.AccountType, lastOrder.RefreshType,
-//		price, lastOrder.Amount-lastOrder.DealAmount, true)
-//	setLastOrder(key, lastOrder.Market, lastOrder)
-//}
 
 func checkLastBid(market, symbol, orderSide string) (valid bool) {
 	up, down := model.AppMarkets.GetLastUpDown(symbol, market)

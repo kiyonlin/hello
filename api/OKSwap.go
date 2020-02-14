@@ -7,9 +7,14 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"github.com/bitly/go-simplejson"
 	"hello/model"
 	"hello/util"
 	"io"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -49,7 +54,7 @@ var subscribeHandlerOKSwap = func(subscribes []interface{}, subType string) erro
 func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan struct{}, error) {
 	lastPingTime := util.GetNow().Unix()
 	wsHandler := func(event []byte) {
-		if util.GetNow().Unix()-lastPingTime > 30 { // ping ws server every 5 seconds
+		if util.GetNow().Unix()-lastPingTime > 30 { // ping ws server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
 			if err := sendToWs(model.OKSwap, []byte(`"ping"`)); err != nil {
 				util.SocketInfo("okswap server ping client error " + err.Error())
@@ -63,10 +68,285 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		reader := flate.NewReader(bytes.NewReader(event))
 		_, _ = io.Copy(&out, reader)
 		event = out.Bytes()
-		fmt.Println(string(event))
-		markets.GetBmPendingOrders()
+		depthJson, depthErr := util.NewJSON(event)
+		if depthErr != nil {
+			util.Notice(`okswap depth event error ` + depthErr.Error())
+			return
+		}
+		table := depthJson.Get(`table`).MustString()
+		if table == `swap/depth5` {
+			handleDepthOkSwap(markets, depthJson.Get(`data`))
+		} else if table == `swap/position` {
+			handlePositionOKSwap(depthJson.Get(`data`))
+			util.Notice(fmt.Sprintf(`get ws okswap position %s`, string(event)))
+		}
 	}
 	return WebSocketServe(model.OKSwap, model.AppConfig.WSUrls[model.OKSwap], model.SubscribeDepth,
 		model.GetWSSubscribes(model.OKSwap, model.SubscribeDepth),
 		subscribeHandlerOKSwap, wsHandler, errHandler)
+}
+
+func parseAccountOKSwap(account *model.Account, item map[string]interface{}) {
+	if item[`liquidation_price`] != nil {
+		account.LiquidationPrice, _ = strconv.ParseFloat(item[`liquidation_price`].(string), 64)
+	}
+	if item[`position`] != nil && item[`side`] != nil {
+		side := strings.ToLower(item[`side`].(string))
+		if side == `long` {
+			account.Direction = model.OrderSideBuy
+		} else if side == `short` {
+			account.Direction = model.OrderSideSell
+		}
+		free, err := strconv.ParseFloat(item[`position`].(string), 64)
+		if err == nil {
+			if model.OrderSideSell == account.Direction {
+				account.Free = math.Abs(free) * -1
+			} else {
+				account.Free = free
+			}
+			account.Free = 100 * account.Free
+		}
+	}
+	if item[`avg_cost`] != nil {
+		account.EntryPrice, _ = strconv.ParseFloat(item[`avg_cost`].(string), 64)
+	}
+	if item[`margin`] != nil {
+		account.Margin, _ = strconv.ParseFloat(item[`margin`].(string), 64)
+	}
+	if item[`settled_pnl`] != nil {
+		account.ProfitReal, _ = strconv.ParseFloat(item[`settled_pnl`].(string), 64)
+	}
+}
+
+func handlePositionOKSwap(response *simplejson.Json) {
+	if response == nil {
+		return
+	}
+	data := response.MustArray()
+	if data != nil && len(data) > 0 {
+		for _, value := range data {
+			if value != nil {
+				item := value.(map[string]interface{})
+				if item[`instrument_id`] != nil && item[`timestamp`] != nil {
+					account := &model.Account{Market: model.OKSwap}
+					account.Currency = model.StandardSymbol[model.OKSwap][item[`instrument_id`].(string)]
+					timestamp, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
+					account.Ts = timestamp.UnixNano() / 1000000
+					parseAccountOKSwap(account, item)
+					model.AppAccounts.SetAccount(model.OKSwap, account.Currency, account)
+				}
+			}
+		}
+	}
+}
+
+func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
+	if response == nil {
+		return
+	}
+	data := response.MustArray()
+	if data != nil && len(data) > 0 {
+		bidAsk := &model.BidAsk{}
+		bidAsk.Bids = make([]model.Tick, 0)
+		bidAsk.Asks = make([]model.Tick, 0)
+		value := data[0].(map[string]interface{})
+		if value[`instrument_id`] != nil && value[`timestamp`] != nil {
+			symbol := model.StandardSymbol[model.OKSwap][value[`instrument_id`].(string)]
+			ts, err := time.Parse(time.RFC3339, value[`timestamp`].(string))
+			if err == nil {
+				bidAsk.Ts = int(ts.UnixNano()) / 1000000
+			}
+			if value[`bids`] != nil {
+				for _, items := range value[`bids`].([]interface{}) {
+					item := items.([]interface{})
+					if item != nil && len(item) == 4 {
+						tick := model.Tick{Symbol: symbol, Side: model.OrderSideBuy}
+						tick.Price, _ = strconv.ParseFloat(item[0].(string), 64)
+						tick.Amount, _ = strconv.ParseFloat(item[1].(string), 64)
+						bidAsk.Bids = append(bidAsk.Bids, tick)
+					}
+				}
+			}
+			if value[`asks`] != nil {
+				for _, items := range value[`asks`].([]interface{}) {
+					item := items.([]interface{})
+					if item != nil && len(item) == 4 {
+						tick := model.Tick{Symbol: symbol, Side: model.OrderSideSell}
+						tick.Price, _ = strconv.ParseFloat(item[0].(string), 64)
+						tick.Amount, _ = strconv.ParseFloat(item[1].(string), 64)
+						bidAsk.Asks = append(bidAsk.Asks, tick)
+					}
+				}
+			}
+			sort.Sort(bidAsk.Asks)
+			sort.Sort(sort.Reverse(bidAsk.Bids))
+			//util.SocketInfo(markets.ToStringBidAsk(bidAsk))
+			if !markets.SetBidAsk(symbol, model.OKSwap, bidAsk) {
+				util.Info(`fail to set new by tick update`)
+				for function, handler := range model.GetFunctions(model.OKSwap, symbol) {
+					if handler != nil {
+						handler(model.OKSwap, symbol, function)
+					}
+				}
+			}
+		}
+	}
+}
+
+func SignedRequestOKSwap(key, secret, method, path string, body map[string]interface{}) []byte {
+	if key == `` {
+		key = model.AppConfig.OkexKey
+	}
+	if secret == `` {
+		secret = model.AppConfig.OkexSecret
+	}
+	if body == nil {
+		body = make(map[string]interface{})
+	}
+	uri := model.AppConfig.RestUrls[model.OKSwap] + path
+	epoch := time.Now().UnixNano() / int64(time.Millisecond)
+	timestamp := fmt.Sprintf(`%d.%d`, epoch/1000, epoch%1000)
+	toBeSign := fmt.Sprintf(`%s%s%s`, timestamp, method, path)
+	headers := map[string]string{`OK-ACCESS-KEY`: key, `OK-ACCESS-PASSPHRASE`: `OKSwap`, "OK-ACCESS-TIMESTAMP": timestamp}
+	if method == `POST` {
+		toBeSign = toBeSign + string(util.JsonEncodeMapToByte(body))
+		headers["Content-Type"] = "application/json"
+	}
+	hash := hmac.New(sha256.New, []byte(model.AppConfig.OkexSecret))
+	hash.Write([]byte(toBeSign))
+	sign := base64.StdEncoding.EncodeToString([]byte(hash.Sum(nil)))
+	headers[`OK-ACCESS-SIGN`] = sign
+	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 5)
+	return responseBody
+}
+
+func getAccountOKSwap(key, secret, symbol string, accounts *model.Accounts) {
+	response := SignedRequestOKSwap(key, secret, `GET`,
+		fmt.Sprintf(`/api/swap/v3/%s/position`, model.DialectSymbol[model.OKSwap][symbol]), nil)
+	util.Notice(fmt.Sprintf(string(response)))
+	positionJson, err := util.NewJSON(response)
+	if err == nil {
+		positionJson = positionJson.Get(`holding`)
+		if positionJson != nil {
+			for _, item := range positionJson.MustArray() {
+				account := &model.Account{Market: model.OKSwap}
+				parseAccountOKSwap(account, item.(map[string]interface{}))
+				account.Currency = symbol
+				accounts.SetAccount(model.OKSwap, account.Currency, account)
+			}
+		}
+	}
+}
+
+func getFundingRateOKSwap(symbol string) (fundingRate float64, expire int64) {
+	response := SignedRequestOKSwap(``, ``, `GET`,
+		fmt.Sprintf(`/api/swap/v3/instruments/%s/funding_time`, model.DialectSymbol[model.OKSwap][symbol]), nil)
+	instrumentJson, err := util.NewJSON(response)
+	if err == nil {
+		data := instrumentJson.MustMap()
+		if data != nil {
+			if data["funding_rate"] != nil {
+				fundingRate, _ = strconv.ParseFloat(data["funding_rate"].(string), 64)
+			}
+			if data["funding_time"] != nil {
+				fundingTime, _ := time.Parse(time.RFC3339, data["funding_time"].(string))
+				expire = fundingTime.Unix()
+			}
+		}
+	}
+	return
+}
+
+// type 1开多 2开空 3平多 4平空
+// order_type 0：普通委托 1：只做Maker（Post only） 2：全部成交或立即取消（FOK） 3：立即成交并取消剩余（IOC）
+func placeOrderOKSwap(order *model.Order, key, secret, orderSide, orderType, symbol, price,
+	amount string) {
+	postData := make(map[string]interface{})
+	postData[`size`] = amount
+	postData[`type`] = orderSide
+	postData["order_type"] = orderType
+	postData["instrument_id"] = model.DialectSymbol[model.OKSwap][symbol]
+	postData[`price`] = price
+	response := SignedRequestOKSwap(key, secret, `POST`, `/api/swap/v3/order`, postData)
+	util.Notice(`place okswap` + string(response))
+	orderJson, err := util.NewJSON(response)
+	if err == nil {
+		order.OrderId = orderJson.Get(`order_id`).MustString()
+	}
+	return
+}
+
+func parseOrderOKSwap(order *model.Order, item map[string]interface{}) {
+	if order == nil {
+		return
+	}
+	if item[`order_id`] != nil {
+		order.OrderId = item[`order_id`].(string)
+	}
+	if item["instrument_id"] != nil {
+		order.Symbol = model.StandardSymbol[model.OKSwap][item["instrument_id"].(string)]
+	}
+	if item[`size`] != nil {
+		order.Amount, _ = strconv.ParseFloat(item[`size`].(string), 64)
+		order.Amount = order.Amount * 100
+	}
+	if item[`timestamp`] != nil {
+		order.OrderTime, _ = time.Parse(time.RFC3339, item[`timestamp`].(string))
+	}
+	if item["filled_qty"] != nil {
+		order.DealAmount, _ = strconv.ParseFloat(item["filled_qty"].(string), 64)
+		order.DealAmount = order.DealAmount * 100
+	}
+	if item[`fee`] != nil {
+		order.Fee, _ = strconv.ParseFloat(item[`fee`].(string), 64)
+	}
+	if item[`price`] != nil {
+		order.Price, _ = strconv.ParseFloat(item[`price`].(string), 64)
+	}
+	if item[`price_avg`] != nil {
+		order.DealPrice, _ = strconv.ParseFloat(item[`price_avg`].(string), 64)
+	}
+	if item[`order_type`] != nil {
+		order.OrderType = item[`order_type`].(string)
+	}
+	if item[`type`] != nil {
+		if item[`type`] == `1` || item[`type`] == `4` {
+			order.OrderSide = model.OrderSideBuy
+		} else if item[`type`] == `2` || item[`type`] == `3` {
+			order.OrderSide = model.OrderSideSell
+		}
+	}
+	order.Status = model.CarryStatusWorking
+	if item[`state`] != nil {
+		order.Status = model.GetOrderStatus(model.OKSwap, item[`state`].(string))
+	}
+	if order.DealAmount > 0 && order.DealPrice == 0 {
+		order.DealPrice = order.Price
+	}
+	return
+}
+
+func queryOrderOKSwap(key, secret, symbol, orderId string) (order *model.Order) {
+	response := SignedRequestOKSwap(key, secret, `GET`,
+		fmt.Sprintf(`/api/swap/v3/orders/%s/%s`, model.DialectSymbol[model.OKSwap][symbol], orderId), nil)
+	util.Notice(`query order OKSwap: ` + string(response))
+	orderJson, err := util.NewJSON(response)
+	if err == nil {
+		data := orderJson.MustMap()
+		order = &model.Order{Market: model.OKSwap, Symbol: symbol, OrderId: orderId}
+		parseOrderOKSwap(order, data)
+	}
+	return
+}
+
+func cancelOrderOKSwap(key, secret, symbol, orderId string) (result bool) {
+	response := SignedRequestOKSwap(key, secret, `POST`,
+		fmt.Sprintf(`/api/swap/v3/cancel_order/%s/%s`, model.DialectSymbol[model.OKSwap][symbol], orderId), nil)
+	orderJson, err := util.NewJSON(response)
+	util.Notice(fmt.Sprintf(`okswap cancel order %s return %s`, orderId, string(response)))
+	result = false
+	if err == nil {
+		result, _ = strconv.ParseBool(orderJson.Get(`result`).MustString())
+	}
+	return
 }

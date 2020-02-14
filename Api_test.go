@@ -74,33 +74,11 @@ func Test_initTurtleN(t *testing.T) {
 }
 
 func Test_RefreshAccount(t *testing.T) {
-	a := 1.0 / 9.0
-	fmt.Println(a)
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	var err error
-	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
-	if err != nil {
-		util.Notice(err.Error())
-		return
-	}
-	//rate := api.GetFundingRate(model.Bitmex, `btcusd_p`)
-	//fmt.Println(rate)
-	//api.RefreshAccount(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit)
-	//carry.GetTurtleData(model.Bitmex, `ethusd_p`)
-	bitmexKey := `HHCJIVMpxYEahfxGZH9NoFzD`
-	bitmexSecret := `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`
-	//res, code, msg, order := api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret, model.Bybit,
-	//	`btcusd_p`, order.OrderId)
-	//fmt.Println(fmt.Sprintf(`%v %s %s %f`, res, code, msg, order.DealPrice))
-	//api.CancelOrder(model.AppConfig.BybitKey, model.AppConfig.BybitSecret,model.Bybit,`btcusd_p`, `1234`)
-	//fmt.Println(order.Price)
-	//model.AppDB.Save(order)
-	//res, _ := api.MustCancel(bitmexKey, bitmexSecret, model.Bitmex, `btcusd_p`, `394c8c53-427d-820c-8f45-737017f939d6`, true)
-	//fmt.Println(res)
-	model.AppConfig.Env = `not_test`
-	order := api.PlaceOrder(bitmexKey, bitmexSecret,
-		model.OrderSideSell, model.OrderTypeLimit, model.Bitmex, `btcusd_p`,
-		``, ``, model.PostOnly, 5555, 1, true)
-	fmt.Println(fmt.Sprintf(`order id %s status %s deal amount %f`, order.OrderId, order.Status, order.DealAmount))
+	//api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap)
+	api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OrderSideBuy, ``, model.OKSwap,
+		`btcusd_p`, ``, ``, ``, 10264, 100, false)
+	//api.QueryOrderById(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap, `btcusd_p`, `433245228481585152`)
+	//api.CancelOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap, `btcusd_p`, `433089124304625665`)
 }

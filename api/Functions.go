@@ -42,11 +42,15 @@ func GetPriceDistance(market, symbol string) float64 {
 		switch market {
 		case model.Bitmex, model.Bybit, model.Fmex:
 			return 0.5
+		case model.OKSwap:
+			return 0.1
 		}
 	case `ethusd_p`:
 		switch market {
 		case model.Bitmex, model.Bybit, model.Fmex:
 			return 0.05
+		case model.OKSwap:
+			return 0.01
 		}
 	}
 	return 0
@@ -97,6 +101,13 @@ func GetMinAmount(market, symbol string) float64 {
 			return 1
 		case `ethusd_p`:
 			return 1
+		}
+	case model.OKSwap:
+		switch symbol {
+		case `btcusd_p`:
+			return 100
+		case `ethusd_p`:
+			return 100
 		}
 	}
 	return 0
@@ -153,6 +164,13 @@ func GetPriceDecimal(market, symbol string) float64 {
 		case `ethusd_p`:
 			return 1.5
 		}
+	case model.OKSwap:
+		switch symbol {
+		case `btcusd_p`:
+			return 1
+		case `ethusd_p`:
+			return 2
+		}
 	}
 	return 8
 }
@@ -178,19 +196,7 @@ func GetAmountDecimal(market, symbol string) float64 {
 			`ada_eth`, `dash_usdt`, `dash_btc`, `dash_eth`, `bsv_btc`, `pax_usdt`, `tusd_usdt`, `usdc_usdt`, `gusd_usdt`:
 			return 4
 		}
-	case model.Fmex:
-		switch symbol {
-		case `btcusd_p`:
-			return 0
-		}
-	case model.Bitmex:
-		switch symbol {
-		case `btcusd_p`:
-			return 0
-		case `ethusd_p`:
-			return 0
-		}
-	case model.Bybit:
+	case model.Bitmex, model.Bybit, model.Fmex, model.OKSwap:
 		switch symbol {
 		case `btcusd_p`:
 			return 0
@@ -255,6 +261,8 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (
 		}
 	case model.Bybit:
 		result, errCode, msg, order = cancelOrderBybit(key, secret, symbol, orderId)
+	case model.OKSwap:
+		result = cancelOrderOKSwap(key, secret, symbol, orderId)
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
 	return result, errCode, msg, order
@@ -376,6 +384,8 @@ func GetFundingRate(market, symbol string) (fundingRate float64, expireTime int6
 		fundingRate, expireTime = getFundingRateBitmex(symbol)
 	case model.Bybit:
 		fundingRate, expireTime = getFundingRateBybit(symbol)
+	case model.OKSwap:
+		fundingRate, expireTime = getFundingRateOKSwap(symbol)
 	}
 	model.SetFundingRate(market, symbol, fundingRate, expireTime)
 	util.Notice(fmt.Sprintf(`after update funding %s %s rate %f expire %d`,
@@ -417,6 +427,8 @@ func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.O
 				return value
 			}
 		}
+	case model.OKSwap:
+		return queryOrderOKSwap(key, secret, symbol, orderId)
 	}
 	return &model.Order{OrderId: orderId, Symbol: symbol, Market: market, DealAmount: dealAmount, DealPrice: dealPrice,
 		Status: status}
@@ -511,16 +523,14 @@ func RefreshAccount(key, secret, market string) {
 		if err != nil {
 			util.Notice(err.Error())
 		}
+	case model.OKSwap:
+		getAccountOKSwap(key, secret, `btcusd_p`, model.AppAccounts)
+		//symbols := model.GetMarketSymbols(model.OKSwap)
+		//for symbol := range symbols {
+		//	getAccountOKSwap(key, secret, symbol, model.AppAccounts)
+		//}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
-		//if model.AppConfig.BnbMin > 0 && model.AppConfig.BnbBuy > 0 {
-		//	account := model.AppAccounts.GetAccount(model.Binance, `bnb`)
-		//	if account != nil && account.Free < model.AppConfig.BnbMin {
-		//		util.Notice(fmt.Sprintf(`[bnb數量不足]%f - %f`, account.Free, model.AppConfig.BnbMin))
-		//		PlaceOrder(model.OrderSideBuy, model.OrderTypeMarket, model.Binance, `bnb_usdt`, ``,
-		//			0, model.AppConfig.BnbBuy)
-		//	}
-		//}
 	case model.Fcoin:
 		accounts := getLeverAccountFcoin(key, secret)
 		for key, value := range accounts {
@@ -595,21 +605,9 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``, RefreshType: orderParam,
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
-	//valid := false
-	//result, bidAsk := model.AppMarkets.GetBidAsk(symbol, market)
-	//if result {
-	//	if orderSide == model.OrderSideSell && price > bidAsk.Bids[0].Price*0.998 {
-	//		valid = true
-	//	} else if orderSide == model.OrderSideBuy && price < bidAsk.Asks[0].Price*1.002 {
-	//		valid = true
-	//	}
-	//}
-	//if !valid {
-	//	util.Notice(fmt.Sprintf(`[place order limit]%s %s %s %f`, market, symbol, orderSide, price))
-	//	return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-	//		AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``,
-	//		Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
-	//}
+	if market == model.OKSwap {
+		amount = amount / 100
+	}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(market, symbol))
 	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%s price:%s`,
@@ -674,6 +672,23 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	case model.Bybit:
 		placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+	case model.OKSwap:
+		account := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol)
+		if orderSide == model.OrderSideSell {
+			account = model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideBuy+symbol)
+			if account != nil && account.Free > amount*100 { // 平多
+				orderSide = `3`
+			} else { // 开空
+				orderSide = `2`
+			}
+		} else if orderSide == model.OrderSideBuy {
+			if account != nil && math.Abs(account.Free) > amount*100 { // 平空
+				orderSide = `4`
+			} else {
+				orderSide = `1`
+			}
+		}
+		placeOrderOKSwap(order, key, secret, orderSide, `0`, symbol, strPrice, strAmount)
 	}
 	if order.OrderId == "0" || order.OrderId == "" {
 		order.Status = model.CarryStatusFail

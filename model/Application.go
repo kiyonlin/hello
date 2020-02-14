@@ -272,6 +272,15 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`PendingCancel`:   CarryStatusWorking,
 		`Deactivated`:     CarryStatusFail,
 	},
+	OKSwap: {
+		`-2`: CarryStatusFail,    // 失败
+		`-1`: CarryStatusFail,    // 撤单成功
+		`0`:  CarryStatusWorking, // 等待成交
+		`1`:  CarryStatusWorking, // 部分成交
+		`2`:  CarryStatusSuccess, // 完全成交
+		`3`:  CarryStatusWorking, // 下单中
+		`4`:  CarryStatusWorking, // 撤单中
+	},
 }
 
 func SetCarryInfo(key, value string) {
@@ -590,7 +599,7 @@ func NewConfig() {
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
 	AppConfig.RestUrls[OKEX] = "https://www.okex.com/api/v1"
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com/api/v1`
-	AppConfig.RestUrls[OKSwap] = `https://www.okex.com/api/swap/v3`
+	AppConfig.RestUrls[OKSwap] = `https://www.okex.com`
 	AppConfig.RestUrls[Binance] = "https://api.binance.com"
 	AppConfig.RestUrls[Coinbig] = "https://www.coinbig.com/api/publics/v1"
 	AppConfig.RestUrls[Coinpark] = "https://api.coinpark.cc/v1"
