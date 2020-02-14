@@ -150,7 +150,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 	a2 := setting.AmountLimit
 	zFee, expired := api.GetFundingRate(market, symbol)
 	zFeeRelated, expiredRelated := api.GetFundingRate(setting.MarketRelated, symbol)
-	if setting.MarketRelated == model.Bybit {
+	if setting.MarketRelated == model.Bybit || setting.MarketRelated == model.OKSwap {
 		if expired > expiredRelated {
 			zFee = 0
 		} else {
