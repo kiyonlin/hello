@@ -605,6 +605,9 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``, RefreshType: orderParam,
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
+	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price, RefreshType: orderParam,
+		OrderTime: util.GetNow()}
 	if market == model.OKSwap {
 		amount = amount / 100
 	}
@@ -615,9 +618,6 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	if amountType == model.AmountTypeContractNumber {
 		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
 	}
-	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price, RefreshType: orderParam,
-		OrderTime: util.GetNow()}
 	if model.AppConfig.Env == `test` {
 		order.Status = model.CarryStatusSuccess
 		order.OrderId = fmt.Sprintf(`%s%s%d`, market, symbol, util.GetNow().UnixNano())

@@ -163,6 +163,7 @@ func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
 						tick := model.Tick{Symbol: symbol, Side: model.OrderSideBuy}
 						tick.Price, _ = strconv.ParseFloat(item[0].(string), 64)
 						tick.Amount, _ = strconv.ParseFloat(item[1].(string), 64)
+						tick.Amount = tick.Amount * 100
 						bidAsk.Bids = append(bidAsk.Bids, tick)
 					}
 				}
@@ -174,6 +175,7 @@ func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
 						tick := model.Tick{Symbol: symbol, Side: model.OrderSideSell}
 						tick.Price, _ = strconv.ParseFloat(item[0].(string), 64)
 						tick.Amount, _ = strconv.ParseFloat(item[1].(string), 64)
+						tick.Amount = tick.Amount * 100
 						bidAsk.Asks = append(bidAsk.Asks, tick)
 					}
 				}
