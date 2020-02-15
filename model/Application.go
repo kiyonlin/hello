@@ -20,6 +20,7 @@ var ConnectionResetTime = int64(0)
 var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
 var candles = make(map[string]*Candle)    // market+symbol+period+rfc3339, candle
 var CarryInfo = make(map[string]string)   // function - msg
+var AppMetric = &MetricManager{}
 
 const KeyDefault = ``
 const SecretDefault = ``
@@ -99,17 +100,11 @@ type Config struct {
 	Channels        int
 	InChina         int // 1 in china, otherwise outter china
 	RefreshTimeSlot int
-	//SequencePlace   int // position:[0~14]
 	Between         int64
-	OrderWait       int64 // fcoin/coinpark 刷单平均等待时间
 	ChannelSlot     float64
 	Delay           float64
-	MinUsdt         float64 // 折合usdt最小下单金额
-	MaxUsdt         float64 // 折合usdt最大下单金额
-	Stable          bool
-	WSUrls          map[string]string  // marketName - ws url
-	RestUrls        map[string]string  // marketName - rest url
-	MarketCost      map[string]float64 // marketName - order cost
+	WSUrls          map[string]string // marketName - ws url
+	RestUrls        map[string]string // marketName - rest url
 	HuobiKey        string
 	HuobiSecret     string
 	OkexKey         string
@@ -126,14 +121,10 @@ type Config struct {
 	BybitSecret     string
 	FcoinKey        string
 	FcoinSecret     string
-	CarryDistance   float64 // carry价差触发条件
 	AmountRate      float64 // 刷单填写数量比率
 	PreDealDis      float64
 	BinanceOrderDis float64
 	Handle          string // 0 不执行处理程序，1执行处理程序
-	HandleMaker     string
-	HandleRefresh   string
-	HandleGrid      string
 	Mail            string
 	Port            string
 	TurtleLimitMain int
@@ -606,15 +597,6 @@ func NewConfig() {
 	AppConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
 	//AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com`
 	AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
-	AppConfig.MarketCost = make(map[string]float64)
-	AppConfig.MarketCost[Fcoin] = 0
-	AppConfig.MarketCost[Huobi] = 0.0005
-	AppConfig.MarketCost[OKEX] = 0.0005
-	AppConfig.MarketCost[OKFUTURE] = 0.0005
-	AppConfig.MarketCost[Binance] = 0.0004
-	AppConfig.MarketCost[Coinpark] = 0
-	AppConfig.MarketCost[Coinbig] = 0
-	AppConfig.MarketCost[Bitmex] = 0.0005
 	AppConfig.SymbolPrice = make(map[string]float64)
 	AppConfig.UpdatePriceTime = make(map[string]int64)
 }
@@ -644,18 +626,12 @@ func (config *Config) SetUpdatePriceTime(symbol string, updateTime int64) {
 
 func (config *Config) ToString() string {
 	str := "markets-carry cost:\n"
-	for key, value := range config.MarketCost {
-		str += fmt.Sprintf("-%s base carry cost: %f\n", key, value)
-	}
-	str += fmt.Sprintf("carry distance: %f\n", config.CarryDistance)
 	str += fmt.Sprintf("delay: %f\n", config.Delay)
 	str += fmt.Sprintf("channelslot: %f\n", config.ChannelSlot)
-	str += fmt.Sprintf("minusdt: %f maxusdt: %f \n", config.MinUsdt, config.MaxUsdt)
 	str += fmt.Sprintf("PreDealDis: %f Binance order dis: %f\n", config.PreDealDis, config.BinanceOrderDis)
 	str += fmt.Sprintf("channels: %d \n", config.Channels)
-	str += fmt.Sprintf("handle: %s handleMaker: %s handlerefresh: %s handlegrid: %s\n",
-		config.Handle, config.HandleMaker, config.HandleRefresh, config.HandleGrid)
-	str += fmt.Sprintf("orderwait: %d amountrate: %f\n", config.OrderWait, config.AmountRate)
+	str += fmt.Sprintf("handle: %s\n", config.Handle)
+	str += fmt.Sprintf(" amountrate: %f\n", config.AmountRate)
 	str += fmt.Sprintf("between: %d \n", config.Between)
 	return str
 }

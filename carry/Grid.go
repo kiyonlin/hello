@@ -140,7 +140,7 @@ func handleOrderDeal(key, secret string, grid *grid, order *model.Order, market,
 
 var ProcessGrid = func(market, symbol string, function interface{}) {
 	grid := getGrid(market, symbol)
-	if grid.griding || model.AppConfig.Handle != `1` || model.AppConfig.HandleGrid != `1` || model.AppPause {
+	if grid.griding || model.AppConfig.Handle != `1` || model.AppPause {
 		return
 	}
 	setGriding(market, symbol, true)

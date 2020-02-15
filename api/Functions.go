@@ -735,13 +735,3 @@ func GetPrice(key, secret, symbol string) (buy float64, err error) {
 	}
 	return getBuyPriceFcoin(key, secret, symbol)
 }
-
-//CheckOrderValue
-func _(key, secret, currency string, amount float64) (result bool) {
-	currencyPrice, _ := GetPrice(key, secret, currency+`_usdt`)
-	if currencyPrice*amount < model.AppConfig.MinUsdt {
-		util.Notice(fmt.Sprintf(`%s下单数量%f不足%f usdt`, currency, amount, model.AppConfig.MinUsdt))
-		return false
-	}
-	return true
-}

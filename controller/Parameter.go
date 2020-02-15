@@ -353,7 +353,8 @@ func GetParameters(c *gin.Context) {
 		}
 		rows.Close()
 	}
-	msg += model.AppConfig.ToString()
+	msg += model.AppMetric.ToString()
+	//msg += model.AppConfig.ToString()
 	c.String(http.StatusOK, msg)
 }
 
@@ -394,15 +395,6 @@ func SetParameters(c *gin.Context) {
 	if handle != `` {
 		model.AppConfig.Handle = handle
 	}
-	if handleMaker != `` {
-		model.AppConfig.HandleMaker = handleMaker
-	}
-	if handleRefresh != `` {
-		model.AppConfig.HandleRefresh = handleRefresh
-	}
-	if handleGrid != `` {
-		model.AppConfig.HandleGrid = handleGrid
-	}
 	between := c.Query(`between`)
 	if len(between) > 0 {
 		model.AppConfig.Between, _ = strconv.ParseInt(between, 10, 64)
@@ -415,20 +407,9 @@ func SetParameters(c *gin.Context) {
 	if len(binanceOrderDis) > 0 {
 		model.AppConfig.BinanceOrderDis, _ = strconv.ParseFloat(binanceOrderDis, 64)
 	}
-	orderWait := c.Query("orderwait")
-	if orderWait != `` {
-		model.AppConfig.OrderWait, _ = strconv.ParseInt(orderWait, 10, 64)
-	}
 	amountRate := c.Query("amountrate")
 	if amountRate != `` {
 		model.AppConfig.AmountRate, _ = strconv.ParseFloat(amountRate, 64)
-	}
-	carryDistance := c.Query("carrydistance")
-	if len(strings.TrimSpace(carryDistance)) > 0 {
-		value, _ := strconv.ParseFloat(carryDistance, 64)
-		if value > 0 && value < 1 {
-			model.AppConfig.CarryDistance = value
-		}
 	}
 	channelSlot := c.Query("channelslot")
 	if len(strings.TrimSpace(channelSlot)) > 0 {
@@ -441,14 +422,6 @@ func SetParameters(c *gin.Context) {
 	if len(strings.TrimSpace(channels)) > 0 {
 		temp, _ := strconv.ParseInt(channels, 10, 64)
 		model.AppConfig.Channels = int(temp)
-	}
-	minUsdt := c.Query("minusdt")
-	if len(strings.TrimSpace(minUsdt)) > 0 {
-		model.AppConfig.MinUsdt, _ = strconv.ParseFloat(minUsdt, 64)
-	}
-	maxUsdt := c.Query("maxusdt")
-	if len(strings.TrimSpace(maxUsdt)) > 0 {
-		model.AppConfig.MaxUsdt, _ = strconv.ParseFloat(maxUsdt, 64)
 	}
 	delay := c.Query("delay")
 	if len(strings.TrimSpace(delay)) > 0 {

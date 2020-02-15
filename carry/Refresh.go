@@ -18,8 +18,6 @@ const RefreshTypeSequence = `sequence`
 const RefreshTypeFar = `far`
 const RefreshTypeGrid = `refresh_grid`
 
-//const SequencePlace = 12
-
 var refreshOrders = &RefreshOrders{}
 
 type RefreshBidAsk struct {
@@ -444,9 +442,9 @@ var ProcessRefresh = func(market, symbol string, function interface{}) {
 		return
 	}
 	go validRefreshHang(model.KeyDefault, model.SecretDefault, symbol, amountLimit, otherPrice, priceDistance, tick)
-	if model.AppConfig.Handle != `1` || model.AppConfig.HandleRefresh != `1` || model.AppPause {
-		util.Notice(fmt.Sprintf(`[status]%s %s %v is pause:%v`,
-			model.AppConfig.Handle, model.AppConfig.HandleRefresh, refreshOrders.refreshing, model.AppPause))
+	if model.AppConfig.Handle != `1` || model.AppPause {
+		util.Notice(fmt.Sprintf(`[status]%s %v is pause:%v`,
+			model.AppConfig.Handle, refreshOrders.refreshing, model.AppPause))
 		CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, ``)
 		return
 	}
@@ -743,13 +741,11 @@ func refreshHang(key, secret, market, symbol, accountType string, hangRate, amou
 		util.Notice(fmt.Sprintf(`[wrong symbol]%s`, symbol))
 		return
 	}
-	if model.AppConfig.Stable {
-		if setting.GridAmount > 0 {
-			hangGrid(key, secret, market, symbol, accountType, setting, tick)
-		} else {
-			hangSequence(key, secret, market, symbol, accountType, leftFree, rightFree, otherPrice, hangRate,
-				amountLimit, priceDistance, coins, tick)
-		}
+	if setting.GridAmount > 0 {
+		hangGrid(key, secret, market, symbol, accountType, setting, tick)
+	} else {
+		hangSequence(key, secret, market, symbol, accountType, leftFree, rightFree, otherPrice, hangRate,
+			amountLimit, priceDistance, coins, tick)
 	}
 	hangFar(key, secret, market, symbol, accountType, farRate, finalPlace, leftFree, rightFree, coins, farPlaces, tick)
 }
