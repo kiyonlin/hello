@@ -28,7 +28,7 @@ type TickDelay struct {
 type MetricManager struct {
 	Lock        sync.Mutex
 	metricHour  map[string]map[string]*TickMetric // market_symbol - MMDDHH - tickMetric
-	metricTicks map[string][]TickDelay            // market_symbol - []TickDelay
+	metricTicks map[string][]*TickDelay           // market_symbol - []TickDelay
 	index       map[string]int                    // market_symbol - index
 }
 
@@ -60,14 +60,14 @@ func (metricManager *MetricManager) addTick(market, symbol string, current time.
 	tickMetric.delaySum += delay
 	tickMetric.delayAvg = float64(tickMetric.delaySum) / float64(tickMetric.countAll)
 	if metricManager.metricTicks == nil || metricManager.index == nil {
-		metricManager.metricTicks = make(map[string][]TickDelay)
+		metricManager.metricTicks = make(map[string][]*TickDelay)
 		metricManager.index = make(map[string]int)
 	}
 	if metricManager.metricTicks[marketSymbol] == nil {
-		metricManager.metricTicks[marketSymbol] = make([]TickDelay, recentTickLength)
+		metricManager.metricTicks[marketSymbol] = make([]*TickDelay, recentTickLength)
 		metricManager.index[marketSymbol] = 0
 	}
-	tickDelay := TickDelay{receiveTime: current, delay: delay}
+	tickDelay := &TickDelay{receiveTime: current, delay: delay}
 	metricManager.metricTicks[marketSymbol][metricManager.index[marketSymbol]] = tickDelay
 	metricManager.index[marketSymbol] = (metricManager.index[marketSymbol] + 1) % recentTickLength
 }
@@ -75,9 +75,16 @@ func (metricManager *MetricManager) addTick(market, symbol string, current time.
 func (metricManager *MetricManager) ToString() (metricStr string) {
 	metricStr = ``
 	for marketSymbol, metrics := range metricManager.metricTicks {
-		tickMetric := TickMetric{start: metrics[metricManager.index[marketSymbol]].receiveTime,
-			end: metrics[(metricManager.index[marketSymbol]-1+recentTickLength)%recentTickLength].receiveTime}
+		index := metricManager.index[marketSymbol]
+		pre := (metricManager.index[marketSymbol] - 1 + recentTickLength) % recentTickLength
+		if metrics[index] == nil {
+			index = 0
+		}
+		tickMetric := TickMetric{start: metrics[index].receiveTime, end: metrics[pre].receiveTime}
 		for _, tick := range metrics {
+			if tick == nil {
+				continue
+			}
 			if tick.delay > tickMetric.delayHigh {
 				tickMetric.delayHigh = tick.delay
 			}
