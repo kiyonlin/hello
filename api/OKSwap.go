@@ -76,7 +76,7 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		table := depthJson.Get(`table`).MustString()
 		if table == `swap/depth5` {
 			handleDepthOkSwap(markets, depthJson.Get(`data`))
-		} else if table == `swap/position` {
+		} else if strings.Contains(table, `swap/position`) {
 			handlePositionOKSwap(depthJson.Get(`data`))
 			util.SocketInfo(fmt.Sprintf(`get ws okswap position %s`, string(event)))
 		}
@@ -90,14 +90,14 @@ func parseAccountOKSwap(account *model.Account, item map[string]interface{}) {
 	if item[`liquidation_price`] != nil {
 		account.LiquidationPrice, _ = strconv.ParseFloat(item[`liquidation_price`].(string), 64)
 	}
-	if item[`position`] != nil && item[`side`] != nil {
+	if item[`avail_position`] != nil && item[`side`] != nil {
 		side := strings.ToLower(item[`side`].(string))
 		if side == `long` {
 			account.Direction = model.OrderSideBuy
 		} else if side == `short` {
 			account.Direction = model.OrderSideSell
 		}
-		free, err := strconv.ParseFloat(item[`position`].(string), 64)
+		free, err := strconv.ParseFloat(item[`avail_position`].(string), 64)
 		if err == nil {
 			if model.OrderSideSell == account.Direction {
 				account.Free = math.Abs(free) * -1
