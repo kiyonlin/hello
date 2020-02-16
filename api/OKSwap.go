@@ -77,11 +77,7 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		if table == `swap/depth5` {
 			handleDepthOkSwap(markets, depthJson.Get(`data`))
 		} else if strings.Contains(table, `swap/position`) {
-			fmt.Println(string(event))
-			util.SocketInfo(fmt.Sprintf(`get ws okswap position %s`, string(event)))
 			handlePositionOKSwap(depthJson.Get(`data`))
-		} else {
-			fmt.Println(string(event))
 		}
 	}
 	return WebSocketServe(model.OKSwap, model.AppConfig.WSUrls[model.OKSwap], model.SubscribeDepth,
@@ -131,12 +127,17 @@ func handlePositionOKSwap(response *simplejson.Json) {
 			if value != nil {
 				item := value.(map[string]interface{})
 				if item[`instrument_id`] != nil && item[`timestamp`] != nil {
-					account := &model.Account{Market: model.OKSwap}
-					account.Currency = model.StandardSymbol[model.OKSwap][item[`instrument_id`].(string)]
+					currency := model.StandardSymbol[model.OKSwap][item[`instrument_id`].(string)]
 					timestamp, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
-					account.Ts = timestamp.UnixNano() / 1000000
-					parseAccountOKSwap(account, item)
-					model.AppAccounts.SetAccount(model.OKSwap, account.Currency, account)
+					ts := timestamp.UnixNano() / 1000000
+					if item[`holding`] != nil {
+						holdings := item[`holding`].([]interface{})
+						for _, holding := range holdings {
+							account := &model.Account{Market: model.OKSwap, Ts: ts, Currency: currency}
+							parseAccountOKSwap(account, holding.(map[string]interface{}))
+							model.AppAccounts.SetAccount(model.OKSwap, account.Currency, account)
+						}
+					}
 				}
 			}
 		}
@@ -228,7 +229,7 @@ func SignedRequestOKSwap(key, secret, method, path string, body map[string]inter
 func getAccountOKSwap(key, secret, symbol string, accounts *model.Accounts) {
 	response := SignedRequestOKSwap(key, secret, `GET`,
 		fmt.Sprintf(`/api/swap/v3/%s/position`, model.DialectSymbol[model.OKSwap][symbol]), nil)
-	util.Notice(fmt.Sprintf(string(response)))
+	util.Notice(fmt.Sprintf(`get account rest:%s`, string(response)))
 	positionJson, err := util.NewJSON(response)
 	if err == nil {
 		positionJson = positionJson.Get(`holding`)
