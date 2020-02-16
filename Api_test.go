@@ -76,9 +76,11 @@ func Test_initTurtleN(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
+	api.PlaceOrder(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.OrderSideBuy, model.OrderTypeLimit,
+		model.Bitmex, `btcusd_p`, ``, ``, model.PostOnly, 10264, 100, false)
 	//api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap)
-	api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OrderSideBuy, ``, model.OKSwap,
-		`btcusd_p`, ``, ``, ``, 10264, 100, false)
+	//api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OrderSideBuy, ``, model.OKSwap,
+	//	`btcusd_p`, ``, ``, ``, 10264, 100, false)
 	//api.QueryOrderById(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap, `btcusd_p`, `433245228481585152`)
 	//api.CancelOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap, `btcusd_p`, `433089124304625665`)
 }

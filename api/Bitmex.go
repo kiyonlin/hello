@@ -285,6 +285,9 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	}
 	if markets.SetBidAsk(symbol, model.Bitmex, bidAsk) {
 		for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
+			if function == model.FunctionPostonlyHandler {
+				continue
+			}
 			if handler != nil {
 				handler(model.Bitmex, symbol, function)
 			}
