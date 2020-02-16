@@ -56,8 +56,8 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 	wsHandler := func(event []byte) {
 		if util.GetNow().Unix()-lastPingTime > 30 { // ping ws server every 30 seconds
 			lastPingTime = util.GetNow().Unix()
-			if err := sendToWs(model.OKSwap, []byte(`"ping"`)); err != nil {
-				util.SocketInfo("okswap server ping client error " + err.Error())
+			if err := sendToWs(model.OKSwap, []byte(`ping`)); err != nil {
+				util.SocketInfo("okex server ping client error " + err.Error())
 			}
 		}
 		if len(event) == 0 {
@@ -67,7 +67,6 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		var out bytes.Buffer
 		reader := flate.NewReader(bytes.NewReader(event))
 		_, _ = io.Copy(&out, reader)
-		event = out.Bytes()
 		depthJson, depthErr := util.NewJSON(event)
 		if depthErr != nil {
 			util.Notice(`okswap depth event error ` + depthErr.Error())
@@ -77,8 +76,11 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		if table == `swap/depth5` {
 			handleDepthOkSwap(markets, depthJson.Get(`data`))
 		} else if strings.Contains(table, `swap/position`) {
-			handlePositionOKSwap(depthJson.Get(`data`))
+			fmt.Println(string(event))
 			util.SocketInfo(fmt.Sprintf(`get ws okswap position %s`, string(event)))
+			handlePositionOKSwap(depthJson.Get(`data`))
+		} else {
+			fmt.Println(string(event))
 		}
 	}
 	return WebSocketServe(model.OKSwap, model.AppConfig.WSUrls[model.OKSwap], model.SubscribeDepth,
