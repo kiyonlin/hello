@@ -293,10 +293,10 @@ func GetParameters(c *gin.Context) {
 	day := util.GetNow().Add(d)
 	dayStr := fmt.Sprintf(`%d-%d-%d`, day.Year(), day.Month(), day.Day())
 	earnRows, _ := model.AppDB.Model(&orders).
-		Select(`date(order_time), order_side, symbol, sum(deal_amount),sum(deal_amount / deal_price), sum(fee)`).
-		Where(`deal_amount>? and order_time>?`, 0, dayStr).
-		Group(`order_side, date(order_time), symbol`).
-		Order(`date(order_time) desc`).Rows()
+		Select(`date(order_time at time zone 'CCT'), order_side, symbol, sum(deal_amount),sum(deal_amount / deal_price), sum(fee)`).
+		Where(`deal_amount>? and order_time at time zone 'CCT'>?`, 0, dayStr).
+		Group(`order_side, date(order_time at time zone 'CCT') , symbol`).
+		Order(`date(order_time at time zone 'CCT') desc`).Rows()
 	if earnRows != nil {
 		for earnRows.Next() {
 			var date, orderSide, symbol, dealAmount, coinAmount, fee string
@@ -309,7 +309,7 @@ func GetParameters(c *gin.Context) {
 	today := fmt.Sprintf(`%d-%d-%d`, now.Year(), now.Month(), now.Day())
 	orderRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,sum(deal_amount),count(id),
 		round(sum(deal_amount)/sum(deal_amount/deal_price),1),sum(deal_amount/deal_price),sum(fee)`).Where(`
-		deal_amount>? and date(order_time)=?`, 0, today).Group(`market,symbol,order_side`).Rows()
+		deal_amount>? and date(order_time at time zone 'CCT')=?`, 0, today).Group(`market,symbol,order_side`).Rows()
 	if orderRows != nil {
 		for orderRows.Next() {
 			var market, symbol, orderSide, dealAmount, dealPrice, count, coinAmount, fee string
