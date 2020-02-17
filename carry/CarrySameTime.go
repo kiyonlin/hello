@@ -285,6 +285,8 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 					accountBybit.Free = freeRelated
 				}
 				model.AppAccounts.SetAccount(setting.MarketRelated, symbol, accountBybit)
+			} else {
+				api.RefreshAccount(``, ``, model.OKSwap)
 			}
 		}
 	}
