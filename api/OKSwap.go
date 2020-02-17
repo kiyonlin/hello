@@ -70,7 +70,7 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		event = out.Bytes()
 		depthJson, depthErr := util.NewJSON(event)
 		if depthErr != nil {
-			util.Notice(`okswap depth event error ` + depthErr.Error())
+			util.Notice(string(event) + `okswap depth event error ` + depthErr.Error())
 			return
 		}
 		table := depthJson.Get(`table`).MustString()
