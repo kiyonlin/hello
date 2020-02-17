@@ -524,11 +524,11 @@ func RefreshAccount(key, secret, market string) {
 			util.Notice(err.Error())
 		}
 	case model.OKSwap:
-		getAccountOKSwap(key, secret, `btcusd_p`, model.AppAccounts)
-		//symbols := model.GetMarketSymbols(model.OKSwap)
-		//for symbol := range symbols {
-		//	getAccountOKSwap(key, secret, symbol, model.AppAccounts)
-		//}
+		//getAccountOKSwap(key, secret, `btcusd_p`, model.AppAccounts)
+		symbols := model.GetMarketSymbols(model.OKSwap)
+		for symbol := range symbols {
+			getAccountOKSwap(key, secret, symbol, model.AppAccounts)
+		}
 	case model.Binance:
 		getAccountBinance(model.AppAccounts)
 	case model.Fcoin:
@@ -582,6 +582,7 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 		} else {
 			if market == model.OKSwap && order != nil && order.ErrCode == `35010` {
 				amountType = model.AmountTypeNew
+				RefreshAccount(key, secret, model.OKSwap)
 			}
 			time.Sleep(time.Millisecond * 100)
 			util.Notice(fmt.Sprintf(`fail to place order %d time, re order`, i))

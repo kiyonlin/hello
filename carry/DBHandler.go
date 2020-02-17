@@ -336,11 +336,11 @@ func Maintain() {
 	model.HandlerMap[model.FunctionBMCarryHang] = ProcessCarryOrder
 	model.HandlerMap[model.FunctionPostonlyHandler] = PostonlyHandler
 	defer model.AppDB.Close()
-	model.AppDB.AutoMigrate(&model.Account{})
-	model.AppDB.AutoMigrate(&model.Setting{})
-	model.AppDB.AutoMigrate(&model.Order{})
-	model.AppDB.AutoMigrate(&model.Score{})
-	model.AppDB.AutoMigrate(&model.Candle{})
+	//model.AppDB.AutoMigrate(&model.Account{})
+	//model.AppDB.AutoMigrate(&model.Setting{})
+	//model.AppDB.AutoMigrate(&model.Order{})
+	//model.AppDB.AutoMigrate(&model.Score{})
+	//model.AppDB.AutoMigrate(&model.Candle{})
 	model.LoadSettings()
 	go AccountHandlerServe()
 	//go CheckPastRefresh()
