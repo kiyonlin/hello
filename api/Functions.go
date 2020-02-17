@@ -580,6 +580,9 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 		if order != nil && order.OrderId != `` {
 			break
 		} else {
+			if market == model.OKSwap && order != nil && order.ErrCode == `35010` {
+				amountType = model.AmountTypeNew
+			}
 			time.Sleep(time.Millisecond * 100)
 			util.Notice(fmt.Sprintf(`fail to place order %d time, re order`, i))
 		}
@@ -676,15 +679,15 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		account := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol)
 		if orderSide == model.OrderSideSell {
 			account = model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideBuy+symbol)
-			if account != nil && account.Free > amount*100 { // 平多
+			if amountType != model.AmountTypeNew && account != nil && account.Free > amount*100 { // 平多
 				orderSide = `3`
 			} else { // 开空
 				orderSide = `2`
 			}
 		} else if orderSide == model.OrderSideBuy {
-			if account != nil && math.Abs(account.Free) > amount*100 { // 平空
+			if amountType != model.AmountTypeNew && account != nil && math.Abs(account.Free) > amount*100 { // 平空
 				orderSide = `4`
-			} else {
+			} else { // 开多
 				orderSide = `1`
 			}
 		}

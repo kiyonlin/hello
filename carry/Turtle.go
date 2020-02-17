@@ -191,7 +191,8 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
 				setting.PriceX, turtleData.n))
 			if api.IsValid(turtleData.orderShort) {
-				lastOrder := api.QueryOrderById(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderShort.OrderId)
+				lastOrder := api.QueryOrderById(model.KeyDefault, model.SecretDefault, market, symbol,
+					turtleData.orderShort.OrderId)
 				if api.IsValid(lastOrder) {
 					setting.PriceX = lastOrder.DealPrice
 					priceLong = setting.PriceX + turtleData.n/2
@@ -241,10 +242,12 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 	}
 	if updateSetting {
 		if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
-			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderLong.OrderId, true)
+			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol,
+				turtleData.orderLong.OrderId, true)
 		}
 		if turtleData.orderShort != nil && turtleData.orderShort.OrderId != `` {
-			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderShort.OrderId, true)
+			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol,
+				turtleData.orderShort.OrderId, true)
 		}
 		turtleData.orderLong = nil
 		turtleData.orderShort = nil

@@ -60,6 +60,7 @@ const OrderSideLiquidateShort = `liquidateShort`
 //const CarryTypeArbitraryBuy = `arbitrarybuy`
 const AmountTypeContractNumber = `contractnumber`
 const AmountTypeCoinNumber = `coinnumber`
+const AmountTypeNew = `new` // 用于okswap 开仓，而不平仓
 
 const FunctionTurtle = `turtle`
 const FunctionGrid = `grid`

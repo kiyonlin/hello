@@ -274,9 +274,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderRelated := getLastOrder(key, setting.MarketRelated)
 		if api.IsValid(orderMarket) && api.IsValid(orderRelated) {
 			time.Sleep(time.Second)
-			if setting.MarketRelated != model.Bybit {
-				api.RefreshAccount(``, ``, setting.MarketRelated)
-			} else {
+			if setting.MarketRelated == model.Bybit {
 				if orderRelated.OrderSide == model.OrderSideSell {
 					freeRelated -= orderRelated.Amount
 				} else {
