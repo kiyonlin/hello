@@ -262,8 +262,8 @@ func updateTurtleSetting(market, symbol string, turtleData *TurtleData, setting 
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64) {
-	amountShort /= 1000
-	amountLong /= 1000
+	amountShort = amountShort / 1000
+	amountLong = amountLong / 1000
 	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
 		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
