@@ -256,7 +256,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
 			`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-		return
+		//return
 	}
 	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
 		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %d`,
@@ -265,7 +265,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 			symbol, ``, setting.AccountType, ``, priceLong, amountLong, false)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			order.RefreshType = model.FunctionTurtle
-			model.AppDB.Save(&order)
+			go model.AppDB.Save(&order)
 			turtleData.orderLong = order
 		}
 	}
@@ -276,7 +276,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 			market, symbol, ``, setting.AccountType, ``, priceShort, amountShort, false)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			order.RefreshType = model.FunctionTurtle
-			model.AppDB.Save(&order)
+			go model.AppDB.Save(&order)
 			turtleData.orderShort = order
 		}
 	}

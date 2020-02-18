@@ -70,7 +70,9 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		event = out.Bytes()
 		depthJson, depthErr := util.NewJSON(event)
 		if depthErr != nil {
-			util.Notice(string(event) + `okswap depth event error ` + depthErr.Error())
+			if string(event) != `pong` {
+				util.Notice(string(event) + `okswap depth event error ` + depthErr.Error())
+			}
 			return
 		}
 		table := depthJson.Get(`table`).MustString()
@@ -359,7 +361,12 @@ func cancelOrderOKSwap(key, secret, symbol, orderId string) (result bool) {
 	util.Notice(fmt.Sprintf(`okswap cancel order %s return %s`, orderId, string(response)))
 	result = false
 	if err == nil {
-		result, _ = strconv.ParseBool(orderJson.Get(`result`).MustString())
+		errCode := orderJson.Get(`error_code`).MustString()
+		if errCode == "0" {
+			result = true
+		} else {
+			result = false
+		}
 	}
 	return
 }

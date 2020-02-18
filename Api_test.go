@@ -79,8 +79,8 @@ func Test_RefreshAccount(t *testing.T) {
 	//api.PlaceOrder(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.OrderSideBuy, model.OrderTypeLimit,
 	//	model.Bitmex, `btcusd_p`, ``, ``, model.PostOnly, 10264, 00, false)
 	//api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap)
-	api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OrderSideBuy, ``, model.OKSwap,
-		`btcusd_p`, ``, ``, ``, 9666, 300, false)
+	//api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OrderSideBuy, ``, model.OKSwap,
+	//	`btcusd_p`, ``, ``, ``, 9666, 300, false)
 	//api.QueryOrderById(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap, `btcusd_p`, `433245228481585152`)
-	//api.CancelOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap, `btcusd_p`, `433089124304625665`)
+	api.CancelOrder(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.OKSwap, `btcusd_p`, `e7a8248a-ac13-fc5f-245c-496ca7a816b0`)
 }
