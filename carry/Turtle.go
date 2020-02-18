@@ -142,7 +142,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 	if setting.Chance == 0 { // 开初始多仓
 		priceLong = turtleData.highDays20
 		priceShort = turtleData.lowDays20
-		placeTurtleOrders(market, symbol, turtleData, setting, priceShort, priceLong, currentN, amountShort, amountLong)
+		placeTurtleOrders(market, symbol, turtleData, setting, currentN, priceShort, priceLong, amountShort, amountLong)
 		if tick.Asks[0].Price > priceLong {
 			setting.Chance = 1
 			setting.GridAmount = turtleData.amount
@@ -163,7 +163,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 		priceLong = setting.PriceX + turtleData.n/2
 		priceShort = math.Max(turtleData.lowDays10, setting.PriceX-2*turtleData.n)
 		amountShort = setting.GridAmount
-		placeTurtleOrders(market, symbol, turtleData, setting, priceShort, priceLong, currentN, amountShort, amountLong)
+		placeTurtleOrders(market, symbol, turtleData, setting, currentN, priceShort, priceLong, amountShort, amountLong)
 		// 加仓一个单位
 		if tick.Bids[0].Price > priceLong && currentN < float64(model.AppConfig.TurtleLimitMain) {
 			setting.PriceX = priceLong
@@ -189,7 +189,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 			util.Notice(fmt.Sprintf(`平多 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
 				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
 				setting.PriceX, turtleData.n))
-			placeTurtleOrders(market, symbol, turtleData, setting, priceShort, priceLong, currentN, amountShort, amountLong)
+			placeTurtleOrders(market, symbol, turtleData, setting, currentN, priceShort, priceLong, amountShort, amountLong)
 			if api.IsValid(turtleData.orderShort) {
 				setting.PriceX = tick.Asks[0].Price
 				lastOrder := api.QueryOrderById(model.KeyDefault, model.SecretDefault, market, symbol,
@@ -204,7 +204,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 		priceLong = math.Min(turtleData.highDays10, setting.PriceX+2*turtleData.n)
 		priceShort = setting.PriceX - turtleData.n/2
 		amountLong = setting.GridAmount
-		placeTurtleOrders(market, symbol, turtleData, setting, priceShort, priceLong, currentN, amountShort, amountLong)
+		placeTurtleOrders(market, symbol, turtleData, setting, currentN, priceShort, priceLong, amountShort, amountLong)
 		// 加仓一个单位
 		if tick.Asks[0].Price < priceShort && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
 			setting.Chance = setting.Chance - 1
@@ -229,7 +229,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 			util.Notice(fmt.Sprintf(`平空 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
 				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
 				setting.PriceX, turtleData.n))
-			placeTurtleOrders(market, symbol, turtleData, setting, priceShort, priceLong, currentN, amountShort, amountLong)
+			placeTurtleOrders(market, symbol, turtleData, setting, currentN, priceShort, priceLong, amountShort, amountLong)
 			if api.IsValid(turtleData.orderShort) {
 				lastOrder := api.QueryOrderById(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderShort.OrderId)
 				setting.PriceX = tick.Bids[0].Price
