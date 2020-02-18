@@ -26,6 +26,7 @@ func ParameterServe() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	router.GET("/get", GetParameters)
+	router.GET("/", GetParameters)
 	router.GET("/set", SetParameters)
 	router.GET(`/refresh`, RefreshParameters)
 	router.GET(`/pw`, GetCode)
