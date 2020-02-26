@@ -207,6 +207,17 @@ func GetAmountDecimal(market, symbol string) float64 {
 	return 4
 }
 
+func MustQuery(key, secret, market, symbol, orderId string) (order *model.Order) {
+	for true {
+		order := QueryOrderById(key, secret, market, symbol, orderId)
+		if IsValid(order) {
+			return order
+		}
+		time.Sleep(time.Second * 3)
+	}
+	return
+}
+
 func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (res bool, order *model.Order) {
 	for i := 0; i < 7; i++ {
 		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, orderId)
