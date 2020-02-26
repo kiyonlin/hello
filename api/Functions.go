@@ -237,6 +237,10 @@ func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (r
 
 func CancelOrder(key, secret, market string, symbol string, orderId string) (
 	result bool, errCode, msg string, order *model.Order) {
+	if model.AppConfig.Env == `test` {
+		return true, ``, `test cancel`,
+			&model.Order{Market: market, Symbol: symbol, OrderId: orderId, Status: model.CarryStatusFail}
+	}
 	errCode = `market-not-supported ` + market
 	msg = `market not supported ` + market
 	switch market {
@@ -300,7 +304,7 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 	}
 	candle = &model.Candle{}
 	model.AppDB.Where(`market = ? and symbol = ? and period = ? and utc_date = ?`,
-		market, symbol, `1d`, timeCandle.String()[0:19]).First(candle)
+		market, symbol, `1d`, timeCandle.String()[0:10]).First(candle)
 	if candle.N > 0 {
 		return
 	}
