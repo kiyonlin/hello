@@ -110,11 +110,11 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	markets.trade[second][symbol][deal.Market] = deal
 	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
 		markets.trade[second][symbol][Bitmex] != nil && markets.trade[second][symbol][Fmex] != nil {
-		candle := &Candle{Symbol: symbol, Ts: second,
-			PriceBitmex: markets.trade[second][symbol][Bitmex].Price,
-			PriceFmex:   markets.trade[second][symbol][Fmex].Price,
-		}
-		go AppDB.Save(&candle)
+		//candle := &Candle{Symbol: symbol, Ts: second,
+		//	PriceBitmex: markets.trade[second][symbol][Bitmex].Price,
+		//	PriceFmex:   markets.trade[second][symbol][Fmex].Price,
+		//}
+		//go AppDB.Save(&candle)
 		chance := 15.0
 		for _, setting := range AppSettings {
 			if setting.Function == FunctionHangContract &&

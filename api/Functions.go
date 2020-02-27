@@ -355,9 +355,13 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 			continue
 		}
 		if candleCurrent.N > 0 {
+			if i == 1 {
+				candle.N += candleCurrent.N * 19 / 20
+				break
+			}
 			candle.N += candleCurrent.N / 20
 		} else {
-			candle.N = candle.N + (candleCurrent.PriceHigh-candleCurrent.PriceLow)/20
+			candle.N += (candleCurrent.PriceHigh - candleCurrent.PriceLow) / 20
 		}
 	}
 	//fmt.Println(candle.Start.String())
