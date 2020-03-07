@@ -482,9 +482,9 @@ func parseOrderBybit(order *model.Order, item map[string]interface{}) {
 
 func GetWalletBybit(key, secret string) (msg string) {
 	postData := make(map[string]interface{})
-	postData[`coin`] = `BTC`
+	postData[`limit`] = `50`
 	response := SignedRequestBybit(key, secret, `GET`,
-		`/v2/private/wallet/balance`, postData)
+		`/open-api/wallet/fund/records`, postData)
 	return string(response)
 	//instrumentJson, err := util.NewJSON(response)
 	//if err == nil {

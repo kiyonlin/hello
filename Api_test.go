@@ -98,7 +98,7 @@ func Test_wallet(t *testing.T) {
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
 	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
-	api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret)
+	fmt.Println(api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret))
 	//balance := api.GetWalletOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret)
 	//for symbol, amount := range balance {
 	//	if amount > 0 {
