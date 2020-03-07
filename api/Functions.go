@@ -20,18 +20,20 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 	needReset := true
 	now := util.GetNowUnixMillion()
 	symbols := markets.GetSymbols()
+	delay := 0.0
 	for symbol := range symbols {
 		_, bidAsk := markets.GetBidAsk(symbol, market)
 		if bidAsk == nil {
 			continue
 		}
+		delay = float64(now - int64(bidAsk.Ts))
 		if float64(now-int64(bidAsk.Ts)) < model.AppConfig.Delay {
 			//util.Notice(market + ` no need to reconnect`)
 			needReset = false
 		}
 	}
 	if needReset {
-		util.SocketInfo(fmt.Sprintf(`socket need reset %v`, needReset))
+		util.SocketInfo(fmt.Sprintf(`socket need reset %v %f`, needReset, delay))
 	}
 	return needReset
 }
@@ -82,26 +84,11 @@ func GetMinAmount(market, symbol string) float64 {
 			return 200
 		}
 	case model.Fmex:
-		switch symbol {
-		case `btcusd_p`:
-			return 1
-		case `ethusd_p`:
-			return 1
-		}
+		return 1
 	case model.Bitmex:
-		switch symbol {
-		case `btcusd_p`:
-			return 1
-		case `ethusd_p`:
-			return 1
-		}
+		return 1
 	case model.Bybit:
-		switch symbol {
-		case `btcusd_p`:
-			return 1
-		case `ethusd_p`:
-			return 1
-		}
+		return 1
 	case model.OKSwap:
 		switch symbol {
 		case `btcusd_p`:
@@ -171,6 +158,17 @@ func GetPriceDecimal(market, symbol string) float64 {
 		case `ethusd_p`:
 			return 2
 		}
+	case model.Ftx:
+		switch symbol {
+		case `btcusd_p`, `ethusd_p`, `ltcusd_p`, `bchusd_p`, `bsvusd_p`:
+			return 2
+		case `etcusd_p`:
+			return 4
+		case `eosusd_p`:
+			return 5
+		case `xrpusd_p`:
+			return 6
+		}
 	}
 	return 8
 }
@@ -197,12 +195,7 @@ func GetAmountDecimal(market, symbol string) float64 {
 			return 4
 		}
 	case model.Bitmex, model.Bybit, model.Fmex, model.OKSwap:
-		switch symbol {
-		case `btcusd_p`:
-			return 0
-		case `ethusd_p`:
-			return 0
-		}
+		return 0
 	}
 	return 4
 }
@@ -405,6 +398,8 @@ func GetFundingRate(market, symbol string) (fundingRate float64, expireTime int6
 		fundingRate, expireTime = getFundingRateBybit(symbol)
 	case model.OKSwap:
 		fundingRate, expireTime = getFundingRateOKSwap(symbol)
+	case model.Ftx:
+		fundingRate, expireTime = getFundingRateFtx(symbol)
 	}
 	model.SetFundingRate(market, symbol, fundingRate, expireTime)
 	util.Notice(fmt.Sprintf(`after update funding %s %s rate %f expire %d`,
@@ -575,6 +570,8 @@ func RefreshAccount(key, secret, market string) {
 		for symbol := range symbols {
 			getAccountBybit(key, secret, symbol, model.AppAccounts)
 		}
+	case model.Ftx:
+		getAccountFtx(key, secret, model.AppAccounts)
 	}
 }
 
@@ -630,12 +627,17 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	}
 	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
 		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price, RefreshType: orderParam,
-		OrderTime: util.GetNow()}
+		OrderTime: util.GetNow(), UnfilledQuantity: amount}
 	if market == model.OKSwap {
 		amount = amount / 100
+	} else if market == model.Ftx {
+		amount = amount / price
 	}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(market, symbol))
-	amount, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
+	strAmount := fmt.Sprintf(`%f`, amount)
+	if market != model.Ftx {
+		amount, strAmount = util.FormatNum(amount, GetAmountDecimal(market, symbol))
+	}
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%s price:%s`,
 		orderSide, market, symbol, start, strAmount, strPrice))
 	if amountType == model.AmountTypeContractNumber {
@@ -695,6 +697,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		placeOrderBitmex(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	case model.Bybit:
 		placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+	case model.Ftx:
+		placeOrderFtx(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	case model.OKSwap:
 		account := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol)
 		if orderSide == model.OrderSideSell {

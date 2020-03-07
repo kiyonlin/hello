@@ -130,7 +130,7 @@ func handlePositionOKSwap(response *simplejson.Json) {
 			if value != nil {
 				item := value.(map[string]interface{})
 				if item[`instrument_id`] != nil && item[`timestamp`] != nil {
-					currency := model.StandardSymbol[model.OKSwap][item[`instrument_id`].(string)]
+					currency := model.GetStandardSymbol(model.OKSwap, item[`instrument_id`].(string))
 					timestamp, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
 					ts := timestamp.UnixNano() / 1000000
 					if item[`holding`] != nil {
@@ -158,7 +158,7 @@ func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
 		bidAsk.Asks = make([]model.Tick, 0)
 		value := data[0].(map[string]interface{})
 		if value[`instrument_id`] != nil && value[`timestamp`] != nil {
-			symbol := model.StandardSymbol[model.OKSwap][value[`instrument_id`].(string)]
+			symbol := model.GetStandardSymbol(model.OKSwap, value[`instrument_id`].(string))
 			ts, err := time.Parse(time.RFC3339, value[`timestamp`].(string))
 			if err == nil {
 				bidAsk.Ts = int(ts.UnixNano()) / 1000000
@@ -231,7 +231,7 @@ func SignedRequestOKSwap(key, secret, method, path string, body map[string]inter
 
 func getAccountOKSwap(key, secret, symbol string, accounts *model.Accounts) {
 	response := SignedRequestOKSwap(key, secret, `GET`,
-		fmt.Sprintf(`/api/swap/v3/%s/position`, model.DialectSymbol[model.OKSwap][symbol]), nil)
+		fmt.Sprintf(`/api/swap/v3/%s/position`, model.GetDialectSymbol(model.OKSwap, symbol)), nil)
 	util.Notice(fmt.Sprintf(`get account rest:%s`, string(response)))
 	positionJson, err := util.NewJSON(response)
 	if err == nil {
@@ -249,7 +249,8 @@ func getAccountOKSwap(key, secret, symbol string, accounts *model.Accounts) {
 
 func getFundingRateOKSwap(symbol string) (fundingRate float64, expire int64) {
 	response := SignedRequestOKSwap(``, ``, `GET`,
-		fmt.Sprintf(`/api/swap/v3/instruments/%s/funding_time`, model.DialectSymbol[model.OKSwap][symbol]), nil)
+		fmt.Sprintf(`/api/swap/v3/instruments/%s/funding_time`,
+			model.GetDialectSymbol(model.OKSwap, symbol)), nil)
 	instrumentJson, err := util.NewJSON(response)
 	if err == nil {
 		data := instrumentJson.MustMap()
@@ -274,7 +275,7 @@ func placeOrderOKSwap(order *model.Order, key, secret, orderSide, orderType, sym
 	postData[`size`] = amount
 	postData[`type`] = orderSide
 	postData["order_type"] = orderType
-	postData["instrument_id"] = model.DialectSymbol[model.OKSwap][symbol]
+	postData["instrument_id"] = model.GetDialectSymbol(model.OKSwap, symbol)
 	postData[`price`] = price
 	response := SignedRequestOKSwap(key, secret, `POST`, `/api/swap/v3/order`, postData)
 	util.Notice(`place okswap` + string(response))
@@ -299,7 +300,7 @@ func parseOrderOKSwap(order *model.Order, item map[string]interface{}) {
 		order.OrderId = item[`order_id`].(string)
 	}
 	if item["instrument_id"] != nil {
-		order.Symbol = model.StandardSymbol[model.OKSwap][item["instrument_id"].(string)]
+		order.Symbol = model.GetStandardSymbol(model.OKSwap, item["instrument_id"].(string))
 	}
 	if item[`size`] != nil {
 		order.Amount, _ = strconv.ParseFloat(item[`size`].(string), 64)
@@ -343,7 +344,7 @@ func parseOrderOKSwap(order *model.Order, item map[string]interface{}) {
 
 func queryOrderOKSwap(key, secret, symbol, orderId string) (order *model.Order) {
 	response := SignedRequestOKSwap(key, secret, `GET`,
-		fmt.Sprintf(`/api/swap/v3/orders/%s/%s`, model.DialectSymbol[model.OKSwap][symbol], orderId), nil)
+		fmt.Sprintf(`/api/swap/v3/orders/%s/%s`, model.GetDialectSymbol(model.OKSwap, symbol), orderId), nil)
 	util.Notice(`query order OKSwap: ` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
@@ -356,7 +357,8 @@ func queryOrderOKSwap(key, secret, symbol, orderId string) (order *model.Order) 
 
 func cancelOrderOKSwap(key, secret, symbol, orderId string) (result bool) {
 	response := SignedRequestOKSwap(key, secret, `POST`,
-		fmt.Sprintf(`/api/swap/v3/cancel_order/%s/%s`, model.DialectSymbol[model.OKSwap][symbol], orderId), nil)
+		fmt.Sprintf(`/api/swap/v3/cancel_order/%s/%s`,
+			model.GetDialectSymbol(model.OKSwap, symbol), orderId), nil)
 	orderJson, err := util.NewJSON(response)
 	util.Notice(fmt.Sprintf(`okswap cancel order %s return %s`, orderId, string(response)))
 	result = false
@@ -368,5 +370,58 @@ func cancelOrderOKSwap(key, secret, symbol, orderId string) (result bool) {
 			result = false
 		}
 	}
+	return
+}
+
+func GetWalletOKSwap(key, secret string) (balance map[string]float64) {
+	response := SignedRequestOKSwap(key, secret, `GET`, `/api/swap/v3/accounts`, nil)
+	orderJson, err := util.NewJSON(response)
+	if err == nil {
+		balance = make(map[string]float64)
+		items := orderJson.Get(`info`).MustArray()
+		for _, item := range items {
+			wallet := item.(map[string]interface{})
+			if wallet == nil {
+				continue
+			}
+			if wallet[`instrument_id`] != nil && wallet[`equity`] != nil {
+				symbol := model.GetStandardSymbol(model.OKSwap, wallet[`instrument_id`].(string))
+				balance[symbol], _ =
+					strconv.ParseFloat(wallet[`equity`].(string), 64)
+			}
+		}
+	}
+	return
+}
+
+func parseTransferAmount(response []byte) (info string) {
+	transferJson, err := util.NewJSON(response)
+	if err == nil {
+		items := transferJson.MustArray()
+		for _, item := range items {
+			amount := 0.0
+			jsonAmount := item.(map[string]interface{})[`amount`]
+			if jsonAmount != nil {
+				amount, _ = strconv.ParseFloat(jsonAmount.(string), 64)
+			}
+			jsonTime := item.(map[string]interface{})[`timestamp`]
+			if jsonTime != nil {
+				info += fmt.Sprintf("%s %f\n", jsonTime.(string), amount)
+			}
+		}
+	}
+	return
+}
+
+func GetWalletHistoryOKSwap(key, secret, symbol string) (info string) {
+	postData := make(map[string]interface{})
+	postData[`type`] = `5`
+	symbol = model.GetDialectSymbol(model.OKSwap, symbol)
+	response := SignedRequestOKSwap(key, secret, `GET`,
+		fmt.Sprintf(`/api/swap/v3/accounts/%s/ledger?type=5`, symbol), postData)
+	info = parseTransferAmount(response)
+	response = SignedRequestOKSwap(key, secret, `GET`,
+		fmt.Sprintf(`/api/swap/v3/accounts/%s/ledger?type=6`, symbol), postData)
+	info += parseTransferAmount(response)
 	return
 }

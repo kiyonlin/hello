@@ -76,12 +76,34 @@ func Test_initTurtleN(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	//api.PlaceOrder(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.OrderSideBuy, model.OrderTypeLimit,
-	//	model.Bitmex, `btcusd_p`, ``, ``, model.PostOnly, 10264, 00, false)
+	//rate, ts := api.GetFundingRate(model.Ftx, `btcusd_p`)
+	//fmt.Println(fmt.Sprintf(`%f %d`, rate, ts))
+	//api.RefreshAccount(``, ``, model.Ftx)
+	//api.CreateSubAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
+	order := api.PlaceOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret,
+		model.OrderSideSell, model.OrderTypeLimit,
+		model.Ftx, `xrpusd_p`, ``, ``, ``, 0.235567,
+		1, false)
+	fmt.Println(order.OrderId)
 	//api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap)
 	//api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OrderSideBuy, ``, model.OKSwap,
 	//	`btcusd_p`, ``, ``, ``, 9666, 300, false)
-	api.QueryOrderById(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex, `ethusd_p`,
-		`44202b24-36e5-d07e-bc6d-b717b4f198f1`)
+	//api.QueryOrderById(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex, `ethusd_p`,
+	//	`44202b24-36e5-d07e-bc6d-b717b4f198f1`)
 	//api.CancelOrder(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.OKSwap, `btcusd_p`, `e7a8248a-ac13-fc5f-245c-496ca7a816b0`)
+}
+
+func Test_wallet(t *testing.T) {
+	model.NewConfig()
+	_ = configor.Load(model.AppConfig, "./config.yml")
+	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
+	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
+	api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret)
+	//balance := api.GetWalletOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret)
+	//for symbol, amount := range balance {
+	//	if amount > 0 {
+	//		info := api.GetWalletHistoryOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, symbol)
+	//		fmt.Println(fmt.Sprintf("%s %f\n %s", symbol, amount, info))
+	//	}
+	//}
 }

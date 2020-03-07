@@ -103,7 +103,7 @@ func parseAccount(account *model.Account, item map[string]interface{}) {
 		return
 	}
 	if item[`symbol`] != nil {
-		account.Currency = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
+		account.Currency = model.GetStandardSymbol(model.Bitmex, item[`symbol`].(string))
 	}
 	if item[`currentQty`] != nil {
 		free, err := item[`currentQty`].(json.Number).Float64()
@@ -128,7 +128,7 @@ func parseQuote(item map[string]interface{}) (bid, ask *model.Tick, quoteTime ti
 	bid = &model.Tick{Side: model.OrderSideBuy}
 	ask = &model.Tick{Side: model.OrderSideSell}
 	if item[`symbol`] != nil {
-		symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
+		symbol = model.GetStandardSymbol(model.Bitmex, item[`symbol`].(string))
 		bid.Symbol = symbol
 		ask.Symbol = symbol
 	}
@@ -168,7 +168,7 @@ func parseTick(item map[string]interface{}) (tick *model.Tick) {
 	}
 	tick = &model.Tick{}
 	if item[`symbol`] != nil {
-		tick.Symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
+		tick.Symbol = model.GetStandardSymbol(model.Bitmex, item[`symbol`].(string))
 	}
 	if item[`id`] != nil {
 		id, err := item[`id`].(json.Number).Int64()
@@ -199,7 +199,7 @@ func parseOrderBM(order *model.Order, item map[string]interface{}) {
 		order.OrderId = item[`orderID`].(string)
 	}
 	if item[`symbol`] != nil {
-		order.Symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
+		order.Symbol = model.GetStandardSymbol(model.Bitmex, item[`symbol`].(string))
 	}
 	if item[`side`] != nil {
 		order.OrderSide = strings.ToLower(item[`side`].(string))
@@ -235,7 +235,7 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 	symbol := ``
 	item := data[0].(map[string]interface{})
 	if item[`symbol`] != nil {
-		symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
+		symbol = model.GetStandardSymbol(model.Bitmex, item[`symbol`].(string))
 	}
 	if item[`timestamp`] != nil {
 		tickTime, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
@@ -558,7 +558,7 @@ func handleTrade(markets *model.Markets, action string, data []interface{}) {
 				}
 			}
 			if item[`symbol`] != nil {
-				deal.Symbol = model.StandardSymbol[model.Bitmex][item[`symbol`].(string)]
+				deal.Symbol = model.GetStandardSymbol(model.Bitmex, item[`symbol`].(string))
 			}
 			if item[`side`] != nil {
 				deal.Side = item[`side`].(string)
@@ -641,7 +641,7 @@ func cancelOrderBitmex(key, secret, orderId string) (result bool, errCode, msg s
 func queryOrderBitmex(key, secret, symbol, orderId string) (orders []*model.Order) {
 	orders = make([]*model.Order, 0)
 	postData := make(map[string]interface{})
-	symbol = model.DialectSymbol[model.Bitmex][symbol]
+	symbol = model.GetDialectSymbol(model.Bitmex, symbol)
 	postData[`symbol`] = symbol
 	postData[`reverse`] = `true`
 	postData[`filter`] = fmt.Sprintf(`{"orderID":"%s"}`, orderId)
@@ -680,7 +680,7 @@ func getAccountBitmex(key, secret string, accounts *model.Accounts) {
 
 func placeOrderBitmex(order *model.Order, key, secret, orderSide, orderType, execInst, symbol, price, amount string) {
 	postData := make(map[string]interface{})
-	symbol = model.DialectSymbol[model.Bitmex][symbol]
+	symbol = model.GetDialectSymbol(model.Bitmex, symbol)
 	postData["symbol"] = symbol
 	postData["side"] = strings.ToUpper(orderSide[0:1]) + orderSide[1:]
 	postData["orderQty"] = amount
@@ -712,7 +712,7 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 	candles map[string]*model.Candle) {
 	candles = make(map[string]*model.Candle)
 	postData := make(map[string]interface{})
-	symbolNew := model.DialectSymbol[model.Bitmex][symbol]
+	symbolNew := model.GetDialectSymbol(model.Bitmex, symbol)
 	postData[`symbol`] = symbolNew
 	postData[`reverse`] = `false`
 	postData[`binSize`] = binSize
@@ -773,7 +773,7 @@ func getBtcBalanceBitmex(key, secret string) (balance float64) {
 
 func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 	postData := make(map[string]interface{})
-	symbol = model.DialectSymbol[model.Bitmex][symbol]
+	symbol = model.GetDialectSymbol(model.Bitmex, symbol)
 	postData[`symbol`] = symbol
 	response := SignedRequestBitmex(``, ``, `GET`, `/instrument`, postData)
 	instrumentJson, err := util.NewJSON(response)
@@ -798,7 +798,7 @@ func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 
 func GetOrderBook(key, secret, symbol string) (result bool, bid, ask *model.Tick) {
 	postData := make(map[string]interface{})
-	postData[`symbol`] = model.DialectSymbol[model.Bitmex][symbol]
+	postData[`symbol`] = model.GetDialectSymbol(model.Bitmex, symbol)
 	postData[`depth`] = `1`
 	response := SignedRequestBitmex(key, secret, `GET`, `/orderBook/L2`, postData)
 	bookJson, err := util.NewJSON(response)
@@ -823,4 +823,30 @@ func GetOrderBook(key, secret, symbol string) (result bool, bid, ask *model.Tick
 		result = true
 	}
 	return result, bid, ask
+}
+
+func GetWalletHistoryBitmex(key, secret string) (amount float64, transfer string) {
+	postData := make(map[string]interface{})
+	response := SignedRequestBitmex(key, secret, `GET`, `/user/walletHistory`, postData)
+	walletJson, err := util.NewJSON(response)
+	if err == nil {
+		items := walletJson.MustArray()
+		for _, item := range items {
+			data := item.(map[string]interface{})
+			if data == nil || data[`transactType`] == nil {
+				continue
+			}
+			if data[`transactType`] == `UnrealisedPNL` && amount == 0 {
+				amount, _ = data[`walletBalance`].(json.Number).Float64()
+			}
+			if data[`transactType`] == `Withdrawal` || data[`transactType`] == `Deposit` {
+				temp, _ := data[`amount`].(json.Number).Float64()
+				temp = temp / 100000000
+				transfer += fmt.Sprintf("%s %s %f\n", data[`timestamp`].(string),
+					data[`transactType`], temp)
+			}
+		}
+	}
+	amount = amount / 100000000
+	return
 }

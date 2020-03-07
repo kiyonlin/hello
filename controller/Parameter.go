@@ -7,7 +7,6 @@ import (
 	"hello/carry"
 	"hello/model"
 	"hello/util"
-	"math"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -18,9 +17,6 @@ import (
 //var accessTime = make(map[string]int64)
 var codeGenTime int64
 var code = ``
-var data = make(map[string]interface{})
-var dataUpdateTime *time.Time
-var balances = make(map[string]map[string]map[string][]float64) // time - market - currency - value
 
 func ParameterServe() {
 	router := gin.Default()
@@ -184,106 +180,18 @@ func GetCode(c *gin.Context) {
 	}
 }
 
-func renderOrder() {
-	d, _ := time.ParseDuration("-240h")
-	timeLine := util.GetNow().Add(d)
-	rows, _ := model.AppDB.Table("orders").Select(`symbol, date(created_at), count(id), order_side, 
-		round(sum(deal_amount*deal_price),4), round(sum(deal_amount*deal_price)/sum(deal_amount),8)`).
-		Where(`date(created_at) > ? and function = ?`, timeLine, `grid`).
-		Group(`symbol, date(created_at), order_side`).Having(`sum(deal_amount)>?`, 0).
-		Order(`date(created_at) desc`).Rows()
-	defer rows.Close()
-	orderTimes := make([]string, 0)
-	orders := make(map[string]map[string]map[string][]float64) // date - symbol - orderSide - [count, amount, price]
-	for rows.Next() {
-		var symbol, orderSide string
-		var count, amount, price float64
-		var date time.Time
-		_ = rows.Scan(&symbol, &date, &count, &orderSide, &amount, &price)
-		dateStr := date.Format("01-02")
-		if len(orderTimes) == 0 || orderTimes[len(orderTimes)-1] != dateStr {
-			orderTimes = append(orderTimes, dateStr)
-		}
-		if orders[dateStr] == nil {
-			orders[dateStr] = make(map[string]map[string][]float64)
-		}
-		if orders[dateStr][symbol] == nil {
-			orders[dateStr][symbol] = make(map[string][]float64)
-		}
-		if orders[dateStr][symbol][orderSide] == nil {
-			orders[dateStr][symbol][orderSide] = make([]float64, 3)
-		}
-		orders[dateStr][symbol][orderSide][0] = count
-		currencies := strings.Split(symbol, `_`)
-		if len(currencies) > 0 {
-			priceUsdt, _ := api.GetPrice(``, ``, currencies[1]+`_usdt`)
-			amount = math.Round(priceUsdt * amount)
-			price = math.Round(priceUsdt*price*1000) / 1000
-		}
-		orders[dateStr][symbol][orderSide][1] = amount
-		orders[dateStr][symbol][orderSide][2] = price
-	}
-	data[`orders`] = orders
-	data[`orderTimes`] = orderTimes
-}
-
-func renderBalance() {
-	d, _ := time.ParseDuration("-240h")
-	timeLine := util.GetNow().Add(d)
-	rows, _ := model.AppDB.Table("accounts").Select(`timestamp, market, currency, round(price_in_usdt,2),
-		round(free*price_in_usdt, 0),round(frozen*price_in_usdt,0)`).Where(`timestamp > ?`, timeLine).
-		Order(`timestamp desc`).Rows()
-	defer rows.Close()
-	times := make([]string, 0)
-	inAlls := make(map[string]float64)
-	for rows.Next() {
-		var date time.Time
-		var market, currency string
-		var price, free, froze float64
-		_ = rows.Scan(&date, &market, &currency, &price, &free, &froze)
-		if dataUpdateTime == nil || dataUpdateTime.Before(date) {
-			dataUpdateTime = &date
-		}
-		if free < 5 && froze < 5 {
-			continue
-		}
-		dateStr := date.Format("01-02 15:04")
-		if len(times) == 0 || times[len(times)-1] != dateStr {
-			times = append(times, dateStr)
-		}
-		if balances[dateStr] == nil {
-			balances[dateStr] = make(map[string]map[string][]float64)
-		}
-		if balances[dateStr][market] == nil {
-			balances[dateStr][market] = make(map[string][]float64)
-		}
-		if balances[dateStr][market][currency] == nil {
-			balances[dateStr][market][currency] = make([]float64, 4)
-		}
-		balances[dateStr][market][currency][0] = free
-		balances[dateStr][market][currency][1] = froze
-		balances[dateStr][market][currency][2] = price
-		inAlls[dateStr] += free + froze
-		for key := range balances[dateStr][market] {
-			balances[dateStr][market][key][3] = math.Round(
-				(balances[dateStr][market][key][0] + balances[dateStr][market][key][1]) / inAlls[dateStr] * 100)
-		}
-	}
-	data[`times`] = times
-	data[`balances`] = balances
-	data[`inAlls`] = inAlls
-}
-
 func GetBalance(c *gin.Context) {
-	d, _ := time.ParseDuration("1h")
-	timeLine := util.GetNow().Add(d)
-	if dataUpdateTime != nil && timeLine.Before(*dataUpdateTime) {
-		c.HTML(http.StatusOK, "balance.html", data)
-		return
+	amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
+	msg := fmt.Sprintf("%f \n%s", amount, transfer)
+	balance := api.GetWalletOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret)
+	for symbol, amount := range balance {
+		if amount > 0 {
+			info := api.GetWalletHistoryOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, symbol)
+			msg += fmt.Sprintf("\n%s %f\n %s", symbol, amount, info)
+		}
 	}
-	renderBalance()
-	renderOrder()
-	c.HTML(http.StatusOK, "balance.html", data)
+	msg += api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret)
+	c.String(http.StatusOK, msg)
 }
 
 func GetParameters(c *gin.Context) {

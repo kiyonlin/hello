@@ -77,7 +77,7 @@ func WsDepthServeBybit(markets *model.Markets, errHandler ErrHandler) (chan stru
 		}
 		if strings.Contains(topic, `orderBookL2_25.`) {
 			//util.SocketInfo(string(event))
-			symbol := model.StandardSymbol[model.Bybit][topic[strings.LastIndex(topic, `.`)+1:]]
+			symbol := model.GetStandardSymbol(model.Bybit, topic[strings.LastIndex(topic, `.`)+1:])
 			handleOrderBookBybit(markets, symbol, ts, depthJson)
 		} else if topic == `position` {
 			handleAccountBybit(depthJson.Get(`data`))
@@ -94,7 +94,7 @@ func parseTickBybit(item map[string]interface{}) (tick *model.Tick) {
 	}
 	tick = &model.Tick{}
 	if item[`symbol`] != nil {
-		tick.Symbol = model.StandardSymbol[model.Bybit][item[`symbol`].(string)]
+		tick.Symbol = model.GetStandardSymbol(model.Bybit, item[`symbol`].(string))
 	}
 	if item[`id`] != nil {
 		id, err := item[`id`].(json.Number).Int64()
@@ -221,7 +221,7 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 
 func parseAccountBybit(account *model.Account, item map[string]interface{}) {
 	if item[`symbol`] != nil {
-		account.Currency = model.StandardSymbol[model.Bybit][item[`symbol`].(string)]
+		account.Currency = model.GetStandardSymbol(model.Bybit, item[`symbol`].(string))
 	}
 	if item[`size`] != nil && item[`side`] != nil {
 		account.Direction = strings.ToLower(item[`side`].(string))
@@ -305,7 +305,7 @@ func SignedRequestBybit(key, secret, method, path string, body map[string]interf
 func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode, msg string, order *model.Order) {
 	postData := make(map[string]interface{})
 	postData[`order_id`] = orderId
-	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
+	postData[`symbol`] = model.GetDialectSymbol(model.Bybit, symbol)
 	response := SignedRequestBybit(key, secret, `POST`, `/v2/private/order/cancel`, postData)
 	orderJson, err := util.NewJSON(response)
 	result = false
@@ -331,8 +331,8 @@ func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode
 func queryOrderBybit(key, secret, symbol, orderId string) (orders []*model.Order) {
 	orders = make([]*model.Order, 0)
 	postData := make(map[string]interface{})
-	symbol = model.DialectSymbol[model.Bybit][symbol]
-	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
+	symbol = model.GetDialectSymbol(model.Bybit, symbol)
+	postData[`symbol`] = model.GetDialectSymbol(model.Bybit, symbol)
 	postData[`order_id`] = orderId
 	response := SignedRequestBybit(key, secret, `GET`, `/open-api/order/list`, postData)
 	util.Notice(`query orders: ` + string(response))
@@ -356,7 +356,7 @@ func queryOrderBybit(key, secret, symbol, orderId string) (orders []*model.Order
 
 func getAccountBybit(key, secret, symbol string, accounts *model.Accounts) {
 	postData := make(map[string]interface{})
-	postData[`symbol`] = model.DialectSymbol[model.Bybit][symbol]
+	postData[`symbol`] = model.GetDialectSymbol(model.Bybit, symbol)
 	response := SignedRequestBybit(key, secret, `GET`, `/v2/private/position/list`, postData)
 	util.Notice(fmt.Sprintf(string(response)))
 	positionJson, err := util.NewJSON(response)
@@ -375,7 +375,7 @@ func getAccountBybit(key, secret, symbol string, accounts *model.Accounts) {
 func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, timeInForce, symbol, price,
 	amount string) {
 	postData := make(map[string]interface{})
-	symbol = model.DialectSymbol[model.Bybit][symbol]
+	symbol = model.GetDialectSymbol(model.Bybit, symbol)
 	postData["side"] = strings.ToUpper(orderSide[0:1]) + orderSide[1:]
 	postData["order_type"] = strings.ToUpper(orderType[0:1]) + orderType[1:]
 	if orderType != model.OrderTypeMarket && orderType != model.OrderTypeStop {
@@ -404,7 +404,7 @@ func placeOrderBybit(order *model.Order, key, secret, orderSide, orderType, time
 
 func getFundingRateBybit(symbol string) (fundingRate float64, expire int64) {
 	postData := make(map[string]interface{})
-	symbol = model.DialectSymbol[model.Bybit][symbol]
+	symbol = model.GetDialectSymbol(model.Bybit, symbol)
 	postData[`symbol`] = symbol
 	response := SignedRequestBybit(``, ``, `GET`,
 		`/open-api/funding/prev-funding-rate`, postData)
@@ -439,7 +439,7 @@ func parseOrderBybit(order *model.Order, item map[string]interface{}) {
 		order.OrderId = item[`order_id`].(string)
 	}
 	if item[`symbol`] != nil {
-		order.Symbol = model.StandardSymbol[model.Bybit][item[`symbol`].(string)]
+		order.Symbol = model.GetStandardSymbol(model.Bybit, item[`symbol`].(string))
 	}
 	if item[`side`] != nil {
 		order.OrderSide = strings.ToLower(item[`side`].(string))
@@ -478,4 +478,32 @@ func parseOrderBybit(order *model.Order, item map[string]interface{}) {
 		order.DealPrice = order.Price
 	}
 	return
+}
+
+func GetWalletBybit(key, secret string) (msg string) {
+	postData := make(map[string]interface{})
+	postData[`coin`] = `BTC`
+	response := SignedRequestBybit(key, secret, `GET`,
+		`/v2/private/wallet/balance`, postData)
+	return string(response)
+	//instrumentJson, err := util.NewJSON(response)
+	//if err == nil {
+	//	retCode := instrumentJson.Get(`ret_code`).MustFloat64()
+	//	if retCode != 0 {
+	//		return 0, 0
+	//	}
+	//	instrumentJson = instrumentJson.Get(`result`)
+	//	if instrumentJson != nil {
+	//		instrument, _ := instrumentJson.Map()
+	//		if instrument == nil {
+	//			return 0, 0
+	//		}
+	//		if instrument[`symbol`] != nil && instrument[`symbol`] == symbol &&
+	//			instrument[`funding_rate`] != nil && instrument[`funding_rate_timestamp`] != nil {
+	//			fundingRate, _ = strconv.ParseFloat(instrument[`funding_rate`].(string), 64)
+	//			expire, _ = instrument[`funding_rate_timestamp`].(json.Number).Int64()
+	//			expire += 28800
+	//		}
+	//	}
+	//}
 }

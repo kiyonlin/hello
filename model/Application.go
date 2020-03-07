@@ -36,6 +36,7 @@ const Huobi = "huobi"
 const Binance = "binance"
 const Fcoin = "fcoin"
 const Fmex = `fmex`
+const Ftx = `ftx`
 const Coinbig = "coinbig"
 const Coinpark = "coinpark"
 const Btcdo = `btcdo`
@@ -110,6 +111,8 @@ type Config struct {
 	HuobiSecret     string
 	OkexKey         string
 	OkexSecret      string
+	FtxKey          string
+	FtxSecret       string
 	BinanceKey      string
 	BinanceSecret   string
 	CoinbigKey      string
@@ -133,35 +136,44 @@ type Config struct {
 	UpdatePriceTime map[string]int64   // symbol -time
 }
 
-var DialectSymbol = map[string]map[string]string{ // market - standard symbol - dialect symbol
-	Bitmex: {
-		`btcusd_p`: `XBTUSD`,
-		`ethusd_p`: `ETHUSD`,
-	},
-	Bybit: {
-		`btcusd_p`: `BTCUSD`,
-		`ethusd_p`: `ETHUSD`,
-	},
-	OKSwap: {
-		`btcusd_p`: `BTC-USD-SWAP`,
-		`ethusd_p`: `ETH-USD-SWAP`,
-	},
+func GetDialectSymbol(market, symbol string) (dialectSymbol string) {
+	switch market {
+	case Bitmex:
+		symbol = strings.Replace(symbol, `btc`, `xbt`, -1)
+		return strings.ToUpper(strings.Split(symbol, `_`)[0])
+	case Bybit:
+		return strings.ToUpper(strings.Split(symbol, `_`)[0])
+	case OKSwap:
+		if strings.Contains(symbol, `usd_p`) {
+			return strings.ToUpper(strings.Split(symbol, `usd`)[0]) + `-USD-SWAP`
+		} else if strings.Contains(symbol, `usdt_p`) {
+			return strings.ToUpper(strings.Split(symbol, `usdt`)[0]) + `-USDT-SWAP`
+		}
+	case Ftx:
+		return strings.ToUpper(strings.Split(symbol, `usd`)[0]) + `-PERP`
+	}
+	return ``
 }
 
-var StandardSymbol = map[string]map[string]string{ // market - dialect symbol - standard symbol
-	Bitmex: {
-		`XBTUSD`: `btcusd_p`,
-		`ETHUSD`: `ethusd_p`,
-	},
-	Bybit: {
-		`BTCUSD`: `btcusd_p`,
-		`ETHUSD`: `ethusd_p`,
-	},
-	OKSwap: {
-		`BTC-USD-SWAP`: `btcusd_p`,
-		`ETH-USD-SWAP`: `ethusd_p`,
-	},
+func GetStandardSymbol(market, symbol string) (standardSymbol string) {
+	symbol = strings.ToLower(symbol)
+	switch market {
+	case Bitmex:
+		return strings.Replace(symbol, `xbt`, `btc`, -1) + `_p`
+	case Bybit:
+		return symbol + `_p`
+	case OKSwap:
+		if strings.Contains(symbol, `-usd-swap`) {
+			return strings.Split(symbol, `-usd`)[0] + `usd_p`
+		} else if strings.Contains(symbol, `-usdt-swap`) {
+			return strings.Split(symbol, `-usd`)[0] + `usdt_p`
+		}
+	case Ftx:
+		return strings.Split(symbol, `-`)[0] + `usd_p`
+	}
+	return standardSymbol
 }
+
 var dictMap = map[string]map[string]string{ // market - union name - market name
 	Fcoin: {
 		OrderTypeLimit:  `limit`,
@@ -272,6 +284,13 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 		`2`:  CarryStatusSuccess, // 完全成交
 		`3`:  CarryStatusWorking, // 下单中
 		`4`:  CarryStatusWorking, // 撤单中
+	},
+	Ftx: {
+		`new`:       CarryStatusWorking,
+		`open`:      CarryStatusWorking,
+		`closed`:    CarryStatusSuccess,
+		`cancelled`: CarryStatusFail,
+		`triggered`: CarryStatusSuccess,
 	},
 }
 
@@ -407,7 +426,7 @@ func GetOrderStatus(market, marketStatus string) (status string) {
 func GetWSSubscribePos(market, symbol string) (subscribe interface{}) {
 	switch market {
 	case OKSwap:
-		return `swap/position:` + DialectSymbol[market][symbol]
+		return `swap/position:` + GetDialectSymbol(market, symbol)
 	}
 	return ``
 }
@@ -453,15 +472,15 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
 		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
 	case OKSwap:
-		return `swap/depth5:` + DialectSymbol[OKSwap][symbol]
+		return `swap/depth5:` + GetDialectSymbol(OKSwap, symbol)
 	case Bitmex:
 		if subType == SubscribeDeal {
-			return `trade:` + DialectSymbol[Bitmex][symbol]
+			return `trade:` + GetDialectSymbol(Bitmex, symbol)
 		} else if subType == SubscribeDepth {
 			//return `quote:` + DialectSymbol[Bitmex][symbol]
 			//return `orderBookL2:` + DialectSymbol[Bitmex][symbol]
 			//return `orderBookL2_25:` + DialectSymbol[Bitmex][symbol]
-			return `orderBook10:` + DialectSymbol[Bitmex][symbol]
+			return `orderBook10:` + GetDialectSymbol(Bitmex, symbol)
 		}
 		return ``
 	case Bybit:
@@ -472,6 +491,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 			//return `orderBook_200.100ms.` + subSymbol
 			return `orderBookL2_25.` + subSymbol
 		}
+	case Ftx:
+		return []string{`orderbook`, GetDialectSymbol(Ftx, symbol)}
 	case Coinbig:
 		switch symbol {
 		case `btc_usdt`:
@@ -559,6 +580,7 @@ func NewConfig() {
 	AppConfig.WSUrls[OKFUTURE] = `wss://real.okex.com:10440/websocket?compress=true`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
+	AppConfig.WSUrls[Ftx] = `wss://ftx.com/ws`
 	if AppConfig.Env == `test` {
 		//AppConfig.WSUrls[Fmex] = `wss://api.testnet.fmex.com/v2/ws`
 		//AppConfig.RestUrls[Fmex] = `https://api.testnet.fmex.com/`
@@ -594,6 +616,7 @@ func NewConfig() {
 	AppConfig.RestUrls[Btcdo] = `https://api.btcdo.com`
 	//AppConfig.RestUrls[Bitmex] = `https://testnet.bitmex.com`
 	AppConfig.RestUrls[Bitmex] = `https://www.bitmex.com/api/v1`
+	AppConfig.RestUrls[Ftx] = `https://ftx.com/api`
 	AppConfig.SymbolPrice = make(map[string]float64)
 	AppConfig.UpdatePriceTime = make(map[string]int64)
 }
@@ -653,9 +676,6 @@ func GetWSSubscribes(market, subType string) []interface{} {
 	}
 	if market == Bitmex {
 		subscribes = append(subscribes, `order`)
-	}
-	if AppConfig.Env == "test" {
-		subscribes = append(subscribes, `orderBookL2_25:`+DialectSymbol[Bitmex]["btcusd_p"])
 	}
 	return subscribes
 }
