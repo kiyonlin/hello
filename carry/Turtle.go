@@ -221,7 +221,7 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 func updateTurtleSetting(market, symbol string, turtleData *TurtleData, setting *model.Setting) {
 	time.Sleep(time.Second * 3)
 	if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
-		order := api.MustQuery(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderShort.OrderId)
+		order := api.MustQuery(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderLong.OrderId)
 		if api.IsValid(order) && order.Status == model.CarryStatusSuccess {
 			setting.PriceX = order.DealPrice
 		}
