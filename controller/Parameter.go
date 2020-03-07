@@ -263,8 +263,8 @@ func GetParameters(c *gin.Context) {
 		}
 		rows.Close()
 	}
-	msg += model.AppMetric.ToString()
-	//msg += model.AppConfig.ToString()
+	msg += model.AppMetric.ToString() + "\n"
+	msg += model.AppConfig.ToString()
 	c.String(http.StatusOK, msg)
 }
 
