@@ -187,7 +187,7 @@ func GetBalance(c *gin.Context) {
 	for symbol, amount := range balance {
 		if amount > 0 {
 			info := api.GetWalletHistoryOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, symbol)
-			msg = fmt.Sprintf("%s\n[okswap] %s %f\n %s", msg, symbol, amount, info)
+			msg = fmt.Sprintf("%s\n[okswap] %s %f\n%s", msg, symbol, amount, info)
 		}
 	}
 	amountBybit, msgBybit := api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret)
