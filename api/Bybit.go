@@ -480,30 +480,28 @@ func parseOrderBybit(order *model.Order, item map[string]interface{}) {
 	return
 }
 
-func GetWalletBybit(key, secret string) (msg string) {
+func GetWalletBybit(key, secret string) (balance float64, msg string) {
 	postData := make(map[string]interface{})
 	postData[`limit`] = `50`
 	response := SignedRequestBybit(key, secret, `GET`,
 		`/open-api/wallet/fund/records`, postData)
-	return string(response)
-	//instrumentJson, err := util.NewJSON(response)
-	//if err == nil {
-	//	retCode := instrumentJson.Get(`ret_code`).MustFloat64()
-	//	if retCode != 0 {
-	//		return 0, 0
-	//	}
-	//	instrumentJson = instrumentJson.Get(`result`)
-	//	if instrumentJson != nil {
-	//		instrument, _ := instrumentJson.Map()
-	//		if instrument == nil {
-	//			return 0, 0
-	//		}
-	//		if instrument[`symbol`] != nil && instrument[`symbol`] == symbol &&
-	//			instrument[`funding_rate`] != nil && instrument[`funding_rate_timestamp`] != nil {
-	//			fundingRate, _ = strconv.ParseFloat(instrument[`funding_rate`].(string), 64)
-	//			expire, _ = instrument[`funding_rate_timestamp`].(json.Number).Int64()
-	//			expire += 28800
-	//		}
-	//	}
-	//}
+	dataJson, err := util.NewJSON(response)
+	if err == nil {
+		data := dataJson.GetPath(`result`, `data`).MustArray()
+		for _, item := range data {
+			itemMap := item.(map[string]interface{})
+			itemType := itemMap[`type`]
+			if itemType == nil {
+				continue
+			}
+			if balance == 0 && itemMap[`wallet_balance`] != nil {
+				balance, _ = strconv.ParseFloat(itemMap[`wallet_balance`].(string), 64)
+			}
+			if itemType == `Withdraw` || itemType == `Deposit` {
+				amount, _ := strconv.ParseFloat(itemMap[`amount`].(string), 64)
+				msg += fmt.Sprintf("%s %s %f\n", itemMap[`exec_time`], itemType, amount)
+			}
+		}
+	}
+	return
 }
