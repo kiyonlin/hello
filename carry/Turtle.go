@@ -122,13 +122,13 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 		return
 	}
 	currentN := model.GetCurrentN(model.FunctionTurtle)
-	if currentN == float64(model.AppConfig.TurtleLimitMain) && turtleData.orderLong != nil {
+	if currentN >= float64(model.AppConfig.TurtleLimitMain) && turtleData.orderLong != nil {
 		if api.IsValid(turtleData.orderLong) {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderLong.OrderId, true)
 		}
 		turtleData.orderLong = nil
 		return
-	} else if currentN == -1*float64(model.AppConfig.TurtleLimitMain) && turtleData.orderShort != nil {
+	} else if currentN <= -1*float64(model.AppConfig.TurtleLimitMain) && turtleData.orderShort != nil {
 		if api.IsValid(turtleData.orderShort) {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderShort.OrderId, true)
 		}
@@ -220,6 +220,10 @@ var ProcessTurtle = func(market, symbol string, function interface{}) {
 
 func updateTurtleSetting(market, symbol string, turtleData *TurtleData, setting *model.Setting) {
 	time.Sleep(time.Second * 3)
+	updateSetting := true
+	if (setting.Chance > 0 && (turtleData.orderLong == nil || turtleData.orderLong.OrderId == ``)) || (setting.Chance < 0 && (turtleData.orderShort == nil || turtleData.orderShort.OrderId == ``)) {
+		updateSetting = false
+	}
 	if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
 		order := api.MustQuery(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderLong.OrderId)
 		if api.IsValid(order) && order.Status == model.CarryStatusSuccess {
@@ -238,16 +242,18 @@ func updateTurtleSetting(market, symbol string, turtleData *TurtleData, setting 
 	}
 	turtleData.orderLong = nil
 	turtleData.orderShort = nil
-	setting.UpdatedAt = util.GetNow()
-	model.SetSetting(model.FunctionTurtle, market, symbol, setting)
-	model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-		market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-		`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+	if updateSetting {
+		setting.UpdatedAt = util.GetNow()
+		model.SetSetting(model.FunctionTurtle, market, symbol, setting)
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+			`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+	}
 }
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64) {
-	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
+	if turtleData.orderLong == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
 		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeStop, market,
@@ -258,7 +264,7 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			turtleData.orderLong = order
 		}
 	}
-	if turtleData.orderShort == nil && currentN > -1*float64(model.AppConfig.TurtleLimitMain) {
+	if turtleData.orderShort == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
 		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideSell, model.OrderTypeStop,
