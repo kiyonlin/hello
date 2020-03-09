@@ -253,7 +253,7 @@ func updateTurtleSetting(market, symbol string, turtleData *TurtleData, setting 
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64) {
-	if turtleData.orderLong == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
+	if turtleData.orderLong == nil && currentN < float64(model.AppConfig.TurtleLimitMain) {
 		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeStop, market,
@@ -264,7 +264,7 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			turtleData.orderLong = order
 		}
 	}
-	if turtleData.orderShort == nil && math.Abs(currentN) < float64(model.AppConfig.TurtleLimitMain) {
+	if turtleData.orderShort == nil && currentN > -1*float64(model.AppConfig.TurtleLimitMain) {
 		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideSell, model.OrderTypeStop,
