@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"hello/util"
+	"strings"
 	"time"
 )
 
@@ -73,6 +74,8 @@ func LoadSettings() {
 	AppSettings = []Setting{}
 	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
 	marketSymbolSetting = make(map[string]map[string]map[string][]*Setting)
+	//binanceSettings := make(map[string]*Setting)
+	relatedSettings := make(map[string]*Setting)
 	handlers = make(map[string]map[string]map[string]CarryHandler)
 	for i := range AppSettings {
 		market := AppSettings[i].Market
@@ -87,8 +90,12 @@ func LoadSettings() {
 		if marketSymbolSetting[function][market][symbol] == nil {
 			marketSymbolSetting[function][market][symbol] = make([]*Setting, 0)
 		}
-		marketSymbolSetting[function][market][symbol] = append(marketSymbolSetting[function][market][symbol],
-			&AppSettings[i])
+		if AppSettings[i].MarketRelated != `` {
+			marketsRelated := strings.Split(AppSettings[i].MarketRelated, `,`)
+			for _, value := range marketsRelated {
+				AppSettings = append(AppSettings, Setting{Market: value, Symbol: AppSettings[i].Symbol, Valid: true})
+			}
+		}
 		if handlers[market] == nil {
 			handlers[market] = make(map[string]map[string]CarryHandler)
 		}
@@ -101,6 +108,9 @@ func LoadSettings() {
 			handlers[market][symbol][fmt.Sprintf(`%s_%d`, function, util.GetNow().UnixNano())] =
 				HandlerMap[function]
 		}
+	}
+	for _, setting := range relatedSettings {
+		AppSettings = append(AppSettings, *setting)
 	}
 }
 

@@ -94,18 +94,17 @@ func Test_RefreshAccount(t *testing.T) {
 }
 
 func Test_wallet(t *testing.T) {
-	a := 4.6
-	fmt.Println(int64(a))
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
-	fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
-	fmt.Println(api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret))
-	balance := api.GetWalletOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret)
-	for symbol, amount := range balance {
-		if amount > 0 {
-			info := api.GetWalletHistoryOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, symbol)
-			fmt.Println(fmt.Sprintf("%s %f\n %s", symbol, amount, info))
-		}
-	}
+	api.RefreshAccount(``, ``, model.OKSwap)
+	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
+	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
+	//fmt.Println(api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret))
+	//balance := api.GetWalletOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret)
+	//for symbol, amount := range balance {
+	//	if amount > 0 {
+	//		info := api.GetWalletHistoryOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, symbol)
+	//		fmt.Println(fmt.Sprintf("%s %f\n %s", symbol, amount, info))
+	//	}
+	//}
 }
