@@ -90,6 +90,8 @@ func LoadSettings() {
 		if marketSymbolSetting[function][market][symbol] == nil {
 			marketSymbolSetting[function][market][symbol] = make([]*Setting, 0)
 		}
+		marketSymbolSetting[function][market][symbol] = append(marketSymbolSetting[function][market][symbol],
+			&AppSettings[i])
 		if AppSettings[i].MarketRelated != `` {
 			marketsRelated := strings.Split(AppSettings[i].MarketRelated, `,`)
 			for _, value := range marketsRelated {
