@@ -13,72 +13,10 @@ import (
 )
 
 var accountServing = false
-var lastAmountIndex = 0
 
 var WSErrHandler = func(err error) {
 	print(err)
 	util.SocketInfo(`get error ` + err.Error())
-}
-
-//func CheckPastRefresh() {
-func _() {
-	start := fmt.Sprintf(`-%ds`, model.AppConfig.RefreshTimeSlot)
-	d, _ := time.ParseDuration(start)
-	for true {
-		now := util.GetNow()
-		begin := now.Add(d)
-		begin = time.Date(begin.Year(), begin.Month(), begin.Day(), begin.Hour(), begin.Minute(), 0, 0,
-			begin.Location())
-		end := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0,
-			now.Location())
-		slotNum := int((now.Hour()*3600 + now.Minute()*60 + now.Second()) / model.AppConfig.RefreshTimeSlot)
-		if lastAmountIndex != slotNum {
-			lastAmountIndex = slotNum
-			markets := model.GetMarkets()
-			for _, market := range markets {
-				symbols := model.GetMarketSymbols(market)
-				for symbol := range symbols {
-					beginStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d`,
-						begin.Year(), begin.Month(), begin.Day(), begin.Hour(), begin.Minute(), begin.Second())
-					endStr := fmt.Sprintf(`%d-%d-%d %d:%d:%d`,
-						end.Year(), end.Month(), end.Day(), end.Hour(), end.Minute(), end.Second())
-					util.SocketInfo(fmt.Sprintf(`to check amount %s %s %s ~ %s`, market, symbol, beginStr, endStr))
-					rows, err := model.AppDB.Table(`orders`).Select(`sum(price*amount)`).
-						Where(`market=? and symbol=? and function=? and order_time>? and order_time<?`,
-							market, symbol, model.FunctionRefresh, beginStr, endStr).Rows()
-					if err == nil {
-						if rows.Next() {
-							var amount float64
-							_ = rows.Scan(&amount)
-							setting := model.GetSetting(model.FunctionRefresh, market, symbol)
-							if setting != nil {
-								util.SocketInfo(fmt.Sprintf(`check amount %s %s %f %f`, market, symbol,
-									amount, setting.AmountLimit))
-								if setting.AmountLimit > amount {
-									body := fmt.Sprintf(`[%s~%s]%s %s amount:%f < limit%f`,
-										beginStr, endStr, market, symbol, amount, setting.AmountLimit)
-									err := util.SendMail(model.AppConfig.Mail,
-										fmt.Sprintf(`[refresh]%s %f`, symbol, amount), body)
-									if err != nil {
-										util.SocketInfo(fmt.Sprintf(`%s %s发送失败`, market, symbol))
-									}
-								} else {
-									util.SocketInfo(fmt.Sprintf(`[refresh enough]%s %s %f > limit %f`,
-										market, symbol, amount, setting.AmountLimit))
-								}
-							}
-						}
-					} else {
-						util.SocketInfo(`can not get amount from db ` + err.Error())
-					}
-					if rows != nil {
-						rows.Close()
-					}
-				}
-			}
-		}
-		time.Sleep(time.Minute * 9)
-	}
 }
 
 func AccountHandlerServe() {

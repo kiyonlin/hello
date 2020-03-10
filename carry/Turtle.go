@@ -245,7 +245,6 @@ func updateTurtleSetting(market, symbol string, turtleData *TurtleData, setting 
 	turtleData.orderLong = nil
 	turtleData.orderShort = nil
 	setting.UpdatedAt = util.GetNow()
-	model.SetSetting(model.FunctionTurtle, market, symbol, setting)
 	model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 		market, symbol, model.FunctionTurtle).Updates(map[string]interface{}{
 		`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
@@ -257,10 +256,8 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeStop, market,
-			symbol, ``, setting.AccountType, ``, priceLong, amountLong, false)
+			symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
-			order.RefreshType = model.FunctionTurtle
-			go model.AppDB.Save(&order)
 			turtleData.orderLong = order
 		}
 	}
@@ -268,10 +265,9 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %d`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, model.AppConfig.TurtleLimitMain))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideSell, model.OrderTypeStop,
-			market, symbol, ``, setting.AccountType, ``, priceShort, amountShort, false)
+			market, symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
+			amountShort, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
-			order.RefreshType = model.FunctionTurtle
-			go model.AppDB.Save(&order)
 			turtleData.orderShort = order
 		}
 	}

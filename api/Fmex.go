@@ -103,8 +103,10 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 				if markets.SetBidAsk(symbol, model.Fmex, &bidAsk) {
 					for function, handler := range model.GetFunctions(model.Fmex, symbol) {
 						if handler != nil {
-							setting := model.GetSetting(function, model.Fmex, symbol)
-							go handler(setting)
+							settings := model.GetSetting(function, model.Fmex, symbol)
+							for _, setting := range settings {
+								go handler(setting)
+							}
 						}
 					}
 				}

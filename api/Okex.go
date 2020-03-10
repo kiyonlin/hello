@@ -84,8 +84,10 @@ func WsDepthServeOkex(markets *model.Markets, errHandler ErrHandler) (chan struc
 					bidAsk.Ts = message.Data.Timestamp
 					if markets.SetBidAsk(symbol, model.OKEX, &bidAsk) {
 						for function, handler := range model.GetFunctions(model.OKEX, symbol) {
-							setting := model.GetSetting(function, model.OKEX, symbol)
-							go handler(setting)
+							settings := model.GetSetting(function, model.OKEX, symbol)
+							for _, setting := range settings {
+								go handler(setting)
+							}
 						}
 					}
 				}

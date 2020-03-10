@@ -82,7 +82,7 @@ func Test_RefreshAccount(t *testing.T) {
 	//api.CreateSubAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
 	order := api.PlaceOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret,
 		model.OrderSideSell, model.OrderTypeLimit,
-		model.Ftx, `xrpusd_p`, ``, ``, ``, 0.235567,
+		model.Ftx, `xrpusd_p`, ``, ``, ``, ``, 0.235567,
 		1, false)
 	fmt.Println(order.OrderId)
 	//api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap)

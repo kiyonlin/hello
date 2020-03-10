@@ -582,8 +582,8 @@ func IsValid(order *model.Order) (valid bool) {
 	return true
 }
 
-func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam string,
-	price, amount float64, saveDB bool, channel chan model.Order, retry int) {
+func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam,
+	refreshType string, price, amount float64, saveDB bool, channel chan model.Order, retry int) {
 	var order *model.Order
 	i := 0
 	forever := false
@@ -591,8 +591,8 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 		forever = true
 	}
 	for ; i < retry || forever; i++ {
-		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam, price,
-			amount, saveDB)
+		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam,
+			refreshType, price, amount, saveDB)
 		if order != nil && order.OrderId != `` {
 			break
 		} else {
@@ -616,8 +616,8 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam string,
-	price, amount float64, saveDB bool) (order *model.Order) {
+func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam,
+	refreshType string, price, amount float64, saveDB bool) (order *model.Order) {
 	start := util.GetNowUnixMillion()
 	if amount < 0.0001 {
 		util.Notice(`can not place order with amount 0`)
@@ -726,6 +726,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	util.Notice(fmt.Sprintf(`...%s %s %s return order at %d distance %d`,
 		orderSide, market, symbol, end, end-start))
 	if saveDB {
+		order.RefreshType = refreshType
 		go model.AppDB.Save(&order)
 	}
 	return

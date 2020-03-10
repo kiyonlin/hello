@@ -197,39 +197,38 @@ func GetBalance(c *gin.Context) {
 
 func GetParameters(c *gin.Context) {
 	msg := ``
-	now := util.GetNow()
 	var orders model.Order
 	d, _ := time.ParseDuration("-72h")
 	day := util.GetNow().Add(d)
 	dayStr := fmt.Sprintf(`%d-%d-%d`, day.Year(), day.Month(), day.Day())
 	earnRows, _ := model.AppDB.Model(&orders).
-		Select(`date(order_time at time zone 'CCT'), order_side, symbol, sum(deal_amount),
-			sum(deal_amount/deal_price), sum(fee),sum(deal_amount)/sum(deal_amount/deal_price)`).
+		Select(`refresh_type, date(order_time at time zone 'CCT'), order_side, symbol, sum(deal_amount),
+			sum(deal_amount/deal_price),sum(deal_amount)/sum(deal_amount/deal_price)`).
 		Where(`deal_amount>? and order_time at time zone 'CCT'>?`, 0, dayStr).
-		Group(`order_side, date(order_time at time zone 'CCT') , symbol`).
+		Group(`refresh_type, order_side, date(order_time at time zone 'CCT') , symbol`).
 		Order(`date(order_time at time zone 'CCT') desc`).Rows()
 	if earnRows != nil {
 		for earnRows.Next() {
-			var date, orderSide, symbol, dealAmount, coinAmount, fee, price string
-			_ = earnRows.Scan(&date, &orderSide, &symbol, &dealAmount, &coinAmount, &fee, &price)
-			msg += fmt.Sprintf("[实际收支%s]%s %s合约数:%s 代币数:%s 均价:%s 支出手续费:%s\n",
-				orderSide, date, symbol, dealAmount, coinAmount, price, fee)
+			var refreshType, date, orderSide, symbol, dealAmount, coinAmount, price string
+			_ = earnRows.Scan(&refreshType, &date, &orderSide, &symbol, &dealAmount, &coinAmount, &price)
+			msg += fmt.Sprintf("[%s实际收支%s]%s %s合约数:%s 代币数:%s 均价:%s \n",
+				refreshType, orderSide, date, symbol, dealAmount, coinAmount, price)
 		}
 		earnRows.Close()
 	}
-	today := fmt.Sprintf(`%d-%d-%d`, now.Year(), now.Month(), now.Day())
-	orderRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,sum(deal_amount),count(id),
-		round(sum(deal_amount)/sum(deal_amount/deal_price),1),sum(deal_amount/deal_price),sum(fee)`).Where(`
-		deal_amount>? and date(order_time at time zone 'CCT')=?`, 0, today).Group(`market,symbol,order_side`).Rows()
-	if orderRows != nil {
-		for orderRows.Next() {
-			var market, symbol, orderSide, dealAmount, dealPrice, count, coinAmount, fee string
-			_ = orderRows.Scan(&market, &symbol, &orderSide, &dealAmount, &count, &dealPrice, &coinAmount, &fee)
-			msg += fmt.Sprintf("[%s成交状况]%s %s %s 成交数量:%s 次数:%s 均价:%s coin数量:%s fee:%s\n",
-				today, market, symbol, orderSide, dealAmount, count, dealPrice, coinAmount, fee)
-		}
-		orderRows.Close()
-	}
+	//today := fmt.Sprintf(`%d-%d-%d`, now.Year(), now.Month(), now.Day())
+	//orderRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,sum(deal_amount),count(id),
+	//	round(sum(deal_amount)/sum(deal_amount/deal_price),1),sum(deal_amount/deal_price),sum(fee)`).Where(`
+	//	deal_amount>? and date(order_time at time zone 'CCT')=?`, 0, today).Group(`market,symbol,order_side`).Rows()
+	//if orderRows != nil {
+	//	for orderRows.Next() {
+	//		var market, symbol, orderSide, dealAmount, dealPrice, count, coinAmount, fee string
+	//		_ = orderRows.Scan(&market, &symbol, &orderSide, &dealAmount, &count, &dealPrice, &coinAmount, &fee)
+	//		msg += fmt.Sprintf("[%s成交状况]%s %s %s 成交数量:%s 次数:%s 均价:%s coin数量:%s fee:%s\n",
+	//			today, market, symbol, orderSide, dealAmount, count, dealPrice, coinAmount, fee)
+	//	}
+	//	orderRows.Close()
+	//}
 	//turtle last orders
 	turtleRows, _ := model.AppDB.Model(&orders).Select(`market,symbol,order_side,price,deal_price,deal_amount`).
 		Where(`deal_amount>? and refresh_type=?`, 0, model.FunctionTurtle).
@@ -243,24 +242,23 @@ func GetParameters(c *gin.Context) {
 		}
 		turtleRows.Close()
 	}
-	for _, value := range model.CarryInfo {
-		msg += value + "\n"
+	for key, value := range model.CarryInfo {
+		msg += fmt.Sprintf("%s: %s\n", key, value)
 	}
 	var setting model.Setting
-	rows, _ := model.AppDB.Model(&setting).Select(`market, symbol, function, grid_amount, grid_price_distance, 
-		function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
+	rows, _ := model.AppDB.Model(&setting).Select(`market, market_related, symbol, function, grid_amount, 
+		grid_price_distance,function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
 	if rows != nil {
 		for rows.Next() {
-			//_ = rows.Scan(&setting)
-			var market, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit, gridAmount,
-				gridPriceDistance, priceX string
+			var market, marketRelated, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit,
+				gridAmount, gridPriceDistance, priceX string
 			valid := false
-			_ = rows.Scan(&market, &symbol, &function, &gridAmount, &gridPriceDistance, &parameter, &amountLimit,
-				&refreshLimitLow, &refreshLimit, &valid, &priceX)
-			msg += fmt.Sprintf("%s %s %s parameter:%s A总:%s 下单数量:%s 价差：%s refreshlimitlow:%s "+
+			_ = rows.Scan(&market, &marketRelated, &symbol, &function, &gridAmount, &gridPriceDistance, &parameter,
+				&amountLimit, &refreshLimitLow, &refreshLimit, &valid, &priceX)
+			msg += fmt.Sprintf("%s-%s %s %s parameter:%s A总:%s 下单数量:%s 价差：%s refreshlimitlow:%s "+
 				"refreshlimit:%s %v priceX:%s\n",
-				market, symbol, function, parameter, amountLimit, gridAmount, gridPriceDistance, refreshLimitLow,
-				refreshLimit, valid, priceX)
+				market, marketRelated, symbol, function, parameter, amountLimit, gridAmount, gridPriceDistance,
+				refreshLimitLow, refreshLimit, valid, priceX)
 		}
 		rows.Close()
 	}

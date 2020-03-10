@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"hello/util"
-	"strings"
 	"time"
 )
 
@@ -34,20 +33,10 @@ type Setting struct {
 	UpdatedAt         time.Time
 }
 
-var marketSymbolSetting map[string]map[string]map[string]*Setting // function - marketName - symbol - setting
-var handlers map[string]map[string]map[string]CarryHandler        // market - symbol - function- carryHandler
+var marketSymbolSetting map[string]map[string]map[string][]*Setting // function - marketName - symbol - setting
+var handlers map[string]map[string]map[string]CarryHandler          // market - symbol - function- carryHandler
 
-func SetSetting(function, market, symbol string, setting *Setting) {
-	if marketSymbolSetting[function] == nil {
-		marketSymbolSetting[function] = make(map[string]map[string]*Setting)
-	}
-	if marketSymbolSetting[function][market] == nil {
-		marketSymbolSetting[function][market] = make(map[string]*Setting)
-	}
-	marketSymbolSetting[function][market][symbol] = setting
-}
-
-func GetSetting(function, market, symbol string) *Setting {
+func GetSetting(function, market, symbol string) []*Setting {
 	if marketSymbolSetting[function] == nil || marketSymbolSetting[function][market] == nil {
 		return nil
 	}
@@ -59,9 +48,11 @@ func GetCurrentN(function string) (currentN float64) {
 		return 0
 	}
 	for _, value := range marketSymbolSetting[function] {
-		for _, setting := range value {
-			if setting != nil {
-				currentN += setting.Chance
+		for _, settings := range value {
+			for _, setting := range settings {
+				if setting != nil {
+					currentN += setting.Chance
+				}
 			}
 		}
 	}
@@ -81,37 +72,23 @@ func GetFunctions(market, symbol string) map[string]CarryHandler {
 func LoadSettings() {
 	AppSettings = []Setting{}
 	AppDB.Where(`valid = ?`, true).Find(&AppSettings)
-	marketSymbolSetting = make(map[string]map[string]map[string]*Setting)
-	//binanceSettings := make(map[string]*Setting)
-	relatedSettings := make(map[string]*Setting)
-	fcoinSettings := make(map[string]*Setting)
+	marketSymbolSetting = make(map[string]map[string]map[string][]*Setting)
 	handlers = make(map[string]map[string]map[string]CarryHandler)
 	for i := range AppSettings {
 		market := AppSettings[i].Market
 		function := AppSettings[i].Function
 		symbol := AppSettings[i].Symbol
 		if marketSymbolSetting[function] == nil {
-			marketSymbolSetting[function] = make(map[string]map[string]*Setting)
+			marketSymbolSetting[function] = make(map[string]map[string][]*Setting)
 		}
 		if marketSymbolSetting[function][market] == nil {
-			marketSymbolSetting[function][market] = make(map[string]*Setting)
+			marketSymbolSetting[function][market] = make(map[string][]*Setting)
 		}
-		marketSymbolSetting[function][market][symbol] = &AppSettings[i]
-		if AppSettings[i].Function == FunctionRefresh {
-			//binanceSettings[symbol] = &Setting{Market: Binance, Symbol: AppSettings[i].Symbol}
-			if AppSettings[i].Symbol == `btc_pax` {
-				fcoinSettings[`btc_usdt`] = &Setting{Market: Fcoin, Symbol: `btc_usdt`}
-				fcoinSettings[`pax_usdt`] = &Setting{Market: Fcoin, Symbol: `pax_usdt`}
-			} else {
-				relatedSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
-			}
+		if marketSymbolSetting[function][market][symbol] == nil {
+			marketSymbolSetting[function][market][symbol] = make([]*Setting, 0)
 		}
-		if AppSettings[i].MarketRelated != `` {
-			marketsRelated := strings.Split(AppSettings[i].MarketRelated, `,`)
-			for _, value := range marketsRelated {
-				AppSettings = append(AppSettings, Setting{Market: value, Symbol: AppSettings[i].Symbol, Valid: true})
-			}
-		}
+		marketSymbolSetting[function][market][symbol] = append(marketSymbolSetting[function][market][symbol],
+			&AppSettings[i])
 		if handlers[market] == nil {
 			handlers[market] = make(map[string]map[string]CarryHandler)
 		}
@@ -123,21 +100,6 @@ func LoadSettings() {
 		} else {
 			handlers[market][symbol][fmt.Sprintf(`%s_%d`, function, util.GetNow().UnixNano())] =
 				HandlerMap[function]
-		}
-	}
-	for _, setting := range relatedSettings {
-		AppSettings = append(AppSettings, *setting)
-	}
-	for _, setting := range fcoinSettings {
-		needAdd := true
-		for _, value := range AppSettings {
-			if value.Market == Fcoin && value.Symbol == setting.Symbol {
-				needAdd = false
-				break
-			}
-		}
-		if needAdd {
-			AppSettings = append(AppSettings, *setting)
 		}
 	}
 }

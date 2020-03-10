@@ -194,8 +194,10 @@ func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
 				for function, handler := range model.GetFunctions(model.OKSwap, symbol) {
 					if handler != nil {
 						util.Notice(`handling by okswap`)
-						setting := model.GetSetting(function, model.OKSwap, symbol)
-						handler(setting)
+						settings := model.GetSetting(function, model.OKSwap, symbol)
+						for _, setting := range settings {
+							handler(setting)
+						}
 					}
 				}
 			}
