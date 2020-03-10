@@ -245,23 +245,6 @@ func GetParameters(c *gin.Context) {
 	for key, value := range model.CarryInfo {
 		msg += fmt.Sprintf("%s: %s\n", key, value)
 	}
-	var setting model.Setting
-	rows, _ := model.AppDB.Model(&setting).Select(`market, market_related, symbol, function, grid_amount, 
-		grid_price_distance,function_parameter,amount_limit,refresh_limit_low, refresh_limit, valid, price_x`).Rows()
-	if rows != nil {
-		for rows.Next() {
-			var market, marketRelated, symbol, function, parameter, amountLimit, refreshLimitLow, refreshLimit,
-				gridAmount, gridPriceDistance, priceX string
-			valid := false
-			_ = rows.Scan(&market, &marketRelated, &symbol, &function, &gridAmount, &gridPriceDistance, &parameter,
-				&amountLimit, &refreshLimitLow, &refreshLimit, &valid, &priceX)
-			msg += fmt.Sprintf("%s-%s %s %s parameter:%s A总:%s 下单数量:%s 价差：%s refreshlimitlow:%s "+
-				"refreshlimit:%s %v priceX:%s\n",
-				market, marketRelated, symbol, function, parameter, amountLimit, gridAmount, gridPriceDistance,
-				refreshLimitLow, refreshLimit, valid, priceX)
-		}
-		rows.Close()
-	}
 	msg += model.AppMetric.ToString() + "\n"
 	msg += model.AppConfig.ToString()
 	c.String(http.StatusOK, msg)

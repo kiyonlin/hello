@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+// setting:
+// gridAmount 下单数量
+// gridPriceDistance 价差参数
+// amountLimit 总量限制
+// refreshLimitLow 最低数量限制
 var carrySameTimeLock sync.Mutex
 
 var lastOrders = make(map[string]map[string]*model.Order)
@@ -168,9 +173,12 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, market, setting.MarketRelated),
 		fmt.Sprintf("[搬砖参数] %s %s资金费率:%f %s资金费率%f p1:%f p2:%f py:%f px:%f 对应持仓:%f %s 延时 %dms\n"+
+			"【设置】下单数量: %f, 价差参数:%f,  A总: %f, 最低数量: %f\n"+
 			"%d-%d %f %f %f %f %f - %f %f %f %f %f",
 			util.GetNow().String(), market, zFee, setting.MarketRelated, zFeeRelated,
 			p1, p2, py, priceX, freeRelated, util.GetNow().String(), util.GetNowUnixMillion()-int64(tick.Ts),
+			// refreshLimitLow 限制
+			setting.GridAmount, setting.GridPriceDistance, setting.AmountLimit, setting.RefreshLimitLow,
 			tick.Bids.Len(), tick.Asks.Len(), tick.Bids[4].Price, tick.Bids[3].Price, tick.Bids[2].Price,
 			tick.Bids[1].Price, tick.Bids[0].Price, tick.Asks[0].Price, tick.Asks[1].Price, tick.Asks[2].Price,
 			tick.Asks[3].Price, tick.Asks[4].Price))
