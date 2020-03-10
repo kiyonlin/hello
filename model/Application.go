@@ -642,7 +642,7 @@ func (config *Config) ToString() string {
 	str += fmt.Sprintf("PreDealDis: %f Binance order dis: %f\n", config.PreDealDis, config.BinanceOrderDis)
 	str += fmt.Sprintf("channels: %d \n", config.Channels)
 	str += fmt.Sprintf("handle: %s\n", config.Handle)
-	str += fmt.Sprintf(" amountrate: %f\n", config.AmountRate)
+	str += fmt.Sprintf("amountrate: %f\n", config.AmountRate)
 	str += fmt.Sprintf("between: %d \n", config.Between)
 	return str
 }

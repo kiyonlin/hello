@@ -92,9 +92,9 @@ var ProcessCarrySameTime = func(setting *model.Setting) {
 	}
 	if (int(startTime)-tick.Ts > 400 || int(startTime)-tickRelated.Ts > 200) ||
 		model.AppConfig.Handle != `1` || model.AppPause {
-		//util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
-		//	startTime, setting.MarketRelated, market, int(startTime)-tick.Ts, setting.MarketRelated,
-		//	int(startTime)-tickRelated.Ts))
+		util.Info(fmt.Sprintf(`error4 now:%d related:%s tick_%s delta:%d tick_%s delta:%d`,
+			startTime, setting.MarketRelated, setting.Market, int(startTime)-tick.Ts, setting.MarketRelated,
+			int(startTime)-tickRelated.Ts))
 		return
 	}
 	key := fmt.Sprintf(`%s-%s-%s`, setting.Market, setting.MarketRelated, setting.Symbol)
