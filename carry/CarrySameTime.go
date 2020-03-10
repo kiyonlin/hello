@@ -56,38 +56,37 @@ func setCarrySameTiming(value bool) {
 	carrySameTiming = value
 }
 
-var ProcessCarrySameTime = func(market, symbol string, functionName interface{}) {
+var ProcessCarrySameTime = func(setting *model.Setting) {
 	if carrySameTiming {
 		return
 	}
 	setCarrySameTiming(true)
 	defer setCarrySameTiming(false)
 	startTime := util.GetNowUnixMillion()
-	setting := model.GetSetting(functionName.(string), market, symbol)
 	if setting == nil || setting.MarketRelated == `` {
 		return
 	}
-	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
-	_, tickRelated := model.AppMarkets.GetBidAsk(symbol, setting.MarketRelated)
+	_, tick := model.AppMarkets.GetBidAsk(setting.Symbol, setting.Market)
+	_, tickRelated := model.AppMarkets.GetBidAsk(setting.Symbol, setting.MarketRelated)
 	//account := model.AppAccounts.GetAccount(market, symbol)
-	accountRelated := model.AppAccounts.GetAccount(setting.MarketRelated, symbol)
+	accountRelated := model.AppAccounts.GetAccount(setting.MarketRelated, setting.Symbol)
 	if (setting.MarketRelated != model.OKSwap && accountRelated == nil) || (setting.MarketRelated == model.OKSwap &&
-		model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideBuy+symbol) == nil &&
-		model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol) == nil) {
+		model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideBuy+setting.Symbol) == nil &&
+		model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+setting.Symbol) == nil) {
 		api.RefreshAccount(``, ``, setting.MarketRelated)
 		util.Info(`error1 account is nil, refresh and return`)
 		return
 	}
 	freeRelated := 0.0
 	if setting.MarketRelated == model.OKSwap {
-		freeRelated = combineOKSwapAccounts(symbol)
+		freeRelated = combineOKSwapAccounts(setting.Symbol)
 	} else {
 		freeRelated = accountRelated.Free
 	}
 	if tickRelated == nil || tick == nil || tickRelated.Asks == nil || tickRelated.Bids == nil || tick.Asks == nil ||
 		tick.Bids == nil {
 		if tick == nil {
-			util.Info(fmt.Sprintf(`error2 %s tick is nil`, market))
+			util.Info(fmt.Sprintf(`error2 %s tick is nil`, setting.Market))
 		}
 		if tickRelated == nil {
 			util.Info(fmt.Sprintf(`error2 %s tick is nil`, setting.MarketRelated))
@@ -97,7 +96,7 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 	if tickRelated.Asks.Len() < 5 || tickRelated.Bids.Len() < 5 || tick.Asks.Len() < 5 || tick.Bids.Len() < 5 ||
 		tick.Bids[0].Price >= tick.Asks[0].Price || tickRelated.Bids[0].Price >= tickRelated.Asks[0].Price {
 		util.Info(fmt.Sprintf(`error3 %s %d %d %f-%f or %s %d %d %f-%fdepth tick length not good`,
-			market, tick.Bids.Len(), tick.Asks.Len(), tick.Bids[0].Price, tick.Asks[0].Price, setting.MarketRelated,
+			setting.Market, tick.Bids.Len(), tick.Asks.Len(), tick.Bids[0].Price, tick.Asks[0].Price, setting.MarketRelated,
 			tickRelated.Bids.Len(), tickRelated.Asks.Len(), tickRelated.Bids[0].Price, tickRelated.Asks[0].Price))
 		return
 	}
@@ -108,8 +107,8 @@ var ProcessCarrySameTime = func(market, symbol string, functionName interface{})
 		//	int(startTime)-tickRelated.Ts))
 		return
 	}
-	key := fmt.Sprintf(`%s-%s-%s`, market, setting.MarketRelated, symbol)
-	placeBothOrders(market, symbol, key, tick, tickRelated, freeRelated, setting)
+	key := fmt.Sprintf(`%s-%s-%s`, setting.Market, setting.MarketRelated, setting.Symbol)
+	placeBothOrders(setting.Market, setting.Symbol, key, tick, tickRelated, freeRelated, setting)
 }
 
 func checkLastBid(market, symbol, orderSide string) (valid bool) {

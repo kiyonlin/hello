@@ -380,12 +380,13 @@ func (refreshOrders *RefreshOrders) setHanging(in bool) {
 	refreshOrders.hanging = in
 }
 
-var ProcessRefresh = func(market, symbol string, function interface{}) {
+var ProcessRefresh = func(setting *model.Setting) {
 	start := util.GetNowUnixMillion()
-	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	result, tick := model.AppMarkets.GetBidAsk(setting.Symbol, setting.Market)
 	if !result {
-		util.Notice(fmt.Sprintf(`[tick not good result]%s %s`, market, symbol))
-		CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, RefreshTypeGrid+RefreshTypeFar)
+		util.Notice(fmt.Sprintf(`[tick not good result]%s %s`, setting.Market, setting.Symbol))
+		CancelRefreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+			RefreshTypeGrid+RefreshTypeFar)
 		return
 	}
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
@@ -394,29 +395,29 @@ var ProcessRefresh = func(market, symbol string, function interface{}) {
 		if tick != nil {
 			timeDis = int(start) - tick.Ts
 		}
-		util.Notice(fmt.Sprintf(`[tick not good time]%s %s %d`, market, symbol, timeDis))
-		CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, RefreshTypeGrid+RefreshTypeFar)
+		util.Notice(fmt.Sprintf(`[tick not good time]%s %s %d`, setting.Market, setting.Symbol, timeDis))
+		CancelRefreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, RefreshTypeGrid+RefreshTypeFar)
 		return
 	}
-	gridSetting := model.GetSetting(model.FunctionGrid, market, symbol)
-	setting := model.GetSetting(model.FunctionRefresh, market, symbol)
+	gridSetting := model.GetSetting(model.FunctionGrid, setting.Market, setting.Symbol)
 	result, otherPrice := true, (tick.Bids[0].Price+tick.Asks[0].Price)/2
 	if setting.BinanceDisMin > -0.9 && setting.BinanceDisMax < 0.9 {
-		result, otherPrice = getOtherPrice(market, symbol, model.Huobi)
+		result, otherPrice = getOtherPrice(setting.Market, setting.Symbol, model.Huobi)
 	}
 	if !result || otherPrice == 0 {
-		util.Notice(fmt.Sprintf(`[get other price]%s %f`, symbol, otherPrice))
+		util.Notice(fmt.Sprintf(`[get other price]%s %f`, setting.Symbol, otherPrice))
 		//CancelRefreshHang(market, symbol)
 		return
 	}
-	leftFree, rightFree, _, _, err := getBalance(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType)
+	leftFree, rightFree, _, _, err := getBalance(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+		setting.AccountType)
 	if gridSetting != nil {
 		leftFree = leftFree - gridSetting.GridAmount/tick.Bids[0].Price
 		rightFree = rightFree - gridSetting.GridAmount
 	}
 	if err != nil || (leftFree <= 0 && rightFree <= 0) {
-		util.Notice(fmt.Sprintf(`balance not good %s %s`, market, symbol))
-		CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, RefreshTypeGrid)
+		util.Notice(fmt.Sprintf(`balance not good %s %s`, setting.Market, setting.Symbol))
+		CancelRefreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, RefreshTypeGrid)
 		return
 	}
 	hangRate := 0.0
@@ -435,17 +436,18 @@ var ProcessRefresh = func(market, symbol string, function interface{}) {
 		}
 		finalPlace, _ = strconv.ParseFloat(parameters[len(parameters)-1], 64)
 	}
-	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
+	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(setting.Market, setting.Symbol))
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 {
 		util.SocketInfo(fmt.Sprintf(`socekt old tick %d %d`, util.GetNowUnixMillion(), tick.Ts))
-		CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, RefreshTypeFar+RefreshTypeGrid)
+		CancelRefreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, RefreshTypeFar+RefreshTypeGrid)
 		return
 	}
-	go validRefreshHang(model.KeyDefault, model.SecretDefault, symbol, amountLimit, otherPrice, priceDistance, tick)
+	go validRefreshHang(model.KeyDefault, model.SecretDefault, setting.Symbol,
+		amountLimit, otherPrice, priceDistance, tick)
 	if model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s %v is pause:%v`,
 			model.AppConfig.Handle, refreshOrders.refreshing, model.AppPause))
-		CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, ``)
+		CancelRefreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``)
 		return
 	}
 	if refreshOrders.refreshing {
@@ -463,18 +465,20 @@ var ProcessRefresh = func(market, symbol string, function interface{}) {
 	//	CancelRefreshHang(market, symbol)
 	//}
 	if delay > 500 {
-		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+		util.Info(fmt.Sprintf(`%s %s [delay too long] %d`, setting.Market, setting.Symbol, delay))
 		return
 	}
-	resetCoin := refreshOrders.getNeedReset(symbol, setting.AccountType)
+	resetCoin := refreshOrders.getNeedReset(setting.Symbol, setting.AccountType)
 	if resetCoin != `` {
 		time.Sleep(time.Second)
-		util.Notice(fmt.Sprintf(`[reset balance]%s %s %s %s`, market, symbol, resetCoin, setting.AccountType))
-		api.RefreshCoinAccount(model.KeyDefault, model.SecretDefault, market, symbol, resetCoin, setting.AccountType)
-		refreshOrders.setNeedReset(symbol, setting.AccountType, ``)
+		util.Notice(fmt.Sprintf(`[reset balance]%s %s %s %s`,
+			setting.Market, setting.Symbol, resetCoin, setting.AccountType))
+		api.RefreshCoinAccount(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, resetCoin,
+			setting.AccountType)
+		refreshOrders.setNeedReset(setting.Symbol, setting.AccountType, ``)
 		return
 	}
-	haveAmount, index := refreshOrders.CheckAmountLimit(market, symbol, setting.AmountLimit)
+	haveAmount, index := refreshOrders.CheckAmountLimit(setting.Market, setting.Symbol, setting.AmountLimit)
 	if index == 0 {
 		refreshOrders.amountIndex = 0
 	}
@@ -483,13 +487,13 @@ var ProcessRefresh = func(market, symbol string, function interface{}) {
 		util.Notice(`[before 10min canceling]`)
 		time.Sleep(time.Second * 2)
 		refreshOrders.amountIndex = index
-		symbols := model.GetMarketSymbols(market)
+		symbols := model.GetMarketSymbols(setting.Market)
 		for key := range symbols {
-			CancelRefreshHang(``, ``, market, symbol, RefreshTypeGrid)
+			CancelRefreshHang(``, ``, setting.Market, setting.Symbol, RefreshTypeGrid)
 			refreshOrders.setInRefresh(key, true)
 		}
 		time.Sleep(time.Second * 2)
-		api.RefreshAccount(model.KeyDefault, model.SecretDefault, market)
+		api.RefreshAccount(model.KeyDefault, model.SecretDefault, setting.Market)
 		util.Notice(`[after 10min canceling]`)
 		return
 	}
@@ -498,27 +502,28 @@ var ProcessRefresh = func(market, symbol string, function interface{}) {
 	if model.AppConfig.Env == `simon` {
 		resize = 100
 	}
-	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, market, symbol, otherPrice, amount*resize, tick)
-	if refreshOrders.CheckLastChancePrice(market, symbol, orderPrice, 0.9*priceDistance) {
-		refreshOrders.SetLastChancePrice(market, symbol, 0)
+	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, setting.Market, setting.Symbol,
+		otherPrice, amount*resize, tick)
+	if refreshOrders.CheckLastChancePrice(setting.Market, setting.Symbol, orderPrice, 0.9*priceDistance) {
+		refreshOrders.SetLastChancePrice(setting.Market, setting.Symbol, 0)
 		refreshAble = false
 	}
-	if refreshOrders.getWaiting(symbol) {
+	if refreshOrders.getWaiting(setting.Symbol) {
 		time.Sleep(time.Second)
-		refreshOrders.setWaiting(symbol, false)
+		refreshOrders.setWaiting(setting.Symbol, false)
 		return
 	}
-	if refreshOrders.getInRefresh(symbol) {
+	if refreshOrders.getInRefresh(setting.Symbol) {
 		//util.Notice(fmt.Sprintf(`[in refreshing %s]`, symbol))
 		if haveAmount {
 			if refreshAble {
-				doRefresh(model.KeyDefault, model.SecretDefault, setting, market, symbol, setting.AccountType,
+				doRefresh(model.KeyDefault, model.SecretDefault, setting, setting.Market, setting.Symbol, setting.AccountType,
 					orderSide, orderReverse, orderPrice, 0.9*priceDistance, amount, tick)
 			} else {
-				util.Notice(fmt.Sprintf(`[in refreshing not refreshable %s]`, symbol))
+				util.Notice(fmt.Sprintf(`[in refreshing not refreshable %s]`, setting.Symbol))
 			}
 		} else {
-			refreshOrders.setInRefresh(symbol, false)
+			refreshOrders.setInRefresh(setting.Symbol, false)
 			time.Sleep(time.Second)
 		}
 	} else {
@@ -528,23 +533,24 @@ var ProcessRefresh = func(market, symbol string, function interface{}) {
 				//if index > refreshOrders.amountIndex {
 				//	//api.RefreshAccount(market)
 				//}
-				util.Notice(fmt.Sprintf(`in hang refreshable %s %s %f %f`, market, symbol, leftFree, rightFree))
-				refreshOrders.setInRefresh(symbol, true)
-				CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, RefreshTypeGrid)
+				util.Notice(fmt.Sprintf(`in hang refreshable %s %s %f %f`,
+					setting.Market, setting.Symbol, leftFree, rightFree))
+				refreshOrders.setInRefresh(setting.Symbol, true)
+				CancelRefreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, RefreshTypeGrid)
 				time.Sleep(time.Second)
-				util.Notice(fmt.Sprintf(`set done refreshable %s %s`, market, symbol))
+				util.Notice(fmt.Sprintf(`set done refreshable %s %s`, setting.Market, setting.Symbol))
 			} else {
 				util.Notice(fmt.Sprintf(`in hang not refreshable %s left %f right %f`,
-					symbol, leftFree, rightFree))
-				refreshHang(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType, hangRate,
-					amountLimit, farRate, finalPlace, leftFree, rightFree, otherPrice, priceDistance, farPlaces,
-					setting, tick)
+					setting.Symbol, leftFree, rightFree))
+				refreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, setting.AccountType,
+					hangRate, amountLimit, farRate, finalPlace, leftFree, rightFree, otherPrice, priceDistance,
+					farPlaces, setting, tick)
 			}
 		} else {
-			util.Notice(fmt.Sprintf(`in hang not have amount %s`, symbol))
-			refreshHang(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType, hangRate,
-				amountLimit, farRate, finalPlace, leftFree, rightFree, otherPrice, priceDistance, farPlaces, setting,
-				tick)
+			util.Notice(fmt.Sprintf(`in hang not have amount %s`, setting.Symbol))
+			refreshHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, setting.AccountType,
+				hangRate, amountLimit, farRate, finalPlace, leftFree, rightFree, otherPrice, priceDistance, farPlaces,
+				setting, tick)
 		}
 	}
 }

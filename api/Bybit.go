@@ -213,7 +213,8 @@ func handleOrderBookBybit(markets *model.Markets, symbol string, ts int64, respo
 		}
 		for function, handler := range model.GetFunctions(model.Bybit, symbol) {
 			if handler != nil {
-				handler(model.Bybit, symbol, function)
+				setting := model.GetSetting(function, model.Bybit, symbol)
+				handler(setting)
 			}
 		}
 	}
@@ -485,6 +486,7 @@ func GetWalletBybit(key, secret string) (balance float64, msg string) {
 	postData[`limit`] = `50`
 	response := SignedRequestBybit(key, secret, `GET`,
 		`/open-api/wallet/fund/records`, postData)
+	util.Notice(`bybit wallet: ` + string(response))
 	dataJson, err := util.NewJSON(response)
 	if err == nil {
 		data := dataJson.GetPath(`result`, `data`).MustArray()

@@ -128,20 +128,19 @@ func (hangFarOrders *HangFarOrders) setFarOrders(symbol string, bidOrders, askOr
 	hangFarOrders.askOrders[symbol] = askOrders
 }
 
-var ProcessHangFar = func(market, symbol string, function interface{}) {
+var ProcessHangFar = func(setting *model.Setting) {
 	start := util.GetNowUnixMillion()
-	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	_, tick := model.AppMarkets.GetBidAsk(setting.Symbol, setting.Market)
 	if tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 15 || tick.Bids.Len() < 15 ||
 		int(start)-tick.Ts > 500 {
 		timeDis := 0
 		if tick != nil {
 			timeDis = int(start) - tick.Ts
 		}
-		util.Notice(fmt.Sprintf(`[tick not good time]%s %s %d`, market, symbol, timeDis))
-		CancelHang(model.KeyDefault, model.SecretDefault, market, symbol)
+		util.Notice(fmt.Sprintf(`[tick not good time]%s %s %d`, setting.Market, setting.Symbol, timeDis))
+		CancelHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol)
 		return
 	}
-	setting := model.GetSetting(model.FunctionHangFar, market, symbol)
 	parameters := strings.Split(setting.FunctionParameter, `_`)
 	posStr := make([]string, len(parameters)/3)
 	pos := make(map[string]float64)
@@ -155,7 +154,7 @@ var ProcessHangFar = func(market, symbol string, function interface{}) {
 	}
 	if util.GetNowUnixMillion()-int64(tick.Ts) > 1000 || model.AppConfig.Handle != `1` || model.AppPause {
 		util.Notice(fmt.Sprintf(`[status]%s is pause:%v`, model.AppConfig.Handle, model.AppPause))
-		CancelHang(model.KeyDefault, model.SecretDefault, market, symbol)
+		CancelHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol)
 		return
 	}
 	if hangFarOrders.hangingFar {
@@ -163,16 +162,18 @@ var ProcessHangFar = func(market, symbol string, function interface{}) {
 	}
 	hangFarOrders.setInHangingFar(true)
 	defer hangFarOrders.setInHangingFar(false)
-	if validHang(model.KeyDefault, model.SecretDefault, market, symbol, pos, posDis, tick) {
+	if validHang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, pos, posDis, tick) {
 		return
 	}
 	if len(hangFarOrders.needRevertOrders) > 0 {
 		util.Notice(fmt.Sprintf(`=need cancel revert= need:%d revert:%d bid:%d ask:%d`,
 			len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
-			len(hangFarOrders.bidOrders[symbol]), len(hangFarOrders.askOrders[symbol])))
-		revertCancelOrder(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType, tick)
-	} else if hang(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType, pos, amount, tick) {
-		CancelNonHang(market, symbol)
+			len(hangFarOrders.bidOrders[setting.Symbol]), len(hangFarOrders.askOrders[setting.Symbol])))
+		revertCancelOrder(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+			setting.AccountType, tick)
+	} else if hang(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, setting.AccountType, pos,
+		amount, tick) {
+		CancelNonHang(setting.Market, setting.Symbol)
 	}
 }
 

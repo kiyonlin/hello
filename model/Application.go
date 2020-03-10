@@ -16,7 +16,6 @@ var infoLock sync.Mutex
 var fundingRate = make(map[string]map[string]float64)     // market - symbol - funding rate
 var fundingRateUpdate = make(map[string]map[string]int64) // market - symbol - update time
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
-var ConnectionResetTime = int64(0)
 var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
 var candles = make(map[string]*Candle)    // market+symbol+period+rfc3339, candle
 var CarryInfo = make(map[string]string)   // function - msg
@@ -68,20 +67,12 @@ const FunctionGrid = `grid`
 const FunctionCarry = `carry`
 const FunctionHang = `hang`
 const FunctionHangFar = `hang_far`
-const FunctionHangContract = `hang_contract`
 const FunctionRank = `rank`
 const FunctionHangRevert = `hang_revert`
-const FunctionBMCarryHang = `bm_carry_hang`
 const FunctionPostonlyHandler = `postonly`
-
-//const FunctionArbitrary = `arbitrary`
 const FunctionRefresh = `refresh`
 
 const PostOnly = `ParticipateDoNotInitiate`
-
-//const FunRefreshMiddle = `refresh_parameter_middle`
-//const FunRefreshSide = `refresh_parameter_side`
-//const FunRefreshSeparate = `refresh_parameter_separate`
 
 var AppDB *gorm.DB
 var AppSettings []Setting

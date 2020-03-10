@@ -70,11 +70,11 @@ func (rank *Rank) setOrders(symbol string, orders []*model.Order) {
 	rank.orders[symbol] = orders
 }
 
-var ProcessRank = func(market, symbol string, function interface{}) {
-	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
+var ProcessRank = func(setting *model.Setting) {
+	result, tick := model.AppMarkets.GetBidAsk(setting.Symbol, setting.Market)
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || tick.Asks.Len() < 11 ||
 		tick.Bids.Len() < 11 {
-		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, market, symbol))
+		util.Notice(fmt.Sprintf(`[tick not good]%s %s`, setting.Market, setting.Symbol))
 		return
 	}
 	if model.AppConfig.Handle != `1` || model.AppPause {
@@ -82,13 +82,12 @@ var ProcessRank = func(market, symbol string, function interface{}) {
 	}
 	delay := util.GetNowUnixMillion() - int64(tick.Ts)
 	if delay > 500 {
-		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, market, symbol, delay))
+		util.Notice(fmt.Sprintf(`%s %s [delay too long] %d`, setting.Market, setting.Symbol, delay))
 		return
 	}
-	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
+	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(setting.Market, setting.Symbol))
 	checkDistance := priceDistance / 10
-	completeTick(market, symbol, tick, priceDistance, checkDistance)
-	setting := model.GetSetting(model.FunctionRank, market, symbol)
+	completeTick(setting.Market, setting.Symbol, tick, priceDistance, checkDistance)
 	if setting == nil {
 		return
 	}
@@ -101,26 +100,26 @@ var ProcessRank = func(market, symbol string, function interface{}) {
 		score = scoreAsk
 		cancelSide = model.OrderSideBuy
 	}
-	orders := rank.getOrders(symbol)
+	orders := rank.getOrders(setting.Symbol)
 	newOrders := make([]*model.Order, 0)
 	for _, order := range orders {
 		orderScore := calcOrderScore(order, setting, tick)
 		if order.OrderSide == cancelSide {
-			util.Notice(fmt.Sprintf(`--- cancel less side order %s %s`, symbol, order.OrderId))
-			api.CancelOrder(``, ``, market, symbol, order.OrderId)
+			util.Notice(fmt.Sprintf(`--- cancel less side order %s %s`, setting.Symbol, order.OrderId))
+			api.CancelOrder(``, ``, setting.Market, setting.Symbol, order.OrderId)
 			didSmth = true
 		} else {
 			if orderScore.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/4 {
 				newOrders = append(newOrders, order)
 			} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 				(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-				api.CancelOrder(``, ``, market, symbol, order.OrderId)
+				api.CancelOrder(``, ``, setting.Market, setting.Symbol, order.OrderId)
 				didSmth = true
 			}
 		}
 	}
-	if util.GetNowUnixMillion()-rank.getCheckTime(symbol) > 300000 {
-		queryOrders := api.QueryOrders(``, ``, market, symbol, model.CarryStatusWorking, setting.AccountType,
+	if util.GetNowUnixMillion()-rank.getCheckTime(setting.Symbol) > 300000 {
+		queryOrders := api.QueryOrders(``, ``, setting.Market, setting.Symbol, model.CarryStatusWorking, setting.AccountType,
 			0, 0)
 		for _, queryOrder := range queryOrders {
 			for _, order := range newOrders {
@@ -131,15 +130,16 @@ var ProcessRank = func(market, symbol string, function interface{}) {
 			}
 		}
 		newOrders = queryOrders
-		util.Info(fmt.Sprintf(`get working orders from api %s %d`, symbol, len(newOrders)))
-		rank.setCheckTime(symbol)
+		util.Info(fmt.Sprintf(`get working orders from api %s %d`, setting.Symbol, len(newOrders)))
+		rank.setCheckTime(setting.Symbol)
 	} else if !didSmth && model.AppConfig.FcoinKey != `` && model.AppConfig.FcoinSecret != `` &&
 		score.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/2 {
-		leftFree, rightFree, _, _, _ := getBalance(model.KeyDefault, model.SecretDefault, market, symbol, setting.AccountType)
+		leftFree, rightFree, _, _, _ := getBalance(model.KeyDefault, model.SecretDefault, setting.Market,
+			setting.Symbol, setting.AccountType)
 		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
 			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
-			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, market,
-				symbol, ``, setting.AccountType, ``, score.Price, score.Amount, false)
+			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, setting.Market,
+				setting.Symbol, ``, setting.AccountType, ``, score.Price, score.Amount, false)
 			if order.OrderId != `` {
 				order.Status = model.CarryStatusWorking
 				order.RefreshType = RankSequence
@@ -147,7 +147,7 @@ var ProcessRank = func(market, symbol string, function interface{}) {
 				model.AppDB.Save(&order)
 			}
 		} else {
-			coins := strings.Split(symbol, `_`)
+			coins := strings.Split(setting.Symbol, `_`)
 			if score.OrderSide == model.OrderSideBuy {
 				util.Info(fmt.Sprintf(`--- coin influient %s %f<%f point:%f`,
 					coins[1], rightFree, score.Price*score.Amount, score.Point))
@@ -157,7 +157,7 @@ var ProcessRank = func(market, symbol string, function interface{}) {
 			}
 		}
 	}
-	rank.setOrders(symbol, newOrders)
+	rank.setOrders(setting.Symbol, newOrders)
 }
 
 func completeTick(market, symbol string, tick *model.BidAsk, priceDistance, checkDistance float64) {

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type CarryHandler func(market, symbol string, function interface{})
+type CarryHandler func(setting *Setting)
 
 type Setting struct {
 	Valid             bool
@@ -36,19 +36,6 @@ type Setting struct {
 
 var marketSymbolSetting map[string]map[string]map[string]*Setting // function - marketName - symbol - setting
 var handlers map[string]map[string]map[string]CarryHandler        // market - symbol - function- carryHandler
-
-func GetFunctionMarkets(function string) []string {
-	if marketSymbolSetting[function] == nil {
-		return nil
-	}
-	markets := make([]string, len(marketSymbolSetting[function]))
-	i := 0
-	for key := range marketSymbolSetting[function] {
-		markets[i] = key
-		i++
-	}
-	return markets
-}
 
 func SetSetting(function, market, symbol string, setting *Setting) {
 	if marketSymbolSetting[function] == nil {
@@ -118,11 +105,6 @@ func LoadSettings() {
 			} else {
 				relatedSettings[symbol] = &Setting{Market: Huobi, Symbol: AppSettings[i].Symbol}
 			}
-		}
-		if AppSettings[i].Function == FunctionHangContract {
-			relatedSettings[symbol] = &Setting{Market: Bitmex, Symbol: AppSettings[i].Symbol, Valid: true,
-				Chance: AppSettings[i].Chance, RefreshLimitLow: AppSettings[i].RefreshLimitLow,
-				RefreshLimit: AppSettings[i].RefreshLimit}
 		}
 		if AppSettings[i].MarketRelated != `` {
 			marketsRelated := strings.Split(AppSettings[i].MarketRelated, `,`)

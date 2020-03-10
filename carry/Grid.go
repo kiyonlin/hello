@@ -138,14 +138,14 @@ func handleOrderDeal(key, secret string, grid *grid, order *model.Order, market,
 	}
 }
 
-var ProcessGrid = func(market, symbol string, function interface{}) {
-	grid := getGrid(market, symbol)
+var ProcessGrid = func(setting *model.Setting) {
+	grid := getGrid(setting.Market, setting.Symbol)
 	if grid.griding || model.AppConfig.Handle != `1` || model.AppPause {
 		return
 	}
-	setGriding(market, symbol, true)
-	defer setGriding(market, symbol, false)
-	result, tick := model.AppMarkets.GetBidAsk(symbol, market)
+	setGriding(setting.Market, setting.Symbol, true)
+	defer setGriding(setting.Market, setting.Symbol, false)
+	result, tick := model.AppMarkets.GetBidAsk(setting.Symbol, setting.Market)
 	if !result {
 		return
 	}
@@ -155,7 +155,7 @@ var ProcessGrid = func(market, symbol string, function interface{}) {
 		return
 	}
 	if grid.sellOrder == nil || grid.buyOrder == nil {
-		if placeGridOrders(``, ``, market, symbol, tick) {
+		if placeGridOrders(``, ``, setting.Market, setting.Symbol, tick) {
 			for true {
 				<-snycGrid
 				if grid.sellOrder != nil && grid.buyOrder != nil {
@@ -166,11 +166,11 @@ var ProcessGrid = func(market, symbol string, function interface{}) {
 	} else if grid.sellOrder != nil && grid.sellOrder.Price < tick.Asks[0].Price {
 		util.Notice(fmt.Sprintf(` sell id %s at price %f < %f`, grid.sellOrder.OrderId, grid.sellOrder.Price,
 			tick.Asks[0].Price))
-		handleOrderDeal(``, ``, grid, grid.sellOrder, market, model.OrderSideSell)
+		handleOrderDeal(``, ``, grid, grid.sellOrder, setting.Market, model.OrderSideSell)
 	} else if grid.buyOrder != nil && grid.buyOrder.Price > tick.Bids[0].Price {
 		util.Notice(fmt.Sprintf(`buy id %s at price %f < %f`, grid.buyOrder.OrderId, grid.buyOrder.Price,
 			tick.Bids[0].Price))
-		handleOrderDeal(``, ``, grid, grid.buyOrder, market, model.OrderSideBuy)
+		handleOrderDeal(``, ``, grid, grid.buyOrder, setting.Market, model.OrderSideBuy)
 	}
 	time.Sleep(time.Microsecond * 100)
 }

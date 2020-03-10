@@ -67,10 +67,26 @@ func (markets *Markets) GetBmPendingOrders() (orders map[string]*Order) {
 	return markets.bmPendingOrders
 }
 
-func (markets *Markets) SetBMPendingOrders(orders map[string]*Order) {
+func (markets *Markets) RemoveBmPendingOrder() (order *Order) {
 	markets.lock.Lock()
 	defer markets.lock.Unlock()
-	markets.bmPendingOrders = orders
+	if markets.bmPendingOrders == nil {
+		return nil
+	}
+	for orderId, item := range markets.bmPendingOrders {
+		delete(markets.bmPendingOrders, orderId)
+		return item
+	}
+	return nil
+}
+
+func (markets *Markets) AddBMPendingOrder(order *Order) {
+	markets.lock.Lock()
+	defer markets.lock.Unlock()
+	if markets.bmPendingOrders == nil {
+		markets.bmPendingOrders = make(map[string]*Order)
+	}
+	markets.bmPendingOrders[order.OrderId] = order
 }
 
 func (markets *Markets) GetTrends(symbol string) (start, end map[string]*Deal) {
@@ -110,18 +126,7 @@ func (markets *Markets) SetTrade(deal *Deal) {
 	markets.trade[second][symbol][deal.Market] = deal
 	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
 		markets.trade[second][symbol][Bitmex] != nil && markets.trade[second][symbol][Fmex] != nil {
-		//candle := &Candle{Symbol: symbol, Ts: second,
-		//	PriceBitmex: markets.trade[second][symbol][Bitmex].Price,
-		//	PriceFmex:   markets.trade[second][symbol][Fmex].Price,
-		//}
-		//go AppDB.Save(&candle)
 		chance := 15.0
-		for _, setting := range AppSettings {
-			if setting.Function == FunctionHangContract &&
-				setting.Market == deal.Market && setting.Symbol == deal.Symbol {
-				chance = setting.Chance
-			}
-		}
 		compareSecond := second - int64(chance)
 		compare := markets.trade[compareSecond]
 		if compare != nil && compare[symbol] != nil && compare[symbol][Bitmex] != nil &&
@@ -132,17 +137,6 @@ func (markets *Markets) SetTrade(deal *Deal) {
 		delete(markets.trade, compareSecond)
 	}
 }
-
-//func (markets *Markets) GetTrade(second int64, market, symbol string) (deal *Deal) {
-//	markets.lock.Lock()
-//	defer markets.lock.Unlock()
-//	if markets.trade[second] != nil && markets.trade[second][symbol] != nil &&
-//		markets.trade[second][symbol][market] != nil {
-//		deal = markets.trade[second][symbol][market]
-//	}
-//	//util.Notice(fmt.Sprintf(`%d get bm deal %v`, second%100, deal != nil))
-//	return deal
-//}
 
 func (markets *Markets) GetIsWriting(market string) bool {
 	markets.lock.Lock()

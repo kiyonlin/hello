@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-var PostonlyHandler = func(market, symbol string, order interface{}) {
-	startTime := util.GetNowUnixMillion()
-	_, tick := model.AppMarkets.GetBidAsk(symbol, market)
-	if order == nil || model.AppConfig.Handle != `1` {
+var PostonlyHandler = func(setting *model.Setting) {
+	orderPostonly := model.AppMarkets.RemoveBmPendingOrder()
+	if setting == nil || model.AppConfig.Handle != `1` || orderPostonly == nil {
 		return
 	}
-	orderPostonly := order.(*model.Order)
+	startTime := util.GetNowUnixMillion()
+	_, tick := model.AppMarkets.GetBidAsk(setting.Symbol, setting.Market)
 	if orderPostonly.RefreshType != model.PostOnly || orderPostonly.Amount-orderPostonly.DealAmount < 1 ||
 		orderPostonly.OrderId == `` || orderPostonly.Status != model.CarryStatusFail {
 		if orderPostonly.RefreshType == model.PostOnly {
@@ -30,7 +30,7 @@ var PostonlyHandler = func(market, symbol string, order interface{}) {
 		priceAsk = tick.Asks[0].Price
 	} else {
 		util.Notice(`fatal error1: tick absent`)
-		_, restBid, restAsk := api.GetOrderBook(``, ``, symbol)
+		_, restBid, restAsk := api.GetOrderBook(``, ``, setting.Symbol)
 		if restBid != nil && restAsk != nil {
 			priceBid = restBid.Price
 			priceAsk = restAsk.Price
@@ -64,13 +64,13 @@ var PostonlyHandler = func(market, symbol string, order interface{}) {
 	//}
 	amount := orderPostonly.Amount - orderPostonly.DealAmount
 	for true {
-		orderPostonly = api.PlaceOrder(``, ``, orderSide, model.OrderTypeLimit, market, symbol,
+		orderPostonly = api.PlaceOrder(``, ``, orderSide, model.OrderTypeLimit, setting.Market, setting.Symbol,
 			``, ``, model.PostOnly, price, amount, true)
 		if orderPostonly != nil && orderPostonly.OrderId != `` {
 			break
 		}
 		time.Sleep(time.Second)
 	}
-	util.Notice(fmt.Sprintf(`reorder: %s order %s %s %s %f %f orderParam:<%s> delay:%d`, market,
-		orderSide, model.OrderTypeLimit, symbol, price, amount, model.PostOnly, util.GetNowUnixMillion()-startTime))
+	util.Notice(fmt.Sprintf(`reorder: %s order %s %s %s %f %f orderParam:<%s> delay:%d`, setting.Market,
+		orderSide, model.OrderTypeLimit, setting.Symbol, price, amount, model.PostOnly, util.GetNowUnixMillion()-startTime))
 }

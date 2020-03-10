@@ -289,7 +289,8 @@ func handOrderBook10(markets *model.Markets, data []interface{}) {
 				continue
 			}
 			if handler != nil {
-				handler(model.Bitmex, symbol, function)
+				setting := model.GetSetting(function, model.Bitmex, symbol)
+				handler(setting)
 			}
 		}
 	}
@@ -317,7 +318,8 @@ func handleQuote(markets *model.Markets, action string, data []interface{}) {
 		if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 			for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 				if handler != nil {
-					handler(model.Bitmex, symbol, function)
+					setting := model.GetSetting(function, model.Bitmex, symbol)
+					handler(setting)
 				}
 			}
 		}
@@ -325,18 +327,18 @@ func handleQuote(markets *model.Markets, action string, data []interface{}) {
 }
 
 func handleOrder(markets *model.Markets, action string, data []interface{}) {
-	var orders map[string]*model.Order
+	//var orders map[string]*model.Order
 	for _, value := range data {
 		switch action {
 		case `partial`:
-			if orders == nil {
-				orders = make(map[string]*model.Order)
-			}
-			order := &model.Order{Market: model.Bitmex}
-			parseOrderBM(order, value.(map[string]interface{}))
-			if order.OrderId != `` {
-				orders[order.OrderId] = order
-			}
+			//if orders == nil {
+			//	orders = make(map[string]*model.Order)
+			//}
+			//order := &model.Order{Market: model.Bitmex}
+			//parseOrderBM(order, value.(map[string]interface{}))
+			//if order.OrderId != `` {
+			//	orders[order.OrderId] = order
+			//}
 		case `insert`:
 			//if orders == nil {
 			//	orders = markets.GetBmPendingOrders()
@@ -351,23 +353,25 @@ func handleOrder(markets *model.Markets, action string, data []interface{}) {
 			}
 			for function, handler := range model.GetFunctions(model.Bitmex, order.Symbol) {
 				if handler != nil && function == model.FunctionPostonlyHandler && model.AppConfig.Env != `test` {
-					go handler(model.Bitmex, order.Symbol, order)
+					markets.AddBMPendingOrder(order)
+					setting := model.GetSetting(function, model.Bitmex, order.Symbol)
+					go handler(setting)
 				}
 			}
 		case `update`:
-			if orders == nil {
-				orders = markets.GetBmPendingOrders()
-			}
-			if orders != nil {
-				order := &model.Order{Market: model.Bitmex}
-				parseOrderBM(order, value.(map[string]interface{}))
-				if order.OrderId != `` {
-					orderOld := orders[order.OrderId]
-					if orderOld != nil {
-						parseOrderBM(orderOld, value.(map[string]interface{}))
-					}
-				}
-			}
+			//if orders == nil {
+			//	orders = markets.GetBmPendingOrders()
+			//}
+			//if orders != nil {
+			//	order := &model.Order{Market: model.Bitmex}
+			//	parseOrderBM(order, value.(map[string]interface{}))
+			//	if order.OrderId != `` {
+			//		orderOld := orders[order.OrderId]
+			//		if orderOld != nil {
+			//			parseOrderBM(orderOld, value.(map[string]interface{}))
+			//		}
+			//	}
+			//}
 		}
 	}
 	//markets.SetBMPendingOrders(orders)
@@ -503,7 +507,8 @@ func handleOrderBook(markets *model.Markets, action string, data []interface{}) 
 			if markets.SetBidAsk(symbol, model.Bitmex, bidAsks) {
 				for function, handler := range model.GetFunctions(model.Bitmex, symbol) {
 					if handler != nil && model.AppConfig.Env != `test` {
-						handler(model.Bitmex, symbol, function)
+						setting := model.GetSetting(function, model.Bitmex, symbol)
+						handler(setting)
 					}
 				}
 			}
@@ -828,6 +833,7 @@ func GetOrderBook(key, secret, symbol string) (result bool, bid, ask *model.Tick
 func GetWalletHistoryBitmex(key, secret string) (amount float64, transfer string) {
 	postData := make(map[string]interface{})
 	response := SignedRequestBitmex(key, secret, `GET`, `/user/walletHistory`, postData)
+	util.Notice(`bitmex wallet: ` + string(response))
 	walletJson, err := util.NewJSON(response)
 	if err == nil {
 		items := walletJson.MustArray()

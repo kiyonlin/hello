@@ -235,7 +235,6 @@ func MaintainTransFee(key, secret string) {
 }
 
 func createMarketDepthServer(markets *model.Markets, market string) chan struct{} {
-	model.ConnectionResetTime = 0
 	util.SocketInfo(" create depth chan for " + market)
 	var channel chan struct{}
 	var err error
@@ -277,9 +276,6 @@ func ResetChannel(market string, channel chan struct{}) {
 	symbols := model.GetMarketSymbols(market)
 	for symbol := range symbols {
 		for function := range model.GetFunctions(model.Bitmex, symbol) {
-			if model.FunctionHangContract == function {
-				go CancelHangContracts(model.KeyDefault, model.SecretDefault, market, symbol)
-			}
 			if model.FunctionRefresh == function {
 				go CancelRefreshHang(model.KeyDefault, model.SecretDefault, market, symbol, RefreshTypeGrid)
 			}
@@ -324,25 +320,19 @@ func Maintain() {
 		return
 	}
 	model.HandlerMap[model.FunctionGrid] = ProcessGrid
-	//model.HandlerMap[model.FunctionArbitrary] = ProcessContractArbitrage
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
-	//model.HandlerMap[model.FunctionCarry] = ProcessCarry
 	model.HandlerMap[model.FunctionTurtle] = ProcessTurtle
 	model.HandlerMap[model.FunctionCarry] = ProcessCarrySameTime
-	model.HandlerMap[model.FunctionCarry+`_`+model.Fmex] = ProcessCarrySameTime
-	model.HandlerMap[model.FunctionCarry+`_`+model.Bybit] = ProcessCarrySameTime
 	model.HandlerMap[model.FunctionHang] = ProcessHang
 	model.HandlerMap[model.FunctionRank] = ProcessRank
 	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar
-	model.HandlerMap[model.FunctionHangContract] = ProcessHangContract
-	model.HandlerMap[model.FunctionBMCarryHang] = ProcessCarryOrder
 	model.HandlerMap[model.FunctionPostonlyHandler] = PostonlyHandler
 	defer model.AppDB.Close()
-	//model.AppDB.AutoMigrate(&model.Account{})
-	//model.AppDB.AutoMigrate(&model.Setting{})
-	//model.AppDB.AutoMigrate(&model.Order{})
-	//model.AppDB.AutoMigrate(&model.Score{})
-	//model.AppDB.AutoMigrate(&model.Candle{})
+	model.AppDB.AutoMigrate(&model.Account{})
+	model.AppDB.AutoMigrate(&model.Setting{})
+	model.AppDB.AutoMigrate(&model.Order{})
+	model.AppDB.AutoMigrate(&model.Score{})
+	model.AppDB.AutoMigrate(&model.Candle{})
 	model.LoadSettings()
 	go AccountHandlerServe()
 	//go CheckPastRefresh()

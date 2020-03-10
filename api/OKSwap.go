@@ -194,7 +194,8 @@ func handleDepthOkSwap(markets *model.Markets, response *simplejson.Json) {
 				for function, handler := range model.GetFunctions(model.OKSwap, symbol) {
 					if handler != nil {
 						util.Notice(`handling by okswap`)
-						handler(model.OKSwap, symbol, function)
+						setting := model.GetSetting(function, model.OKSwap, symbol)
+						handler(setting)
 					}
 				}
 			}
@@ -376,6 +377,7 @@ func cancelOrderOKSwap(key, secret, symbol, orderId string) (result bool) {
 func GetWalletOKSwap(key, secret string) (balance map[string]float64) {
 	response := SignedRequestOKSwap(key, secret, `GET`, `/api/swap/v3/accounts`, nil)
 	orderJson, err := util.NewJSON(response)
+	util.Notice(`okswap wallet: ` + string(response))
 	if err == nil {
 		balance = make(map[string]float64)
 		items := orderJson.Get(`info`).MustArray()
@@ -419,9 +421,11 @@ func GetWalletHistoryOKSwap(key, secret, symbol string) (info string) {
 	symbol = model.GetDialectSymbol(model.OKSwap, symbol)
 	response := SignedRequestOKSwap(key, secret, `GET`,
 		fmt.Sprintf(`/api/swap/v3/accounts/%s/ledger?type=5`, symbol), postData)
+	util.Notice(`okswap wallet history 5: ` + string(response))
 	info = parseTransferAmount(response)
 	response = SignedRequestOKSwap(key, secret, `GET`,
 		fmt.Sprintf(`/api/swap/v3/accounts/%s/ledger?type=6`, symbol), postData)
+	util.Notice(`okswap wallet history 6: ` + string(response))
 	info += parseTransferAmount(response)
 	return
 }
