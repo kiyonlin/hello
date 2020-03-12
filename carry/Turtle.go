@@ -228,6 +228,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 		}
 	}
 	for true {
+		util.Notice(fmt.Sprintf(`query turtle break %s %s`, orderSide, orderIdQuery))
 		order := api.QueryOrderById(``, ``, setting.Market, setting.Symbol, orderIdQuery)
 		if order != nil && order.DealPrice > 0 && order.Status == model.CarryStatusSuccess {
 			setting.UpdatedAt = util.GetNow()
