@@ -146,7 +146,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 	priceShort := 0.0
 	amountLong := turtleData.amount
 	amountShort := turtleData.amount
-	if setting.Chance == 0 { // 开初始多仓
+	if setting.Chance == 0 { // 开初始仓
 		priceLong = turtleData.highDays20
 		priceShort = turtleData.lowDays20
 		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
@@ -173,7 +173,8 @@ var ProcessTurtle = func(setting *model.Setting) {
 		priceLong = setting.PriceX + turtleData.n/2
 		priceShort = math.Max(turtleData.lowDays10, setting.PriceX-2*turtleData.n)
 		amountShort = setting.GridAmount
-		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN, priceShort, priceLong, amountShort, amountLong)
+		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
+			priceShort, priceLong, amountShort, amountLong)
 		// 加仓一个单位
 		if tick.Bids[0].Price > priceLong && int(currentN) < model.AppConfig.TurtleLimitMain {
 			setting.Chance = setting.Chance + 1
@@ -190,8 +191,6 @@ var ProcessTurtle = func(setting *model.Setting) {
 			util.Notice(fmt.Sprintf(`平多 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
 				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
 				setting.PriceX, turtleData.n))
-			placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
-				priceShort, priceLong, amountShort, amountLong)
 			updateTurtleSetting(setting.Market, setting.Symbol, turtleData, setting)
 		}
 	} else if setting.Chance < 0 {
@@ -217,8 +216,6 @@ var ProcessTurtle = func(setting *model.Setting) {
 			util.Notice(fmt.Sprintf(`平空 chance:%f amount:%f price:%f currentN:%f short-long:%f %f px:%f n:%f`,
 				setting.Chance, setting.GridAmount, setting.PriceX, currentN, priceShort, priceLong,
 				setting.PriceX, turtleData.n))
-			placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
-				priceShort, priceLong, amountShort, amountLong)
 			updateTurtleSetting(setting.Market, setting.Symbol, turtleData, setting)
 		}
 	}
