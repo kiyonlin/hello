@@ -202,12 +202,8 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 	orderPriceRelated := 0.0
 	carryType := 0
 	orderParam := ``
-	amountLine := 900000.0
+	amountLine := 1000000.0
 	bidAskRate := 1.0 / 9.0
-	if setting.MarketRelated == model.Bybit {
-		amountLine = 100000
-		bidAskRate = 1.0 / 10.0
-	}
 	if fmb1+priceDistance >= calcAmtPriceBuyNew+priceX && fmbaNew >= setting.RefreshLimitLow {
 		amount = math.Min(math.Min(0.8*fmbaNew, a1), setting.GridAmount)
 		orderSideRelated = model.OrderSideSell
