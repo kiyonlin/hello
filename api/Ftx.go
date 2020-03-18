@@ -98,12 +98,12 @@ func handleDepthFtx(markets *model.Markets, response *simplejson.Json) {
 			for _, item := range bids {
 				price, _ := item.([]interface{})[0].(json.Number).Float64()
 				size, _ := item.([]interface{})[1].(json.Number).Float64()
-				bidAsk.Bids = append(bidAsk.Bids, model.Tick{Price: price, Amount: price * size})
+				bidAsk.Bids = append(bidAsk.Bids, model.Tick{Price: price, Amount: size})
 			}
 			for _, item := range asks {
 				price, _ := item.([]interface{})[0].(json.Number).Float64()
 				size, _ := item.([]interface{})[1].(json.Number).Float64()
-				bidAsk.Asks = append(bidAsk.Bids, model.Tick{Price: price, Amount: price * size})
+				bidAsk.Asks = append(bidAsk.Bids, model.Tick{Price: price, Amount: size})
 			}
 		} else if dataType == `update` {
 			priceAmountBid := make(map[float64]*model.Tick)
@@ -111,12 +111,12 @@ func handleDepthFtx(markets *model.Markets, response *simplejson.Json) {
 			for _, item := range bids {
 				price, _ := item.([]interface{})[0].(json.Number).Float64()
 				size, _ := item.([]interface{})[1].(json.Number).Float64()
-				priceAmountBid[price] = &model.Tick{Price: price, Amount: price * size}
+				priceAmountBid[price] = &model.Tick{Price: price, Amount: size}
 			}
 			for _, item := range asks {
 				price, _ := item.([]interface{})[0].(json.Number).Float64()
 				size, _ := item.([]interface{})[1].(json.Number).Float64()
-				priceAmountAsk[price] = &model.Tick{Price: price, Amount: price * size}
+				priceAmountAsk[price] = &model.Tick{Price: price, Amount: size}
 			}
 			_, oldBidAsk := markets.GetBidAsk(symbol, model.Ftx)
 			for _, bid := range oldBidAsk.Bids {
@@ -160,75 +160,66 @@ func handleDepthFtx(markets *model.Markets, response *simplejson.Json) {
 	}
 }
 
-//
-//func cancelOrderBybit(key, secret, symbol, orderId string) (result bool, errCode, msg string, order *model.Order) {
-//	postData := make(map[string]interface{})
-//	postData[`order_id`] = orderId
-//	postData[`symbol`] = model.GetDialectSymbol(model.Bybit, symbol)
-//	response := SignedRequestBybit(key, secret, `POST`, `/v2/private/order/cancel`, postData)
-//	orderJson, err := util.NewJSON(response)
-//	result = false
-//	if err == nil {
-//		retCode := orderJson.Get(`ret_code`).MustInt64()
-//		if retCode == 0 {
-//			result = true
-//		}
-//		errCode = strconv.FormatInt(retCode, 10)
-//		msg = orderJson.Get(`ret_msg`).MustString()
-//		if orderJson.Get(`result`) != nil {
-//			item, _ := orderJson.Get(`result`).Map()
-//			if item != nil {
-//				order = &model.Order{}
-//				parseOrderBybit(order, item)
-//			}
-//		}
-//		return
-//	}
-//	return false, ``, ``, nil
-//}
-//
-//func queryOrderBybit(key, secret, symbol, orderId string) (orders []*model.Order) {
-//	orders = make([]*model.Order, 0)
-//	postData := make(map[string]interface{})
-//	symbol = model.GetDialectSymbol(model.Bybit, symbol)
-//	postData[`symbol`] = model.GetDialectSymbol(model.Bybit, symbol)
-//	postData[`order_id`] = orderId
-//	response := SignedRequestBybit(key, secret, `GET`, `/open-api/order/list`, postData)
-//	util.Notice(`query orders: ` + string(response))
-//	orderJson, err := util.NewJSON(response)
-//	if err == nil {
-//		orderJson = orderJson.GetPath(`result`, `data`)
-//		if orderJson == nil {
-//			return
-//		}
-//		orderArray, _ := orderJson.Array()
-//		for _, data := range orderArray {
-//			order := &model.Order{Market: model.Bybit}
-//			parseOrderBybit(order, data.(map[string]interface{}))
-//			if order.OrderId != `` {
-//				orders = append(orders, order)
-//			}
-//		}
-//	}
-//	return
-//}
+func GetWalletHistoryFtx(key, secret string) (history string) {
+	history = string(SignedRequestFtx(key, secret, `GET`, `/wallet/deposits`, nil, nil))
+	history += string(SignedRequestFtx(key, secret, `GET`, `/wallet/withdrawals`, nil, nil))
+	return
+}
+
+func getUSDBalanceFtx(key, secret string) (balance float64) {
+	response := SignedRequestFtx(key, secret, `GET`, `/wallet/balances`, nil, nil)
+	util.Notice(`get usd balance ftx: ` + string(response))
+	balanceJson, err := util.NewJSON(response)
+	if err == nil {
+		items := balanceJson.Get(`result`).MustArray()
+		for _, item := range items {
+			data := item.(map[string]interface{})
+			if data[`coin`] != nil && data[`coin`] == `USD` {
+				balance, _ = data[`free`].(json.Number).Float64()
+			}
+		}
+	}
+	return
+}
+
+func cancelOrderFtx(key, secret, orderId string) (result bool) {
+	response := SignedRequestFtx(key, secret, `DELETE`, fmt.Sprintf(`/orders/%s`, orderId), nil, nil)
+	util.Notice(`cancel ftx ` + string(response))
+	orderJson, err := util.NewJSON(response)
+	if err == nil {
+		return orderJson.Get(`success`).MustBool()
+	}
+	return false
+}
+
+func queryOrderFtx(key, secret, orderId string) (order *model.Order) {
+	response := SignedRequestFtx(key, secret, `GET`, fmt.Sprintf(`/orders/%s`, orderId), nil, nil)
+	util.Notice(`query orders ftx: ` + string(response))
+	orderJson, err := util.NewJSON(response)
+	if err == nil {
+		data, _ := orderJson.Get(`result`).Map()
+		order = &model.Order{Market: model.Ftx}
+		parseOrderFtx(order, data)
+	}
+	return
+}
 
 func getAccountFtx(key, secret string, accounts *model.Accounts) {
 	postData := make(map[string]interface{})
 	response := SignedRequestFtx(key, secret, `GET`, `/positions`, nil, postData)
-	fmt.Println(string(response))
-	util.Notice(fmt.Sprintf(string(response)))
-	accounts.SetAccount(model.Ftx, ``, nil)
-	//positionJson, err := util.NewJSON(response)
-	//if err == nil {
-	//	positionJson = positionJson.Get(`result`)
-	//	if positionJson != nil {
-	//		account := &model.Account{Market: model.Bybit, Ts: util.GetNowUnixMillion(), Currency: symbol}
-	//		item, _ := positionJson.Map()
-	//		parseAccountBybit(account, item)
-	//		accounts.SetAccount(model.Bybit, account.Currency, account)
-	//	}
-	//}
+	util.Notice(`get account ftx ` + fmt.Sprintf(string(response)))
+	positionJson, err := util.NewJSON(response)
+	if err == nil {
+		positionJson = positionJson.Get(`result`)
+		if positionJson != nil {
+			data := positionJson.MustArray()
+			for _, item := range data {
+				account := &model.Account{Market: model.Ftx, Ts: util.GetNowUnixMillion()}
+				parseAccountFtx(account, item.(map[string]interface{}))
+				accounts.SetAccount(model.Ftx, account.Currency, account)
+			}
+		}
+	}
 }
 
 func getFundingRateFtx(symbol string) (fundingRate float64, expire int64) {
@@ -261,6 +252,37 @@ func getFundingRateFtx(symbol string) (fundingRate float64, expire int64) {
 	return
 }
 
+func parseAccountFtx(account *model.Account, item map[string]interface{}) {
+	if item[`entryPrice`] != nil {
+		account.EntryPrice, _ = item[`entryPrice`].(json.Number).Float64()
+	}
+	if item[`estimatedLiquidationPrice`] != nil {
+		account.LiquidationPrice, _ = item[`estimatedLiquidationPrice`].(json.Number).Float64()
+	}
+	if item[`future`] != nil {
+		account.Currency = model.GetStandardSymbol(model.Ftx, item[`future`].(string))
+	}
+	if item[`netSize`] != nil {
+		account.Free, _ = item[`netSize`].(json.Number).Float64()
+		//account.Free = account.Free * account.EntryPrice
+	}
+	if item[`realizedPnl`] != nil {
+		account.ProfitReal, _ = item[`realizedPnl`].(json.Number).Float64()
+	}
+	if item[`side`] != nil {
+		account.Direction = item[`side`].(string)
+	}
+	if item[`bust_price`] != nil {
+		account.BankruptcyPrice, _ = strconv.ParseFloat(item[`bust_price`].(string), 64)
+	}
+	if item[`position_margin`] != nil {
+		account.Margin, _ = strconv.ParseFloat(item[`position_margin`].(string), 64)
+	}
+	if item[`unrealizedPnl`] != nil {
+		account.ProfitUnreal, _ = item[`unrealizedPnl`].(json.Number).Float64()
+	}
+}
+
 //remainingSize	number	31431.0
 //reduceOnly	boolean	false
 //ioc	boolean	false
@@ -287,6 +309,9 @@ func parseOrderFtx(order *model.Order, item map[string]interface{}) {
 	if item[`price`] != nil {
 		order.Price, _ = item[`price`].(json.Number).Float64()
 	}
+	if item[`avgFillPrice`] != nil {
+		order.DealPrice, _ = item[`avgFillPrice`].(json.Number).Float64()
+	}
 	if item[`side`] != nil {
 		order.OrderSide = strings.ToLower(item[`side`].(string))
 	}
@@ -305,14 +330,15 @@ func parseOrderFtx(order *model.Order, item map[string]interface{}) {
 	if item[`triggeredAt`] != nil {
 		order.OrderUpdateTime, _ = time.Parse(time.RFC3339, item[`triggeredAt`].(string))
 	}
+
 	if order.Status != model.CarryStatusSuccess && order.Status != model.CarryStatusFail {
 		order.Status = model.CarryStatusWorking
 	}
 	if order.DealAmount == 0 || order.DealPrice == 0 {
 		order.DealPrice = order.Price
 	}
-	order.Amount = order.Amount * order.Price
-	order.DealAmount = order.DealAmount * order.Price
+	//order.Amount = order.Amount * order.Price
+	//order.DealAmount = order.DealAmount * order.Price
 	order.UnfilledQuantity = order.Amount - order.DealAmount
 	return
 }
@@ -382,6 +408,7 @@ func SignedRequestFtx(key, secret, method, path string, param, body map[string]i
 		hash.Write([]byte(fmt.Sprintf(`%d%s%s%s`, ts, method, uri, bodyStr)))
 	} else {
 		hash.Write([]byte(fmt.Sprintf(`%d%s%s`, ts, method, uri)))
+		bodyStr = ``
 	}
 	sign := hex.EncodeToString(hash.Sum(nil))
 	headers := map[string]string{`FTX-KEY`: key, `FTX-TS`: strconv.FormatInt(ts, 10), "FTX-SIGN": sign,

@@ -17,6 +17,7 @@ var fundingRate = make(map[string]map[string]float64)     // market - symbol - f
 var fundingRateUpdate = make(map[string]map[string]int64) // market - symbol - update time
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
 var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
+var usdBalance = make(map[string]float64) // market_rfc3339, usd balance
 var candles = make(map[string]*Candle)    // market+symbol+period+rfc3339, candle
 var CarryInfo = make(map[string]string)   // function - msg
 var AppMetric = &MetricManager{}
@@ -87,44 +88,54 @@ var AppPause = false
 var AccountChannel = make(chan map[string]*Account, 50)
 
 type Config struct {
-	lock            sync.Mutex
-	Env             string
-	DBConnection    string
-	Channels        int
-	InChina         int // 1 in china, otherwise outter china
-	RefreshTimeSlot int
-	Between         int64
-	ChannelSlot     float64
-	Delay           float64
-	WSUrls          map[string]string // marketName - ws url
-	RestUrls        map[string]string // marketName - rest url
-	HuobiKey        string
-	HuobiSecret     string
-	OkexKey         string
-	OkexSecret      string
-	FtxKey          string
-	FtxSecret       string
-	BinanceKey      string
-	BinanceSecret   string
-	CoinbigKey      string
-	CoinbigSecret   string
-	CoinparkKey     string
-	CoinparkSecret  string
-	BitmexKey       string
-	BitmexSecret    string
-	BybitKey        string
-	BybitSecret     string
-	FcoinKey        string
-	FcoinSecret     string
-	AmountRate      float64 // 刷单填写数量比率
-	PreDealDis      float64
-	BinanceOrderDis float64
-	Handle          string // 0 不执行处理程序，1执行处理程序
-	Mail            string
-	Port            string
-	TurtleLimitMain int
-	SymbolPrice     map[string]float64 // symbol - price
-	UpdatePriceTime map[string]int64   // symbol -time
+	lock                sync.Mutex
+	Env                 string
+	DBConnection        string
+	Channels            int
+	InChina             int // 1 in china, otherwise outter china
+	RefreshTimeSlot     int
+	Between             int64
+	ChannelSlot         float64
+	Delay               float64
+	WSUrls              map[string]string // marketName - ws url
+	RestUrls            map[string]string // marketName - rest url
+	HuobiKey            string
+	HuobiSecret         string
+	OkexKey             string
+	OkexSecret          string
+	FtxKey              string
+	FtxSecret           string
+	BinanceKey          string
+	BinanceSecret       string
+	CoinbigKey          string
+	CoinbigSecret       string
+	CoinparkKey         string
+	CoinparkSecret      string
+	BitmexKey           string
+	BitmexSecret        string
+	BybitKey            string
+	BybitSecret         string
+	FcoinKey            string
+	FcoinSecret         string
+	AmountRate          float64 // 刷单填写数量比率
+	PreDealDis          float64
+	BinanceOrderDis     float64
+	Handle              string // 0 不执行处理程序，1执行处理程序
+	Mail                string
+	Port                string
+	TurtleLimitMain     int
+	TurtleLimitPlatform int
+	SymbolPrice         map[string]float64 // symbol - price
+	UpdatePriceTime     map[string]int64   // symbol -time
+}
+
+func GetTurtleLimit(symbol string) (limit int) {
+	switch symbol {
+	case `btcusd_p`, `ethusd_p`, `eosusd_p`, `ltcusd_p`, `bchusd_p`:
+		return AppConfig.TurtleLimitMain
+	default:
+		return AppConfig.TurtleLimitPlatform
+	}
 }
 
 func GetDialectSymbol(market, symbol string) (dialectSymbol string) {
@@ -292,6 +303,24 @@ func SetCarryInfo(key, value string) {
 		CarryInfo = make(map[string]string)
 	}
 	CarryInfo[key] = value
+}
+
+func GetUSDBalance(market string, timeBalance time.Time) (balance float64) {
+	infoLock.Lock()
+	defer infoLock.Unlock()
+	if usdBalance == nil {
+		usdBalance = make(map[string]float64)
+	}
+	return usdBalance[market+timeBalance.Format(time.RFC3339)[0:19]]
+}
+
+func SetUSDBalance(market string, timeBalance time.Time, balance float64) {
+	infoLock.Lock()
+	defer infoLock.Unlock()
+	if usdBalance == nil {
+		usdBalance = make(map[string]float64)
+	}
+	usdBalance[market+timeBalance.Format(time.RFC3339)[0:19]] = balance
 }
 
 func GetBtcBalance(market string, timeBalance time.Time) (balance float64) {

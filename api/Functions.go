@@ -260,6 +260,8 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (
 		result, errCode, msg, order = cancelOrderBybit(key, secret, symbol, orderId)
 	case model.OKSwap:
 		result = cancelOrderOKSwap(key, secret, symbol, orderId)
+	case model.Ftx:
+		result = cancelOrderFtx(key, secret, orderId)
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
 	return result, errCode, msg, order
@@ -305,7 +307,6 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 	dEnd, _ := time.ParseDuration(`24h`)
 	begin := timeCandle.Add(dBegin)
 	end := timeCandle.Add(dEnd)
-	//fmt.Println(begin.String() + `api========>` + end.String())
 	switch market {
 	case model.Bitmex:
 		candles := getCandlesBitmex(key, secret, symbol, `1d`, begin, end, 20)
@@ -346,10 +347,24 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 			candle.N += (candleCurrent.PriceHigh - candleCurrent.PriceLow) / 20
 		}
 	}
-	//fmt.Println(candle.Start.String())
 	model.AppDB.Save(&candle)
 	model.SetCandle(market, symbol, `1d`, timeCandle.Format(time.RFC3339)[0:10], candle)
 	return candle
+}
+
+func GetUSDBalance(key, secret, market string) (balance float64) {
+	today := util.GetNow()
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	model.GetUSDBalance(market, today)
+	if balance > 0 {
+		return balance
+	}
+	switch market {
+	case model.Ftx:
+		balance = getUSDBalanceFtx(key, secret)
+		model.SetUSDBalance(market, today, balance)
+	}
+	return
 }
 
 func GetBtcBalance(key, secret, market string) (balance float64) {
@@ -432,6 +447,8 @@ func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.O
 		}
 	case model.OKSwap:
 		return queryOrderOKSwap(key, secret, symbol, orderId)
+	case model.Ftx:
+		return queryOrderFtx(key, symbol, orderId)
 	}
 	return &model.Order{OrderId: orderId, Symbol: symbol, Market: market, DealAmount: dealAmount, DealPrice: dealPrice,
 		Status: status}
@@ -619,14 +636,9 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		OrderTime: util.GetNow(), UnfilledQuantity: amount}
 	if market == model.OKSwap {
 		amount = amount / 100
-	} else if market == model.Ftx {
-		amount = amount / price
 	}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(market, symbol))
-	strAmount := fmt.Sprintf(`%f`, amount)
-	if market != model.Ftx {
-		amount, strAmount = util.FormatNum(amount, GetAmountDecimal(market, symbol))
-	}
+	_, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%s price:%s`,
 		orderSide, market, symbol, start, strAmount, strPrice))
 	if amountType == model.AmountTypeContractNumber {
@@ -687,7 +699,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	case model.Bybit:
 		placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	case model.Ftx:
-		placeOrderFtx(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
+		placeOrderFtx(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice,
+			fmt.Sprintf(`%f`, amount))
 	case model.OKSwap:
 		account := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol)
 		if orderSide == model.OrderSideSell {
