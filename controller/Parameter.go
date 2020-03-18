@@ -285,10 +285,6 @@ func SetParameters(c *gin.Context) {
 	if handle != `` {
 		model.AppConfig.Handle = handle
 	}
-	between := c.Query(`between`)
-	if len(between) > 0 {
-		model.AppConfig.Between, _ = strconv.ParseInt(between, 10, 64)
-	}
 	predealdis := c.Query(`predealdis`)
 	if len(predealdis) > 0 {
 		model.AppConfig.PreDealDis, _ = strconv.ParseFloat(predealdis, 64)

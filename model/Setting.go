@@ -28,7 +28,6 @@ type Setting struct {
 	RefreshLimitLow   float64
 	BinanceDisMin     float64
 	BinanceDisMax     float64
-	RefreshSameTime   int  // 1 stands for same time, otherwise separate
 	ID                uint `gorm:"primary_key"`
 	CreatedAt         time.Time
 	UpdatedAt         time.Time

@@ -506,7 +506,7 @@ var ProcessRefresh = func(setting *model.Setting) {
 	if model.AppConfig.Env == `simon` {
 		resize = 100
 	}
-	refreshAble, orderSide, orderReverse, orderPrice := preDeal(setting, setting.Market, setting.Symbol,
+	refreshAble, orderSide, orderPrice := preDeal(setting, setting.Market, setting.Symbol,
 		otherPrice, amount*resize, tick)
 	if refreshOrders.CheckLastChancePrice(setting.Market, setting.Symbol, orderPrice, 0.9*priceDistance) {
 		refreshOrders.SetLastChancePrice(setting.Market, setting.Symbol, 0)
@@ -522,7 +522,7 @@ var ProcessRefresh = func(setting *model.Setting) {
 		if haveAmount {
 			if refreshAble {
 				doRefresh(model.KeyDefault, model.SecretDefault, setting, setting.Market, setting.Symbol, setting.AccountType,
-					orderSide, orderReverse, orderPrice, 0.9*priceDistance, amount, tick)
+					orderSide, orderPrice, 0.9*priceDistance, amount, tick)
 			} else {
 				util.Notice(fmt.Sprintf(`[in refreshing not refreshable %s]`, setting.Symbol))
 			}
@@ -828,11 +828,11 @@ func CancelRefreshHang(key, secret, market, symbol, keep string) {
 }
 
 func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount float64, tick *model.BidAsk) (
-	result bool, orderSide, reverseSide string, orderPrice float64) {
+	result bool, orderSide string, orderPrice float64) {
 	priceDistance := 1 / math.Pow(10, api.GetPriceDecimal(market, symbol))
 	if tick.Asks[0].Price > 1.0003*tick.Bids[0].Price && symbol != `btc_pax` &&
 		tick.Bids[0].Price+1.1*priceDistance < tick.Asks[0].Price {
-		return false, "", "", 0
+		return false, "", 0
 	}
 	if tick.Bids[0].Price > otherPrice*(1+setting.BinanceDisMin) &&
 		tick.Bids[0].Price < otherPrice*(1+setting.BinanceDisMax) {
@@ -841,7 +841,7 @@ func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount f
 				tick.Bids[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Asks[0].Amount > 2*tick.Bids[0].Amount &&
 				tick.Asks[0].Amount < model.AppConfig.PreDealDis*tick.Bids[0].Amount {
-				return true, model.OrderSideBuy, model.OrderSideSell, tick.Bids[0].Price
+				return true, model.OrderSideBuy, tick.Bids[0].Price
 			}
 		} else {
 			bidAmount := tick.Bids[0].Amount
@@ -857,12 +857,12 @@ func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount f
 						orderPrice, tick.Bids[0].Price))
 					orderPrice = tick.Bids[0].Price
 				}
-				return true, model.OrderSideBuy, model.OrderSideSell, orderPrice
+				return true, model.OrderSideBuy, orderPrice
 			} else if tick.Bids[0].Amount < amount*setting.RefreshLimit &&
 				tick.Bids[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Asks[0].Amount > 2*tick.Bids[0].Amount &&
 				tick.Asks[0].Amount < model.AppConfig.PreDealDis*tick.Bids[0].Amount {
-				return true, model.OrderSideBuy, model.OrderSideSell, tick.Bids[0].Price
+				return true, model.OrderSideBuy, tick.Bids[0].Price
 			}
 		}
 	}
@@ -873,7 +873,7 @@ func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount f
 				tick.Asks[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Bids[0].Amount > 2*tick.Asks[0].Amount &&
 				tick.Bids[0].Amount < model.AppConfig.PreDealDis*tick.Asks[0].Amount {
-				return true, model.OrderSideSell, model.OrderSideBuy, tick.Asks[0].Price
+				return true, model.OrderSideSell, tick.Asks[0].Price
 			}
 		} else {
 			askAmount := tick.Asks[0].Amount
@@ -889,16 +889,16 @@ func preDeal(setting *model.Setting, market, symbol string, otherPrice, amount f
 						orderPrice, tick.Asks[0].Price))
 					orderPrice = tick.Asks[0].Price
 				}
-				return true, model.OrderSideSell, model.OrderSideBuy, orderPrice
+				return true, model.OrderSideSell, orderPrice
 			} else if tick.Asks[0].Amount < amount*setting.RefreshLimit &&
 				tick.Asks[0].Amount > amount*setting.RefreshLimitLow &&
 				tick.Bids[0].Amount > 2*tick.Asks[0].Amount &&
 				tick.Bids[0].Amount < model.AppConfig.PreDealDis*tick.Asks[0].Amount {
-				return true, model.OrderSideSell, model.OrderSideBuy, tick.Asks[0].Price
+				return true, model.OrderSideSell, tick.Asks[0].Price
 			}
 		}
 	}
-	return false, ``, ``, 0
+	return false, ``, 0
 }
 
 func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice float64) {
@@ -929,7 +929,7 @@ func getOtherPrice(market, symbol, otherMarket string) (result bool, otherPrice 
 	return true, (otherTick.Bids[0].Price + otherTick.Asks[0].Price) / 2
 }
 
-func doRefresh(key, secret string, setting *model.Setting, market, symbol, accountType, orderSide, orderReverse string,
+func doRefresh(key, secret string, setting *model.Setting, market, symbol, accountType, orderSide string,
 	price, priceDistance, amount float64, tick *model.BidAsk) {
 	util.Notice(fmt.Sprintf(`[doRefresh]%s %s %s %f %f`, symbol, accountType, orderSide, price, amount))
 	orders := &RefreshBidAsk{}
@@ -942,20 +942,8 @@ func doRefresh(key, secret string, setting *model.Setting, market, symbol, accou
 	if price-tick.Bids[0].Price > priceDistance {
 		askAmount = 0.9998 * amount
 	}
-	if setting.RefreshSameTime == 1 {
-		go placeRefreshOrder(key, secret, orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
-		placeRefreshOrder(key, secret, orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
-	} else {
-		if orderSide == model.OrderSideBuy && orderReverse == model.OrderSideSell {
-			placeRefreshOrder(key, secret, orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
-			time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
-			placeRefreshOrder(key, secret, orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
-		} else if orderSide == model.OrderSideSell && orderReverse == model.OrderSideBuy {
-			placeRefreshOrder(key, secret, orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
-			time.Sleep(time.Millisecond * time.Duration(model.AppConfig.Between))
-			placeRefreshOrder(key, secret, orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
-		}
-	}
+	go placeRefreshOrder(key, secret, orders, model.OrderSideBuy, market, symbol, accountType, price, bidAmount)
+	placeRefreshOrder(key, secret, orders, model.OrderSideSell, market, symbol, accountType, price, askAmount)
 	time.Sleep(time.Second)
 }
 
