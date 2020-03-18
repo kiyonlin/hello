@@ -81,8 +81,8 @@ func Test_RefreshAccount(t *testing.T) {
 	//api.RefreshAccount(``, ``, model.Ftx)
 	//api.CreateSubAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
 	order := api.PlaceOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret,
-		model.OrderSideSell, model.OrderTypeLimit,
-		model.Ftx, `xrpusd_p`, ``, ``, ``, ``, 0.235567,
+		model.OrderSideSell, model.OrderTypeMarket,
+		model.Ftx, `htusd_p`, ``, ``, ``, ``, 0.235567,
 		1, false)
 	fmt.Println(order.OrderId)
 	//api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap)
@@ -105,7 +105,7 @@ func Test_wallet(t *testing.T) {
 	today := time.Now().In(time.UTC)
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	//api.GetDayCandle(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex, `btcusd_p`, today)
-	api.GetDayCandle(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `btcusd_p`, today)
+	api.GetDayCandle(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `htusd_p`, today)
 	//balanceUSD := api.GetWalletHistoryFtx(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
 	//balanceUSD := api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
 	//fmt.Print(balanceUSD)

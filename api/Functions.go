@@ -328,7 +328,8 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 	}
 	candle = model.GetCandle(market, symbol, `1d`, timeCandle.Format(time.RFC3339)[0:10])
 	if candle == nil {
-		util.Notice(fmt.Sprintf(`error: can not get candle %s %s`, `1d`, timeCandle.String()))
+		util.Notice(fmt.Sprintf(`error: can not get candle %s %s %s %s`,
+			market, symbol, `1d`, timeCandle.String()))
 		return
 	}
 	candle.N = (candle.PriceHigh - candle.PriceLow) / 20

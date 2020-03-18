@@ -43,16 +43,15 @@ func GetSetting(function, market, symbol string) []*Setting {
 	return marketSymbolSetting[function][market][symbol]
 }
 
-func GetCurrentN(function string) (currentN float64) {
-	if marketSymbolSetting[function] == nil {
+func GetCurrentN(setting *Setting) (currentN float64) {
+	if setting == nil || marketSymbolSetting[setting.Function] == nil ||
+		marketSymbolSetting[setting.Function][setting.Market] == nil {
 		return 0
 	}
-	for _, value := range marketSymbolSetting[function] {
-		for _, settings := range value {
-			for _, setting := range settings {
-				if setting != nil {
-					currentN += setting.Chance
-				}
+	for _, value := range marketSymbolSetting[setting.Function][setting.Market] {
+		for _, item := range value {
+			if item != nil && item.FunctionParameter == setting.FunctionParameter {
+				currentN += setting.Chance
 			}
 		}
 	}

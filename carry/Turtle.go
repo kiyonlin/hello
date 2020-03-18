@@ -125,7 +125,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 	if turtleData == nil || turtleData.n == 0 || turtleData.amount == 0 {
 		return
 	}
-	currentN := model.GetCurrentN(model.FunctionTurtle)
+	currentN := model.GetCurrentN(setting)
 	if currentN >= setting.AmountLimit && turtleData.orderLong != nil {
 		if api.IsValid(turtleData.orderLong) {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
