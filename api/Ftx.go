@@ -162,6 +162,49 @@ func handleDepthFtx(markets *model.Markets, response *simplejson.Json) {
 	}
 }
 
+func getCandlesFtx(key, secret, symbol, binSize string, start, end time.Time, count int) (
+	candles map[string]*model.Candle) {
+	candles = make(map[string]*model.Candle)
+	symbolNew := model.GetDialectSymbol(model.Ftx, symbol)
+	param := make(map[string]interface{})
+	if binSize == `1d` {
+		param[`resolution`] = `86400`
+	}
+	param[`limit`] = fmt.Sprintf(`%d`, count)
+	param[`start_time`] = fmt.Sprintf(`%d`, start.Unix())
+	param[`end_time`] = fmt.Sprintf(`%d`, end.Unix())
+	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+	end = time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
+	response := SignedRequestFtx(key, secret, `GET`,
+		fmt.Sprintf(`/markets/%s/candles`, symbolNew), param, nil)
+	candleJson, err := util.NewJSON(response)
+	if err == nil {
+		candleJsons := candleJson.Get(`result`).MustArray()
+		for _, value := range candleJsons {
+			item := value.(map[string]interface{})
+			candle := &model.Candle{Market: model.Ftx, Symbol: symbol, Period: binSize}
+			if item[`open`] != nil {
+				candle.PriceOpen, _ = item[`open`].(json.Number).Float64()
+			}
+			if item[`close`] != nil {
+				candle.PriceClose, _ = item[`close`].(json.Number).Float64()
+			}
+			if item[`high`] != nil {
+				candle.PriceHigh, _ = item[`high`].(json.Number).Float64()
+			}
+			if item[`low`] != nil {
+				candle.PriceLow, _ = item[`low`].(json.Number).Float64()
+			}
+			if item[`startTime`] != nil {
+				start, _ := time.Parse(time.RFC3339, item[`startTime`].(string))
+				candle.UTCDate = start.Format(time.RFC3339)[0:10]
+				candles[candle.UTCDate] = candle
+			}
+		}
+	}
+	return
+}
+
 func GetWalletHistoryFtx(key, secret string) (history string) {
 	history = string(SignedRequestFtx(key, secret, `GET`, `/wallet/deposits`, nil, nil))
 	history += string(SignedRequestFtx(key, secret, `GET`, `/wallet/withdrawals`, nil, nil))

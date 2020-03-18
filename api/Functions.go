@@ -303,24 +303,27 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 	if candle.N > 0 {
 		return
 	}
-	dBegin, _ := time.ParseDuration(`-456h`)
+	dBegin, _ := time.ParseDuration(`-480h`)
 	dEnd, _ := time.ParseDuration(`24h`)
 	begin := timeCandle.Add(dBegin)
 	end := timeCandle.Add(dEnd)
+	var candles map[string]*model.Candle
 	switch market {
 	case model.Bitmex:
-		candles := getCandlesBitmex(key, secret, symbol, `1d`, begin, end, 20)
-		for _, value := range candles {
-			c := model.GetCandle(value.Market, value.Symbol, value.Period, value.UTCDate)
-			if c == nil || c.N == 0 {
-				candleDB := &model.Candle{}
-				model.AppDB.Where(`market = ? and symbol = ? and period = ? and utc_date = ?`,
-					market, symbol, `1d`, value.UTCDate).First(candleDB)
-				if candleDB.N > 0 {
-					value.N = candleDB.N
-				}
-				model.SetCandle(market, symbol, `1d`, value.UTCDate, value)
+		candles = getCandlesBitmex(key, secret, symbol, `1d`, begin, end, 20)
+	case model.Ftx:
+		candles = getCandlesFtx(key, secret, symbol, `1d`, begin, end, 20)
+	}
+	for _, value := range candles {
+		c := model.GetCandle(value.Market, value.Symbol, value.Period, value.UTCDate)
+		if c == nil || c.N == 0 {
+			candleDB := &model.Candle{}
+			model.AppDB.Where(`market = ? and symbol = ? and period = ? and utc_date = ?`,
+				market, symbol, `1d`, value.UTCDate).First(candleDB)
+			if candleDB.N > 0 {
+				value.N = candleDB.N
 			}
+			model.SetCandle(market, symbol, `1d`, value.UTCDate, value)
 		}
 	}
 	candle = model.GetCandle(market, symbol, `1d`, timeCandle.Format(time.RFC3339)[0:10])

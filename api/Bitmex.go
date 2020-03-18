@@ -738,7 +738,7 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 	postData[`endTime`] = end.Format(time.RFC3339)
 	response := SignedRequestBitmex(key, secret, `GET`, `/trade/bucketed`, postData)
 	candleJson, err := util.NewJSON(response)
-	duration, _ := time.ParseDuration(`-24h`)
+	//duration, _ := time.ParseDuration(`-24h`)
 	if err == nil {
 		candleJsons, err := candleJson.Array()
 		if err == nil {
@@ -759,7 +759,7 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 				}
 				if item[`timestamp`] != nil {
 					start, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
-					start = start.Add(duration)
+					//start = start.Add(duration)
 					candle.UTCDate = start.Format(time.RFC3339)[0:10]
 					candles[candle.UTCDate] = candle
 				}
