@@ -103,7 +103,7 @@ func handleDepthFtx(markets *model.Markets, response *simplejson.Json) {
 			for _, item := range asks {
 				price, _ := item.([]interface{})[0].(json.Number).Float64()
 				size, _ := item.([]interface{})[1].(json.Number).Float64()
-				bidAsk.Asks = append(bidAsk.Bids, model.Tick{Price: price, Amount: size})
+				bidAsk.Asks = append(bidAsk.Asks, model.Tick{Price: price, Amount: size})
 			}
 		} else if dataType == `update` {
 			priceAmountBid := make(map[float64]*model.Tick)
