@@ -252,7 +252,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64) {
 	if turtleData.orderLong == nil && currentN < setting.AmountLimit {
-		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %d`,
+		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %f`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, setting.AmountLimit))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeStop, market,
 			symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
@@ -261,7 +261,7 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 		}
 	}
 	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit {
-		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %d`,
+		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %f`,
 			setting.Chance, setting.GridAmount, setting.PriceX, currentN, setting.AmountLimit))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideSell, model.OrderTypeStop,
 			market, symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
