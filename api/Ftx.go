@@ -69,8 +69,6 @@ func WsDepthServeFtx(markets *model.Markets, errHandler ErrHandler) (chan struct
 		msgType := responseJson.Get(`channel`).MustString()
 		if msgType == `orderbook` {
 			handleDepthFtx(markets, responseJson)
-		} else {
-			fmt.Println(string(event))
 		}
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Ftx]
@@ -273,7 +271,6 @@ func getFundingRateFtx(symbol string) (fundingRate float64, expire int64) {
 	postData[`future`] = symbol
 	response := SignedRequestFtx(``, ``, `GET`,
 		`/funding_payments`, nil, postData)
-	fmt.Println(string(response))
 	instrumentJson, err := util.NewJSON(response)
 	if err == nil {
 		retCode := instrumentJson.Get(`ret_code`).MustFloat64()
