@@ -83,7 +83,7 @@ func handleDepthFtx(markets *model.Markets, response *simplejson.Json) {
 	if response == nil {
 		return
 	}
-	symbol := model.GetSymbol(model.Ftx, response.Get("market").MustString())
+	symbol := model.GetStandardSymbol(model.Ftx, response.Get("market").MustString())
 	dataType := response.Get(`type`).MustString()
 	data := response.Get(`data`)
 	if data != nil {
@@ -149,9 +149,9 @@ func handleDepthFtx(markets *model.Markets, response *simplejson.Json) {
 		sort.Sort(bidAsk.Asks)
 		sort.Sort(sort.Reverse(bidAsk.Bids))
 		if markets.SetBidAsk(symbol, model.Ftx, bidAsk) {
+			markets.ToStringBidAsk(bidAsk)
 			for function, handler := range model.GetFunctions(model.Ftx, symbol) {
 				if handler != nil {
-					util.Notice(`handling by ftx ` + function)
 					settings := model.GetSetting(function, model.Ftx, symbol)
 					for _, setting := range settings {
 						handler(setting)
