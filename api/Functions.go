@@ -729,8 +729,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 		order.Status = model.CarryStatusWorking
 	}
 	end := util.GetNowUnixMillion()
-	util.Notice(fmt.Sprintf(`...%s %s %s return order at %d distance %d`,
-		orderSide, market, symbol, end, end-start))
+	util.Notice(fmt.Sprintf(`...%s %s %s return order at %d distance %d %s`,
+		orderSide, market, symbol, end, end-start, order.Status))
 	if saveDB {
 		order.RefreshType = refreshType
 		go model.AppDB.Save(&order)

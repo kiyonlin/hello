@@ -372,7 +372,6 @@ func parseOrderFtx(order *model.Order, item map[string]interface{}) {
 	if item[`triggeredAt`] != nil {
 		order.OrderUpdateTime, _ = time.Parse(time.RFC3339, item[`triggeredAt`].(string))
 	}
-
 	if order.Status != model.CarryStatusSuccess && order.Status != model.CarryStatusFail {
 		order.Status = model.CarryStatusWorking
 	}
