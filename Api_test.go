@@ -81,10 +81,13 @@ func Test_RefreshAccount(t *testing.T) {
 	//api.RefreshAccount(``, ``, model.Ftx)
 	//api.CreateSubAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
 	order := api.PlaceOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret,
-		model.OrderSideSell, model.OrderTypeMarket,
-		model.Ftx, `htusd_p`, ``, ``, ``, ``, 0.235567,
-		1, false)
+		model.OrderSideSell, model.OrderTypeStop,
+		model.Ftx, `btcusd_p`, ``, ``, ``, ``, 5188,
+		0.0001, false)
 	fmt.Println(order.OrderId)
+	//result, _, _, _ := api.CancelOrder(``, ``, model.Ftx, `htusd_p`, model.OrderTypeStop, "899071")
+	//fmt.Print(result)
+	//api.QueryOrderById("", "", model.Ftx, `htusd_p`, "899071")
 	//api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKSwap)
 	//api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OrderSideBuy, ``, model.OKSwap,
 	//	`btcusd_p`, ``, ``, ``, 9666, 300, false)
@@ -96,24 +99,25 @@ func Test_RefreshAccount(t *testing.T) {
 func Test_wallet(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
-	var err error
-	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
-	if err != nil {
-		util.Notice(err.Error())
-		return
-	}
-	today := time.Now().In(time.UTC)
-	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	//var err error
+	//model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
+	//if err != nil {
+	//	util.Notice(err.Error())
+	//	return
+	//}
+	//today := time.Now().In(time.UTC)
+	//today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	//api.GetDayCandle(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex, `btcusd_p`, today)
-	api.GetDayCandle(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `htusd_p`, today)
+	//api.GetDayCandle(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `htusd_p`, today)
 	//balanceUSD := api.GetWalletHistoryFtx(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
 	//balanceUSD := api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
 	//fmt.Print(balanceUSD)
 	//api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
 
 	//api.RefreshAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
-	//order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, ``, `4041147187`)
-	//fmt.Print(order.DealPrice)
+	order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
+		`btcusd_p`, model.OrderTypeStop, `901501`)
+	fmt.Print(order.DealPrice)
 	//result, _, _, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `xrpusd_p`, `4041706684`)
 	//fmt.Print(result)
 	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)

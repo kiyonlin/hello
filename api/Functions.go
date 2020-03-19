@@ -200,9 +200,9 @@ func GetAmountDecimal(market, symbol string) float64 {
 	return 4
 }
 
-func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (res bool, order *model.Order) {
+func MustCancel(key, secret, market, symbol, orderType, orderId string, mustCancel bool) (res bool, order *model.Order) {
 	for i := 0; i < 7; i++ {
-		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, orderId)
+		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, orderType, orderId)
 		res = result
 		order = cancelOrder
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
@@ -228,7 +228,7 @@ func MustCancel(key, secret, market, symbol, orderId string, mustCancel bool) (r
 	return res, order
 }
 
-func CancelOrder(key, secret, market string, symbol string, orderId string) (
+func CancelOrder(key, secret, market, symbol, orderType, orderId string) (
 	result bool, errCode, msg string, order *model.Order) {
 	if model.AppConfig.Env == `test` {
 		return true, ``, `test cancel`,
@@ -261,7 +261,7 @@ func CancelOrder(key, secret, market string, symbol string, orderId string) (
 	case model.OKSwap:
 		result = cancelOrderOKSwap(key, secret, symbol, orderId)
 	case model.Ftx:
-		result = cancelOrderFtx(key, secret, orderId)
+		result = cancelOrderFtx(key, secret, orderType, orderId)
 	}
 	util.Notice(fmt.Sprintf(`[cancel %s %v %s %s]`, orderId, result, market, symbol))
 	return result, errCode, msg, order
@@ -415,7 +415,7 @@ func GetFundingRate(market, symbol string) (fundingRate float64, expireTime int6
 	return
 }
 
-func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.Order) {
+func QueryOrderById(key, secret, market, symbol, orderType, orderId string) (order *model.Order) {
 	var dealAmount, dealPrice float64
 	var status string
 	switch market {
@@ -452,7 +452,16 @@ func QueryOrderById(key, secret, market, symbol, orderId string) (order *model.O
 	case model.OKSwap:
 		return queryOrderOKSwap(key, secret, symbol, orderId)
 	case model.Ftx:
-		return queryOrderFtx(key, symbol, orderId)
+		if orderType == model.OrderTypeStop {
+			newOrderId := queryTriggerOrderId(key, secret, orderId)
+			if newOrderId != `` {
+				return queryOrderFtx(key, secret, newOrderId)
+			} else {
+				status = model.CarryStatusWorking
+			}
+		} else {
+			return queryOrderFtx(key, secret, orderId)
+		}
 	}
 	return &model.Order{OrderId: orderId, Symbol: symbol, Market: market, DealAmount: dealAmount, DealPrice: dealPrice,
 		Status: status}

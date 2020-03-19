@@ -41,7 +41,7 @@ var ProcessHang = func(setting *model.Setting) {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-			api.CancelOrder(``, ``, setting.Market, setting.Symbol, order.OrderId)
+			api.CancelOrder(``, ``, setting.Market, setting.Symbol, ``, order.OrderId)
 			didSmth = true
 		}
 	}

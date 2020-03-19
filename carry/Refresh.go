@@ -152,7 +152,7 @@ func (refreshOrders *RefreshOrders) removeRefreshHang(key, secret, symbol string
 		}
 		if refreshOrders.fcoinHang[symbol][i].OrderId == order.OrderId {
 			if needCancel {
-				api.MustCancel(key, secret, order.Market, order.Symbol, order.OrderId, true)
+				api.MustCancel(key, secret, order.Market, order.Symbol, order.OrderType, order.OrderId, true)
 			}
 		} else {
 			orders = append(orders, refreshOrders.fcoinHang[symbol][i])
@@ -960,10 +960,12 @@ func receiveRefresh(key, secret string, orders *RefreshBidAsk, market, symbol, a
 			} else {
 				if refreshLastBid.Status == model.CarryStatusWorking &&
 					refreshLastAsk.Status == model.CarryStatusFail {
-					api.MustCancel(key, secret, refreshLastBid.Market, refreshLastBid.Symbol, refreshLastBid.OrderId, true)
+					api.MustCancel(key, secret, refreshLastBid.Market, refreshLastBid.Symbol,
+						refreshLastBid.OrderType, refreshLastBid.OrderId, true)
 				} else if refreshLastAsk.Status == model.CarryStatusWorking &&
 					refreshLastBid.Status == model.CarryStatusFail {
-					api.MustCancel(key, secret, refreshLastAsk.Market, refreshLastAsk.Symbol, refreshLastAsk.OrderId, true)
+					api.MustCancel(key, secret, refreshLastAsk.Market, refreshLastAsk.Symbol,
+						refreshLastAsk.OrderType, refreshLastAsk.OrderId, true)
 				}
 				if refreshLastBid.Status == model.CarryStatusFail || refreshLastAsk.Status == model.CarryStatusFail {
 					refreshOrders.setWaiting(symbol, true)

@@ -55,7 +55,7 @@ var _ = func() {
 			for _, order := range orders {
 				if order != nil && order.OrderId != `` {
 					result, errCode, msg, _ := api.CancelOrder(model.KeyDefault, model.SecretDefault,
-						market, symbol, order.OrderId)
+						market, symbol, ``, order.OrderId)
 					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
 					time.Sleep(time.Millisecond * 100)
 				}
@@ -152,7 +152,7 @@ func MaintainTransFee(key, secret string) {
 			util.Info(fmt.Sprintf(`--- get working orders %d`, len(orders)))
 			feeIndex += len(orders)
 			for _, value := range orders {
-				order := api.QueryOrderById(key, secret, value.Market, value.Symbol, value.OrderId)
+				order := api.QueryOrderById(key, secret, value.Market, value.Symbol, value.OrderType, value.OrderId)
 				if order == nil {
 					continue
 				}

@@ -51,10 +51,12 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&orderShort)
 	if orderLong.OrderId != `` {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderLong.OrderId, true)
+		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderLong.OrderId,
+			orderLong.OrderType, true)
 	}
 	if orderShort.OrderId != `` {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderShort.OrderId, true)
+		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderShort.OrderId,
+			orderShort.OrderType, true)
 	}
 	for i := 1; i <= 20; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
@@ -129,14 +131,14 @@ var ProcessTurtle = func(setting *model.Setting) {
 	if currentN >= setting.AmountLimit && turtleData.orderLong != nil {
 		if api.IsValid(turtleData.orderLong) {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-				turtleData.orderLong.OrderId, true)
+				turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
 		}
 		turtleData.orderLong = nil
 		return
 	} else if currentN <= -1*setting.AmountLimit && turtleData.orderShort != nil {
 		if api.IsValid(turtleData.orderShort) {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-				turtleData.orderShort.OrderId, true)
+				turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
 		}
 		turtleData.orderShort = nil
 		return
@@ -220,21 +222,23 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 		util.Notice(fmt.Sprintf(`fata error, nil order to break`))
 		return
 	}
-	orderIdCancel := turtleData.orderLong.OrderId
-	orderIdQuery := turtleData.orderShort.OrderId
+	orderCancel := turtleData.orderLong
+	orderQuery := turtleData.orderShort
 	if orderSide == model.OrderSideBuy {
-		orderIdCancel = turtleData.orderShort.OrderId
-		orderIdQuery = turtleData.orderLong.OrderId
+		orderCancel = turtleData.orderShort
+		orderQuery = turtleData.orderLong
 	}
 	for true {
-		canceled, _ := api.MustCancel(``, ``, setting.Market, setting.Symbol, orderIdCancel, true)
+		canceled, _ := api.MustCancel(``, ``, setting.Market, setting.Symbol, orderCancel.OrderType,
+			orderCancel.OrderId, true)
 		if canceled {
 			break
 		}
 	}
 	for true {
-		util.Notice(fmt.Sprintf(`query turtle break %s %s`, orderSide, orderIdQuery))
-		order := api.QueryOrderById(``, ``, setting.Market, setting.Symbol, orderIdQuery)
+		util.Notice(fmt.Sprintf(`query turtle break %s %s`, orderSide, orderQuery.OrderId))
+		order := api.QueryOrderById(``, ``,
+			setting.Market, setting.Symbol, orderQuery.OrderType, orderQuery.OrderId)
 		if order != nil && order.DealPrice > 0 && order.Status == model.CarryStatusSuccess {
 			setting.UpdatedAt = util.GetNow()
 			model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",

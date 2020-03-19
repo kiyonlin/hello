@@ -225,21 +225,45 @@ func getUSDBalanceFtx(key, secret string) (balance float64) {
 	return
 }
 
-func cancelOrderFtx(key, secret, orderId string) (result bool) {
-	response := SignedRequestFtx(key, secret, `DELETE`, fmt.Sprintf(`/orders/%s`, orderId), nil, nil)
-	util.Notice(`cancel ftx ` + string(response))
+func cancelOrderFtx(key, secret, orderType, orderId string) (result bool) {
+	path := `/orders/%s`
+	if orderType == model.OrderTypeStop {
+		path = `/conditional_orders/%s`
+	}
+	response := SignedRequestFtx(key, secret, `DELETE`, fmt.Sprintf(path, orderId), nil, nil)
+	util.Notice(fmt.Sprintf(`cancel ftx %s: %s`, orderType, string(response)))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
+		if strings.Contains(orderJson.Get(`error`).MustString(), `already closed`) {
+			return true
+		}
 		return orderJson.Get(`success`).MustBool()
 	}
 	return false
 }
 
+func queryTriggerOrderId(key, secret, id string) (orderId string) {
+	response := SignedRequestFtx(key, secret, `GET`,
+		fmt.Sprintf(`/conditional_orders/%s/triggers`, id), nil, nil)
+	orderJson, err := util.NewJSON(response)
+	if err == nil && orderJson.Get(`success`).MustBool() {
+		orders := orderJson.Get(`result`).MustArray()
+		for _, item := range orders {
+			data := item.(map[string]interface{})
+			if data[`orderId`] != nil {
+				orderNumber, _ := data[`orderId`].(json.Number).Int64()
+				return fmt.Sprintf(`%d`, orderNumber)
+			}
+		}
+	}
+	return
+}
+
 func queryOrderFtx(key, secret, orderId string) (order *model.Order) {
 	response := SignedRequestFtx(key, secret, `GET`, fmt.Sprintf(`/orders/%s`, orderId), nil, nil)
-	util.Notice(`query orders ftx: ` + string(response))
+	util.Notice(fmt.Sprintf(`query orders ftx: %s`, string(response)))
 	orderJson, err := util.NewJSON(response)
-	if err == nil {
+	if err == nil && orderJson.Get(`success`).MustBool() {
 		data, _ := orderJson.Get(`result`).Map()
 		order = &model.Order{Market: model.Ftx}
 		parseOrderFtx(order, data)
