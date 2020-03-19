@@ -58,7 +58,7 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderShort.OrderType, orderShort.OrderId,
 			true)
 	}
-	for i := 1; i <= 20; i++ {
+	for i := 1; i < 20; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		day := today.Add(duration)
 		candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, market, symbol, day)
