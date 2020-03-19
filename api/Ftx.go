@@ -231,7 +231,7 @@ func cancelOrderFtx(key, secret, orderType, orderId string) (result bool) {
 		path = `/conditional_orders/%s`
 	}
 	response := SignedRequestFtx(key, secret, `DELETE`, fmt.Sprintf(path, orderId), nil, nil)
-	util.Notice(fmt.Sprintf(`cancel ftx %s: %s`, orderType, string(response)))
+	util.Notice(fmt.Sprintf(`cancel ftx %s %s: %s`, orderType, orderId, string(response)))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		if strings.Contains(orderJson.Get(`error`).MustString(), `already closed`) {
