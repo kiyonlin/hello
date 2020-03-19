@@ -46,6 +46,8 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 			amount *= 2
 		case `ethusd_p`, `eosusd_p`:
 			amount *= 1.5
+		case `htusd_p`, `okbusd_p`, `bnbusd_p`:
+			amount *= 0.5
 		}
 	}
 	return amount
