@@ -119,7 +119,7 @@ func Test_wallet(t *testing.T) {
 	//	`btcusd_p`, model.OrderTypeStop, `898952`)
 	//fmt.Print(order.DealPrice)
 	result, _, _, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
-		`xrpusd_p`, model.OrderTypeStop, `898915`)
+		`xrpusd_p`, model.OrderTypeStop, `904008`)
 	fmt.Print(result)
 	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
 	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
