@@ -116,7 +116,7 @@ func Test_wallet(t *testing.T) {
 
 	//api.RefreshAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
 	order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
-		`btcusd_p`, model.OrderTypeStop, `904000`)
+		`btcusd_p`, model.OrderTypeStop, `903993`)
 	fmt.Print(order.DealPrice)
 	result, _, _, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
 		`xrpusd_p`, model.OrderTypeStop, `904009`)
