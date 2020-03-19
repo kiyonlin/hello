@@ -246,6 +246,7 @@ func queryTriggerOrderId(key, secret, id string) (orderId string) {
 	response := SignedRequestFtx(key, secret, `GET`,
 		fmt.Sprintf(`/conditional_orders/%s/triggers`, id), nil, nil)
 	orderJson, err := util.NewJSON(response)
+	util.Notice(fmt.Sprintf(`query trigger orderid from %s:%s`, orderId, string(response)))
 	if err == nil && orderJson.Get(`success`).MustBool() {
 		orders := orderJson.Get(`result`).MustArray()
 		for _, item := range orders {

@@ -115,11 +115,11 @@ func Test_wallet(t *testing.T) {
 	//api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
 
 	//api.RefreshAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
-	//order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
-	//	`btcusd_p`, model.OrderTypeStop, `898952`)
-	//fmt.Print(order.DealPrice)
+	order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
+		`btcusd_p`, model.OrderTypeStop, `904000`)
+	fmt.Print(order.DealPrice)
 	result, _, _, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
-		`xrpusd_p`, model.OrderTypeStop, `904008`)
+		`xrpusd_p`, model.OrderTypeStop, `904009`)
 	fmt.Print(result)
 	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
 	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
