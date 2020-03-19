@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
 	"math"
@@ -359,14 +358,14 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 func GetUSDBalance(key, secret, market string) (balance float64) {
 	today := util.GetNow()
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	model.GetUSDBalance(market, today)
+	//model.GetUSDBalance(market, today)
 	if balance > 0 {
 		return balance
 	}
 	switch market {
 	case model.Ftx:
 		balance = getUSDBalanceFtx(key, secret)
-		model.SetUSDBalance(market, today, balance)
+		//model.SetUSDBalance(market, today, balance)
 	}
 	return
 }
@@ -374,14 +373,14 @@ func GetUSDBalance(key, secret, market string) (balance float64) {
 func GetBtcBalance(key, secret, market string) (balance float64) {
 	today := util.GetNow()
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	balance = model.GetBtcBalance(market, today)
+	//balance = model.GetBtcBalance(market, today)
 	if balance > 0 {
 		return
 	}
 	switch market {
 	case model.Bitmex:
 		balance = getBtcBalanceBitmex(key, secret)
-		model.SetBtcBalance(market, today, balance)
+		//model.SetBtcBalance(market, today, balance)
 	}
 	return
 }
@@ -756,9 +755,6 @@ func GetPrice(key, secret, symbol string) (buy float64, err error) {
 		model.NewConfig()
 	}
 	strs := strings.Split(symbol, "_")
-	if len(strs) != 2 {
-		return 0, errors.New(`wrong symbol ` + symbol)
-	}
 	strs[0] = strings.ToUpper(strings.TrimSpace(strs[0]))
 	strs[1] = strings.ToUpper(strings.TrimSpace(strs[1]))
 	if strs[0] == strs[1] {

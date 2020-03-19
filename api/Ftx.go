@@ -217,8 +217,12 @@ func getUSDBalanceFtx(key, secret string) (balance float64) {
 		items := balanceJson.Get(`result`).MustArray()
 		for _, item := range items {
 			data := item.(map[string]interface{})
-			if data[`coin`] != nil && data[`coin`] == `USD` {
-				balance, _ = data[`free`].(json.Number).Float64()
+			if data[`usdValue`] != nil {
+				num, _ := data[`usdValue`].(json.Number).Float64()
+				if data[`coin`] != `USD` {
+					num *= 0.9
+				}
+				balance += num
 			}
 		}
 	}

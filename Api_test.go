@@ -110,17 +110,15 @@ func Test_wallet(t *testing.T) {
 	//api.GetDayCandle(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex, `btcusd_p`, today)
 	//api.GetDayCandle(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `htusd_p`, today)
 	//balanceUSD := api.GetWalletHistoryFtx(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
-	//balanceUSD := api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
-	//fmt.Print(balanceUSD)
-	//api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
-
+	balanceUSD := api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
+	fmt.Print(balanceUSD)
 	//api.RefreshAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
-	order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
-		`btcusd_p`, model.OrderTypeStop, `903993`)
-	fmt.Print(order.DealPrice)
-	result, _, _, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
-		`xrpusd_p`, model.OrderTypeStop, `904009`)
-	fmt.Print(result)
+	//order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
+	//	`btcusd_p`, model.OrderTypeStop, `903993`)
+	//fmt.Print(order.DealPrice)
+	//result, _, _, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
+	//	`xrpusd_p`, model.OrderTypeStop, `904009`)
+	//fmt.Print(result)
 	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
 	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
 	//fmt.Println(api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret))

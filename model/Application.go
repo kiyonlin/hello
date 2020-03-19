@@ -8,7 +8,6 @@ import (
 	"hello/util"
 	"strings"
 	"sync"
-	"time"
 )
 
 var HandlerMap = make(map[string]CarryHandler)
@@ -16,10 +15,11 @@ var infoLock sync.Mutex
 var fundingRate = make(map[string]map[string]float64)     // market - symbol - funding rate
 var fundingRateUpdate = make(map[string]map[string]int64) // market - symbol - update time
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
-var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
-var usdBalance = make(map[string]float64) // market_rfc3339, usd balance
-var candles = make(map[string]*Candle)    // market+symbol+period+rfc3339, candle
-var CarryInfo = make(map[string]string)   // function - msg
+
+//var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
+//var usdBalance = make(map[string]float64) // market_rfc3339, usd balance
+var candles = make(map[string]*Candle)  // market+symbol+period+rfc3339, candle
+var CarryInfo = make(map[string]string) // function - msg
 var AppMetric = &MetricManager{}
 
 const KeyDefault = ``
@@ -294,41 +294,41 @@ func SetCarryInfo(key, value string) {
 	CarryInfo[key] = value
 }
 
-func GetUSDBalance(market string, timeBalance time.Time) (balance float64) {
-	infoLock.Lock()
-	defer infoLock.Unlock()
-	if usdBalance == nil {
-		usdBalance = make(map[string]float64)
-	}
-	return usdBalance[market+timeBalance.Format(time.RFC3339)[0:19]]
-}
-
-func SetUSDBalance(market string, timeBalance time.Time, balance float64) {
-	infoLock.Lock()
-	defer infoLock.Unlock()
-	if usdBalance == nil {
-		usdBalance = make(map[string]float64)
-	}
-	usdBalance[market+timeBalance.Format(time.RFC3339)[0:19]] = balance
-}
-
-func GetBtcBalance(market string, timeBalance time.Time) (balance float64) {
-	infoLock.Lock()
-	defer infoLock.Unlock()
-	if btcBalance == nil {
-		btcBalance = make(map[string]float64)
-	}
-	return btcBalance[market+timeBalance.Format(time.RFC3339)[0:19]]
-}
-
-func SetBtcBalance(market string, timeBalance time.Time, balance float64) {
-	infoLock.Lock()
-	defer infoLock.Unlock()
-	if btcBalance == nil {
-		btcBalance = make(map[string]float64)
-	}
-	btcBalance[market+timeBalance.Format(time.RFC3339)[0:19]] = balance
-}
+//func GetUSDBalance(market string, timeBalance time.Time) (balance float64) {
+//	infoLock.Lock()
+//	defer infoLock.Unlock()
+//	if usdBalance == nil {
+//		usdBalance = make(map[string]float64)
+//	}
+//	return usdBalance[market+timeBalance.Format(time.RFC3339)[0:19]]
+//}
+//
+//func SetUSDBalance(market string, timeBalance time.Time, balance float64) {
+//	infoLock.Lock()
+//	defer infoLock.Unlock()
+//	if usdBalance == nil {
+//		usdBalance = make(map[string]float64)
+//	}
+//	usdBalance[market+timeBalance.Format(time.RFC3339)[0:19]] = balance
+//}
+//
+//func GetBtcBalance(market string, timeBalance time.Time) (balance float64) {
+//	infoLock.Lock()
+//	defer infoLock.Unlock()
+//	if btcBalance == nil {
+//		btcBalance = make(map[string]float64)
+//	}
+//	return btcBalance[market+timeBalance.Format(time.RFC3339)[0:19]]
+//}
+//
+//func SetBtcBalance(market string, timeBalance time.Time, balance float64) {
+//	infoLock.Lock()
+//	defer infoLock.Unlock()
+//	if btcBalance == nil {
+//		btcBalance = make(map[string]float64)
+//	}
+//	btcBalance[market+timeBalance.Format(time.RFC3339)[0:19]] = balance
+//}
 
 func GetCandle(market, symbol, period, utcDate string) (candle *Candle) {
 	infoLock.Lock()
