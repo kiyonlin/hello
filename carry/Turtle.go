@@ -82,7 +82,7 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderShort.OrderType, orderShort.OrderId,
 			true)
 	}
-	for i := 1; i < 20; i++ {
+	for i := 1; i < 19; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		day := today.Add(duration)
 		candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, market, symbol, day)
@@ -95,10 +95,10 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		if turtleData.lowDays20 == 0 || turtleData.lowDays20 > candle.PriceLow {
 			turtleData.lowDays20 = candle.PriceLow
 		}
-		if candle.PriceHigh > turtleData.highDays10 && i < 11 {
+		if candle.PriceHigh > turtleData.highDays10 && i < 10 {
 			turtleData.highDays10 = candle.PriceHigh
 		}
-		if (turtleData.lowDays10 == 0 || turtleData.lowDays10 > candle.PriceLow) && i < 11 {
+		if (turtleData.lowDays10 == 0 || turtleData.lowDays10 > candle.PriceLow) && i < 10 {
 			turtleData.lowDays10 = candle.PriceLow
 		}
 		if i == 1 {
