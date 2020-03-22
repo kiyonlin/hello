@@ -737,11 +737,12 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 	//fmt.Println(end.Format(time.RFC3339))
 	postData[`endTime`] = end.Format(time.RFC3339)
 	response := SignedRequestBitmex(key, secret, `GET`, `/trade/bucketed`, postData)
+	util.Notice(fmt.Sprintf(`bitmex get candle %s`, string(response)))
 	candleJson, err := util.NewJSON(response)
-	//duration, _ := time.ParseDuration(`-24h`)
 	if err == nil {
 		candleJsons, err := candleJson.Array()
 		if err == nil {
+			duration, _ := time.ParseDuration(`-24h`)
 			for _, value := range candleJsons {
 				item := value.(map[string]interface{})
 				candle := &model.Candle{Market: model.Bitmex, Symbol: symbol, Period: binSize}
@@ -759,7 +760,7 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 				}
 				if item[`timestamp`] != nil {
 					start, _ := time.Parse(time.RFC3339, item[`timestamp`].(string))
-					//start = start.Add(duration)
+					start = start.Add(duration) // bitmex 返回的是当前时间段的上一个时间段的数据
 					candle.UTCDate = start.Format(time.RFC3339)[0:10]
 					candles[candle.UTCDate] = candle
 				}

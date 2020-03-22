@@ -36,17 +36,17 @@ func Test_initTurtleN(t *testing.T) {
 	}
 	model.AppDB.AutoMigrate(&model.Candle{})
 	today := time.Now().In(time.UTC)
-	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	//api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-	//	model.Bitmex, `btcusd_p`, yesterday)
 	fmt.Println(today.String())
-	for i := 100; i > 0; i-- {
-		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
-		index := today.Add(d)
-		fmt.Println(index.String())
-		api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-			model.Bitmex, `btcusd_p`, index)
-	}
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+		model.Bitmex, `ethusd_p`, today)
+	//for i := 20; i > 0; i-- {
+	//	d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
+	//	index := today.Add(d)
+	//	fmt.Println(index.String())
+	//	api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
+	//		model.Bitmex, `ethusd_p`, index)
+	//}
 	//go carry.CheckPastRefresh()
 	//for true {
 	//	time.Sleep(time.Minute)
