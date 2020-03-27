@@ -76,18 +76,18 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&orderShort)
 	if orderShort != nil && orderLong != nil {
-		util.Notice(fmt.Sprintf(`load orders from db %s %s long: %s short: %s`,
+		util.Notice(fmt.Sprintf(`load orders from db %s %s long: %s short: %s and to cancel`,
 			market, symbol, orderLong.OrderId, orderShort.OrderId))
+		if orderLong.OrderId != `` {
+			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderLong.OrderType, orderLong.OrderId,
+				true)
+		}
+		if orderShort.OrderId != `` {
+			api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderShort.OrderType, orderShort.OrderId,
+				true)
+		}
 	} else {
 		util.Notice(fmt.Sprintf(`can not load order long or short from db %s %s`, market, symbol))
-	}
-	if orderLong.OrderId != `` {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderLong.OrderType, orderLong.OrderId,
-			true)
-	}
-	if orderShort.OrderId != `` {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderShort.OrderType, orderShort.OrderId,
-			true)
 	}
 	for i := 1; i < 19; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
