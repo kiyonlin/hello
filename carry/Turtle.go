@@ -66,14 +66,23 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	if dataSet[market][symbol][todayStr] != nil {
 		return dataSet[market][symbol][todayStr]
 	}
+	util.Notice(`need to create turtle ` + market + symbol)
 	turtleData = &TurtleData{turtleTime: today}
-	var orderLong, orderShort model.Order
-	model.AppDB.Model(&orderLong).Where(
+	var orderLong, orderShort *model.Order
+	model.AppDB.Model(orderLong).Where(
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideBuy).Last(&orderLong)
-	model.AppDB.Model(&orderShort).Where(
+	model.AppDB.Model(orderShort).Where(
 		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&orderShort)
+	if orderLong == nil {
+		util.Notice(fmt.Sprintf(`can not load order long from db %s %s`, market, symbol))
+	}
+	if orderShort == nil {
+		util.Notice(fmt.Sprintf(`can not load order short from db %s %s`, market, symbol))
+	}
+	util.Notice(fmt.Sprintf(`load orders from db %s %s long: %s short: %s`,
+		market, symbol, orderLong.OrderId, orderShort.OrderId))
 	if orderLong.OrderId != `` {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderLong.OrderType, orderLong.OrderId,
 			true)
