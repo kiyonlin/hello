@@ -99,6 +99,13 @@ func Test_RefreshAccount(t *testing.T) {
 func Test_wallet(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
+	model.AppDB, _ = gorm.Open("postgres", model.AppConfig.DBConnection)
+	var orderLong model.Order
+	model.AppDB.Model(&orderLong).Where(
+		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
+		`ftx`, `btcusd_pd`, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideBuy).Last(&orderLong)
+	fmt.Print(orderLong.OrderId)
+
 	//var err error
 	//model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	//if err != nil {
@@ -110,15 +117,15 @@ func Test_wallet(t *testing.T) {
 	//api.GetDayCandle(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex, `btcusd_p`, today)
 	//api.GetDayCandle(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `htusd_p`, today)
 	//balanceUSD := api.GetWalletHistoryFtx(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
-	balanceUSD := api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
-	fmt.Print(balanceUSD)
+	//balanceUSD := api.GetUSDBalance(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
+	//fmt.Print(balanceUSD)
 	//api.RefreshAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx)
 	//order := api.QueryOrderById(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
 	//	`btcusd_p`, model.OrderTypeStop, `903993`)
 	//fmt.Print(order.DealPrice)
-	//result, _, _, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx,
-	//	`xrpusd_p`, model.OrderTypeStop, `904009`)
-	//fmt.Print(result)
+	result, _, _, _ := api.CancelOrder(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex,
+		`btcusd_p`, model.OrderTypeStop, `fa9a9293-bcd1-4812-501d-c7529b42efed`)
+	fmt.Print(result)
 	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
 	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))
 	//fmt.Println(api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret))
