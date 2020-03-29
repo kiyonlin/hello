@@ -250,7 +250,7 @@ func queryTriggerOrderId(key, secret, id string) (orderId string) {
 	response := SignedRequestFtx(key, secret, `GET`,
 		fmt.Sprintf(`/conditional_orders/%s/triggers`, id), nil, nil)
 	orderJson, err := util.NewJSON(response)
-	util.Notice(fmt.Sprintf(`query trigger orderid from %s:%s`, id, string(response)))
+	util.SocketInfo(fmt.Sprintf(`query trigger orderid from %s:%s`, id, string(response)))
 	if err == nil && orderJson.Get(`success`).MustBool() {
 		orders := orderJson.Get(`result`).MustArray()
 		for _, item := range orders {
@@ -268,7 +268,7 @@ func queryOpenTriggerOrders(key, secret, symbol, triggerId string) (open bool) {
 	param := make(map[string]interface{})
 	param[`market`] = model.GetDialectSymbol(model.Ftx, symbol)
 	response := SignedRequestFtx(key, secret, `GET`, `/conditional_orders`, param, nil)
-	util.Notice(fmt.Sprintf(`query open trigger orders ftx %s: %s`, symbol, string(response)))
+	util.SocketInfo(fmt.Sprintf(`query open trigger orders ftx %s: %s`, symbol, string(response)))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orders := orderJson.Get(`result`).MustArray()
