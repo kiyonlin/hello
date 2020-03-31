@@ -100,12 +100,7 @@ func Test_wallet(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	model.AppDB, _ = gorm.Open("postgres", model.AppConfig.DBConnection)
-	var orderLong model.Order
-	model.AppDB.Model(&orderLong).Where(
-		"market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
-		`ftx`, `btcusd_pd`, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideBuy).Last(&orderLong)
-	fmt.Print(orderLong.OrderId)
-
+	carry.GetTurtleData(model.Ftx, `okbusd_p`)
 	//var err error
 	//model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	//if err != nil {

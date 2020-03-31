@@ -56,7 +56,10 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	today := time.Now().In(time.UTC)
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	duration, _ := time.ParseDuration(`-24h`)
+	yesterday := today.Add(duration)
 	todayStr := today.String()[0:10]
+	yesterdayStr := yesterday.String()[0:10]
 	if dataSet[market] == nil {
 		dataSet[market] = make(map[string]map[string]*TurtleData)
 	}
@@ -66,6 +69,7 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	if dataSet[market][symbol][todayStr] != nil {
 		return dataSet[market][symbol][todayStr]
 	}
+	turtleYesterday := dataSet[market][symbol][yesterdayStr]
 	util.Notice(`need to create turtle ` + market + symbol)
 	turtleData = &TurtleData{turtleTime: today}
 	var orderLong, orderShort model.Order
@@ -77,6 +81,16 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		market, symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).Last(&orderShort)
 	util.Notice(fmt.Sprintf(`load orders from db %s %s long: %s short: %s and to cancel`,
 		market, symbol, orderLong.OrderId, orderShort.OrderId))
+	if turtleYesterday != nil {
+		if orderLong.OrderId == `` {
+			orderLong = *turtleYesterday.orderLong
+			util.Notice(fmt.Sprintf(`set today order long from yesterday %s`, orderLong.OrderId))
+		}
+		if orderShort.OrderId == `` {
+			orderShort = *turtleYesterday.orderShort
+			util.Notice(fmt.Sprintf(`set today order short from yesterday %s`, orderShort.OrderId))
+		}
+	}
 	if orderLong.OrderId != `` {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderLong.OrderType, orderLong.OrderId,
 			true)
