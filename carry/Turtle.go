@@ -277,6 +277,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			turtleData.orderShort = nil
 			turtleData.amount = calcTurtleAmount(setting.Market, setting.Symbol, orderQuery.Price, turtleData.n)
 			time.Sleep(time.Second * 3)
+			break
 		} else {
 			util.Notice(`not yet break, approaching`)
 			return false
