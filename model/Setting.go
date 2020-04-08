@@ -51,7 +51,7 @@ func GetCurrentN(setting *Setting) (currentN float64) {
 	for _, value := range marketSymbolSetting[setting.Function][setting.Market] {
 		for _, item := range value {
 			if item != nil && item.FunctionParameter == setting.FunctionParameter {
-				currentN += setting.Chance
+				currentN += item.Chance
 			}
 		}
 	}

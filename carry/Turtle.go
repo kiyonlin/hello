@@ -255,7 +255,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 
 func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide string) (isBreak bool) {
 	if turtleData == nil || turtleData.orderLong == nil || turtleData.orderShort == nil {
-		util.Notice(fmt.Sprintf(`fata error, nil order to break`))
+		//util.Notice(fmt.Sprintf(`fatal error, nil order to break`))
 		return
 	}
 	orderCancel := turtleData.orderLong
@@ -264,7 +264,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 		orderCancel = turtleData.orderShort
 		orderQuery = turtleData.orderLong
 	}
-	for true {
+	for orderQuery != nil {
 		util.Notice(fmt.Sprintf(`query turtle break %s %s`, orderSide, orderQuery.OrderId))
 		order := api.QueryOrderById(``, ``,
 			setting.Market, setting.Symbol, orderQuery.OrderType, orderQuery.OrderId)
@@ -283,7 +283,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			return false
 		}
 	}
-	for true {
+	for orderCancel != nil {
 		canceled, _ := api.MustCancel(``, ``, setting.Market, setting.Symbol, orderCancel.OrderType,
 			orderCancel.OrderId, true)
 		if canceled {
