@@ -737,7 +737,7 @@ func getCandlesBitmex(key, secret, symbol, binSize string, start, end time.Time,
 	//fmt.Println(end.Format(time.RFC3339))
 	postData[`endTime`] = end.Format(time.RFC3339)
 	response := SignedRequestBitmex(key, secret, `GET`, `/trade/bucketed`, postData)
-	util.Notice(fmt.Sprintf(`bitmex get candle %s`, string(response)))
+	util.SocketInfo(fmt.Sprintf(`bitmex get candle %s`, string(response)))
 	candleJson, err := util.NewJSON(response)
 	if err == nil {
 		candleJsons, err := candleJson.Array()

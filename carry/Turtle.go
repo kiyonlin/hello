@@ -82,11 +82,11 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	util.Notice(fmt.Sprintf(`load orders from db %s %s long: %s short: %s and to cancel`,
 		market, symbol, orderLong.OrderId, orderShort.OrderId))
 	if turtleYesterday != nil {
-		if orderLong.OrderId == `` {
+		if orderLong.OrderId == `` && turtleYesterday.orderLong != nil {
 			orderLong = *turtleYesterday.orderLong
 			util.Notice(fmt.Sprintf(`set today order long from yesterday %s`, orderLong.OrderId))
 		}
-		if orderShort.OrderId == `` {
+		if orderShort.OrderId == `` && turtleYesterday.orderShort != nil {
 			orderShort = *turtleYesterday.orderShort
 			util.Notice(fmt.Sprintf(`set today order short from yesterday %s`, orderShort.OrderId))
 		}
