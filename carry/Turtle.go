@@ -254,7 +254,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 }
 
 func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide string) (isBreak bool) {
-	if turtleData == nil || turtleData.orderLong == nil || turtleData.orderShort == nil {
+	if turtleData == nil {
 		//util.Notice(fmt.Sprintf(`fatal error, nil order to break`))
 		return
 	}
