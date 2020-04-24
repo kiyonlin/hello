@@ -158,21 +158,21 @@ var ProcessTurtle = func(setting *model.Setting) {
 		return
 	}
 	currentN := model.GetCurrentN(setting)
-	if currentN >= setting.AmountLimit && turtleData.orderLong != nil {
-		if api.IsValid(turtleData.orderLong) {
-			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-				turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
-		}
-		turtleData.orderLong = nil
-		return
-	} else if currentN <= -1*setting.AmountLimit && turtleData.orderShort != nil {
-		if api.IsValid(turtleData.orderShort) {
-			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-				turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
-		}
-		turtleData.orderShort = nil
-		return
-	}
+	//if currentN >= setting.AmountLimit && turtleData.orderLong != nil {
+	//	if api.IsValid(turtleData.orderLong) {
+	//		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+	//			turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
+	//	}
+	//	turtleData.orderLong = nil
+	//	return
+	//} else if currentN <= -1*setting.AmountLimit && turtleData.orderShort != nil {
+	//	if api.IsValid(turtleData.orderShort) {
+	//		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+	//			turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
+	//	}
+	//	turtleData.orderShort = nil
+	//	return
+	//}
 	showMsg := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, setting.Market, setting.Symbol)
 	model.SetCarryInfo(showMsg, fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%f 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
 		"20日最高:%f 20日最低:%f 10日最高:%f 10日最低:%f n:%f 数量:%f %s持仓数:%f 总持仓数%f",
@@ -215,7 +215,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
 			priceShort, priceLong, setting.GridAmount, amount)
 		// 加仓一个单位
-		if tick.Asks[0].Price >= priceLong && currentN < setting.AmountLimit {
+		if tick.Asks[0].Price >= priceLong {
 			if handleBreak(setting, turtleData, model.OrderSideBuy) {
 				setting.Chance = setting.Chance + 1
 				setting.GridAmount = setting.GridAmount + amount
@@ -243,7 +243,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
 			priceShort, priceLong, amount, setting.GridAmount)
 		// 加仓一个单位
-		if tick.Bids[0].Price <= priceShort && currentN > -1*setting.AmountLimit {
+		if tick.Bids[0].Price <= priceShort {
 			if handleBreak(setting, turtleData, model.OrderSideSell) {
 				setting.Chance = setting.Chance - 1
 				setting.GridAmount = setting.GridAmount + amount
@@ -291,8 +291,17 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			time.Sleep(time.Second * 3)
 			break
 		} else {
-			util.Notice(`not yet break, approaching`)
-			return false
+			currentN := model.GetCurrentN(setting)
+			if math.Abs(currentN) >= setting.AmountLimit {
+				api.MustCancel(``, ``, setting.Market, setting.Symbol, orderQuery.OrderType,
+					orderQuery.OrderId, true)
+				turtleData.orderLong = nil
+				turtleData.orderShort = nil
+				break
+			} else {
+				util.Notice(`not yet break, approaching`)
+				return false
+			}
 		}
 	}
 	for orderCancel != nil {
