@@ -284,6 +284,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 		order := api.QueryOrderById(``, ``,
 			setting.Market, setting.Symbol, orderQuery.OrderType, orderQuery.OrderId)
 		if order != nil && order.DealPrice > 0 && order.Status == model.CarryStatusSuccess {
+			isBreak = true
 			setting.PriceX = order.DealPrice
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
@@ -295,8 +296,12 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			if math.Abs(currentN) >= setting.AmountLimit {
 				api.MustCancel(``, ``, setting.Market, setting.Symbol, orderQuery.OrderType,
 					orderQuery.OrderId, true)
-				turtleData.orderLong = nil
-				turtleData.orderShort = nil
+				if turtleData.orderLong.OrderId == orderQuery.OrderId {
+					turtleData.orderLong = nil
+				}
+				if turtleData.orderShort.OrderId == orderQuery.OrderId {
+					turtleData.orderShort = nil
+				}
 				break
 			} else {
 				util.Notice(`not yet break, approaching`)
@@ -304,14 +309,14 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			}
 		}
 	}
-	for orderCancel != nil {
+	for orderCancel != nil && isBreak {
 		canceled, _ := api.MustCancel(``, ``, setting.Market, setting.Symbol, orderCancel.OrderType,
 			orderCancel.OrderId, true)
 		if canceled {
 			break
 		}
 	}
-	return true
+	return isBreak
 }
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
