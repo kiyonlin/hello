@@ -82,7 +82,7 @@ func WsDepthServeCoinpark(markets *model.Markets, errHandler ErrHandler) (chan s
 		}
 	}
 	return WebSocketServe(model.Coinpark, model.AppConfig.WSUrls[model.Coinpark], model.SubscribeDepth,
-		model.GetWSSubscribes(model.Coinpark, model.SubscribeDepth), subscribeHandlerCoinpark, wsHandler, errHandler)
+		GetWSSubscribes(model.Coinpark, model.SubscribeDepth), subscribeHandlerCoinpark, wsHandler, errHandler)
 }
 
 func SignedRequestCoinpark(method, path, cmds string) []byte {
@@ -167,7 +167,7 @@ func placeOrderCoinpark(order *model.Order, orderSide, orderType, symbol, price,
 		symbol, orderType, orderSide, price, amount)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
 	util.Notice(cmds + `[place order]` + string(responseBody))
-	orderJson, _ := util.NewJSON([]byte(responseBody))
+	orderJson, _ := util.NewJSON(responseBody)
 	if orderJson == nil {
 		return
 	}
@@ -194,7 +194,7 @@ func placeOrderCoinpark(order *model.Order, orderSide, orderType, symbol, price,
 func queryOrderCoinpark(orderId string) (dealAmount, dealPrice float64, status string) {
 	cmds := fmt.Sprintf(`[{"cmd":"orderpending/order","body":{"id":"%s"}}]`, orderId)
 	responseBody := SignedRequestCoinpark(`POST`, `/orderpending`, cmds)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	util.Notice(string(responseBody))
 	if orderJson == nil {
 		return
@@ -225,13 +225,15 @@ func cancelOrderCoinpark(orderId string) (result bool, code, msg string) {
 	if strings.TrimSpace(string(responseBody)) == `` {
 		return
 	}
-	orderJson, _ := util.NewJSON([]byte(responseBody))
+	orderJson, _ := util.NewJSON(responseBody)
 	if orderJson == nil {
 		util.Notice(`no result in response coinpark ` + orderId)
+		return false, "", ""
 	}
 	orderJson = orderJson.Get("result")
 	if orderJson == nil {
 		util.Notice(`no result in response coinpark ` + orderId)
+		return false, "", ""
 	}
 	results, err := orderJson.Array()
 	if err == nil && len(results) > 0 {

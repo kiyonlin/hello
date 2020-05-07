@@ -266,11 +266,13 @@ func Maintain() {
 	model.HandlerMap[model.FunctionHangFar] = ProcessHangFar
 	model.HandlerMap[model.FunctionPostonlyHandler] = PostonlyHandler
 	defer model.AppDB.Close()
-	model.AppDB.AutoMigrate(&model.Account{})
-	model.AppDB.AutoMigrate(&model.Setting{})
-	model.AppDB.AutoMigrate(&model.Order{})
-	model.AppDB.AutoMigrate(&model.Score{})
-	model.AppDB.AutoMigrate(&model.Candle{})
+	if model.AppConfig.Env != `test` {
+		model.AppDB.AutoMigrate(&model.Account{})
+		model.AppDB.AutoMigrate(&model.Setting{})
+		model.AppDB.AutoMigrate(&model.Order{})
+		model.AppDB.AutoMigrate(&model.Score{})
+		model.AppDB.AutoMigrate(&model.Candle{})
+	}
 	model.LoadSettings()
 	go AccountHandlerServe()
 	//go CheckPastRefresh()

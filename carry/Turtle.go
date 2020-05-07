@@ -6,6 +6,8 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -157,22 +159,10 @@ var ProcessTurtle = func(setting *model.Setting) {
 	if turtleData == nil || turtleData.n == 0 || turtleData.amount == 0 {
 		return
 	}
+	if moveQuarter(setting) {
+		return
+	}
 	currentN := model.GetCurrentN(setting)
-	//if currentN >= setting.AmountLimit && turtleData.orderLong != nil {
-	//	if api.IsValid(turtleData.orderLong) {
-	//		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-	//			turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
-	//	}
-	//	turtleData.orderLong = nil
-	//	return
-	//} else if currentN <= -1*setting.AmountLimit && turtleData.orderShort != nil {
-	//	if api.IsValid(turtleData.orderShort) {
-	//		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-	//			turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
-	//	}
-	//	turtleData.orderShort = nil
-	//	return
-	//}
 	showMsg := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, setting.Market, setting.Symbol)
 	model.SetCarryInfo(showMsg, fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%f 当前已经持仓数量:%f 上一次开仓的价格:%f\n"+
 		"20日最高:%f 20日最低:%f 10日最高:%f 10日最低:%f n:%f 数量:%f %s持仓数:%f 总持仓数%f",
@@ -296,10 +286,10 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			if math.Abs(currentN) >= setting.AmountLimit {
 				api.MustCancel(``, ``, setting.Market, setting.Symbol, orderQuery.OrderType,
 					orderQuery.OrderId, true)
-				if turtleData.orderLong.OrderId == orderQuery.OrderId {
+				if turtleData.orderLong != nil && turtleData.orderLong.OrderId == orderQuery.OrderId {
 					turtleData.orderLong = nil
 				}
-				if turtleData.orderShort.OrderId == orderQuery.OrderId {
+				if turtleData.orderShort != nil && turtleData.orderShort.OrderId == orderQuery.OrderId {
 					turtleData.orderShort = nil
 				}
 				break
@@ -322,22 +312,75 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64) {
 	if turtleData.orderLong == nil && currentN < setting.AmountLimit {
-		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %f`,
-			setting.Chance, setting.GridAmount, setting.PriceX, currentN, setting.AmountLimit))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeStop, market,
+		orderSide := model.OrderSideBuy
+		if setting.Chance < 0 && setting.Market == model.OKFUTURE {
+			orderSide = model.OrderSideLiquidateShort
+		}
+		util.Notice(fmt.Sprintf(`place stop long chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
+			setting.Chance, setting.GridAmount, setting.PriceX, currentN, setting.AmountLimit, orderSide))
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, model.OrderTypeStop, market,
 			symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderLong = order
 		}
 	}
 	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit {
-		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %f`,
-			setting.Chance, setting.GridAmount, setting.PriceX, currentN, setting.AmountLimit))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideSell, model.OrderTypeStop,
+		orderSide := model.OrderSideSell
+		if setting.Chance > 0 && setting.Market == model.OKFUTURE {
+			orderSide = model.OrderSideLiquidateLong
+		}
+		util.Notice(fmt.Sprintf(`place stop short chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
+			setting.Chance, setting.GridAmount, setting.PriceX, currentN, setting.AmountLimit, orderSide))
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, model.OrderTypeStop,
 			market, symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
 			amountShort, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderShort = order
 		}
 	}
+}
+
+func getInstrument(symbol string) (alias string) {
+	instrumentQuarter := model.OKFutureSymbols[symbol][`quarter`]
+	index := strings.LastIndex(instrumentQuarter, `-`)
+	year, _ := strconv.ParseInt(instrumentQuarter[index+1:index+3], 10, 64)
+	month, _ := strconv.ParseInt(instrumentQuarter[index+3:index+5], 10, 64)
+	day, _ := strconv.ParseInt(instrumentQuarter[index+5:index+7], 10, 64)
+	today := time.Now().In(time.UTC)
+	duration, _ := time.ParseDuration(`120h`)
+	days5 := today.Add(duration)
+	dateQuarter := time.Date(int(year), time.Month(month), int(day), 0, 0, 0, 0, today.Location())
+	if days5.Before(dateQuarter) {
+		return `quarter`
+	} else {
+		return `bi_quarter`
+	}
+}
+
+func moveQuarter(setting *model.Setting) (moved bool) {
+	alias := getInstrument(setting.Symbol)
+	if setting.Market != model.OKFUTURE || model.OKFutureSymbols[setting.Symbol] == nil || alias == `quarter` {
+		return false
+	}
+	instrument := model.OKFutureSymbols[setting.Symbol][alias]
+	if setting.MarketRelated != `` && setting.MarketRelated != instrument {
+		if setting.GridAmount > 0 {
+			orderSide := model.OrderSideLiquidateLong
+			if setting.Chance < 0 {
+				orderSide = model.OrderSideLiquidateShort
+			}
+			fmt.Println(orderSide)
+			//api.PlaceOrder(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, orderSide, model.)
+		}
+		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+			setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+			`chance`: 0, `grid_amount`: 0, `market_related`: instrument})
+		util.Notice(fmt.Sprintf(`切换%s->%s chance:%f amount:%f `, setting.MarketRelated, instrument,
+			setting.Chance, setting.GridAmount))
+		setting.Chance = 0
+		setting.GridAmount = 0
+		setting.MarketRelated = instrument
+		return true
+	}
+	return false
 }

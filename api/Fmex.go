@@ -115,7 +115,7 @@ func WsDepthServeFmex(markets *model.Markets, errHandler ErrHandler) (chan struc
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Fmex]
 	subType := model.SubscribeDepth + `,` + model.SubscribeDeal
-	return WebSocketServe(model.Fmex, requestUrl, subType, model.GetWSSubscribes(model.Fmex, subType),
+	return WebSocketServe(model.Fmex, requestUrl, subType, GetWSSubscribes(model.Fmex, subType),
 		subscribeHandlerFmex, wsHandler, errHandler)
 }
 
@@ -171,7 +171,7 @@ func placeOrderFmex(order *model.Order, key, secret, orderSide, orderType, symbo
 	postData["direction"] = orderSide
 	postData["quantity"] = amount
 	responseBody := SignedRequestFmex(key, secret, "POST", "v3/contracts/orders", postData)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		data, _ := orderJson.Get(`data`).Map()
 		errCode, _ := orderJson.Get("status").Int()
@@ -188,7 +188,7 @@ func placeOrderFmex(order *model.Order, key, secret, orderSide, orderType, symbo
 
 func queryOrderFmex(key, secret, orderId string) (order *model.Order) {
 	responseBody := SignedRequestFmex(key, secret, `GET`, `v3/contracts/orders/`+orderId, nil)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		data, _ := orderJson.Get(`data`).Map()
 		//status, _ := orderJson.Get("status").Int()
@@ -201,7 +201,7 @@ func queryOrderFmex(key, secret, orderId string) (order *model.Order) {
 func queryOrdersFmex(key, secret, symbol string) (orders []*model.Order) {
 	orders = make([]*model.Order, 0)
 	responseBody := SignedRequestFmex(key, secret, `GET`, `v3/contracts/orders/open`, nil)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		jsonOrders := orderJson.GetPath(`data`, `results`)
 		if jsonOrders != nil {
@@ -219,7 +219,7 @@ func queryOrdersFmex(key, secret, symbol string) (orders []*model.Order) {
 
 func cancelOrderFmex(key, secret, orderId string) (result bool, errCode, msg string, order *model.Order) {
 	responseBody := SignedRequestFmex(key, secret, `POST`, `v3/contracts/orders/`+orderId+`/cancel`, nil)
-	responseJson, err := util.NewJSON([]byte(responseBody))
+	responseJson, err := util.NewJSON(responseBody)
 	status := -1
 	if err == nil {
 		status, _ = responseJson.Get(`status`).Int()

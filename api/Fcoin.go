@@ -115,7 +115,7 @@ func WsDepthServeFcoin(markets *model.Markets, errHandler ErrHandler) (chan stru
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Fcoin]
 	return WebSocketServe(model.Fcoin, requestUrl, model.SubscribeDepth,
-		model.GetWSSubscribes(model.Fcoin, model.SubscribeDepth), subscribeHandlerFcoin, wsHandler, errHandler)
+		GetWSSubscribes(model.Fcoin, model.SubscribeDepth), subscribeHandlerFcoin, wsHandler, errHandler)
 }
 
 func SignedRequestFcoin(key, secret, method, path string, body map[string]interface{}) []byte {
@@ -174,7 +174,7 @@ func placeOrderFcoin(order *model.Order, key, secret, orderSide, orderType, symb
 		postData[`account_type`] = `margin`
 	}
 	responseBody := SignedRequestFcoin(key, secret, "POST", "/orders", postData)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		order.OrderId, _ = orderJson.Get("data").String()
 		status, _ := orderJson.Get("status").Int()
@@ -186,7 +186,7 @@ func placeOrderFcoin(order *model.Order, key, secret, orderSide, orderType, symb
 
 func cancelOrderFcoin(key, secret, orderId string) (result bool, errCode, msg string) {
 	responseBody := SignedRequestFcoin(key, secret, `POST`, `/orders/`+orderId+`/submit-cancel`, nil)
-	responseJson, err := util.NewJSON([]byte(responseBody))
+	responseJson, err := util.NewJSON(responseBody)
 	status := -1
 	if err == nil {
 		status, _ = responseJson.Get(`status`).Int()
@@ -252,7 +252,7 @@ func queryOrdersFcoin(key, secret, symbol, states, accountType string, before, a
 	//for runNext {
 	//	line := int64(0)
 	responseBody := SignedRequestFcoin(key, secret, `GET`, `/orders`, body)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		jsonOrders, _ := orderJson.Get(`data`).Array()
 		for _, order := range jsonOrders {
@@ -280,7 +280,7 @@ func queryOrderFcoin(key, secret, symbol, orderId string) (order *model.Order) {
 	postData := make(map[string]interface{})
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	responseBody := SignedRequestFcoin(key, secret, `GET`, `/orders/`+orderId, postData)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		orderMap, _ := orderJson.Get(`data`).Map()
 		return parseOrder(symbol, orderMap)
@@ -351,7 +351,7 @@ func getBuyPriceFcoin(key, secret, symbol string) (buy float64, err error) {
 	model.AppConfig.SetSymbolPrice(symbol, 0)
 	requestSymbol := strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	responseBody := SignedRequestFcoin(key, secret, `GET`, `/market/ticker/`+requestSymbol, nil)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		orderJson = orderJson.Get(`data`)
 		tickerType, _ := orderJson.Get(`type`).String()

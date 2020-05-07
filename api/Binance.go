@@ -78,13 +78,13 @@ func WsDepthServeBinance(markets *model.Markets, errHandler ErrHandler) (chan st
 	}
 	requestUrl := model.AppConfig.WSUrls[model.Binance]
 
-	for _, subscribe := range model.GetWSSubscribes(model.Binance, model.SubscribeDepth) {
+	for _, subscribe := range GetWSSubscribes(model.Binance, model.SubscribeDepth) {
 		if str, ok := subscribe.(string); ok {
 			requestUrl += str + "/"
 		}
 	}
 	return WebSocketServe(model.Binance, requestUrl, model.SubscribeDepth,
-		model.GetWSSubscribes(model.Binance, model.SubscribeDepth),
+		GetWSSubscribes(model.Binance, model.SubscribeDepth),
 		subscribeHandlerBinance, wsHandler, errHandler)
 }
 func signBinance(postData *url.Values, secretKey string) {
@@ -131,7 +131,7 @@ func placeOrderBinance(order *model.Order, orderSide, orderType, symbol, price, 
 	headers := map[string]string{"X-MBX-APIKEY": model.AppConfig.BinanceKey}
 	responseBody, _ := util.HttpRequest("POST",
 		model.AppConfig.RestUrls[model.Binance]+"/api/v3/order?", postData.Encode(), headers, 60)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		orderIdInt, _ := orderJson.Get("orderId").Int()
 		if orderIdInt != 0 {
@@ -167,7 +167,7 @@ func queryOrderBinance(symbol string, orderId string) (dealAmount, dealPrice flo
 	headers := map[string]string{"X-MBX-APIKEY": model.AppConfig.BinanceKey}
 	requestUrl := model.AppConfig.RestUrls[model.Binance] + "/api/v3/order?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers, 60)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		str, _ := orderJson.Get("executedQty").String()
 		if str != "" {
@@ -190,7 +190,7 @@ func getAccountBinance(accounts *model.Accounts) {
 	headers := map[string]string{"X-MBX-APIKEY": model.AppConfig.BinanceKey}
 	requestUrl := model.AppConfig.RestUrls[model.Binance] + "/api/v3/account?" + postData.Encode()
 	responseBody, _ := util.HttpRequest("GET", requestUrl, "", headers, 60)
-	balanceJson, err := util.NewJSON([]byte(responseBody))
+	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		if balanceJson.Get("canTrade").MustBool() {
 			currencies, _ := balanceJson.Get("balances").Array()

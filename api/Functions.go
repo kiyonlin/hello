@@ -778,3 +778,94 @@ func GetPrice(key, secret, symbol string) (buy float64, err error) {
 	}
 	return getBuyPriceFcoin(key, secret, symbol)
 }
+
+func GetWSSubscribes(market, subType string) []interface{} {
+	symbols := model.GetMarketSymbols(market)
+	subscribes := make([]interface{}, 0)
+	for symbol := range symbols {
+		subTypes := strings.Split(subType, `,`)
+		for _, value := range subTypes {
+			subscribe := GetWSSubscribe(market, symbol, value)
+			if subscribe != `` {
+				subscribes = append(subscribes, subscribe)
+			}
+		}
+		if market == model.OKSwap {
+			subscribes = append(subscribes, model.GetWSSubscribePos(market, symbol))
+		}
+	}
+	if market == model.Bitmex || market == model.Bybit {
+		subscribes = append(subscribes, `position`)
+	}
+	if market == model.Bitmex {
+		subscribes = append(subscribes, `order`)
+	}
+	return subscribes
+}
+
+func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
+	switch market {
+	case model.Huobi: // xrp_btc: market.xrpbtc.depth.step0
+		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
+	case model.OKEX: // xrp_btc: ok_sub_spot_xrp_btc_depth_5
+		return "ok_sub_spot_" + symbol + "_depth_5"
+	case model.OKFUTURE:
+		// btc-usd futures/ticker:BTC-USD-170310
+		symbol = strings.ToUpper(symbol)
+		return `futures/depth5:` + GetInstrumentOkFuture(symbol, subType)
+	case model.Binance: // xrp_btc: xrpbtc@depth5
+		if len(symbol) > 4 && symbol[0:4] == `bch_` {
+			symbol = `bchabc_` + symbol[4:]
+		}
+		return strings.ToLower(strings.Replace(symbol, "_", "", 1)) + `@depth5`
+	case model.Fcoin:
+		if subType == model.SubscribeDeal {
+			// btc_usdt: trade.btcusdt
+			return `trade.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+		} else if subType == model.SubscribeDepth {
+			// btc_usdt: depth.L20.btcusdt
+			return `depth.L20.` + strings.ToLower(strings.Replace(symbol, "_", "", 1))
+		}
+	case model.Fmex:
+		if subType == model.SubscribeDepth {
+			// btc_usdt: depth.L20.btcusdt
+			return `depth.L20.` + symbol
+		} else if subType == model.SubscribeDeal {
+			return `trade.` + strings.ToUpper(symbol)
+		}
+	case model.Coinpark: //BTC_USDT bibox_sub_spot_BTC_USDT_ticker
+		//return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_ticker`
+		return `bibox_sub_spot_` + strings.ToUpper(symbol) + `_depth`
+	case model.OKSwap:
+		return `swap/depth5:` + model.GetDialectSymbol(model.OKSwap, symbol)
+	case model.Bitmex:
+		if subType == model.SubscribeDeal {
+			return `trade:` + model.GetDialectSymbol(model.Bitmex, symbol)
+		} else if subType == model.SubscribeDepth {
+			//return `quote:` + DialectSymbol[Bitmex][symbol]
+			//return `orderBookL2:` + DialectSymbol[Bitmex][symbol]
+			//return `orderBookL2_25:` + DialectSymbol[Bitmex][symbol]
+			return `orderBook10:` + model.GetDialectSymbol(model.Bitmex, symbol)
+		}
+		return ``
+	case model.Bybit:
+		subSymbol := strings.ToUpper(symbol[0:strings.Index(symbol, `_`)])
+		if subType == model.SubscribeDeal {
+			return `trade.` + subSymbol
+		} else if subType ==
+			model.SubscribeDepth {
+			//return `orderBook_200.100ms.` + subSymbol
+			return `orderBookL2_25.` + subSymbol
+		}
+	case model.Ftx:
+		return []string{`orderbook`, model.GetDialectSymbol(model.Ftx, symbol)}
+	case model.Coinbig:
+		switch symbol {
+		case `btc_usdt`:
+			return `27`
+		case `eth_usdt`:
+			return `28`
+		}
+	}
+	return ""
+}

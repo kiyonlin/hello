@@ -94,7 +94,7 @@ func WsDepthServeBitmex(markets *model.Markets, errHandler ErrHandler) (chan str
 		}
 	}
 	return WebSocketServe(model.Bitmex, model.AppConfig.WSUrls[model.Bitmex], model.SubscribeDepth,
-		model.GetWSSubscribes(model.Bitmex, model.SubscribeDepth),
+		GetWSSubscribes(model.Bitmex, model.SubscribeDepth),
 		subscribeHandlerBitmex, wsHandler, errHandler)
 }
 

@@ -84,7 +84,7 @@ func WsDepthServeBybit(markets *model.Markets, errHandler ErrHandler) (chan stru
 		}
 	}
 	return WebSocketServe(model.Bybit, model.AppConfig.WSUrls[model.Bybit], model.SubscribeDepth,
-		model.GetWSSubscribes(model.Bybit, model.SubscribeDepth),
+		GetWSSubscribes(model.Bybit, model.SubscribeDepth),
 		subscribeHandlerBybit, wsHandler, errHandler)
 }
 

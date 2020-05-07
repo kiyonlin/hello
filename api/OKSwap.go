@@ -26,7 +26,7 @@ var subscribeHandlerOKSwap = func(subscribes []interface{}, subType string) erro
 	toBeSign := fmt.Sprintf(`%s%s%s`, timestamp, `GET`, `/users/self/verify`)
 	hash := hmac.New(sha256.New, []byte(model.AppConfig.OkexSecret))
 	hash.Write([]byte(toBeSign))
-	sign := base64.StdEncoding.EncodeToString([]byte(hash.Sum(nil)))
+	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	authCmd := fmt.Sprintf(`{"op":"login","args":["%s","%s","%s","%s"]}`,
 		model.AppConfig.OkexKey, `OKSwap`, timestamp, sign)
 	if err = sendToWs(model.OKSwap, []byte(authCmd)); err != nil {
@@ -84,7 +84,7 @@ func WsDepthServeOKSwap(markets *model.Markets, errHandler ErrHandler) (chan str
 		}
 	}
 	return WebSocketServe(model.OKSwap, model.AppConfig.WSUrls[model.OKSwap], model.SubscribeDepth,
-		model.GetWSSubscribes(model.OKSwap, model.SubscribeDepth),
+		GetWSSubscribes(model.OKSwap, model.SubscribeDepth),
 		subscribeHandlerOKSwap, wsHandler, errHandler)
 }
 
@@ -226,7 +226,7 @@ func SignedRequestOKSwap(key, secret, method, path string, body map[string]inter
 	}
 	hash := hmac.New(sha256.New, []byte(model.AppConfig.OkexSecret))
 	hash.Write([]byte(toBeSign))
-	sign := base64.StdEncoding.EncodeToString([]byte(hash.Sum(nil)))
+	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	headers[`OK-ACCESS-SIGN`] = sign
 	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 5)
 	return responseBody

@@ -99,7 +99,7 @@ func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan stru
 		}
 	}
 	return WebSocketServe(model.Huobi, model.AppConfig.WSUrls[model.Huobi], model.SubscribeDepth,
-		model.GetWSSubscribes(model.Huobi, model.SubscribeDepth), subscribeHandlerHuobi, wsHandler, errHandler)
+		GetWSSubscribes(model.Huobi, model.SubscribeDepth), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
 func SignedRequestHuobi(method, path string, data map[string]string) []byte {
@@ -232,7 +232,7 @@ func cancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 func queryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status string) {
 	path := fmt.Sprintf("/v1/order/orders/%s", orderId)
 	responseBody := SignedRequestHuobi(`GET`, path, nil)
-	orderJson, err := util.NewJSON([]byte(responseBody))
+	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ = orderJson.GetPath("data", "state").String()
 		status = model.GetOrderStatus(model.Huobi, status)
