@@ -342,6 +342,9 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 
 func getInstrument(symbol string) (alias string) {
 	instrumentQuarter := model.OKFutureSymbols[symbol][`quarter`]
+	if strings.Contains(instrumentQuarter, `-`) == false {
+		return `quarter`
+	}
 	index := strings.LastIndex(instrumentQuarter, `-`)
 	year, _ := strconv.ParseInt(instrumentQuarter[index+1:index+3], 10, 64)
 	month, _ := strconv.ParseInt(instrumentQuarter[index+3:index+5], 10, 64)
