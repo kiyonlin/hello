@@ -14,6 +14,7 @@ type Setting struct {
 	Function          string
 	Market            string
 	MarketRelated     string
+	SymbolRelated     string
 	Symbol            string
 	FunctionParameter string
 	AccountType       string
