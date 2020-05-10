@@ -504,6 +504,6 @@ func SignedRequestFtx(key, secret, method, path string, param, body map[string]i
 	sign := hex.EncodeToString(hash.Sum(nil))
 	headers := map[string]string{`FTX-KEY`: key, `FTX-TS`: strconv.FormatInt(ts, 10), "FTX-SIGN": sign,
 		"Content-Type": "application/json"}
-	responseBody, _ := util.HttpRequest(method, u.String(), bodyStr, headers, 5)
+	responseBody, _ := util.HttpRequest(method, u.String(), bodyStr, headers, 30)
 	return responseBody
 }
