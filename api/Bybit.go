@@ -301,7 +301,7 @@ func SignedRequestBybit(key, secret, method, path string, body map[string]interf
 	if method == `GET` {
 		uri = uri + `?` + paramStr
 	}
-	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 5)
+	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 60)
 	return responseBody
 }
 

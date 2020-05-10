@@ -228,7 +228,7 @@ func SignedRequestOKSwap(key, secret, method, path string, body map[string]inter
 	hash.Write([]byte(toBeSign))
 	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	headers[`OK-ACCESS-SIGN`] = sign
-	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 30)
+	responseBody, _ := util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 60)
 	return responseBody
 }
 

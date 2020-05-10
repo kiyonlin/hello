@@ -610,9 +610,9 @@ func SignedRequestBitmex(key, secret, method, path string, body map[string]inter
 		`api-signature`: sign, "Content-Type": "application/json"}
 	var responseBody []byte
 	if body == nil {
-		responseBody, _ = util.HttpRequest(method, uri, ``, headers, 30)
+		responseBody, _ = util.HttpRequest(method, uri, ``, headers, 60)
 	} else {
-		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 30)
+		responseBody, _ = util.HttpRequest(method, uri, string(util.JsonEncodeMapToByte(body)), headers, 60)
 	}
 	return responseBody
 }
