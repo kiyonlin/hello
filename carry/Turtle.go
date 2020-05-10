@@ -288,21 +288,8 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			time.Sleep(time.Second * 3)
 			break
 		} else {
-			currentN := model.GetCurrentN(setting)
-			if math.Abs(currentN) >= setting.AmountLimit {
-				api.MustCancel(``, ``, setting.Market, setting.Symbol, orderQuery.OrderType,
-					orderQuery.OrderId, true)
-				if turtleData.orderLong != nil && turtleData.orderLong.OrderId == orderQuery.OrderId {
-					turtleData.orderLong = nil
-				}
-				if turtleData.orderShort != nil && turtleData.orderShort.OrderId == orderQuery.OrderId {
-					turtleData.orderShort = nil
-				}
-				break
-			} else {
-				util.Notice(`not yet break, approaching`)
-				return false
-			}
+			util.Notice(`not yet break, approaching`)
+			return false
 		}
 	}
 	for orderCancel != nil && isBreak {
