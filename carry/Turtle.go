@@ -304,15 +304,12 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64, tick *model.BidAsk) {
-	if priceLong < tick.Asks[0].Price {
-		util.Notice(fmt.Sprintf(`fatal issue: (stop long price)%f < %f(market price)`,
-			priceLong, tick.Asks[0].Price))
-		priceLong = tick.Asks[0].Price
-	}
-	if priceShort > tick.Bids[0].Price {
-		util.Notice(fmt.Sprintf(`fatal issue: (stop short price)%f > %f(market price)`,
-			priceShort, tick.Bids[0].Price))
-		priceShort = tick.Bids[0].Price
+	orderType := model.OrderTypeStop
+	if priceLong < tick.Asks[0].Price || priceShort > tick.Bids[0].Price {
+		util.Notice(fmt.Sprintf(`fatal issue: (stop long price)%f < %f(market price) or 
+		(stop short price)%f > %f(market price)`,
+			priceLong, tick.Asks[0].Price, priceShort, tick.Bids[0].Price))
+		orderType = model.OrderTypeMarket
 	}
 	if turtleData.orderLong == nil && currentN < setting.AmountLimit {
 		orderSide := model.OrderSideBuy
@@ -323,8 +320,8 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			`%s %s place stop long chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, model.OrderTypeStop, market,
-			symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, orderType, market, symbol,
+			``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderLong = order
 		}
@@ -338,8 +335,8 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			`%s %s place stop short chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, model.OrderTypeStop,
-			market, symbol, ``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, orderType, market, symbol,
+			``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
 			amountShort, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderShort = order
