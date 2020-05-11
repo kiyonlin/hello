@@ -282,24 +282,21 @@ func Maintain() {
 			d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 			index := today.Add(d)
 			fmt.Println(index.String())
-			api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-				model.Bitmex, `ethusd_p`, index)
-			api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-				model.Bitmex, `btcusd_p`, index)
 			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Bitmex, `ethusd_p`, index)
+				model.Ftx, `ethusd_p`, index)
 			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Bitmex, `btcusd_p`, index)
+				model.Ftx, `btcusd_p`, index)
 			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Bitmex, `eosusd_p`, index)
+				model.Ftx, `eosusd_p`, index)
 			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Bitmex, `htusd_p`, index)
+				model.Ftx, `htusd_p`, index)
 			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Bitmex, `bnbusd_p`, index)
+				model.Ftx, `bnbusd_p`, index)
 			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Bitmex, `okbusd_p`, index)
+				model.Ftx, `okbusd_p`, index)
 		}
 		fmt.Println(`done`)
+		return
 	}
 	model.LoadSettings()
 	go AccountHandlerServe()
