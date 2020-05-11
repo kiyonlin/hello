@@ -272,31 +272,6 @@ func Maintain() {
 		model.AppDB.AutoMigrate(&model.Order{})
 		model.AppDB.AutoMigrate(&model.Score{})
 		model.AppDB.AutoMigrate(&model.Candle{})
-	} else {
-		today := time.Now().In(time.UTC)
-		fmt.Println(today.String())
-		today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-		//api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-		//	model.Bitmex, `ethusd_p`, today)
-		for i := 100; i > 0; i-- {
-			d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
-			index := today.Add(d)
-			fmt.Println(index.String())
-			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Ftx, `ethusd_p`, index)
-			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Ftx, `btcusd_p`, index)
-			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Ftx, `eosusd_p`, index)
-			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Ftx, `htusd_p`, index)
-			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Ftx, `bnbusd_p`, index)
-			api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-				model.Ftx, `okbusd_p`, index)
-		}
-		fmt.Println(`done`)
-		return
 	}
 	model.LoadSettings()
 	go AccountHandlerServe()
