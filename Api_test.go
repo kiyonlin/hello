@@ -81,9 +81,9 @@ func Test_RefreshAccount(t *testing.T) {
 	//api.RefreshAccount(``, ``, model.Ftx)
 	//api.CreateSubAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
 	order := api.PlaceOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret,
-		model.OrderSideSell, model.OrderTypeStop,
-		model.Ftx, `btcusd_p`, ``, ``, ``, ``, 5188,
-		0.0001, false)
+		model.OrderSideSell, model.OrderTypeMarket,
+		model.Bitmex, `btcusd_p`, ``, ``, ``, ``, 5188,
+		1, false)
 	fmt.Println(order.OrderId)
 	//result, _, _, _ := api.CancelOrder(``, ``, model.Ftx, `htusd_p`, model.OrderTypeStop, "899071")
 	//fmt.Print(result)

@@ -173,7 +173,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 	priceShort := turtleData.lowDays20
 	amount := turtleData.amount
 	if setting.Chance == 0 { // 开初始仓
-		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
+		priceShort, priceLong = placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
 			priceShort, priceLong, amount, amount, tick)
 		if tick.Asks[0].Price >= priceLong {
 			if handleBreak(setting, turtleData, model.OrderSideBuy) {
@@ -204,7 +204,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 	} else if setting.Chance > 0 {
 		priceLong = math.Max(turtleData.highDays20, setting.PriceX+turtleData.n/2)
 		priceShort = math.Max(turtleData.lowDays10, setting.PriceX-2*turtleData.n)
-		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
+		priceShort, priceLong = placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
 			priceShort, priceLong, setting.GridAmount, amount, tick)
 		// 加仓一个单位
 		if tick.Asks[0].Price >= priceLong {
@@ -234,7 +234,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 	} else if setting.Chance < 0 {
 		priceLong = math.Min(turtleData.highDays10, setting.PriceX+2*turtleData.n)
 		priceShort = math.Min(turtleData.lowDays20, setting.PriceX-turtleData.n/2)
-		placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
+		priceShort, priceLong = placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
 			priceShort, priceLong, amount, setting.GridAmount, tick)
 		// 加仓一个单位
 		if tick.Bids[0].Price <= priceShort {
@@ -303,45 +303,61 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 }
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
-	currentN, priceShort, priceLong, amountShort, amountLong float64, tick *model.BidAsk) {
-	orderType := model.OrderTypeStop
-	if priceLong < tick.Asks[0].Price || priceShort > tick.Bids[0].Price {
-		util.Notice(fmt.Sprintf(`fatal issue: (stop long price)%f < %f(market price) or 
-		(stop short price)%f > %f(market price)`,
-			priceLong, tick.Asks[0].Price, priceShort, tick.Bids[0].Price))
-		orderType = model.OrderTypeMarket
-	}
+	currentN, priceShort, priceLong, amountShort, amountLong float64, tick *model.BidAsk) (short, long float64) {
+	long = priceLong
+	short = priceShort
 	if turtleData.orderLong == nil && currentN < setting.AmountLimit {
 		orderSide := model.OrderSideBuy
+		typeLong := model.OrderTypeStop
 		if setting.Chance < 0 && setting.Market == model.OKFUTURE {
 			orderSide = model.OrderSideLiquidateShort
+		}
+		if priceLong < tick.Asks[0].Price {
+			util.Notice(fmt.Sprintf(`fatal issue: (stop long price)%f < %f(market price)`,
+				priceLong, tick.Asks[0].Price))
+			typeLong = model.OrderTypeMarket
+			long = tick.Asks[0].Price
 		}
 		util.Notice(fmt.Sprintf(
 			`%s %s place stop long chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, orderType, market, symbol,
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeLong, market, symbol,
 			``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderLong = order
+			if order.Price > 0 {
+				long = order.Price
+			}
 		}
 	}
 	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit {
 		orderSide := model.OrderSideSell
+		typeShort := model.OrderTypeStop
 		if setting.Chance > 0 && setting.Market == model.OKFUTURE {
 			orderSide = model.OrderSideLiquidateLong
+		}
+		if priceShort > tick.Bids[0].Price {
+			util.Notice(fmt.Sprintf(`fatal issue: (stop short price)%f > %f(market price)`,
+				priceShort, tick.Bids[0].Price))
+			typeShort = model.OrderTypeMarket
+			short = tick.Bids[0].Price
 		}
 		util.Notice(fmt.Sprintf(
 			`%s %s place stop short chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, orderType, market, symbol,
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeShort, market, symbol,
 			``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
 			amountShort, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderShort = order
+			if order.Price > 0 {
+				short = order.Price
+			}
 		}
 	}
+	return
 }
 
 func getInstrument(symbol string) (alias string) {
