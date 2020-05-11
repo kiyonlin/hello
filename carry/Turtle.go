@@ -17,6 +17,9 @@ type TurtleData struct {
 	lowDays10  float64
 	highDays20 float64
 	lowDays20  float64
+	highDays5  float64
+	lowDays5   float64
+	end1       float64
 	n          float64
 	amount     float64
 	orderLong  *model.Order
@@ -101,12 +104,15 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, orderShort.OrderType, orderShort.OrderId,
 			true)
 	}
-	for i := 1; i < 19; i++ {
+	for i := 1; i < 21; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		day := today.Add(duration)
 		candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, market, symbol, day)
 		if candle == nil {
 			continue
+		}
+		if i == 1 {
+			turtleData.end1 = candle.PriceClose
 		}
 		if candle.PriceHigh > turtleData.highDays20 {
 			turtleData.highDays20 = candle.PriceHigh
@@ -114,11 +120,17 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 		if turtleData.lowDays20 == 0 || turtleData.lowDays20 > candle.PriceLow {
 			turtleData.lowDays20 = candle.PriceLow
 		}
-		if candle.PriceHigh > turtleData.highDays10 && i < 10 {
+		if candle.PriceHigh > turtleData.highDays10 && i < 11 {
 			turtleData.highDays10 = candle.PriceHigh
 		}
-		if (turtleData.lowDays10 == 0 || turtleData.lowDays10 > candle.PriceLow) && i < 10 {
+		if (turtleData.lowDays10 == 0 || turtleData.lowDays10 > candle.PriceLow) && i < 11 {
 			turtleData.lowDays10 = candle.PriceLow
+		}
+		if candle.PriceHigh > turtleData.highDays5 && i < 6 {
+			turtleData.highDays5 = candle.PriceHigh
+		}
+		if (turtleData.lowDays5 == 0 || turtleData.lowDays5 > candle.PriceLow) && i < 6 {
+			turtleData.lowDays5 = candle.PriceLow
 		}
 		if i == 1 {
 			turtleData.n = candle.N
@@ -127,6 +139,9 @@ func GetTurtleData(market, symbol string) (turtleData *TurtleData) {
 	}
 	if turtleData.amount > 0 && turtleData.n > 0 {
 		dataSet[market][symbol][todayStr] = turtleData
+		util.Notice(fmt.Sprintf(`%s %s set turtle data: amount:%f n:%f end1:%f 20:%f %f 10:%f %f 5:%f %f`,
+			market, symbol, turtleData.amount, turtleData.n, turtleData.end1, turtleData.lowDays20,
+			turtleData.highDays20, turtleData.lowDays10, turtleData.highDays10, turtleData.lowDays5, turtleData.highDays5))
 	}
 	return
 }
@@ -304,6 +319,16 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64, tick *model.BidAsk) (short, long float64) {
+	if setting.Chance > 0 && setting.PriceX > 0 && turtleData.end1/setting.PriceX > 1.13 {
+		util.Notice(fmt.Sprintf(`提前止盈 chance: %f, end1:%f / %f > 1.13`,
+			setting.Chance, turtleData.end1, setting.PriceX))
+		priceShort = math.Max(turtleData.lowDays5, setting.PriceX-2*turtleData.n)
+	}
+	if setting.Chance < 0 && setting.PriceX > 0 && setting.PriceX/turtleData.end1 > 1.13 {
+		priceLong = math.Min(turtleData.highDays5, setting.PriceX+2*turtleData.n)
+		util.Notice(fmt.Sprintf(`提前止盈 chance: %f, %f / end1:%f > 1.13`,
+			setting.Chance, setting.PriceX, turtleData.end1))
+	}
 	long = priceLong
 	short = priceShort
 	if turtleData.orderLong == nil && currentN < setting.AmountLimit {

@@ -76,15 +76,22 @@ func Test_initTurtleN(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
+	var err error
+	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
+	if err != nil {
+		util.Notice(err.Error())
+		return
+	}
+	carry.GetTurtleData(model.Bitmex, `btcusd_p`)
 	//rate, ts := api.GetFundingRate(model.Ftx, `btcusd_p`)
 	//fmt.Println(fmt.Sprintf(`%f %d`, rate, ts))
 	//api.RefreshAccount(``, ``, model.Ftx)
 	//api.CreateSubAccount(model.AppConfig.FtxKey, model.AppConfig.FtxSecret)
-	order := api.PlaceOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret,
-		model.OrderSideSell, model.OrderTypeMarket,
-		model.Bitmex, `btcusd_p`, ``, ``, ``, ``, 5188,
-		1, false)
-	fmt.Println(order.OrderId)
+	//order := api.PlaceOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret,
+	//	model.OrderSideSell, model.OrderTypeMarket,
+	//	model.Bitmex, `btcusd_p`, ``, ``, ``, ``, 5188,
+	//	1, false)
+	//fmt.Println(order.OrderId)
 	//result, _, _, _ := api.CancelOrder(``, ``, model.Ftx, `htusd_p`, model.OrderTypeStop, "899071")
 	//fmt.Print(result)
 	//api.QueryOrderById("", "", model.Ftx, `htusd_p`, "899071")
