@@ -319,15 +319,15 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 
 func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64, tick *model.BidAsk) (short, long float64) {
-	if setting.Chance > 0 && setting.PriceX > 0 && turtleData.end1/setting.PriceX > 1.13 {
-		util.Notice(fmt.Sprintf(`提前止盈 chance: %f, end1:%f / %f > 1.13`,
-			setting.Chance, turtleData.end1, setting.PriceX))
+	if setting.Chance > 0 && turtleData.end1/turtleData.highDays20 < 0.87 {
 		priceShort = math.Max(turtleData.lowDays5, setting.PriceX-2*turtleData.n)
+		util.Notice(fmt.Sprintf(`提前止盈 chance:%f, end1:%f h20:%f`,
+			setting.Chance, turtleData.end1, turtleData.highDays20))
 	}
-	if setting.Chance < 0 && setting.PriceX > 0 && setting.PriceX/turtleData.end1 > 1.13 {
+	if setting.Chance < 0 && turtleData.end1/turtleData.lowDays20 > 1.13 {
 		priceLong = math.Min(turtleData.highDays5, setting.PriceX+2*turtleData.n)
-		util.Notice(fmt.Sprintf(`提前止盈 chance: %f, %f / end1:%f > 1.13`,
-			setting.Chance, setting.PriceX, turtleData.end1))
+		util.Notice(fmt.Sprintf(`提前止盈 chance: %f, end1:%f l20:%f`,
+			setting.Chance, turtleData.end1, turtleData.lowDays20))
 	}
 	long = priceLong
 	short = priceShort
@@ -343,10 +343,11 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			typeLong = model.OrderTypeMarket
 			long = tick.Asks[0].Price
 		}
-		util.Notice(fmt.Sprintf(
-			`%s %s place stop long chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
+		util.Notice(fmt.Sprintf(`%s %s place stop long chance:%f amount:%f price:%f currentN-limit:%f %f 
+			orderSide:%s end1:%f h20:%f h10:%f h5:%f l20:%f l10:%f l5%f`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
-			setting.AmountLimit, orderSide))
+			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
+			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeLong, market, symbol,
 			``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
@@ -368,10 +369,11 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			typeShort = model.OrderTypeMarket
 			short = tick.Bids[0].Price
 		}
-		util.Notice(fmt.Sprintf(
-			`%s %s place stop short chance:%f amount:%f price:%f currentN-limit:%f %f orderSide:%s`,
+		util.Notice(fmt.Sprintf(`%s %s place stop short chance:%f amount:%f price:%f currentN-limit:%f %f 
+			orderSide:%s end1:%f h20:%f h10:%f h5:%f l20:%f l10:%f l5%f`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
-			setting.AmountLimit, orderSide))
+			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
+			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeShort, market, symbol,
 			``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
 			amountShort, true)
