@@ -356,6 +356,9 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 				long = order.Price
 			}
 		}
+	} else if turtleData.orderLong != nil && currentN >= setting.AmountLimit {
+		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderLong.OrderType,
+			turtleData.orderLong.OrderId, true)
 	}
 	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit {
 		orderSide := model.OrderSideSell
@@ -383,6 +386,9 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 				short = order.Price
 			}
 		}
+	} else if turtleData.orderShort != nil && currentN <= -1*setting.AmountLimit {
+		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderShort.OrderType,
+			turtleData.orderShort.OrderId, true)
 	}
 	return
 }
