@@ -5,7 +5,6 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -168,6 +167,12 @@ func GetPriceDecimal(market, symbol string) float64 {
 		case `xrpusd_p`:
 			return 6
 		}
+	case model.OKFUTURE:
+		if strings.Contains(strings.ToLower(symbol), `btc`) {
+			return 1
+		} else if strings.Contains(strings.ToLower(symbol), `eth`) {
+			return 2
+		}
 	}
 	return 8
 }
@@ -195,13 +200,16 @@ func GetAmountDecimal(market, symbol string) float64 {
 		}
 	case model.Bitmex, model.Bybit, model.Fmex, model.OKSwap:
 		return 0
+	case model.OKFUTURE:
+		return 0
 	}
 	return 4
 }
 
-func MustCancel(key, secret, market, symbol, orderType, orderId string, mustCancel bool) (res bool, order *model.Order) {
+func MustCancel(key, secret, market, symbol, instrument, orderType, orderId string, mustCancel bool) (
+	res bool, order *model.Order) {
 	for i := 0; i < 7; i++ {
-		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, orderType, orderId)
+		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, instrument, orderType, orderId)
 		res = result
 		order = cancelOrder
 		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
@@ -227,8 +235,11 @@ func MustCancel(key, secret, market, symbol, orderType, orderId string, mustCanc
 	return res, order
 }
 
-func CancelOrder(key, secret, market, symbol, orderType, orderId string) (
+func CancelOrder(key, secret, market, symbol, instrument, orderType, orderId string) (
 	result bool, errCode, msg string, order *model.Order) {
+	if instrument == `` {
+		instrument = symbol
+	}
 	if model.AppConfig.Env == `test` {
 		return true, ``, `test cancel`,
 			&model.Order{Market: market, Symbol: symbol, OrderId: orderId, Status: model.CarryStatusFail}
@@ -241,7 +252,7 @@ func CancelOrder(key, secret, market, symbol, orderType, orderId string) (
 	case model.OKEX:
 		result, errCode, msg = cancelOrderOkex(symbol, orderId)
 	case model.OKFUTURE:
-		result, errCode, msg = cancelOrderOkfuture(symbol, orderId)
+		result, errCode, msg = cancelOrderOkfuture(instrument, orderId, orderType)
 	case model.Binance:
 		result, errCode, msg = cancelOrderBinance(symbol, orderId)
 	case model.Fcoin:
@@ -291,7 +302,18 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 	return nil
 }
 
-func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (candle *model.Candle) {
+func GetCurrentInstrument(market, symbol string) (instruemtn string) {
+	switch market {
+	case model.OKFUTURE:
+		return getCurrentInstrumentOkfuture(symbol)
+	}
+	return ``
+}
+
+func GetDayCandle(key, secret, market, symbol, instrument string, timeCandle time.Time) (candle *model.Candle) {
+	if instrument == `` {
+		instrument = symbol
+	}
 	candle = model.GetCandle(market, symbol, `1d`, timeCandle.Format(time.RFC3339)[0:10])
 	if candle != nil && candle.N > 0 {
 		return
@@ -312,6 +334,8 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 		candles = getCandlesBitmex(key, secret, symbol, `1d`, begin, end, 20)
 	case model.Ftx:
 		candles = getCandlesFtx(key, secret, symbol, `1d`, begin, end, 20)
+	case model.OKFUTURE:
+		candles = getCandlesOkfuture(key, secret, symbol, instrument, `1d`, begin, end)
 	}
 	for _, value := range candles {
 		c := model.GetCandle(value.Market, value.Symbol, value.Period, value.UTCDate)
@@ -356,16 +380,11 @@ func GetDayCandle(key, secret, market, symbol string, timeCandle time.Time) (can
 }
 
 func GetUSDBalance(key, secret, market string) (balance float64) {
-	today := util.GetNow()
-	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	//model.GetUSDBalance(market, today)
-	if balance > 0 {
-		return balance
-	}
 	switch market {
 	case model.Ftx:
 		balance = getUSDBalanceFtx(key, secret)
-		//model.SetUSDBalance(market, today, balance)
+		//case model.OKFUTURE:
+		//	balance = getUSDBalanceOkfuture(key, secret)
 	}
 	return
 }
@@ -414,7 +433,10 @@ func GetFundingRate(market, symbol string) (fundingRate float64, expireTime int6
 	return
 }
 
-func QueryOrderById(key, secret, market, symbol, orderType, orderId string) (order *model.Order) {
+func QueryOrderById(key, secret, market, symbol, instrument, orderType, orderId string) (order *model.Order) {
+	if instrument == `` {
+		instrument = symbol
+	}
 	var dealAmount, dealPrice float64
 	var status string
 	switch market {
@@ -423,7 +445,7 @@ func QueryOrderById(key, secret, market, symbol, orderType, orderId string) (ord
 	case model.OKEX:
 		dealAmount, dealPrice, status = queryOrderOkex(symbol, orderId)
 	case model.OKFUTURE:
-		dealAmount, dealPrice, status = queryOrderOkfuture(symbol, orderId)
+		dealAmount, dealPrice, status = queryOrderOkfuture(instrument, orderId)
 	case model.Binance:
 		dealAmount, dealPrice, status = queryOrderBinance(symbol, orderId)
 	case model.Fcoin:
@@ -469,28 +491,6 @@ func QueryOrderById(key, secret, market, symbol, orderType, orderId string) (ord
 	return &model.Order{OrderId: orderId, Symbol: symbol, Market: market, DealAmount: dealAmount, DealPrice: dealPrice,
 		Status: status}
 }
-
-//func SyncQueryOrderById(market, symbol, orderId string) (order *model.Order) {
-//	if orderId == `0` || orderId == `` {
-//		return nil
-//	}
-//	for i := 0; i < 100; i++ {
-//		order = QueryOrderById(market, symbol, orderId)
-//		if order == nil {
-//			continue
-//		}
-//		if order.Status == model.CarryStatusSuccess || order.Status == model.CarryStatusFail {
-//			return order
-//		}
-//		if i > 10 {
-//			cancelResult, cancelErrCode, cancelMsg := CancelOrder(market, symbol, orderId)
-//			util.Notice(fmt.Sprintf(`[cancel order] %v %s %s`, cancelResult, cancelErrCode, cancelMsg))
-//		}
-//		time.Sleep(time.Second * 3)
-//	}
-//	util.Notice(fmt.Sprintf(`can not query %s %s %s, return %s`, market, symbol, orderId, order.Status))
-//	return order
-//}
 
 func RefreshCoinAccount(key, secret, setMarket, symbol, setCoin, accountType string) {
 	//util.Notice(fmt.Sprintf(`[RefreshCoinAccount]%s %s %s %s`, setMarket, symbol, setCoin, accountType))
@@ -604,7 +604,7 @@ func IsValid(order *model.Order) (valid bool) {
 	return true
 }
 
-func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam,
+func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType, orderParam,
 	refreshType string, price, amount float64, saveDB bool, channel chan model.Order, retry int) {
 	var order *model.Order
 	i := 0
@@ -613,8 +613,8 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 		forever = true
 	}
 	for ; i < retry || forever; i++ {
-		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam,
-			refreshType, price, amount, saveDB)
+		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType,
+			orderParam, refreshType, price, amount, saveDB)
 		if order != nil && order.OrderId != `` {
 			break
 		} else {
@@ -638,18 +638,21 @@ func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, amountTy
 // orderSide: OrderSideBuy OrderSideSell OrderSideLiquidateLong OrderSideLiquidateShort
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
-func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, accountType, orderParam,
+func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType, orderParam,
 	refreshType string, price, amount float64, saveDB bool) (order *model.Order) {
+	if instrument == `` {
+		instrument = symbol
+	}
 	start := util.GetNowUnixMillion()
 	if amount < 0.0001 {
 		util.Notice(`can not place order with amount 0`)
 		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-			AmountType: amountType, Price: price, Amount: 0, OrderId: ``, ErrCode: ``, RefreshType: orderParam,
+			Price: price, Amount: 0, OrderId: ``, ErrCode: ``, RefreshType: orderParam,
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
 	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
-		AmountType: amountType, Price: price, Amount: amount, DealAmount: 0, DealPrice: price, RefreshType: orderParam,
-		OrderTime: util.GetNow(), UnfilledQuantity: amount}
+		Price: price, Amount: amount, DealAmount: 0, DealPrice: price, RefreshType: orderParam,
+		OrderTime: util.GetNow(), UnfilledQuantity: amount, Instrument: instrument}
 	if market == model.OKSwap {
 		amount = amount / 100
 	}
@@ -657,9 +660,6 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	_, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
 	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%s price:%s`,
 		orderSide, market, symbol, start, strAmount, strPrice))
-	if amountType == model.AmountTypeContractNumber {
-		strAmount = strconv.FormatFloat(math.Floor(amount*100)/100, 'f', 2, 64)
-	}
 	if model.AppConfig.Env == `test` {
 		order.Status = model.CarryStatusSuccess
 		order.OrderId = fmt.Sprintf(`%s%s%d`, market, symbol, util.GetNow().UnixNano())
@@ -683,18 +683,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, amountType, a
 	case model.OKEX:
 		placeOrderOkex(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
-		if amountType == model.AmountTypeCoinNumber {
-			contractAmount := math.Floor(amount * price / model.OKEXOtherContractFaceValue)
-			if strings.Contains(symbol, `btc`) {
-				contractAmount = math.Floor(amount * price / model.OKEXBTCContractFaceValue)
-			}
-			if contractAmount < 1 {
-				return &model.Order{ErrCode: `amount not enough`, Status: model.CarryStatusFail,
-					DealAmount: 0, DealPrice: 0}
-			}
-			strAmount = strconv.FormatFloat(contractAmount, 'f', 0, 64)
-		}
-		placeOrderOkfuture(order, orderSide, orderType, symbol, strPrice, strAmount)
+		placeOrderOkfuture(order, orderSide, orderType, instrument, strPrice, strAmount)
 	case model.Binance:
 		placeOrderBinance(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
@@ -812,7 +801,7 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 	case model.OKFUTURE:
 		// btc-usd futures/ticker:BTC-USD-170310
 		symbol = strings.ToUpper(symbol)
-		return `futures/depth5:` + GetInstrumentOkFuture(symbol, subType)
+		return `futures/depth5:` + GetCurrentInstrument(market, symbol)
 	case model.Binance: // xrp_btc: xrpbtc@depth5
 		if len(symbol) > 4 && symbol[0:4] == `bch_` {
 			symbol = `bchabc_` + symbol[4:]

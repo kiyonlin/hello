@@ -252,10 +252,10 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		carryChannel := getCarryChannel(key)
 		refreshType := fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, setting.Market, setting.MarketRelated)
 		go api.PlaceSyncOrders(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol,
-			``, setting.AccountType, ``, refreshType, orderPriceRelated, amount,
+			``, ``, setting.AccountType, ``, refreshType, orderPriceRelated, amount,
 			true, carryChannel, -1)
 		go api.PlaceSyncOrders(``, ``, orderSide, model.OrderTypeLimit, market, symbol, ``,
-			setting.AccountType, orderParam, refreshType, orderPrice, amount, true, carryChannel, -1)
+			``, setting.AccountType, orderParam, refreshType, orderPrice, amount, true, carryChannel, -1)
 		for true {
 			order := <-carryChannel
 			util.Notice(fmt.Sprintf(`---- get order %s %s %s`, order.Market, order.OrderId, order.Status))

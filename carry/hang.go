@@ -41,7 +41,7 @@ var ProcessHang = func(setting *model.Setting) {
 			newOrders = append(newOrders, order)
 		} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 			(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-			api.CancelOrder(``, ``, setting.Market, setting.Symbol, ``, order.OrderId)
+			api.CancelOrder(``, ``, setting.Market, setting.Symbol, ``, ``, order.OrderId)
 			didSmth = true
 		}
 	}
@@ -66,7 +66,7 @@ var ProcessHang = func(setting *model.Setting) {
 		if scoreAsk.Point > point || scoreBid.Point > point {
 			if rightFree/scoreBid.Price > scoreBid.Amount {
 				order := api.PlaceOrder(``, ``, scoreBid.OrderSide, model.OrderTypeLimit, setting.Market,
-					setting.Symbol, ``, setting.AccountType, ``, ``, scoreBid.Price,
+					setting.Symbol, ``, ``, setting.AccountType, ``, ``, scoreBid.Price,
 					scoreBid.Amount, false)
 				if order.OrderId != `` {
 					order.Status = model.CarryStatusWorking
@@ -83,7 +83,7 @@ var ProcessHang = func(setting *model.Setting) {
 			}
 			if leftFree > scoreAsk.Amount {
 				order := api.PlaceOrder(``, ``, scoreAsk.OrderSide, model.OrderTypeLimit, setting.Market,
-					setting.Symbol, ``, setting.AccountType, ``, ``, scoreAsk.Price,
+					setting.Symbol, ``, ``, setting.AccountType, ``, ``, scoreAsk.Price,
 					scoreAsk.Amount, false)
 				if order.OrderId != `` {
 					order.Status = model.CarryStatusWorking

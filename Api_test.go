@@ -38,24 +38,24 @@ func Test_initTurtleN(t *testing.T) {
 	today := time.Now().In(time.UTC)
 	fmt.Println(today.String())
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	//api.GetDayCandle(`HHCJIVMpxYEahfxGZH9NoFzD`, `T9PD2va1ovmiiZroFIqJnKL_k6ZLGC3hkay-hKrPiOROe_MY`,
-	//	model.Bitmex, `ethusd_p`, today)
+	symbol := `ETH-USD-200605`
+	api.GetDayCandle(``, ``, model.OKFUTURE, symbol, api.GetCurrentInstrument(model.OKFUTURE, symbol), today)
 	for i := 100; i > 0; i-- {
 		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		index := today.Add(d)
 		fmt.Println(index.String())
-		api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-			model.Ftx, `ethusd_p`, index)
-		api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-			model.Ftx, `btcusd_p`, index)
-		api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-			model.Ftx, `eosusd_p`, index)
-		api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-			model.Ftx, `htusd_p`, index)
-		api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-			model.Ftx, `bnbusd_p`, index)
-		api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
-			model.Ftx, `okbusd_p`, index)
+		//api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
+		//	model.Ftx, `ethusd_p`, index)
+		//api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
+		//	model.Ftx, `btcusd_p`, index)
+		//api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
+		//	model.Ftx, `eosusd_p`, index)
+		//api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
+		//	model.Ftx, `htusd_p`, index)
+		//api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
+		//	model.Ftx, `bnbusd_p`, index)
+		//api.GetDayCandle(`I9ZmxUz8KsgH6AekmsdQtIdZ33T7bH7SPg_WuBsD`, `WtGav2ou_f9HYUT4B9zj66kig7dJW8t1GEmsgFJp`,
+		//	model.Ftx, `okbusd_p`, index)
 	}
 	fmt.Println(`done`)
 	//go carry.CheckPastRefresh()
@@ -93,7 +93,16 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	carry.GetTurtleData(model.Bitmex, `btcusd_p`)
+	//result, _, _, order := api.CancelOrder(``, ``, model.OKFUTURE, `ETH-USD-200626`,
+	//	model.OrderTypeStop, `3034022`)
+	////order := api.QueryOrderById(``, ``, model.OKFUTURE, `ETH-USD-200626`, ``, `5003615274966017`)
+	//fmt.Println(result)
+	//order := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE,
+	//	`ETH-USD-200626`, ``, model.AccountTypeLever, ``, ``, 299,
+	//	0.05, false)
+	//fmt.Println(order.OrderId)
+	api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKFUTURE)
+	//carry.GetTurtleData(model.Bitmex, `btcusd_p`)
 	//rate, ts := api.GetFundingRate(model.Ftx, `btcusd_p`)
 	//fmt.Println(fmt.Sprintf(`%f %d`, rate, ts))
 	//api.RefreshAccount(``, ``, model.Ftx)
@@ -118,7 +127,7 @@ func Test_wallet(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
 	model.AppDB, _ = gorm.Open("postgres", model.AppConfig.DBConnection)
-	carry.GetTurtleData(model.Ftx, `okbusd_p`)
+	//carry.GetTurtleData(model.Ftx, `okbusd_p`)
 	//var err error
 	//model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	//if err != nil {
@@ -137,7 +146,7 @@ func Test_wallet(t *testing.T) {
 	//	`btcusd_p`, model.OrderTypeStop, `903993`)
 	//fmt.Print(order.DealPrice)
 	result, _, _, _ := api.CancelOrder(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret, model.Bitmex,
-		`btcusd_p`, model.OrderTypeStop, `fa9a9293-bcd1-4812-501d-c7529b42efed`)
+		`btcusd_p`, ``, model.OrderTypeStop, `fa9a9293-bcd1-4812-501d-c7529b42efed`)
 	fmt.Print(result)
 	//amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
 	//fmt.Println(fmt.Sprintf("%f \n%s", amount, transfer))

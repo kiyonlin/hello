@@ -15,7 +15,7 @@ var infoLock sync.Mutex
 var fundingRate = make(map[string]map[string]float64)     // market - symbol - funding rate
 var fundingRateUpdate = make(map[string]map[string]int64) // market - symbol - update time
 var Currencies = []string{`btc`, `eth`, `usdt`, `ft`, `ft1808`, `pax`, `usdc`, `tusd`}
-var OKFutureSymbols = make(map[string]map[string]string) // symbol - (quarter;bi_quarter) - instrument
+
 //var btcBalance = make(map[string]float64) // market+rfc3339, btc balance
 //var usdBalance = make(map[string]float64) // market_rfc3339, usd balance
 var candles = make(map[string]*Candle)  // market+symbol+period+rfc3339, candle
@@ -59,8 +59,6 @@ const OrderSideLiquidateShort = `liquidateShort`
 //const CarryTypeFuture = `future`
 //const CarryTypeArbitrarySell = `arbitrarysell`
 //const CarryTypeArbitraryBuy = `arbitrarybuy`
-const AmountTypeContractNumber = `contractnumber`
-const AmountTypeCoinNumber = `coinnumber`
 const AmountTypeNew = `new` // 用于okswap 开仓，而不平仓
 
 const FunctionTurtle = `turtle`
@@ -206,10 +204,11 @@ var orderStatusMap = map[string]map[string]string{ // market - market status - u
 	OKFUTURE: {
 		`0`:  CarryStatusWorking, //等待成交
 		`1`:  CarryStatusWorking, //部分成交
-		`2`:  CarryStatusSuccess, //全部成交
-		`-1`: CarryStatusFail,    //撤单
-		`4`:  CarryStatusWorking, //撤单处理中
-		`5`:  CarryStatusWorking, //撤单中)
+		`2`:  CarryStatusSuccess, //完全成交
+		`3`:  CarryStatusWorking, //下单中
+		`4`:  CarryStatusWorking, //撤单中
+		`-1`: CarryStatusFail,    //撤单成功
+		`-2`: CarryStatusFail,    //失败
 	},
 	Fcoin: {
 		`submitted`:        CarryStatusWorking, //已提交
@@ -553,15 +552,6 @@ func NewConfig() {
 	AppConfig.RestUrls[Ftx] = `https://ftx.com/api`
 	AppConfig.SymbolPrice = make(map[string]float64)
 	AppConfig.UpdatePriceTime = make(map[string]int64)
-}
-
-func SetOkFuturesSymbol(symbol, alias, instrument string) {
-	infoLock.Lock()
-	defer infoLock.Unlock()
-	if OKFutureSymbols[symbol] == nil {
-		OKFutureSymbols[symbol] = make(map[string]string)
-	}
-	OKFutureSymbols[symbol][alias] = instrument
 }
 
 func (config *Config) SetSymbolPrice(symbol string, price float64) {

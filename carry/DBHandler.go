@@ -42,29 +42,29 @@ func AccountHandlerServe() {
 }
 
 //CancelAllOrders
-var _ = func() {
-	model.AppPause = true
-	time.Sleep(time.Second)
-	markets := model.GetMarkets()
-	for _, market := range markets {
-		symbols := model.GetMarketSymbols(market)
-		for symbol := range symbols {
-			util.Notice(fmt.Sprintf(`[cancel old orders] %s %s`, market, symbol))
-			orders := api.QueryOrders(model.KeyDefault, model.SecretDefault, market, symbol, model.CarryStatusWorking,
-				model.AccountTypeLever+model.AccountTypeNormal, 0, 0)
-			for _, order := range orders {
-				if order != nil && order.OrderId != `` {
-					result, errCode, msg, _ := api.CancelOrder(model.KeyDefault, model.SecretDefault,
-						market, symbol, ``, order.OrderId)
-					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
-					time.Sleep(time.Millisecond * 100)
-				}
-			}
-		}
-	}
-	model.LoadSettings()
-	model.AppPause = false
-}
+//var _ = func() {
+//	model.AppPause = true
+//	time.Sleep(time.Second)
+//	markets := model.GetMarkets()
+//	for _, market := range markets {
+//		symbols := model.GetMarketSymbols(market)
+//		for symbol := range symbols {
+//			util.Notice(fmt.Sprintf(`[cancel old orders] %s %s`, market, symbol))
+//			orders := api.QueryOrders(model.KeyDefault, model.SecretDefault, market, symbol, model.CarryStatusWorking,
+//				model.AccountTypeLever+model.AccountTypeNormal, 0, 0)
+//			for _, order := range orders {
+//				if order != nil && order.OrderId != `` {
+//					result, errCode, msg, _ := api.CancelOrder(model.KeyDefault, model.SecretDefault,
+//						market, symbol, ``, order.OrderId)
+//					util.Notice(fmt.Sprintf(`[cancel old]%v %s %s`, result, errCode, msg))
+//					time.Sleep(time.Millisecond * 100)
+//				}
+//			}
+//		}
+//	}
+//	model.LoadSettings()
+//	model.AppPause = false
+//}
 
 func discountBalance(market, symbol, accountType, coin string, discountRate float64) {
 	leverMarket := market
@@ -152,7 +152,8 @@ func MaintainTransFee(key, secret string) {
 			util.Info(fmt.Sprintf(`--- get working orders %d`, len(orders)))
 			feeIndex += len(orders)
 			for _, value := range orders {
-				order := api.QueryOrderById(key, secret, value.Market, value.Symbol, value.OrderType, value.OrderId)
+				order := api.QueryOrderById(key, secret, value.Market, value.Symbol, value.Instrument,
+					value.OrderType, value.OrderId)
 				if order == nil {
 					continue
 				}

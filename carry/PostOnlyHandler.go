@@ -65,7 +65,7 @@ var PostonlyHandler = func(setting *model.Setting) {
 	amount := orderPostonly.Amount - orderPostonly.DealAmount
 	for true {
 		orderPostonly = api.PlaceOrder(``, ``, orderSide, model.OrderTypeLimit, setting.Market, setting.Symbol,
-			``, ``, model.PostOnly, model.PostOnly, price, amount, true)
+			``, ``, ``, model.PostOnly, model.PostOnly, price, amount, true)
 		if orderPostonly != nil && orderPostonly.OrderId != `` {
 			break
 		}

@@ -3,19 +3,40 @@ package api
 import (
 	"bytes"
 	"compress/flate"
-	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"hello/model"
 	"hello/util"
 	"io"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var okfutureLock sync.Mutex
+var okFutureInstrument = make(map[string]map[string]string) // symbol - (quarter;bi_quarter) - instrument
+
+func GetOkFuturesInstrument(symbol, alias string) (instrument string) {
+	if okFutureInstrument == nil || okFutureInstrument[symbol] == nil {
+		SetInstrumentOkFuture()
+	}
+	if okFutureInstrument == nil || okFutureInstrument[symbol] == nil {
+		util.Notice(`fatal error: can not get okfuture instrument`)
+		return ``
+	}
+	return okFutureInstrument[symbol][alias]
+}
+
+func SetOkFuturesInstrument(symbol, alias, instrument string) {
+	okfutureLock.Lock()
+	defer okfutureLock.Unlock()
+	if okFutureInstrument[symbol] == nil {
+		okFutureInstrument[symbol] = make(map[string]string)
+	}
+	okFutureInstrument[symbol][alias] = instrument
+}
 
 var subscribeHandlerOKFuture = func(subscribes []interface{}, subType string) (err error) {
 	subscribe := ``
@@ -45,6 +66,9 @@ func parseTickByOkFuture(data map[string]interface{}) (bidAsks *model.BidAsk, sy
 	bidAsks.Asks = make([]model.Tick, len(data[`asks`].([]interface{})))
 	bidAsks.Bids = make([]model.Tick, len(data[`bids`].([]interface{})))
 	symbol = data[`instrument_id`].(string)
+	if len(strings.Split(symbol, `-`)) > 1 {
+		symbol = symbol[0:strings.LastIndex(symbol, `-`)]
+	}
 	for i, item := range data[`asks`].([]interface{}) {
 		value := item.([]interface{})
 		if len(value) < 2 {
@@ -98,7 +122,29 @@ func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan s
 		}
 	}
 	return WebSocketServe(model.OKFUTURE, model.AppConfig.WSUrls[model.OKFUTURE], model.SubscribeDepth,
-		GetWSSubscribes(model.OKFUTURE, `quarter,bi_quarter`), subscribeHandlerOKFuture, wsHandler, errHandler)
+		GetWSSubscribes(model.OKFUTURE, ``), subscribeHandlerOKFuture, wsHandler, errHandler)
+}
+
+func getCurrentInstrumentOkfuture(symbol string) (currentInstrument string) {
+	instrument := GetOkFuturesInstrument(symbol, `quarter`)
+	instrumentNext := GetOkFuturesInstrument(symbol, `bi_quarter`)
+	index := strings.LastIndex(instrument, `-`)
+	year, _ := strconv.ParseInt(`20`+instrument[index+1:index+3], 10, 64)
+	month, _ := strconv.ParseInt(instrument[index+3:index+5], 10, 64)
+	day, _ := strconv.ParseInt(instrument[index+5:index+7], 10, 64)
+	today := time.Now().In(time.UTC)
+	duration, _ := time.ParseDuration(`120h`)
+	days5 := today.Add(duration)
+	date := time.Date(int(year), time.Month(month), int(day), 0, 0, 0, 0, today.Location())
+	if today.After(date) {
+		util.Notice(`future go cross ` + symbol + date.String())
+		SetInstrumentOkFuture()
+	}
+	if days5.Before(date) {
+		return instrument
+	} else {
+		return instrumentNext
+	}
 }
 
 func depthHandlerOkFuture(markets *model.Markets, data map[string]interface{}) {
@@ -118,43 +164,65 @@ func depthHandlerOkFuture(markets *model.Markets, data map[string]interface{}) {
 	}
 }
 
-func getSymbol(contractSymbol string) (symbol string) {
-	index := strings.Index(contractSymbol, `_`)
-	if index == -1 {
-		return ``
-	}
-	return contractSymbol[0:index] + `_usd`
-}
-
-func GetInstrumentOkFuture(symbol string, alias string) (instrumentId string) {
+func SetInstrumentOkFuture() {
 	responseBody := SignedRequestOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, `GET`,
 		`/api/futures/v3/instruments`, nil)
 	instrumentJson, err := util.NewJSON(responseBody)
 	if err == nil {
-		symbol = strings.ToUpper(symbol)
+		//symbol = strings.ToUpper(symbol)
 		for _, item := range instrumentJson.MustArray() {
 			future := item.(map[string]interface{})
-			if future[`underlying`] != nil && future[`underlying`].(string) == symbol &&
-				future[`alias`] != nil && future[`alias`] == alias {
-				model.SetOkFuturesSymbol(symbol, alias, future[`instrument_id`].(string))
-				return future[`instrument_id`].(string)
+			if future[`underlying`] != nil && future[`alias`] != nil {
+				SetOkFuturesInstrument(strings.ToLower(future[`underlying`].(string)),
+					future[`alias`].(string), future[`instrument_id`].(string))
 			}
 		}
 	}
-	return
 }
 
-func getContractType(contractSymbol string) (contractType string) {
-	index := strings.Index(contractSymbol, `_`)
-	if index > 0 && index < len(contractSymbol) {
-		return contractSymbol[index+1:]
+func parseAccountOkfuture(account *model.Account, data map[string]interface{}) {
+	if data[`equity`] != nil {
+		account.Free, _ = strconv.ParseFloat(data[`equity`].(string), 64)
 	}
-	return ``
+	if data[`currency`] != nil {
+		account.Currency = data[`currency`].(string)
+	}
+	if data[`margin`] != nil {
+		account.Margin, _ = strconv.ParseFloat(data[`margin`].(string), 64)
+	}
+	if data[`realized_pnl`] != nil {
+		account.ProfitReal, _ = strconv.ParseFloat(data[`realized_pnl`].(string), 64)
+	}
+	if data[`margin_for_unfilled`] != nil {
+		account.ProfitUnreal, _ = strconv.ParseFloat(data[`margin_for_unfilled`].(string), 64)
+	}
+	if data[`underlying`] != nil {
+		account.Currency = strings.ToLower(data[`underlying`].(string))
+	}
+}
+
+func GetAccountOkfuture(accounts *model.Accounts) (err error) {
+	responseBody := SignedRequestOKSwap(``, ``, `GET`, "/api/futures/v3/accounts", nil)
+	accountJson, err := util.NewJSON(responseBody)
+	if err != nil {
+		return
+	}
+	items := accountJson.Get(`info`).MustMap()
+	for key, value := range items {
+		account := accounts.GetAccount(model.OKFUTURE, key)
+		if account == nil {
+			account = &model.Account{Market: model.OKFUTURE, Ts: util.GetNowUnixMillion()}
+		}
+		data := value.(map[string]interface{})
+		parseAccountOkfuture(account, data)
+		accounts.SetAccount(model.OKFUTURE, account.Currency, account)
+	}
+	return nil
 }
 
 // orderSide:  1:开多 2:开空 3:平多 4:平空
 // orderType: 是否为对手价 0:不是 1:是
-func placeOrderOkfuture(order *model.Order, orderSide, orderType, symbol, price, amount string) {
+func placeOrderOkfuture(order *model.Order, orderSide, orderType, instrument, price, size string) {
 	switch orderSide {
 	case model.OrderSideBuy:
 		orderSide = `1`
@@ -168,104 +236,123 @@ func placeOrderOkfuture(order *model.Order, orderSide, orderType, symbol, price,
 		util.Notice(`wrong order side for placeOrderOkfuture ` + orderSide)
 		return
 	}
+	postData := map[string]interface{}{`instrument_id`: instrument, `type`: orderSide, `size`: size}
+	algo := `order`
 	switch orderType {
 	case model.OrderTypeLimit:
-		orderType = `0`
+		postData[`price`] = price
+		postData[`order_type`] = `0`
+	case model.PostOnly:
+		postData[`order_type`] = `1`
+		postData[`price`] = price
 	case model.OrderTypeMarket:
-		orderType = `1`
+		postData[`order_type`] = `4`
+		postData[`price`] = price
+	case model.OrderTypeStop:
+		algo = `order_algo`
+		postData[`order_type`] = `1`
+		postData[`algo_type`] = `2`
+		postData[`trigger_price`] = price
 	default:
 		util.Notice(`wrong order type for placeOrderOkfuture ` + orderType)
 		return
 	}
-	postData := map[string]interface{}{`price`: price, `symbol`: getSymbol(symbol), `amount`: amount,
-		`type`: orderSide, `match_price`: orderType}
-	SignedRequestOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, http.MethodPost,
-		`/api/futures/v3/order`, postData)
-	fmt.Println(order.OrderId)
-	//responseBody := SignedRequestOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, `POST`,
-	//	model.AppConfig.RestUrls[model.OKFUTURE]+"/future_trade.do", postData)
-	//resultJson, err := util.NewJSON(responseBody)
-	//if err == nil {
-	//	//result, _ := resultJson.Get(`result`).Bool()
-	//	oid, _ := resultJson.Get(`order_id`).Int64()
-	//	order.OrderId = strconv.FormatInt(oid, 10)
-	//	util.Notice(fmt.Sprintf(`[挂单Ok future] %s side: %s type: %s price: %s amount: %s order id: %s 返回%s`,
-	//		symbol, orderSide, orderType, price, amount, order.OrderId, string(responseBody)))
-	//}
+	responseBody := SignedRequestOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, http.MethodPost,
+		`/api/futures/v3/`+algo, postData)
+	resultJson, err := util.NewJSON(responseBody)
+	if err == nil {
+		result, _ := resultJson.Get(`result`).Bool()
+		if !result {
+			order.Status = model.CarryStatusFail
+		}
+		order.OrderId = resultJson.Get(`order_id`).MustString()
+		util.Notice(fmt.Sprintf(`[挂单Ok future] %s side: %s type: %s price: %s size: %s order id: %s 返回%s`,
+			instrument, orderSide, orderType, price, size, order.OrderId, string(responseBody)))
+	}
 }
 
 //status: 订单状态(0等待成交 1部分成交 2全部成交 -1撤单 4撤单处理中 5撤单中)
-func queryOrderOkfuture(symbol string, orderId string) (dealAmount, dealPrice float64, status string) {
-	postData := url.Values{}
-	postData.Set(`symbol`, getSymbol(symbol))
-	postData.Set(`contract_type`, getContractType(symbol))
-	//postData.Set(`status`, `1`)
-	//postData.Set(`page_length`, `50`)
-	//postData.Set(`current_page`, `1`)
-	postData.Set(`order_id`, orderId)
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_order_info.do",
-		&postData, 100)
+func queryOrderOkfuture(instrument string, orderId string) (dealAmount, dealPrice float64, status string) {
+	responseBody := SignedRequestOKSwap(``, ``, `GET`,
+		fmt.Sprintf(`/api/futures/v3/orders/%s/%s`, instrument, orderId), nil)
 	orderJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return 0, -1, err.Error()
 	}
-	orders, _ := orderJson.Get(`orders`).Array()
-	for _, value := range orders {
-		order, _ := value.(map[string]interface{})[`order_id`].(json.Number).Int64()
-		if strconv.FormatInt(order, 10) == orderId {
-			dealAmount, _ = value.(map[string]interface{})[`deal_amount`].(json.Number).Float64()
-			contractPrice, _ := value.(map[string]interface{})[`price_avg`].(json.Number).Float64()
-			statusCode, _ := value.(map[string]interface{})[`status`].(json.Number).Float64()
-			status = model.GetOrderStatus(model.OKFUTURE, strconv.FormatFloat(statusCode, 'f', 0, 64))
-			return dealAmount, contractPrice, status
-		}
+	data := orderJson.MustMap()
+	if data[`filled_qty`] != nil {
+		dealAmount, _ = strconv.ParseFloat(data[`filled_qty`].(string), 64)
 	}
-	return dealAmount, dealPrice, model.CarryStatusFail
+	if data[`price_avg`] != nil {
+		dealPrice, _ = strconv.ParseFloat(data[`price_avg`].(string), 64)
+	}
+	if data[`instrument_id`] != nil && data[`price`] != nil && dealPrice == 0 {
+		dealPrice, _ = strconv.ParseFloat(data[`price`].(string), 64)
+	}
+	status = model.GetOrderStatus(model.OKFUTURE, data[`state`].(string))
+	return
 }
 
-func cancelOrderOkfuture(symbol string, orderId string) (result bool, errCode, msg string) {
-	//future_cancel.do
-	postData := url.Values{}
-	postData.Set(`symbol`, getSymbol(symbol))
-	postData.Set(`order_id`, orderId)
-	postData.Set(`contract_type`, getContractType(symbol))
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+"/future_cancel.do",
-		&postData, 200)
+func cancelOrderOkfuture(instrument string, orderId string, orderType string) (result bool, errCode, msg string) {
+	var responseBody []byte
+	if orderType != `` {
+		postData := make(map[string]interface{})
+		postData[`instrument_id`] = instrument
+		switch orderType {
+		case model.OrderTypeStop:
+			postData[`order_type`] = `1`
+		}
+		postData[`algo_ids`] = fmt.Sprintf(`[%s]`, orderId)
+		responseBody = SignedRequestOKSwap(``, ``, `POST`,
+			`/api/futures/v3/cancel_algos`, postData)
+	} else {
+		responseBody = SignedRequestOKSwap(``, ``, `POST`,
+			fmt.Sprintf(`/api/futures/v3/cancel_order/%s/%s`, instrument, orderId), nil)
+	}
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		result, _ = orderJson.Get(`result`).Bool()
-		msg, _ = orderJson.Get(`order_id`).String()
+		msg, _ = orderJson.Get(`error_message`).String()
 		return result, ``, msg
 	}
 	return false, ``, err.Error()
 }
 
-func GetAccountOkfuture(accounts *model.Accounts) (err error) {
-	postData := url.Values{}
-	responseBody := sendSignRequest(`POST`, model.AppConfig.RestUrls[model.OKFUTURE]+
-		"/future_userinfo.do", &postData, 400)
-	accountJson, err := util.NewJSON(responseBody)
-	if err != nil || accountJson.Get(`info`) == nil {
-		return errors.New(`fail to get unreal profit`)
+func getCandlesOkfuture(key, secret, symbol, instrument, binSize string, start, end time.Time) (
+	candles map[string]*model.Candle) {
+	candles = make(map[string]*model.Candle)
+	param := make(map[string]interface{})
+	if binSize == `1d` {
+		param[`granularity`] = `86400`
 	}
-	accountMap, err := accountJson.Get(`info`).Map()
+	duration, _ := time.ParseDuration(`-24h`)
+	start = start.Add(duration)
+	duration, _ = time.ParseDuration(`-48h`)
+	end = end.Add(duration)
+	param[`start`] = fmt.Sprintf(`%d-%d-%dT%d:%d:%dZ`, start.Year(), start.Month(), start.Day(), 16, 0, 0)
+	param[`end`] = fmt.Sprintf(`%d-%d-%dT%d:%d:%dZ`, end.Year(), end.Month(), end.Day(), 16, 0, 0)
+	path := fmt.Sprintf(`/api/futures/v3/instruments/%s/candles?%s`, instrument, util.ComposeParams(param))
+	response := SignedRequestOKSwap(key, secret, `GET`, path, nil)
+	fmt.Println(string(response))
+	duration, _ = time.ParseDuration(`8h`)
+	candleJson, err := util.NewJSON(response)
 	if err == nil {
-		for currency, value := range accountMap {
-			if value == nil {
-				return errors.New(`no account data for ` + currency)
+		candleJsons := candleJson.MustArray()
+		for _, value := range candleJsons {
+			item := value.([]interface{})
+			if len(item) < 5 {
+				continue
 			}
-			accountRight, _ := value.(map[string]interface{})[`account_rights`]
-			profitReal, _ := value.(map[string]interface{})[`profit_real`]
-			profitUnreal, _ := value.(map[string]interface{})[`profit_unreal`]
-			account := accounts.GetAccount(model.OKFUTURE, currency)
-			if account == nil {
-				account = &model.Account{Market: model.OKFUTURE, Currency: currency}
-			}
-			account.Free, _ = accountRight.(json.Number).Float64()
-			account.ProfitReal, _ = profitReal.(json.Number).Float64()
-			account.ProfitUnreal, _ = profitUnreal.(json.Number).Float64()
-			accounts.SetAccount(model.OKFUTURE, currency, account)
+			candle := &model.Candle{Market: model.OKFUTURE, Symbol: symbol, Period: binSize}
+			candle.PriceOpen, _ = strconv.ParseFloat(item[1].(string), 64)
+			candle.PriceHigh, _ = strconv.ParseFloat(item[2].(string), 64)
+			candle.PriceLow, _ = strconv.ParseFloat(item[3].(string), 64)
+			candle.PriceClose, _ = strconv.ParseFloat(item[4].(string), 64)
+			start, _ := time.Parse(time.RFC3339, item[0].(string))
+			start = start.Add(duration)
+			candle.UTCDate = start.Format(time.RFC3339)[0:10]
+			candles[candle.UTCDate] = candle
 		}
 	}
-	return nil
+	return
 }

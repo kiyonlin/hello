@@ -11,6 +11,7 @@ type Order struct {
 	Fee         float64
 	FeeIncome   float64
 	Function    string
+	Instrument  string
 	Market      string
 	OrderId     string
 	OrderSide   string
@@ -25,7 +26,7 @@ type Order struct {
 	UpdatedAt   time.Time
 	// fmex
 	Features          int64   //订单特性，每个bit表示一种特性：0x01=FOK，0x02=post_only，0x04=Hidden，0x08=IOC，0x8000=爆仓单"
-	UnfilledQuantity  float64   //未成交数量
+	UnfilledQuantity  float64 //未成交数量
 	MakerFeeRate      float64 //maker费率
 	TakerFeeRate      float64 //taker费率
 	TriggerDirection  string  //触发方向

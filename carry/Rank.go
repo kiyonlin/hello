@@ -106,14 +106,14 @@ var ProcessRank = func(setting *model.Setting) {
 		orderScore := calcOrderScore(order, setting, tick)
 		if order.OrderSide == cancelSide {
 			util.Notice(fmt.Sprintf(`--- cancel less side order %s %s`, setting.Symbol, order.OrderId))
-			api.CancelOrder(``, ``, setting.Market, setting.Symbol, order.OrderType, order.OrderId)
+			api.CancelOrder(``, ``, setting.Market, setting.Symbol, ``, order.OrderType, order.OrderId)
 			didSmth = true
 		} else {
 			if orderScore.Point > (setting.OpenShortMargin+setting.CloseShortMargin)/4 {
 				newOrders = append(newOrders, order)
 			} else if (order.OrderSide == model.OrderSideBuy && order.Price < tick.Bids[0].Price+checkDistance) ||
 				(order.OrderSide == model.OrderSideSell && order.Price > tick.Asks[0].Price-checkDistance) {
-				api.CancelOrder(``, ``, setting.Market, setting.Symbol, order.OrderType, order.OrderId)
+				api.CancelOrder(``, ``, setting.Market, setting.Symbol, ``, order.OrderType, order.OrderId)
 				didSmth = true
 			}
 		}
@@ -139,7 +139,7 @@ var ProcessRank = func(setting *model.Setting) {
 		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
 			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
 			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, setting.Market,
-				setting.Symbol, ``, setting.AccountType, ``, ``, score.Price,
+				setting.Symbol, ``, ``, setting.AccountType, ``, ``, score.Price,
 				score.Amount, false)
 			if order.OrderId != `` {
 				order.Status = model.CarryStatusWorking
