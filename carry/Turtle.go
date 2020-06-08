@@ -60,7 +60,7 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 		if account != nil {
 			p := account.Free * price
 			if strings.Contains(strings.ToLower(symbol), `btc`) {
-				amount = 0.01 * p / n / model.OKEXBTCContractFaceValue * 1000
+				amount = 0.01 * p / n / model.OKEXBTCContractFaceValue
 			} else {
 				amount = 0.01 * p / n / model.OKEXOtherContractFaceValue
 			}
