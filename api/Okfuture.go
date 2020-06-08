@@ -8,6 +8,7 @@ import (
 	"hello/util"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -67,7 +68,7 @@ func parseTickByOkFuture(data map[string]interface{}) (bidAsks *model.BidAsk, sy
 	bidAsks.Bids = make([]model.Tick, len(data[`bids`].([]interface{})))
 	symbol = data[`instrument_id`].(string)
 	if len(strings.Split(symbol, `-`)) > 1 {
-		symbol = symbol[0:strings.LastIndex(symbol, `-`)]
+		symbol = strings.ToLower(symbol[0:strings.LastIndex(symbol, `-`)])
 	}
 	for i, item := range data[`asks`].([]interface{}) {
 		value := item.([]interface{})
@@ -129,6 +130,9 @@ func getCurrentInstrumentOkfuture(symbol string) (currentInstrument string) {
 	instrument := GetOkFuturesInstrument(symbol, `quarter`)
 	instrumentNext := GetOkFuturesInstrument(symbol, `bi_quarter`)
 	index := strings.LastIndex(instrument, `-`)
+	if index == -1 {
+		return ``
+	}
 	year, _ := strconv.ParseInt(`20`+instrument[index+1:index+3], 10, 64)
 	month, _ := strconv.ParseInt(instrument[index+3:index+5], 10, 64)
 	day, _ := strconv.ParseInt(instrument[index+5:index+7], 10, 64)
@@ -265,10 +269,37 @@ func placeOrderOkfuture(order *model.Order, orderSide, orderType, instrument, pr
 		if !result {
 			order.Status = model.CarryStatusFail
 		}
-		order.OrderId = resultJson.Get(`order_id`).MustString()
+		if orderType == model.OrderTypeStop {
+			order.OrderId = resultJson.Get(`algo_id`).MustString()
+		} else {
+			order.OrderId = resultJson.Get(`order_id`).MustString()
+		}
 		util.Notice(fmt.Sprintf(`[挂单Ok future] %s side: %s type: %s price: %s size: %s order id: %s 返回%s`,
 			instrument, orderSide, orderType, price, size, order.OrderId, string(responseBody)))
 	}
+}
+
+func queryOrdersOkfuture(key, secret, instrument string) (orders []*model.Order) {
+	param := url.Values{}
+	param.Set(`order_type`, `1`)
+	param.Set(`status`, `1`)
+	responseBody := SignedRequestOKSwap(key, secret, `GET`,
+		fmt.Sprintf(`/api/futures/v3/order_algo/%s?%s`, instrument, param.Encode()), nil)
+	fmt.Println(string(responseBody))
+	orderJson, _ := util.NewJSON(responseBody)
+	fmt.Println(orderJson.Get(`result`))
+	ids := orderJson.MustArray()
+	for _, value := range ids {
+		item := value.(map[string]interface{})
+		id := item[`algo_ids`].(string)
+		if id == `` {
+			continue
+		}
+		result, code, msg := cancelOrderOkfuture(instrument, id, model.OrderTypeStop)
+		fmt.Println(fmt.Sprintf(`%v %s %s`, result, code, msg))
+		time.Sleep(time.Second)
+	}
+	return
 }
 
 //status: 订单状态(0等待成交 1部分成交 2全部成交 -1撤单 4撤单处理中 5撤单中)
@@ -289,20 +320,20 @@ func queryOrderOkfuture(instrument string, orderId string) (dealAmount, dealPric
 	if data[`instrument_id`] != nil && data[`price`] != nil && dealPrice == 0 {
 		dealPrice, _ = strconv.ParseFloat(data[`price`].(string), 64)
 	}
-	status = model.GetOrderStatus(model.OKFUTURE, data[`state`].(string))
+	if data[`state`] != nil {
+		status = model.GetOrderStatus(model.OKFUTURE, data[`state`].(string))
+	}
 	return
 }
 
 func cancelOrderOkfuture(instrument string, orderId string, orderType string) (result bool, errCode, msg string) {
 	var responseBody []byte
-	if orderType != `` {
+	if orderType == model.OrderTypeStop {
 		postData := make(map[string]interface{})
 		postData[`instrument_id`] = instrument
-		switch orderType {
-		case model.OrderTypeStop:
-			postData[`order_type`] = `1`
-		}
-		postData[`algo_ids`] = fmt.Sprintf(`[%s]`, orderId)
+		postData[`order_type`] = `1`
+		orderIds := []string{orderId}
+		postData[`algo_ids`] = orderIds
 		responseBody = SignedRequestOKSwap(``, ``, `POST`,
 			`/api/futures/v3/cancel_algos`, postData)
 	} else {
@@ -333,7 +364,6 @@ func getCandlesOkfuture(key, secret, symbol, instrument, binSize string, start, 
 	param[`end`] = fmt.Sprintf(`%d-%d-%dT%d:%d:%dZ`, end.Year(), end.Month(), end.Day(), 16, 0, 0)
 	path := fmt.Sprintf(`/api/futures/v3/instruments/%s/candles?%s`, instrument, util.ComposeParams(param))
 	response := SignedRequestOKSwap(key, secret, `GET`, path, nil)
-	fmt.Println(string(response))
 	duration, _ = time.ParseDuration(`8h`)
 	candleJson, err := util.NewJSON(response)
 	if err == nil {

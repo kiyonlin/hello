@@ -219,7 +219,7 @@ func SignedRequestOKSwap(key, secret, method, path string, body map[string]inter
 	epoch := time.Now().UnixNano() / int64(time.Millisecond)
 	timestamp := fmt.Sprintf(`%d.%d`, epoch/1000, epoch%1000)
 	toBeSign := fmt.Sprintf(`%s%s%s`, timestamp, method, path)
-	headers := map[string]string{`OK-ACCESS-KEY`: key, `OK-ACCESS-PASSPHRASE`: `OKSwap`, "OK-ACCESS-TIMESTAMP": timestamp}
+	headers := map[string]string{`OK-ACCESS-KEY`: key, `OK-ACCESS-PASSPHRASE`: `zerg538`, "OK-ACCESS-TIMESTAMP": timestamp}
 	if method == `POST` {
 		toBeSign = toBeSign + string(util.JsonEncodeMapToByte(body))
 		headers["Content-Type"] = "application/json"

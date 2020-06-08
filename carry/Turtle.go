@@ -60,7 +60,7 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 		if account != nil {
 			p := account.Free * price
 			if strings.Contains(strings.ToLower(symbol), `btc`) {
-				amount = 0.01 * p / n / model.OKEXBTCContractFaceValue
+				amount = 0.01 * p / n / model.OKEXBTCContractFaceValue * 1000
 			} else {
 				amount = 0.01 * p / n / model.OKEXOtherContractFaceValue
 			}
@@ -109,7 +109,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	cross := false
-	if instrument != orderShort.Instrument || instrument != orderLong.Instrument {
+	if (orderShort.Instrument != `` && instrument != orderShort.Instrument) || (orderLong.Instrument != `` && instrument != orderLong.Instrument) {
 		cross = true
 	}
 	if orderLong.OrderId != `` {
@@ -133,14 +133,13 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	if cross {
 		setting.Chance = 0
 		channel := model.AppMarkets.GetDepthChan(setting.Market, 0)
-		if channel != nil {
+		if channel == nil {
 			ResetChannel(setting.Market, channel)
 		}
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{`chance`: 0})
 		util.Notice(fmt.Sprintf(`%s need to go cross %s from %s_%s to %s set chance 0`,
 			setting.Market, setting.Symbol, orderLong.Instrument, orderShort.Instrument, instrument))
-
 	}
 	for i := 1; i < 21; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))

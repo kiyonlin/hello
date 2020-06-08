@@ -93,14 +93,17 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	//result, _, _, order := api.CancelOrder(``, ``, model.OKFUTURE, `ETH-USD-200626`,
-	//	model.OrderTypeStop, `3034022`)
-	////order := api.QueryOrderById(``, ``, model.OKFUTURE, `ETH-USD-200626`, ``, `5003615274966017`)
-	//fmt.Println(result)
-	//order := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE,
-	//	`ETH-USD-200626`, ``, model.AccountTypeLever, ``, ``, 299,
-	//	0.05, false)
-	//fmt.Println(order.OrderId)
+	api.QueryOrders(``, ``, model.OKFUTURE, ``, `ETH-USD-200626`, ``, ``, 0, 0)
+	order1 := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE, `btc-usd`,
+		`BTC-USD-200626`, ``, model.AccountTypeLever, ``, ``, 9000.4,
+		1, false)
+	fmt.Println(order1.OrderId)
+	result, _, _, _ := api.CancelOrder(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
+		model.OrderTypeStop, order1.OrderId)
+	fmt.Println(result)
+	order2 := api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
+		``, `5036936567439361`)
+	fmt.Println(order2.OrderId)
 	api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKFUTURE)
 	//carry.GetTurtleData(model.Bitmex, `btcusd_p`)
 	//rate, ts := api.GetFundingRate(model.Ftx, `btcusd_p`)

@@ -277,7 +277,8 @@ func CancelOrder(key, secret, market, symbol, instrument, orderType, orderId str
 	return result, errCode, msg, order
 }
 
-func QueryOrders(key, secret, market, symbol, states, accountTypes string, before, after int64) (orders []*model.Order) {
+func QueryOrders(key, secret, market, symbol, instrument, states, accountTypes string, before, after int64) (
+	orders []*model.Order) {
 	switch market {
 	case model.Fcoin:
 		orders = make([]*model.Order, 0)
@@ -296,6 +297,8 @@ func QueryOrders(key, secret, market, symbol, states, accountTypes string, befor
 		return orders
 	case model.Fmex:
 		return queryOrdersFmex(key, secret, symbol)
+	case model.OKFUTURE:
+		return queryOrdersOkfuture(key, secret, instrument)
 	default:
 		util.Notice(market + ` not supported`)
 	}
@@ -800,7 +803,6 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		return "ok_sub_spot_" + symbol + "_depth_5"
 	case model.OKFUTURE:
 		// btc-usd futures/ticker:BTC-USD-170310
-		symbol = strings.ToUpper(symbol)
 		return `futures/depth5:` + GetCurrentInstrument(market, symbol)
 	case model.Binance: // xrp_btc: xrpbtc@depth5
 		if len(symbol) > 4 && symbol[0:4] == `bch_` {
