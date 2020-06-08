@@ -285,9 +285,7 @@ func queryOrdersOkfuture(key, secret, instrument string) (orders []*model.Order)
 	param.Set(`status`, `1`)
 	responseBody := SignedRequestOKSwap(key, secret, `GET`,
 		fmt.Sprintf(`/api/futures/v3/order_algo/%s?%s`, instrument, param.Encode()), nil)
-	fmt.Println(string(responseBody))
 	orderJson, _ := util.NewJSON(responseBody)
-	fmt.Println(orderJson.Get(`result`))
 	ids := orderJson.MustArray()
 	for _, value := range ids {
 		item := value.(map[string]interface{})
@@ -303,25 +301,59 @@ func queryOrdersOkfuture(key, secret, instrument string) (orders []*model.Order)
 }
 
 //status: 订单状态(0等待成交 1部分成交 2全部成交 -1撤单 4撤单处理中 5撤单中)
-func queryOrderOkfuture(instrument string, orderId string) (dealAmount, dealPrice float64, status string) {
-	responseBody := SignedRequestOKSwap(``, ``, `GET`,
-		fmt.Sprintf(`/api/futures/v3/orders/%s/%s`, instrument, orderId), nil)
-	orderJson, err := util.NewJSON(responseBody)
-	if err != nil {
-		return 0, -1, err.Error()
-	}
-	data := orderJson.MustMap()
-	if data[`filled_qty`] != nil {
-		dealAmount, _ = strconv.ParseFloat(data[`filled_qty`].(string), 64)
-	}
-	if data[`price_avg`] != nil {
-		dealPrice, _ = strconv.ParseFloat(data[`price_avg`].(string), 64)
-	}
-	if data[`instrument_id`] != nil && data[`price`] != nil && dealPrice == 0 {
-		dealPrice, _ = strconv.ParseFloat(data[`price`].(string), 64)
-	}
-	if data[`state`] != nil {
-		status = model.GetOrderStatus(model.OKFUTURE, data[`state`].(string))
+func queryOrderOkfuture(instrument, orderType, orderId string) (dealAmount, dealPrice float64, status string) {
+	if orderType == model.OrderTypeStop {
+		param := url.Values{}
+		param.Set(`order_type`, `1`)
+		param.Set(`algo_id`, orderId)
+		responseBody := SignedRequestOKSwap(``, ``, `GET`,
+			fmt.Sprintf(`/api/futures/v3/order_algo/%s?%s`, instrument, param.Encode()), nil)
+		orderJson, err := util.NewJSON(responseBody)
+		if err != nil {
+			return 0, -1, err.Error()
+		}
+		fmt.Println(string(responseBody))
+		value := orderJson.MustArray()
+		for _, item := range value {
+			data := item.(map[string]interface{})
+			if data[`algo_ids`] != nil && data[`algo_ids`].(string) == orderId {
+				if data[`trigger_price`] != nil {
+					dealPrice, _ = strconv.ParseFloat(data[`trigger_price`].(string), 64)
+				}
+				if data[`real_amount`] != nil {
+					dealAmount, _ = strconv.ParseFloat(data[`real_amount`].(string), 64)
+				}
+				if data[`status`] != nil {
+					if data[`status`] == `1` || data[`status`] == `4` {
+						status = model.CarryStatusWorking
+					} else if data[`status`] == `2` {
+						status = model.CarryStatusSuccess
+					} else if data[`status`] == `3` || data[`status`] == `5` || data[`status`] == `6` {
+						status = model.CarryStatusFail
+					}
+				}
+			}
+		}
+	} else {
+		responseBody := SignedRequestOKSwap(``, ``, `GET`,
+			fmt.Sprintf(`/api/futures/v3/orders/%s/%s`, instrument, orderId), nil)
+		orderJson, err := util.NewJSON(responseBody)
+		if err != nil {
+			return 0, -1, err.Error()
+		}
+		data := orderJson.MustMap()
+		if data[`filled_qty`] != nil {
+			dealAmount, _ = strconv.ParseFloat(data[`filled_qty`].(string), 64)
+		}
+		if data[`price_avg`] != nil {
+			dealPrice, _ = strconv.ParseFloat(data[`price_avg`].(string), 64)
+		}
+		if data[`instrument_id`] != nil && data[`price`] != nil && dealPrice == 0 {
+			dealPrice, _ = strconv.ParseFloat(data[`price`].(string), 64)
+		}
+		if data[`state`] != nil {
+			status = model.GetOrderStatus(model.OKFUTURE, data[`state`].(string))
+		}
 	}
 	return
 }

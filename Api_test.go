@@ -93,7 +93,10 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.QueryOrders(``, ``, model.OKFUTURE, ``, `ETH-USD-200626`, ``, ``, 0, 0)
+	api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
+		model.OrderTypeStop, `5234377`)
+	api.QueryOrders(``, ``, model.OKFUTURE, ``, `BTC-USD-200626`, ``,
+		``, 0, 0)
 	order1 := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE, `btc-usd`,
 		`BTC-USD-200626`, ``, model.AccountTypeLever, ``, ``, 9000.4,
 		1, false)

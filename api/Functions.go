@@ -448,7 +448,7 @@ func QueryOrderById(key, secret, market, symbol, instrument, orderType, orderId 
 	case model.OKEX:
 		dealAmount, dealPrice, status = queryOrderOkex(symbol, orderId)
 	case model.OKFUTURE:
-		dealAmount, dealPrice, status = queryOrderOkfuture(instrument, orderId)
+		dealAmount, dealPrice, status = queryOrderOkfuture(instrument, orderType, orderId)
 	case model.Binance:
 		dealAmount, dealPrice, status = queryOrderBinance(symbol, orderId)
 	case model.Fcoin:
