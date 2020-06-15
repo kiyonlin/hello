@@ -137,14 +137,14 @@ func getCurrentInstrumentOkfuture(symbol string) (currentInstrument string) {
 	month, _ := strconv.ParseInt(instrument[index+3:index+5], 10, 64)
 	day, _ := strconv.ParseInt(instrument[index+5:index+7], 10, 64)
 	today := time.Now().In(time.UTC)
-	duration, _ := time.ParseDuration(`120h`)
-	days5 := today.Add(duration)
+	duration, _ := time.ParseDuration(`312h`)
+	days13 := today.Add(duration)
 	date := time.Date(int(year), time.Month(month), int(day), 0, 0, 0, 0, today.Location())
 	if today.After(date) {
 		util.Notice(`future go cross ` + symbol + date.String())
 		SetInstrumentOkFuture()
 	}
-	if days5.Before(date) {
+	if days13.Before(date) {
 		return instrument
 	} else {
 		return instrumentNext
