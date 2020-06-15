@@ -113,7 +113,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 		cross = true
 	}
 	if orderLong.OrderId != `` {
-		if !cross || setting.Chance < 0 {
+		if !cross || setting.Chance >= 0 {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, orderLong.Instrument,
 				orderLong.OrderType, orderLong.OrderId, true)
 		} else {
@@ -122,7 +122,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 		}
 	}
 	if orderShort.OrderId != `` {
-		if !cross || setting.Chance > 0 {
+		if !cross || setting.Chance <= 0 {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, orderShort.Instrument,
 				orderShort.OrderType, orderShort.OrderId, true)
 		} else {

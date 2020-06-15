@@ -93,16 +93,16 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
-		model.OrderTypeStop, `5234377`)
-	api.QueryOrders(``, ``, model.OKFUTURE, ``, `BTC-USD-200626`, ``,
-		``, 0, 0)
-	order1 := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE, `btc-usd`,
-		`BTC-USD-200626`, ``, model.AccountTypeLever, ``, ``, 9000.4,
-		1, false)
-	fmt.Println(order1.OrderId)
-	result, _, _, _ := api.CancelOrder(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
-		model.OrderTypeStop, order1.OrderId)
+	//api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
+	//	model.OrderTypeStop, `5234377`)
+	//api.QueryOrders(``, ``, model.OKFUTURE, ``, `BTC-USD-200626`, ``,
+	//	``, 0, 0)
+	//order1 := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE, `btc-usd`,
+	//	`BTC-USD-200626`, ``, model.AccountTypeLever, ``, ``, 9000.4,
+	//	1, false)
+	//fmt.Println(order1.OrderId)
+	result, _, _, _ := api.CancelOrder(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200925`,
+		model.OrderTypeStop, `5264638`)
 	fmt.Println(result)
 	order2 := api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
 		``, `5036936567439361`)
