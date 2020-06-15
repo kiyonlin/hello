@@ -110,6 +110,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	cross := false
 	if (orderShort.Instrument != `` && instrument != orderShort.Instrument) || (orderLong.Instrument != `` && instrument != orderLong.Instrument) {
+		util.Notice(fmt.Sprintf(`go cross %s %s => %s`, orderLong.Instrument, orderShort.Instrument, instrument))
 		cross = true
 	}
 	if orderLong.OrderId != `` {
