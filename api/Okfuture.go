@@ -312,7 +312,7 @@ func queryOrderOkfuture(instrument, orderType, orderId string) (dealAmount, deal
 		if err != nil {
 			return 0, -1, err.Error()
 		}
-		fmt.Println(string(responseBody))
+		//fmt.Println(string(responseBody))
 		value := orderJson.MustArray()
 		for _, item := range value {
 			data := item.(map[string]interface{})
@@ -331,6 +331,9 @@ func queryOrderOkfuture(instrument, orderType, orderId string) (dealAmount, deal
 					} else if data[`status`] == `3` || data[`status`] == `5` || data[`status`] == `6` {
 						status = model.CarryStatusFail
 					}
+				}
+				if data[`order_id`] != nil {
+					return queryOrderOkfuture(instrument, model.OrderTypeLimit, data[`order_id`].(string))
 				}
 			}
 		}

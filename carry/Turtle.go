@@ -71,6 +71,9 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 
 func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	today := time.Now().In(time.UTC)
+	if setting.Market == model.OKFUTURE {
+		today = util.GetNow()
+	}
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	duration, _ := time.ParseDuration(`-24h`)
 	yesterday := today.Add(duration)
