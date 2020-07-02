@@ -101,11 +101,11 @@ func Test_RefreshAccount(t *testing.T) {
 	//	`BTC-USD-200626`, ``, model.AccountTypeLever, ``, ``, 9000.4,
 	//	1, false)
 	//fmt.Println(order1.OrderId)
-	result, _, _, _ := api.CancelOrder(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200925`,
-		model.OrderTypeStop, `5264638`)
-	fmt.Println(result)
-	order2 := api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
-		``, `5036936567439361`)
+	//result, _, _, _ := api.CancelOrder(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200925`,
+	//	model.OrderTypeStop, `5264638`)
+	//fmt.Println(result)
+	order2 := api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200925`,
+		model.OrderTypeStop, `5320016`)
 	fmt.Println(order2.OrderId)
 	api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKFUTURE)
 	//carry.GetTurtleData(model.Bitmex, `btcusd_p`)

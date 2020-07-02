@@ -332,7 +332,7 @@ func queryOrderOkfuture(instrument, orderType, orderId string) (dealAmount, deal
 						status = model.CarryStatusFail
 					}
 				}
-				if data[`order_id`] != nil {
+				if data[`order_id`] != nil && status == model.CarryStatusSuccess {
 					return queryOrderOkfuture(instrument, model.OrderTypeLimit, data[`order_id`].(string))
 				}
 			}
