@@ -351,7 +351,10 @@ func getAccountFmex(key, secret string) (account []*model.Account) {
 	}
 	return nil
 }
-func getFundingRateFmex(symbol string) (fundingRate float64, updateTime int64) {
+func
+
+// updateTime: 以unix second表示的下一次更新资金费率的时间
+getFundingRateFmex(symbol string) (fundingRate float64, updateTime int64) {
 	//if symbol == `btcusd_p` {
 	//	symbol = `.btcusdfr8h`
 	//}

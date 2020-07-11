@@ -785,6 +785,7 @@ func getBtcBalanceBitmex(key, secret string) (balance float64) {
 	return
 }
 
+// update: 以unix second表示的下一次更新资金费率的时间
 func getFundingRateBitmex(symbol string) (fundingRate float64, update int64) {
 	postData := make(map[string]interface{})
 	symbol = model.GetDialectSymbol(model.Bitmex, symbol)
