@@ -240,7 +240,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		carryType = 4
 	}
 	amount = math.Floor(amount/100) * 100
-	if amount > 1 {
+	if amount > 1 && (carryType == 2 || carryType == 4) {
 		util.Notice(fmt.Sprintf(`情况%d %s-%s, 资金费率: %f-%f priceX:%f fmb1:%f fms1:%f fmba:%f fmsa:%f fmbaNew:%f
 			fmsaNew:%f tick price:%f-%f tick amount:%f-%f tickRelatedPrice:%f-%f tickRelatedAmount:%f-%f p1:%f p2:%f 持仓:%f`,
 			carryType, market, setting.MarketRelated, zFee, zFeeRelated, priceX, fmb1, fms1, fmba, fmsa, fmbaNew,
