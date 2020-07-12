@@ -109,7 +109,8 @@ var ProcessCarrySameTime = func(setting *model.Setting) {
 	placeBothOrders(setting.Market, setting.Symbol, key, tick, tickRelated, freeRelated, setting)
 }
 
-func checkLastBid(market, symbol, orderSide string) (valid bool) {
+// checkLastBid
+func _(market, symbol, orderSide string) (valid bool) {
 	up, down := model.AppMarkets.GetLastUpDown(symbol, market)
 	now := util.GetNowUnixMillion()
 	if orderSide == model.OrderSideSell && now-int64(down) < 3000 {
@@ -215,8 +216,8 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPrice = tick.Asks[0].Price * 1.001
 		carryType = 1
 	} else if fmb1+priceDistance >= calcAmtPriceBuy+priceX && fmba >= setting.RefreshLimitLow &&
-		tick.Bids[0].Amount < bidAskRate*tick.Asks[0].Amount && tick.Asks[0].Amount > amountLine &&
-		checkLastBid(market, symbol, model.OrderSideBuy) {
+		tick.Bids[0].Amount < bidAskRate*tick.Asks[0].Amount && tick.Asks[0].Amount > amountLine {
+		//checkLastBid(setting.MarketRelated, symbol, model.OrderSideBuy) {
 		amount = math.Min(math.Min(fmba*0.8, a1), setting.GridAmount)
 		orderSideRelated = model.OrderSideSell
 		orderPriceRelated = calcAmtPriceBuy
@@ -232,8 +233,8 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		orderPriceRelated = calcAmtPriceSellNew
 		carryType = 3
 	} else if fms1-priceDistance <= calcAmtPriceSell+priceX && fmsa >= setting.RefreshLimitLow &&
-		tick.Asks[0].Amount < tick.Bids[0].Amount*bidAskRate && tick.Bids[0].Amount > amountLine &&
-		checkLastBid(market, symbol, model.OrderSideSell) {
+		tick.Asks[0].Amount < tick.Bids[0].Amount*bidAskRate && tick.Bids[0].Amount > amountLine {
+		//checkLastBid(market, symbol, model.OrderSideSell) {
 		amount = math.Min(math.Min(fmsa*0.8, a2), setting.GridAmount)
 		orderSideRelated = model.OrderSideBuy
 		orderSide = model.OrderSideSell
@@ -256,9 +257,9 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		refreshType := fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, setting.Market, setting.MarketRelated)
 		api.PlaceOrder(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol, ``,
 			``, setting.AccountType, ``, refreshType, orderPriceRelated, amount, true)
+		time.Sleep(time.Millisecond * 500)
 		util.Notice(fmt.Sprintf(`ignore order %s %s %s %f %s`,
 			setting.Market, symbol, orderSide, orderPrice, orderParam))
-		time.Sleep(time.Second * 3)
 		api.RefreshAccount(``, ``, setting.MarketRelated)
 		//go api.PlaceSyncOrders(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol,
 		//	``, ``, setting.AccountType, ``, refreshType, orderPriceRelated, amount,
