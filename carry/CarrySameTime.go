@@ -11,10 +11,11 @@ import (
 )
 
 // setting:
-// gridAmount 下单数量
-// gridPriceDistance 价差参数
-// amountLimit 总量限制
-// refreshLimitLow 最低数量限制
+// gridAmount 下单数量（图上20000）
+// gridPriceDistance （图上5）
+// amountLimit 总量限制（A总）
+// refreshLimitLow 最低数量限制（图上4000）
+// priceX （价格偏移基数）
 var carrySameTimeLock sync.Mutex
 
 var lastOrders = make(map[string]map[string]*model.Order)
@@ -32,7 +33,8 @@ func setLastOrder(key, market string, order *model.Order) {
 	lastOrders[key][market] = order
 }
 
-func getLastOrder(key, market string) (order *model.Order) {
+//getLastOrder
+func _(key, market string) (order *model.Order) {
 	defer carrySameTimeLock.Unlock()
 	carrySameTimeLock.Lock()
 	if lastOrders == nil {
@@ -44,7 +46,8 @@ func getLastOrder(key, market string) (order *model.Order) {
 	return lastOrders[key][market]
 }
 
-func getCarryChannel(key string) (carryChannel chan model.Order) {
+//getCarryChannel
+func _(key string) (carryChannel chan model.Order) {
 	defer carrySameTimeLock.Unlock()
 	carrySameTimeLock.Lock()
 	if carryChannels == nil {
@@ -157,14 +160,14 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		p2 = -1 * freeRelated / setting.AmountLimit
 		a1 = freeRelated
 		a2 = setting.AmountLimit - freeRelated
-		priceX -= 4 * p2
+		priceX -= 5 * p2
 	} else if freeRelated < setting.AmountLimit/-10 &&
 		-1*freeRelated > setting.AmountLimit/10 {
 		p1 = freeRelated / setting.AmountLimit
 		p2 = 0
 		a1 = setting.AmountLimit + freeRelated
 		a2 = -1 * freeRelated
-		priceX += 4 * p1
+		priceX += 5 * p1
 	}
 	if priceX > 7 {
 		priceX = priceX/2 + 3.5
@@ -202,7 +205,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 	orderPriceRelated := 0.0
 	carryType := 0
 	orderParam := ``
-	amountLine := 1000000.0
+	amountLine := 900000.0
 	bidAskRate := 1.0 / 9.0
 	if fmb1+priceDistance >= calcAmtPriceBuyNew+priceX && fmbaNew >= setting.RefreshLimitLow {
 		amount = math.Min(math.Min(0.8*fmbaNew, a1), setting.GridAmount)
@@ -249,41 +252,47 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 			p1, p2, freeRelated))
 		setLastOrder(key, market, nil)
 		setLastOrder(key, setting.MarketRelated, nil)
-		carryChannel := getCarryChannel(key)
+		//carryChannel := getCarryChannel(key)
 		refreshType := fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, setting.Market, setting.MarketRelated)
-		go api.PlaceSyncOrders(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol,
-			``, ``, setting.AccountType, ``, refreshType, orderPriceRelated, amount,
-			true, carryChannel, -1)
-		go api.PlaceSyncOrders(``, ``, orderSide, model.OrderTypeLimit, market, symbol, ``,
-			``, setting.AccountType, orderParam, refreshType, orderPrice, amount, true, carryChannel, -1)
-		for true {
-			order := <-carryChannel
-			util.Notice(fmt.Sprintf(`---- get order %s %s %s`, order.Market, order.OrderId, order.Status))
-			setLastOrder(key, order.Market, &order)
-			if getLastOrder(key, market) != nil && getLastOrder(key, setting.MarketRelated) != nil {
-				util.Notice(`---- get both, break`)
-				break
-			}
-		}
-		orderMarket := getLastOrder(key, market)
-		orderRelated := getLastOrder(key, setting.MarketRelated)
-		if api.IsValid(orderMarket) && api.IsValid(orderRelated) {
-			time.Sleep(time.Second)
-			if setting.MarketRelated == model.Bybit {
-				if orderRelated.OrderSide == model.OrderSideSell {
-					freeRelated -= orderRelated.Amount
-				} else {
-					freeRelated += orderRelated.Amount
-				}
-				accountBybit := model.AppAccounts.GetAccount(model.Bybit, symbol)
-				if accountBybit != nil {
-					accountBybit.Free = freeRelated
-				}
-				model.AppAccounts.SetAccount(setting.MarketRelated, symbol, accountBybit)
-			} else {
-				api.RefreshAccount(``, ``, model.OKSwap)
-			}
-		}
+		api.PlaceOrder(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol, ``,
+			``, setting.AccountType, ``, refreshType, orderPriceRelated, amount, true)
+		util.Notice(fmt.Sprintf(`ignore order %s %s %s %f %s`,
+			setting.Market, symbol, orderSide, orderPrice, orderParam))
+		time.Sleep(time.Second * 3)
+		api.RefreshAccount(``, ``, setting.MarketRelated)
+		//go api.PlaceSyncOrders(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol,
+		//	``, ``, setting.AccountType, ``, refreshType, orderPriceRelated, amount,
+		//	true, carryChannel, -1)
+		//go api.PlaceSyncOrders(``, ``, orderSide, model.OrderTypeLimit, market, symbol, ``,
+		//	``, setting.AccountType, orderParam, refreshType, orderPrice, amount, true, carryChannel, -1)
+		//for true {
+		//	order := <-carryChannel
+		//	util.Notice(fmt.Sprintf(`---- get order %s %s %s`, order.Market, order.OrderId, order.Status))
+		//	setLastOrder(key, order.Market, &order)
+		//	if getLastOrder(key, market) != nil && getLastOrder(key, setting.MarketRelated) != nil {
+		//		util.Notice(`---- get both, break`)
+		//		break
+		//	}
+		//}
+		//orderMarket := getLastOrder(key, market)
+		//orderRelated := getLastOrder(key, setting.MarketRelated)
+		//if api.IsValid(orderMarket) && api.IsValid(orderRelated) {
+		//	time.Sleep(time.Second)
+		//	if setting.MarketRelated == model.Bybit {
+		//		if orderRelated.OrderSide == model.OrderSideSell {
+		//			freeRelated -= orderRelated.Amount
+		//		} else {
+		//			freeRelated += orderRelated.Amount
+		//		}
+		//		accountBybit := model.AppAccounts.GetAccount(model.Bybit, symbol)
+		//		if accountBybit != nil {
+		//			accountBybit.Free = freeRelated
+		//		}
+		//		model.AppAccounts.SetAccount(setting.MarketRelated, symbol, accountBybit)
+		//	} else {
+		//		api.RefreshAccount(``, ``, model.OKSwap)
+		//	}
+		//}
 	}
 }
 
