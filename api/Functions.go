@@ -546,10 +546,20 @@ func _(key, secret, market string, coins map[string]bool) {
 	}
 }
 
+var refreshTime map[string]*time.Time = make(map[string]*time.Time)
+
 func RefreshAccount(key, secret, market string) {
 	util.SocketInfo(`refresh all accounts in market ` + market)
 	if model.AppConfig.Env == `test` {
 		return
+	}
+	duration, _ := time.ParseDuration(`-10s`)
+	now := time.Now()
+	checkTime := now.Add(duration)
+	if refreshTime[market] != nil || refreshTime[market].Before(checkTime) {
+		return
+	} else {
+		refreshTime[market] = &now
 	}
 	model.AppAccounts.ClearAccounts(market)
 	switch market {

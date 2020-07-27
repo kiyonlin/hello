@@ -209,7 +209,7 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 	responseBody := SignedRequestOKSwap(``, ``, `GET`, "/api/futures/v3/accounts", nil)
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
-		return
+		return err
 	}
 	items := accountJson.Get(`info`).MustMap()
 	for key, value := range items {
