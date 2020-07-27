@@ -546,7 +546,7 @@ func _(key, secret, market string, coins map[string]bool) {
 	}
 }
 
-var refreshTime map[string]*time.Time = make(map[string]*time.Time)
+var refreshTime = make(map[string]*time.Time)
 
 func RefreshAccount(key, secret, market string) {
 	util.SocketInfo(`refresh all accounts in market ` + market)
