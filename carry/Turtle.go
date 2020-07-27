@@ -401,7 +401,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		if setting.Chance < 0 {
 			api.RefreshAccount(``, ``, setting.Market)
 			account := model.AppAccounts.GetAccount(setting.Market, setting.Symbol)
-			if account.Holding < 0 {
+			if account != nil && account.Holding < 0 {
 				amountLong = math.Abs(account.Holding)
 			}
 			util.Notice(fmt.Sprintf(
@@ -443,7 +443,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		if setting.Chance > 0 {
 			api.RefreshAccount(``, ``, setting.Market)
 			account := model.AppAccounts.GetAccount(setting.Market, setting.Symbol)
-			if account.Holding > 0 {
+			if account != nil && account.Holding > 0 {
 				amountShort = math.Abs(account.Holding)
 			}
 			util.Notice(fmt.Sprintf(
