@@ -226,7 +226,8 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 
 // orderSide:  1:开多 2:开空 3:平多 4:平空
 // orderType: 是否为对手价 0:不是 1:是
-func placeOrderOkfuture(order *model.Order, orderSide, orderType, instrument, price, size string) {
+// price == `0` 市价单， != `0` 限价单
+func placeOrderOkfuture(order *model.Order, orderSide, orderType, instrument, price, triggerPrice, size string) {
 	switch orderSide {
 	case model.OrderSideBuy:
 		orderSide = `1`
@@ -255,8 +256,14 @@ func placeOrderOkfuture(order *model.Order, orderSide, orderType, instrument, pr
 	case model.OrderTypeStop:
 		algo = `order_algo`
 		postData[`order_type`] = `1`
-		postData[`algo_type`] = `2`
-		postData[`trigger_price`] = price
+		postData[`trigger_price`] = triggerPrice
+		priceValue, _ := strconv.ParseFloat(price, 64)
+		if priceValue > 0 {
+			postData[`algo_type`] = `1`
+			postData[`algo_price`] = price
+		} else {
+			postData[`algo_type`] = `2`
+		}
 	default:
 		util.Notice(`wrong order type for placeOrderOkfuture ` + orderType)
 		return

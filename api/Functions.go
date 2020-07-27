@@ -602,7 +602,7 @@ func RefreshAccount(key, secret, market string) {
 
 // PlaceSyncOrders
 func _(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType, orderParam,
-	refreshType string, price, amount float64, saveDB bool, channel chan model.Order, retry int) {
+	refreshType string, price, triggerPrice, amount float64, saveDB bool, channel chan model.Order, retry int) {
 	var order *model.Order
 	i := 0
 	forever := false
@@ -611,7 +611,7 @@ func _(key, secret, orderSide, orderType, market, symbol, instrument, amountType
 	}
 	for ; i < retry || forever; i++ {
 		order = PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType,
-			orderParam, refreshType, price, amount, saveDB)
+			orderParam, refreshType, price, triggerPrice, amount, saveDB)
 		if order != nil && order.OrderId != `` {
 			break
 		} else {
@@ -636,7 +636,7 @@ func _(key, secret, orderSide, orderType, market, symbol, instrument, amountType
 // orderType: OrderTypeLimit OrderTypeMarket
 // amount:如果是限价单或市价卖单，amount是左侧币种的数量，如果是市价买单，amount是右测币种的数量
 func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType, orderParam,
-	refreshType string, price, amount float64, saveDB bool) (order *model.Order) {
+	refreshType string, price, triggerPrice, amount float64, saveDB bool) (order *model.Order) {
 	if instrument == `` {
 		instrument = symbol
 	}
@@ -654,9 +654,10 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 		amount = amount / 100
 	}
 	price, strPrice := util.FormatNum(price, GetPriceDecimal(market, symbol))
+	triggerPrice, strTriggerPrice := util.FormatNum(triggerPrice, GetPriceDecimal(market, symbol))
 	_, strAmount := util.FormatNum(amount, GetAmountDecimal(market, symbol))
-	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%s price:%s`,
-		orderSide, market, symbol, start, strAmount, strPrice))
+	util.Notice(fmt.Sprintf(`...%s %s %s before order %d amount:%s price:%s triggerPrice:%s`,
+		orderSide, market, symbol, start, strAmount, strPrice, strTriggerPrice))
 	if model.AppConfig.Env == `test` {
 		order.Status = model.CarryStatusSuccess
 		order.OrderId = fmt.Sprintf(`%s%s%d`, market, symbol, util.GetNow().UnixNano())
@@ -680,7 +681,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 	case model.OKEX:
 		placeOrderOkex(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
-		placeOrderOkfuture(order, orderSide, orderType, instrument, strPrice, strAmount)
+		placeOrderOkfuture(order, orderSide, orderType, instrument, strPrice, strTriggerPrice, strAmount)
 	case model.Binance:
 		placeOrderBinance(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
@@ -701,7 +702,7 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 	case model.Bybit:
 		placeOrderBybit(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strAmount)
 	case model.Ftx:
-		placeOrderFtx(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice,
+		placeOrderFtx(order, key, secret, orderSide, orderType, orderParam, symbol, strPrice, strTriggerPrice,
 			fmt.Sprintf(`%f`, amount))
 	case model.OKSwap:
 		account := model.AppAccounts.GetAccount(model.OKSwap, model.OrderSideSell+symbol)

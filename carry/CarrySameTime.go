@@ -256,7 +256,7 @@ func placeBothOrders(market, symbol, key string, tick, tickRelated *model.BidAsk
 		//carryChannel := getCarryChannel(key)
 		refreshType := fmt.Sprintf(`%s_%s_%s`, model.FunctionCarry, setting.Market, setting.MarketRelated)
 		api.PlaceOrder(``, ``, orderSideRelated, model.OrderTypeLimit, setting.MarketRelated, symbol, ``,
-			``, setting.AccountType, ``, refreshType, orderPriceRelated, amount, true)
+			``, setting.AccountType, ``, refreshType, orderPriceRelated, 0, amount, true)
 		time.Sleep(time.Millisecond * 500)
 		util.Notice(fmt.Sprintf(`ignore order %s %s %s %f %s`,
 			setting.Market, symbol, orderSide, orderPrice, orderParam))

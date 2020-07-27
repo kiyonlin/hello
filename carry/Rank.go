@@ -139,8 +139,8 @@ var ProcessRank = func(setting *model.Setting) {
 		if (score.OrderSide == model.OrderSideBuy && rightFree/score.Price > score.Amount) ||
 			(score.OrderSide == model.OrderSideSell && leftFree > score.Amount) {
 			order := api.PlaceOrder(``, ``, score.OrderSide, model.OrderTypeLimit, setting.Market,
-				setting.Symbol, ``, ``, setting.AccountType, ``, ``, score.Price,
-				score.Amount, false)
+				setting.Symbol, ``, ``, setting.AccountType, ``, ``,
+				score.Price, 0, score.Amount, false)
 			if order.OrderId != `` {
 				order.Status = model.CarryStatusWorking
 				order.RefreshType = RankSequence

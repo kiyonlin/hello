@@ -238,108 +238,92 @@ var ProcessTurtle = func(setting *model.Setting) {
 	priceShort := turtleData.lowDays20
 	amount := turtleData.amount
 	if setting.Chance == 0 { // 开初始仓
-		if setting.Market == model.OKFUTURE {
-			placeTurtleLimit(setting, tick, turtleData, priceLong, priceShort, amount, currentN)
-			util.Notice(fmt.Sprintf(
-				`破20日点 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-				setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
-				priceLong, setting.PriceX, turtleData.n))
-		} else {
-			priceShort, priceLong = placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
-				priceShort, priceLong, amount, amount, tick)
-			if tick.Asks[0].Price >= priceLong {
-				if handleBreak(setting, turtleData, model.OrderSideBuy) {
-					setting.Chance = 1
-					setting.GridAmount = amount
-					model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-						setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-						`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-					util.Notice(fmt.Sprintf(
-						`破20日高点 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-						setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
-						priceLong, setting.PriceX, turtleData.n))
-				}
+		priceShort, priceLong = placeTurtleOrders(turtleData, setting, currentN,
+			priceShort, priceLong, amount, amount, tick)
+		if tick.Asks[0].Price >= priceLong {
+			if handleBreak(setting, turtleData, model.OrderSideBuy) {
+				setting.Chance = 1
+				setting.GridAmount = amount
+				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+				util.Notice(fmt.Sprintf(
+					`破20日高点 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
+					priceLong, setting.PriceX, turtleData.n))
 			}
-			if tick.Bids[0].Price <= priceShort {
-				if handleBreak(setting, turtleData, model.OrderSideSell) {
-					setting.Chance = -1
-					setting.GridAmount = amount
-					model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-						setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-						`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-					util.Notice(fmt.Sprintf(
-						`破20日低点 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-						setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
-						priceLong, setting.PriceX, turtleData.n))
-				}
+		}
+		if tick.Bids[0].Price <= priceShort {
+			if handleBreak(setting, turtleData, model.OrderSideSell) {
+				setting.Chance = -1
+				setting.GridAmount = amount
+				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+				util.Notice(fmt.Sprintf(
+					`破20日低点 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
+					priceLong, setting.PriceX, turtleData.n))
 			}
 		}
 	} else if setting.Chance > 0 {
 		priceLong = math.Max(turtleData.highDays20, setting.PriceX+turtleData.n/2)
 		priceShort = math.Max(turtleData.lowDays10, setting.PriceX-2*turtleData.n)
-		if setting.Market == model.OKFUTURE {
-			placeTurtleLimit(setting, tick, turtleData, priceLong, priceShort, amount, currentN)
-		} else {
-			priceShort, priceLong = placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
-				priceShort, priceLong, setting.GridAmount, amount, tick)
-			// 加仓一个单位
-			if tick.Asks[0].Price >= priceLong {
-				if handleBreak(setting, turtleData, model.OrderSideBuy) {
-					setting.Chance = setting.Chance + 1
-					setting.GridAmount = setting.GridAmount + amount
-					model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-						setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-						`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-					util.Notice(fmt.Sprintf(`加多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-						setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
-						setting.PriceX, turtleData.n))
-				}
-			} // 平多
-			if tick.Bids[0].Price <= priceShort {
-				if handleBreak(setting, turtleData, model.OrderSideSell) {
-					setting.Chance = 0
-					setting.GridAmount = 0
-					model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-						setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-						`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-					util.Notice(fmt.Sprintf(`平多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-						setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
-						setting.PriceX, turtleData.n))
-				}
+		priceShort, priceLong = placeTurtleOrders(turtleData, setting, currentN,
+			priceShort, priceLong, setting.GridAmount, amount, tick)
+		// 加仓一个单位
+		if tick.Asks[0].Price >= priceLong {
+			if handleBreak(setting, turtleData, model.OrderSideBuy) {
+				setting.Chance = setting.Chance + 1
+				setting.GridAmount = setting.GridAmount + amount
+				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+				util.Notice(fmt.Sprintf(`加多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
+					setting.PriceX, turtleData.n))
+			}
+		} // 平多
+		if tick.Bids[0].Price <= priceShort {
+			if handleBreak(setting, turtleData, model.OrderSideSell) {
+				setting.Chance = 0
+				setting.GridAmount = 0
+				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+				util.Notice(fmt.Sprintf(`平多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
+					setting.PriceX, turtleData.n))
 			}
 		}
 	} else if setting.Chance < 0 {
 		priceLong = math.Min(turtleData.highDays10, setting.PriceX+2*turtleData.n)
 		priceShort = math.Min(turtleData.lowDays20, setting.PriceX-turtleData.n/2)
-		if setting.Market == model.OKFUTURE {
-			placeTurtleLimit(setting, tick, turtleData, priceLong, priceShort, amount, currentN)
-		} else {
-			priceShort, priceLong = placeTurtleOrders(setting.Market, setting.Symbol, turtleData, setting, currentN,
-				priceShort, priceLong, amount, setting.GridAmount, tick)
-			// 加仓一个单位
-			if tick.Bids[0].Price <= priceShort {
-				if handleBreak(setting, turtleData, model.OrderSideSell) {
-					setting.Chance = setting.Chance - 1
-					setting.GridAmount = setting.GridAmount + amount
-					model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-						setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-						`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-					util.Notice(fmt.Sprintf(`加空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-						setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
-						setting.PriceX, turtleData.n))
-				}
-			} // 平空
-			if tick.Asks[0].Price >= priceLong {
-				if handleBreak(setting, turtleData, model.OrderSideBuy) {
-					setting.Chance = 0
-					setting.GridAmount = 0
-					model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-						setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-						`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-					util.Notice(fmt.Sprintf(`平空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-						setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
-						setting.PriceX, turtleData.n))
-				}
+		priceShort, priceLong = placeTurtleOrders(turtleData, setting, currentN,
+			priceShort, priceLong, amount, setting.GridAmount, tick)
+		// 加仓一个单位
+		if tick.Bids[0].Price <= priceShort {
+			if handleBreak(setting, turtleData, model.OrderSideSell) {
+				setting.Chance = setting.Chance - 1
+				setting.GridAmount = setting.GridAmount + amount
+				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+				util.Notice(fmt.Sprintf(`加空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
+					setting.PriceX, turtleData.n))
+			}
+		} // 平空
+		if tick.Asks[0].Price >= priceLong {
+			if handleBreak(setting, turtleData, model.OrderSideBuy) {
+				setting.Chance = 0
+				setting.GridAmount = 0
+				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
+					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
+					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
+				util.Notice(fmt.Sprintf(`平空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
+					setting.PriceX, turtleData.n))
 			}
 		}
 	}
@@ -350,10 +334,8 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 		//util.Notice(fmt.Sprintf(`fatal error, nil order to break`))
 		return
 	}
-	orderCancel := turtleData.orderLong
 	orderQuery := turtleData.orderShort
 	if orderSide == model.OrderSideBuy {
-		orderCancel = turtleData.orderShort
 		orderQuery = turtleData.orderLong
 	}
 	for orderQuery != nil {
@@ -365,7 +347,29 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			setting.PriceX = order.DealPrice
 			turtleData.orderLong = nil
 			turtleData.orderShort = nil
-			//turtleData.amount = calcTurtleAmount(setting.Market, setting.Symbol, orderQuery.Price, turtleData.n)
+			if orderSide == model.OrderSideBuy {
+				for _, short := range turtleData.shorts {
+					short = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, short.Instrument,
+						short.OrderType, short.OrderId)
+					if short.Status == model.CarryStatusWorking {
+						api.MustCancel(``, ``, short.Market, short.Symbol, short.Instrument, short.OrderType,
+							short.OrderId, true)
+					}
+				}
+				turtleData.shorts = []*model.Order{}
+				util.Notice(fmt.Sprintf(`clear shorts %d`, len(turtleData.shorts)))
+			} else {
+				for _, long := range turtleData.longs {
+					long = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, long.Instrument,
+						long.OrderType, long.OrderId)
+					if long.Status == model.CarryStatusWorking {
+						api.MustCancel(``, ``, long.Market, long.Symbol, long.Instrument, long.OrderType,
+							long.OrderId, true)
+					}
+				}
+				turtleData.longs = []*model.Order{}
+				util.Notice(fmt.Sprintf(`clear longs %d`, len(turtleData.longs)))
+			}
 			time.Sleep(time.Second * 3)
 			break
 		} else {
@@ -373,29 +377,46 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			return false
 		}
 	}
-	for orderCancel != nil && isBreak {
-		canceled, _ := api.MustCancel(``, ``, setting.Market, setting.Symbol, orderCancel.Instrument,
-			orderCancel.OrderType, orderCancel.OrderId, true)
-		if canceled {
-			break
-		}
-	}
 	return isBreak
 }
 
-func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *model.Setting,
+func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64, tick *model.BidAsk) (short, long float64) {
-	if setting.Chance > 0 && turtleData.end1/turtleData.highDays20 < 0.87 {
-		priceShort = math.Max(turtleData.lowDays5, setting.PriceX-2*turtleData.n)
-		util.Notice(fmt.Sprintf(`提前止盈 chance:%f, end1:%f h20:%f`,
-			setting.Chance, turtleData.end1, turtleData.highDays20))
+	if setting.Chance > 0 {
+		amountShort = 0
+		for _, long := range turtleData.longs {
+			long = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, long.Instrument,
+				long.OrderType, long.OrderId)
+			amountShort += long.DealAmount
+		}
+		util.Notice(fmt.Sprintf(
+			`limit平多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
+			priceLong, setting.PriceX, turtleData.n))
+		if turtleData.end1/turtleData.highDays20 < 0.87 {
+			priceShort = math.Max(turtleData.lowDays5, setting.PriceX-2*turtleData.n)
+			util.Notice(fmt.Sprintf(`提前止盈 chance:%f, end1:%f h20:%f`,
+				setting.Chance, turtleData.end1, turtleData.highDays20))
+		}
 	}
-	if setting.Chance < 0 && turtleData.end1/turtleData.lowDays20 > 1.13 {
-		priceLong = math.Min(turtleData.highDays5, setting.PriceX+2*turtleData.n)
-		util.Notice(fmt.Sprintf(`提前止盈 chance: %f, end1:%f l20:%f`,
-			setting.Chance, turtleData.end1, turtleData.lowDays20))
+	if setting.Chance < 0 {
+		amountLong = 0
+		for _, short := range turtleData.shorts {
+			short = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, short.Instrument,
+				short.OrderType, short.OrderId)
+			amountLong += short.DealAmount
+		}
+		util.Notice(fmt.Sprintf(
+			`limit平空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
+			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
+			priceLong, setting.PriceX, turtleData.n))
+		if turtleData.end1/turtleData.lowDays20 > 1.13 {
+			priceLong = math.Min(turtleData.highDays5, setting.PriceX+2*turtleData.n)
+			util.Notice(fmt.Sprintf(`提前止盈 chance: %f, end1:%f l20:%f`,
+				setting.Chance, turtleData.end1, turtleData.lowDays20))
+		}
 	}
-	instrument := api.GetCurrentInstrument(market, symbol)
+	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	long = priceLong
 	short = priceShort
 	if turtleData.orderLong == nil && currentN < setting.AmountLimit {
@@ -415,17 +436,19 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
 			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeLong, market, symbol, instrument,
-			``, setting.AccountType, ``, model.FunctionTurtle, priceLong, amountLong, true)
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeLong, setting.Market,
+			setting.Symbol, instrument, ``, setting.AccountType, ``, model.FunctionTurtle,
+			priceLong*1.003, priceLong, amountLong, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderLong = order
+			turtleData.longs = append(turtleData.longs, order)
 			if order.Price > 0 {
 				long = order.Price
 			}
 		}
 	} else if turtleData.orderLong != nil && currentN >= setting.AmountLimit {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderLong.Instrument,
-			turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
+		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+			turtleData.orderLong.Instrument, turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
 	}
 	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit {
 		orderSide := model.OrderSideSell
@@ -444,104 +467,19 @@ func placeTurtleOrders(market, symbol string, turtleData *TurtleData, setting *m
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
 			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
-		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeShort, market, symbol, instrument,
-			``, setting.AccountType, ``, model.FunctionTurtle, priceShort,
-			amountShort, true)
+		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeShort, setting.Market,
+			setting.Symbol, instrument, ``, setting.AccountType, ``, model.FunctionTurtle,
+			priceShort*0.997, priceShort, amountShort, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderShort = order
+			turtleData.shorts = append(turtleData.shorts, order)
 			if order.Price > 0 {
 				short = order.Price
 			}
 		}
 	} else if turtleData.orderShort != nil && currentN <= -1*setting.AmountLimit {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, market, symbol, turtleData.orderShort.Instrument,
+		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, turtleData.orderShort.Instrument,
 			turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
 	}
 	return
-}
-
-func placeTurtleLimit(setting *model.Setting, tick *model.BidAsk, turtleData *TurtleData,
-	priceLong, priceShort, amount, currentN float64) {
-	if tick.Asks[0].Price >= priceLong {
-		if setting.Chance < 0 {
-			amount = 0
-			for _, short := range turtleData.shorts {
-				short = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, short.Instrument,
-					short.OrderType, short.OrderId)
-				amount += short.DealAmount
-				if short.Status == model.CarryStatusWorking {
-					api.MustCancel(``, ``, short.Market, short.Symbol, short.Instrument, short.OrderType,
-						short.OrderId, true)
-				}
-			}
-			util.Notice(fmt.Sprintf(`trigger turtle limit long %f >= %f pre-shorts %d deal amount: %f`,
-				tick.Asks[0].Price, priceLong, len(turtleData.shorts), amount))
-		}
-		order := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeLimit, setting.Market, setting.Symbol,
-			``, ``, setting.AccountType, ``, model.FunctionTurtle,
-			priceLong*1.003, amount, true)
-		if order != nil && order.Price > 0 && order.OrderId != `` {
-			turtleData.shorts = []*model.Order{}
-			if setting.Chance < 0 {
-				setting.Chance = 0
-				util.Notice(fmt.Sprintf(
-					`limit平空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
-					priceLong, setting.PriceX, turtleData.n))
-			} else {
-				setting.Chance += 1
-				util.Notice(fmt.Sprintf(
-					`limit加多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
-					priceLong, setting.PriceX, turtleData.n))
-			}
-			setting.PriceX = order.Price
-			turtleData.longs = append(turtleData.longs, order)
-			setting.GridAmount = amount
-			model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-				setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-				`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-		}
-	}
-	if tick.Bids[0].Price <= priceShort {
-		if setting.Chance > 0 {
-			amount = 0
-			for _, long := range turtleData.longs {
-				long = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, long.Instrument,
-					long.OrderType, long.OrderId)
-				amount += long.DealAmount
-				if long.Status == model.CarryStatusWorking {
-					api.MustCancel(``, ``, long.Market, long.Symbol, long.Instrument, long.OrderType,
-						long.OrderId, true)
-				}
-			}
-			util.Notice(fmt.Sprintf(`trigger turtle limit short %f <= %f pre-shorts %d deal amount: %f`,
-				tick.Bids[0].Price, priceShort, len(turtleData.longs), amount))
-		}
-		order := api.PlaceOrder(``, ``, model.OrderSideSell, model.OrderTypeLimit, setting.Market, setting.Symbol,
-			``, ``, setting.AccountType, ``, model.FunctionTurtle,
-			priceLong*0.997, amount, true)
-		if order != nil && order.Price > 0 && order.OrderId != `` {
-			turtleData.longs = []*model.Order{}
-			if setting.Chance > 0 {
-				setting.Chance = 0
-				util.Notice(fmt.Sprintf(
-					`limit平多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
-					priceLong, setting.PriceX, turtleData.n))
-			} else {
-				setting.Chance -= 1
-				util.Notice(fmt.Sprintf(
-					`limit加空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
-					priceLong, setting.PriceX, turtleData.n))
-			}
-			setting.PriceX = order.Price
-			turtleData.shorts = append(turtleData.shorts, order)
-			setting.GridAmount = amount
-			model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
-				setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
-				`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-		}
-	}
 }
