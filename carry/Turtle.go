@@ -109,14 +109,14 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	cross := false
-	if (setting.Market == model.OKFUTURE && turtleData.orderShort.Instrument != `` &&
+	if (setting.Market == model.OKFUTURE && turtleData.orderShort != nil && turtleData.orderShort.Instrument != `` &&
 		instrument != turtleData.orderShort.Instrument) || (setting.Market == model.OKFUTURE &&
-		turtleData.orderLong.Instrument != `` && instrument != turtleData.orderLong.Instrument) {
+		turtleData.orderLong != nil && turtleData.orderLong.Instrument != `` && instrument != turtleData.orderLong.Instrument) {
 		util.Notice(fmt.Sprintf(`go cross %s %s => %s`, turtleData.orderLong.Instrument,
 			turtleData.orderShort.Instrument, instrument))
 		cross = true
 	}
-	if turtleData.orderLong.OrderId != `` {
+	if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
 		if !cross || setting.Chance >= 0 {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 				turtleData.orderLong.Instrument, turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
@@ -125,7 +125,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 				setting.Market, setting.Symbol, setting.Chance))
 		}
 	}
-	if turtleData.orderShort.OrderId != `` {
+	if turtleData.orderShort != nil && turtleData.orderShort.OrderId != `` {
 		if !cross || setting.Chance <= 0 {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 				turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
@@ -142,8 +142,8 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 		}
 		model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 			setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{`chance`: 0})
-		util.Notice(fmt.Sprintf(`%s need to go cross %s from %s_%s to %s set chance 0`,
-			setting.Market, setting.Symbol, turtleData.orderLong.Instrument, turtleData.orderShort.Instrument, instrument))
+		util.Notice(fmt.Sprintf(`%s need to go cross %s to %s set chance 0`,
+			setting.Market, setting.Symbol, instrument))
 	}
 	for i := 1; i < 21; i++ {
 		duration, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
