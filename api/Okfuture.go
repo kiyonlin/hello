@@ -219,9 +219,39 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 		}
 		data := value.(map[string]interface{})
 		parseAccountOkfuture(account, data)
+		instrument := getCurrentInstrumentOkfuture(account.Currency)
+		holding := getHoldingOkfuture(instrument)
+		account.Holding = holding
 		accounts.SetAccount(model.OKFUTURE, account.Currency, account)
 	}
 	return nil
+}
+
+func getHoldingOkfuture(instrument string) (amount float64) {
+	long := 0.0
+	short := 0.0
+	responseBody := SignedRequestOKSwap(``, ``, `GET`,
+		fmt.Sprintf(`/api/futures/v3/%s/position`, instrument), nil)
+	accountJson, err := util.NewJSON(responseBody)
+	if err != nil {
+		util.Notice(`fail to get okfuture holding ` + err.Error())
+		return
+	}
+	holdingArray := accountJson.Get(`holding`).MustArray()
+	for _, value := range holdingArray {
+		holding := value.(map[string]interface{})
+		if holding == nil {
+			return
+		}
+		if holding[`long_qty`] != nil {
+			long, _ = strconv.ParseFloat(holding[`long_qty`].(string), 64)
+		}
+		if holding[`short_qty`] != nil {
+			short, _ = strconv.ParseFloat(holding[`short_qty`].(string), 64)
+		}
+	}
+	util.Notice(fmt.Sprintf(`get okfuture %s holding %f`, instrument, long-short))
+	return long - short
 }
 
 // orderSide:  1:开多 2:开空 3:平多 4:平空

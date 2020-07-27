@@ -399,15 +399,14 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		orderSide := model.OrderSideBuy
 		typeLong := model.OrderTypeStop
 		if setting.Chance < 0 {
-			amountLong = 0
-			for _, short := range turtleData.shorts {
-				short = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, short.Instrument,
-					short.OrderType, short.OrderId)
-				amountLong += short.DealAmount
+			api.RefreshAccount(``, ``, setting.Market)
+			account := model.AppAccounts.GetAccount(setting.Market, setting.Symbol)
+			if account.Holding < 0 {
+				amountLong = math.Abs(account.Holding)
 			}
 			util.Notice(fmt.Sprintf(
 				`limit平空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-				setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
+				setting.Market, setting.Symbol, setting.Chance, amountLong, currentN, priceShort,
 				priceLong, setting.PriceX, turtleData.n))
 			if setting.Market == model.OKFUTURE {
 				orderSide = model.OrderSideLiquidateShort
@@ -442,15 +441,14 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		orderSide := model.OrderSideSell
 		typeShort := model.OrderTypeStop
 		if setting.Chance > 0 {
-			amountShort = 0
-			for _, long := range turtleData.longs {
-				long = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, long.Instrument,
-					long.OrderType, long.OrderId)
-				amountShort += long.DealAmount
+			api.RefreshAccount(``, ``, setting.Market)
+			account := model.AppAccounts.GetAccount(setting.Market, setting.Symbol)
+			if account.Holding > 0 {
+				amountShort = math.Abs(account.Holding)
 			}
 			util.Notice(fmt.Sprintf(
 				`limit平多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
-				setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
+				setting.Market, setting.Symbol, setting.Chance, amountShort, currentN, priceShort,
 				priceLong, setting.PriceX, turtleData.n))
 			if setting.Market == model.OKFUTURE {
 				orderSide = model.OrderSideLiquidateLong

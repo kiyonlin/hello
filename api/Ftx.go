@@ -356,6 +356,7 @@ func parseAccountFtx(account *model.Account, item map[string]interface{}) {
 	}
 	if item[`netSize`] != nil {
 		account.Free, _ = item[`netSize`].(json.Number).Float64()
+		account.Holding = account.Free
 		//account.Free = account.Free * account.EntryPrice
 	}
 	if item[`realizedPnl`] != nil {
@@ -373,6 +374,7 @@ func parseAccountFtx(account *model.Account, item map[string]interface{}) {
 	if item[`unrealizedPnl`] != nil {
 		account.ProfitUnreal, _ = item[`unrealizedPnl`].(json.Number).Float64()
 	}
+
 }
 
 //remainingSize	number	31431.0
