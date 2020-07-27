@@ -556,7 +556,7 @@ func RefreshAccount(key, secret, market string) {
 	duration, _ := time.ParseDuration(`-10s`)
 	now := time.Now()
 	checkTime := now.Add(duration)
-	if refreshTime[market] != nil || refreshTime[market].Before(checkTime) {
+	if refreshTime[market] != nil && refreshTime[market].After(checkTime) {
 		return
 	} else {
 		refreshTime[market] = &now
