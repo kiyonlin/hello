@@ -600,14 +600,8 @@ func RefreshAccount(key, secret, market string) {
 	}
 }
 
-func IsValid(order *model.Order) (valid bool) {
-	if order == nil || order.OrderId == `` || order.Status == model.CarryStatusFail {
-		return false
-	}
-	return true
-}
-
-func PlaceSyncOrders(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType, orderParam,
+// PlaceSyncOrders
+func _(key, secret, orderSide, orderType, market, symbol, instrument, amountType, accountType, orderParam,
 	refreshType string, price, amount float64, saveDB bool, channel chan model.Order, retry int) {
 	var order *model.Order
 	i := 0
@@ -797,8 +791,8 @@ func GetWSSubscribes(market, subType string) []interface{} {
 
 func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 	switch market {
-	case model.Huobi: // xrp_btc: market.xrpbtc.depth.step0
-		return "market." + strings.Replace(symbol, "_", "", 1) + ".depth.step0"
+	case model.Huobi: // xrp_btc: market.xrpbtc.mbp.refresh.
+		return "market." + strings.Replace(symbol, "_", "", 1) + ".mbp.refresh.5"
 	case model.OKEX: // xrp_btc: ok_sub_spot_xrp_btc_depth_5
 		return "ok_sub_spot_" + symbol + "_depth_5"
 	case model.OKFUTURE:

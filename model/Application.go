@@ -510,7 +510,7 @@ func NewConfig() {
 	AppConfig.WSUrls = make(map[string]string)
 	AppConfig.RestUrls = make(map[string]string)
 	//AppConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
-	AppConfig.WSUrls[Huobi] = `wss://api.huobi.br.com/ws`
+	AppConfig.WSUrls[Huobi] = `wss://api-aws.huobi.pro/feed`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
 	AppConfig.WSUrls[Ftx] = `wss://ftx.com/ws`

@@ -294,7 +294,7 @@ func queryOrdersOkfuture(key, secret, instrument string) (orders []*model.Order)
 			continue
 		}
 		result, code, msg := cancelOrderOkfuture(instrument, id, model.OrderTypeStop)
-		fmt.Println(fmt.Sprintf(`%v %s %s`, result, code, msg))
+		util.Notice(fmt.Sprintf(`queryOrdersOkfuture cancel algo id %v %s %s`, result, code, msg))
 		time.Sleep(time.Second)
 	}
 	return

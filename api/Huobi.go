@@ -28,7 +28,7 @@ type HuobiMessage struct {
 	Status string `json:"status"`
 	Id     string `json:"id"`
 	Tick   struct {
-		Id     string      `json:"id"`     // K线id
+		SeqNum float64     `json:"seqNum"`
 		Amount float64     `json:"amount"` // 成交量
 		Count  int         `json:"count"`  // 成交笔数
 		Open   float64     `json:"open"`   // 开盘价
