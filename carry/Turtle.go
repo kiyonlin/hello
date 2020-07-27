@@ -89,6 +89,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	util.Notice(`need to create turtle ` + setting.Market + setting.Symbol)
 	turtleData = &TurtleData{turtleTime: today}
+	var orderLong, orderShort *model.Order
 	model.AppDB.Where("market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		setting.Market, setting.Symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideBuy).
 		Order(`order_time desc`).Limit(math.Abs(setting.Chance)).Find(&turtleData.longs)
@@ -97,38 +98,38 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 		Order(`order_time desc`).Limit(math.Abs(setting.Chance)).Find(&turtleData.shorts)
 	for _, order := range turtleData.longs {
 		util.Notice(`load db turtle orders long ` + order.OrderId)
-		if turtleData.orderLong == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(turtleData.orderLong.OrderTime)) {
-			turtleData.orderLong = order
+		if orderLong == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(orderLong.OrderTime)) {
+			orderLong = order
 		}
 	}
 	for _, order := range turtleData.shorts {
 		util.Notice(`load db turtle orders short ` + order.OrderId)
-		if turtleData.orderShort == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(turtleData.orderShort.OrderTime)) {
-			turtleData.orderShort = order
+		if orderShort == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(orderShort.OrderTime)) {
+			orderShort = order
 		}
 	}
 	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	cross := false
-	if (setting.Market == model.OKFUTURE && turtleData.orderShort != nil && turtleData.orderShort.Instrument != `` &&
-		instrument != turtleData.orderShort.Instrument) || (setting.Market == model.OKFUTURE &&
-		turtleData.orderLong != nil && turtleData.orderLong.Instrument != `` && instrument != turtleData.orderLong.Instrument) {
-		util.Notice(fmt.Sprintf(`go cross %s %s => %s`, turtleData.orderLong.Instrument,
-			turtleData.orderShort.Instrument, instrument))
+	if (setting.Market == model.OKFUTURE && orderShort != nil && orderShort.Instrument != `` &&
+		instrument != orderShort.Instrument) || (setting.Market == model.OKFUTURE &&
+		orderLong != nil && orderLong.Instrument != `` && instrument != orderLong.Instrument) {
+		util.Notice(fmt.Sprintf(`go cross %s %s => %s`, orderLong.Instrument,
+			orderShort.Instrument, instrument))
 		cross = true
 	}
-	if turtleData.orderLong != nil && turtleData.orderLong.OrderId != `` {
+	if orderLong != nil && orderLong.OrderId != `` {
 		if !cross || setting.Chance >= 0 {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-				turtleData.orderLong.Instrument, turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
+				orderLong.Instrument, orderLong.OrderType, orderLong.OrderId, true)
 		} else {
 			util.Notice(fmt.Sprintf(`%s %s keep quarter long when chance %f`,
 				setting.Market, setting.Symbol, setting.Chance))
 		}
 	}
-	if turtleData.orderShort != nil && turtleData.orderShort.OrderId != `` {
+	if orderShort != nil && orderShort.OrderId != `` {
 		if !cross || setting.Chance <= 0 {
 			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
-				turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
+				orderShort.Instrument, orderShort.OrderType, orderShort.OrderId, true)
 		} else {
 			util.Notice(fmt.Sprintf(`%s %s keep quarter short when chance %f`,
 				setting.Market, setting.Symbol, setting.Chance))

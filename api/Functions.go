@@ -651,13 +651,20 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 		instrument = symbol
 	}
 	start := util.GetNowUnixMillion()
+	markSide := model.OrderSideBuy
+	if orderSide == model.OrderSideLiquidateShort {
+		markSide = model.OrderSideBuy
+	}
+	if orderSide == model.OrderSideLiquidateLong {
+		markSide = model.OrderSideSell
+	}
 	if amount < 0.0001 {
 		util.Notice(`can not place order with amount 0`)
-		return &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+		return &model.Order{OrderSide: markSide, OrderType: orderType, Market: market, Symbol: symbol,
 			Price: price, Amount: 0, OrderId: ``, ErrCode: ``, RefreshType: orderParam,
 			Status: model.CarryStatusFail, DealAmount: 0, DealPrice: price, OrderTime: util.GetNow()}
 	}
-	order = &model.Order{OrderSide: orderSide, OrderType: orderType, Market: market, Symbol: symbol,
+	order = &model.Order{OrderSide: markSide, OrderType: orderType, Market: market, Symbol: symbol,
 		Price: price, Amount: amount, DealAmount: 0, DealPrice: price, RefreshType: orderParam,
 		OrderTime: util.GetNow(), UnfilledQuantity: amount, Instrument: instrument}
 	if market == model.OKSwap {
