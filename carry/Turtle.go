@@ -96,17 +96,17 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 		setting.Market, setting.Symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).
 		Order(`order_time desc`).Limit(math.Abs(setting.Chance)).Find(&turtleData.shorts)
 	for _, order := range turtleData.longs {
+		util.Notice(`load db turtle orders long ` + order.OrderId)
 		if turtleData.orderLong == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(turtleData.orderLong.OrderTime)) {
 			turtleData.orderLong = order
 		}
 	}
 	for _, order := range turtleData.shorts {
+		util.Notice(`load db turtle orders short ` + order.OrderId)
 		if turtleData.orderShort == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(turtleData.orderShort.OrderTime)) {
 			turtleData.orderShort = order
 		}
 	}
-	util.Notice(fmt.Sprintf(`load orders from db %s %s long: %s short: %s and to cancel`,
-		setting.Market, setting.Symbol, turtleData.orderLong.OrderId, turtleData.orderShort.OrderId))
 	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	cross := false
 	if (setting.Market == model.OKFUTURE && turtleData.orderShort.Instrument != `` &&
