@@ -93,10 +93,8 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.CancelOrder(``, ``, model.Ftx, `eosusd_p`, ``, model.OrderTypeStop, "6253372")
-	api.CancelOrder(``, ``, model.Ftx, `btcusd_p`, ``, model.OrderTypeStop, "6253373")
-	api.CancelOrder(``, ``, model.Ftx, `okbusd_p`, ``, model.OrderTypeStop, "6253374")
-	api.CancelOrder(``, ``, model.Ftx, `htusd_p`, ``, model.OrderTypeStop, "6253376")
+	api.CancelOrder(``, ``, model.Ftx, `okbusd_p`, ``, model.OrderTypeStop, "6255684")
+	api.CancelOrder(``, ``, model.Ftx, `ethusd_p`, ``, model.OrderTypeStop, "6255686")
 
 	//api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
 	//	model.OrderTypeStop, `5234377`)

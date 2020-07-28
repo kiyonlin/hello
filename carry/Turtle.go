@@ -341,23 +341,23 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 					short = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, short.Instrument,
 						short.OrderType, short.OrderId)
 					if short.Status == model.CarryStatusWorking {
-						api.MustCancel(``, ``, short.Market, short.Symbol, short.Instrument, short.OrderType,
-							short.OrderId, true)
+						api.MustCancel(model.KeyDefault, model.SecretDefault, short.Market, short.Symbol,
+							short.Instrument, short.OrderType, short.OrderId, true)
 					}
 				}
-				turtleData.shorts = []*model.Order{}
 				util.Notice(fmt.Sprintf(`clear shorts %d`, len(turtleData.shorts)))
+				turtleData.shorts = []*model.Order{}
 			} else {
 				for _, long := range turtleData.longs {
 					long = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, long.Instrument,
 						long.OrderType, long.OrderId)
 					if long.Status == model.CarryStatusWorking {
-						api.MustCancel(``, ``, long.Market, long.Symbol, long.Instrument, long.OrderType,
-							long.OrderId, true)
+						api.MustCancel(model.KeyDefault, model.SecretDefault, long.Market, long.Symbol,
+							long.Instrument, long.OrderType, long.OrderId, true)
 					}
 				}
-				turtleData.longs = []*model.Order{}
 				util.Notice(fmt.Sprintf(`clear longs %d`, len(turtleData.longs)))
+				turtleData.longs = []*model.Order{}
 			}
 			time.Sleep(time.Second * 3)
 			break
@@ -465,8 +465,8 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			}
 		}
 	} else if turtleData.orderShort != nil && currentN <= -1*setting.AmountLimit {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, turtleData.orderShort.Instrument,
-			turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
+		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+			turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
 	}
 	return
 }
