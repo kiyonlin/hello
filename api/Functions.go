@@ -481,11 +481,7 @@ func QueryOrderById(key, secret, market, symbol, instrument, orderType, orderId 
 			if newOrderId != `` {
 				return queryOrderFtx(key, secret, newOrderId)
 			} else {
-				if queryOpenTriggerOrders(key, secret, symbol, orderId) {
-					status = model.CarryStatusWorking
-				} else {
-					status = model.CarryStatusFail
-				}
+				status = queryOpenTriggerOrders(key, secret, symbol, orderId)
 			}
 		} else {
 			return queryOrderFtx(key, secret, orderId)

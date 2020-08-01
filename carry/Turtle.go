@@ -71,13 +71,17 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 	return amount
 }
 
-func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
-	today := time.Now().In(time.UTC)
-	if setting.Market == model.OKFUTURE {
+func getTurtleToday(market string) (today time.Time, strToday string) {
+	today = time.Now().In(time.UTC)
+	if market == model.OKFUTURE {
 		today = util.GetNow()
 	}
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	todayStr := today.String()[0:10]
+	return today, today.String()[0:10]
+}
+
+func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
+	today, todayStr := getTurtleToday(setting.Market)
 	if dataSet[setting.Market] == nil {
 		dataSet[setting.Market] = make(map[string]map[string]*TurtleData)
 	}
@@ -96,14 +100,14 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	model.AppDB.Where("market= ? and symbol= ? and refresh_type= ? and amount>deal_amount and status=? and order_side=?",
 		setting.Market, setting.Symbol, model.FunctionTurtle, model.CarryStatusWorking, model.OrderSideSell).
 		Order(`order_time desc`).Limit(setting.AmountLimit).Find(&turtleData.shorts)
+	util.Notice(fmt.Sprintf(`load db turtle orders longs %d shorts %d`,
+		len(turtleData.longs), len(turtleData.shorts)))
 	for _, order := range turtleData.longs {
-		util.Notice(`load db turtle orders long ` + order.OrderId)
 		if orderLong == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(orderLong.OrderTime)) {
 			orderLong = order
 		}
 	}
 	for _, order := range turtleData.shorts {
-		util.Notice(`load db turtle orders short ` + order.OrderId)
 		if orderShort == nil || (order != nil && order.OrderId != `` && order.OrderTime.After(orderShort.OrderTime)) {
 			orderShort = order
 		}

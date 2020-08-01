@@ -264,25 +264,29 @@ func queryTriggerOrderId(key, secret, id string) (orderId string) {
 	return
 }
 
-func queryOpenTriggerOrders(key, secret, symbol, triggerId string) (open bool) {
+func queryOpenTriggerOrders(key, secret, symbol, triggerId string) (status string) {
 	param := make(map[string]interface{})
 	param[`market`] = model.GetDialectSymbol(model.Ftx, symbol)
 	response := SignedRequestFtx(key, secret, `GET`, `/conditional_orders`, param, nil)
 	util.SocketInfo(fmt.Sprintf(`query open trigger orders ftx %s: %s`, symbol, string(response)))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
-		orders := orderJson.Get(`result`).MustArray()
-		for _, order := range orders {
-			item := order.(map[string]interface{})
-			if item[`id`] != nil {
-				num, _ := item[`id`].(json.Number).Float64()
-				if fmt.Sprintf(`%d`, int(num)) == triggerId {
-					return true
+		result := orderJson.Get(`result`)
+		if result != nil {
+			status = model.CarryStatusFail
+			orders := result.MustArray()
+			for _, order := range orders {
+				item := order.(map[string]interface{})
+				if item[`id`] != nil {
+					num, _ := item[`id`].(json.Number).Float64()
+					if fmt.Sprintf(`%d`, int(num)) == triggerId {
+						return model.CarryStatusWorking
+					}
 				}
 			}
 		}
 	}
-	return false
+	return model.CarryStatusWorking
 }
 
 func queryOrderFtx(key, secret, orderId string) (order *model.Order) {
