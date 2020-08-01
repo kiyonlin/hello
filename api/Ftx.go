@@ -270,6 +270,7 @@ func queryOpenTriggerOrders(key, secret, symbol, triggerId string) (status strin
 	response := SignedRequestFtx(key, secret, `GET`, `/conditional_orders`, param, nil)
 	util.SocketInfo(fmt.Sprintf(`query open trigger orders ftx %s: %s`, symbol, string(response)))
 	orderJson, err := util.NewJSON(response)
+	status = model.CarryStatusWorking
 	if err == nil {
 		result := orderJson.Get(`result`)
 		if result != nil {
@@ -286,7 +287,7 @@ func queryOpenTriggerOrders(key, secret, symbol, triggerId string) (status strin
 			}
 		}
 	}
-	return model.CarryStatusWorking
+	return status
 }
 
 func queryOrderFtx(key, secret, orderId string) (order *model.Order) {

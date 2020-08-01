@@ -108,7 +108,7 @@ func Test_RefreshAccount(t *testing.T) {
 	//	model.OrderTypeStop, `5264638`)
 	//fmt.Println(result)
 	order2 := api.QueryOrderById(``, ``, model.Ftx, `eosusd_p`, ``,
-		model.OrderTypeStop, `6531381`)
+		model.OrderTypeStop, `6771160`)
 	fmt.Println(order2.OrderId)
 	api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKFUTURE)
 	//carry.GetTurtleData(model.Bitmex, `btcusd_p`)
