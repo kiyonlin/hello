@@ -67,7 +67,7 @@ func WsDepthServeHuobiDM(markets *model.Markets, errHandler ErrHandler) (chan st
 			symbol := responseJson.Get(`ch`).MustString()
 			strs := strings.Split(symbol, `.`)
 			if strs != nil && len(strs) > 1 {
-				symbol = strs[1]
+				symbol = strings.ToLower(strs[1])
 				sort.Sort(bidAsk.Asks)
 				sort.Sort(sort.Reverse(bidAsk.Bids))
 				if markets.SetBidAsk(symbol, model.HuobiDM, &bidAsk) {
