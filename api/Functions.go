@@ -723,10 +723,10 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 	}
 	start := util.GetNowUnixMillion()
 	markSide := model.OrderSideBuy
-	if orderSide == model.OrderSideLiquidateShort {
+	switch orderSide {
+	case model.OrderSideBuy, model.OrderSideLiquidateShort:
 		markSide = model.OrderSideBuy
-	}
-	if orderSide == model.OrderSideLiquidateLong {
+	case model.OrderSideSell, model.OrderSideLiquidateLong:
 		markSide = model.OrderSideSell
 	}
 	if amount < 0.0001 {

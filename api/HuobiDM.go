@@ -241,6 +241,11 @@ func cancelOrderHuobiDM(symbol, orderId string) (result bool, errCode, msg strin
 	return false, ``, ``
 }
 
+//func cancelAllHuobiDM(contractCode string)  {
+//	param := map[string]interface{}{`contract_code`: contractCode}
+//	responseBody := SignedRequestHuobi(`POST`, `/api/v1/contract_trigger_cancel`, param)
+//}
+
 func queryOpenTriggerOrderHuobiDM(symbol, orderId string) (isWorking bool) {
 	if strings.Contains(symbol, `_`) {
 		symbol = symbol[0:strings.Index(symbol, `_`)]
