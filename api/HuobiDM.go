@@ -89,7 +89,7 @@ func WsDepthServeHuobiDM(markets *model.Markets, errHandler ErrHandler) (chan st
 
 func parseAccountHuobiDM(account *model.Account, data map[string]interface{}) {
 	if data[`symbol`] != nil {
-		account.Currency = data[`symbol`].(string)
+		account.Currency = strings.ToLower(data[`symbol`].(string))
 	}
 	if data[`margin_balance`] != nil { // 账户权益
 		account.Free, _ = data[`margin_balance`].(json.Number).Float64()
@@ -152,6 +152,7 @@ func getHoldingHuobiDM(accounts *model.Accounts) {
 			case `next_quarter`:
 				symbol = symbol + `_NQ`
 			}
+			symbol = strings.ToLower(symbol)
 			account := &model.Account{Market: model.HuobiDM, Ts: util.GetNowUnixMillion(), Currency: symbol}
 			if holding[`volume`] != nil { // 持仓量
 				account.Holding, _ = holding[`volume`].(json.Number).Float64()
@@ -232,8 +233,8 @@ func cancelOrderHuobiDM(symbol, orderId string) (result bool, errCode, msg strin
 	responseBody := SignedRequestHuobi(`POST`, `/api/v1/contract_trigger_cancel`, param)
 	cancelJson, err := util.NewJSON(responseBody)
 	if err == nil {
-		succesIds := cancelJson.GetPath(`data`, `successes`).MustString()
-		if strings.Contains(succesIds, orderId) {
+		successIds := cancelJson.GetPath(`data`, `successes`).MustString()
+		if strings.Contains(successIds, orderId) {
 			return true, ``, ``
 		}
 	}
