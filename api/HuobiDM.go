@@ -63,7 +63,7 @@ func WsDepthServeHuobiDM(markets *model.Markets, errHandler ErrHandler) (chan st
 				amount, _ := value[1].(json.Number).Float64()
 				bidAsk.Asks[i] = model.Tick{Price: price, Amount: amount}
 			}
-			bidAsk.Ts = responseJson.Get(`ts`).MustInt() / 1000
+			bidAsk.Ts = responseJson.Get(`ts`).MustInt()
 			symbol := responseJson.Get(`ch`).MustString()
 			strs := strings.Split(symbol, `.`)
 			if strs != nil && len(strs) > 1 {
@@ -172,7 +172,7 @@ func getHoldingHuobiDM(accounts *model.Accounts) {
 				account.ProfitReal, _ = holding[`profit`].(json.Number).Float64()
 			}
 			if holding[`position_margin`] != nil {
-				account.Margin, _ = holding[`account.Margin`].(json.Number).Float64()
+				account.Margin, _ = holding[`position_margin`].(json.Number).Float64()
 			}
 			if holding[`direction`] != nil {
 				account.Direction, _ = holding[`direction`].(string)

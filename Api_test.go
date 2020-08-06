@@ -93,7 +93,8 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	api.GetCurrentInstrument(model.OKFUTURE, `btc-usd`)
+	setting := &model.Setting{Market: model.HuobiDM, Symbol: `BTC_CQ`}
+	carry.GetTurtleData(setting)
 	api.GetDayCandle(``, ``, model.HuobiDM, `btc_cq`, ``, time.Now())
 	//api.PlaceOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OrderSideBuy, model.OrderTypeStop,
 	//	model.HuobiDM, `btc_cq`, `BTC200925`, ``, ``, `5`, model.FunctionTurtle,
@@ -113,7 +114,6 @@ func Test_RefreshAccount(t *testing.T) {
 	//	model.OrderTypeStop, `6771160`)
 	//fmt.Println(order2.OrderId)
 	//api.RefreshAccount(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.HuobiDM)
-	//carry.GetTurtleData(model.Bitmex, `btcusd_p`)
 	//rate, ts := api.GetFundingRate(model.Ftx, `btcusd_p`)
 	//fmt.Println(fmt.Sprintf(`%f %d`, rate, ts))
 	//api.RefreshAccount(``, ``, model.Ftx)

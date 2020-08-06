@@ -198,9 +198,6 @@ var ProcessTurtle = func(setting *model.Setting) {
 	now := util.GetNowUnixMillion()
 	if !result || tick == nil || tick.Asks == nil || tick.Bids == nil || model.AppConfig.Handle != `1` ||
 		model.AppPause || now-int64(tick.Ts) > 1000 {
-		//if tick != nil {
-		//util.Info(fmt.Sprintf(`[tick not good]%s %s %d`, market, symbol, now-int64(tick.Ts)))
-		//}
 		return
 	}
 	if setting == nil || turtling {
