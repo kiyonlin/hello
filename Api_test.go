@@ -93,13 +93,14 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	//api.CancelOrder(``, ``, model.Ftx, `okbusd_p`, ``, model.OrderTypeStop, "6255684")
-	//api.CancelOrder(``, ``, model.Ftx, `ethusd_p`, ``, model.OrderTypeStop, "6255686")
-
-	//api.QueryOrderById(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200626`,
-	//	model.OrderTypeStop, `5234377`)
-	//api.QueryOrders(``, ``, model.OKFUTURE, ``, `BTC-USD-200626`, ``,
-	//	``, 0, 0)
+	api.GetDayCandle(``, ``, model.HuobiDM, `btc_cq`, ``, time.Now())
+	//api.PlaceOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OrderSideBuy, model.OrderTypeStop,
+	//	model.HuobiDM, `btc_cq`, `BTC200925`, ``, ``, `5`, model.FunctionTurtle,
+	//	12110.2345, 12100, 1.4, true)
+	//api.CancelOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.HuobiDM, `btc_cq`,
+	//	``, model.OrderTypeStop, "7")
+	//api.QueryOrderById(``, ``, model.HuobiDM, `btc_cq`, `BTC200925`, model.OrderTypeStop, `2`)
+	fmt.Println(api.GetCurrentInstrument(model.HuobiDM, `btc_cq`))
 	//order1 := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE, `btc-usd`,
 	//	`BTC-USD-200626`, ``, model.AccountTypeLever, ``, ``, 9000.4,
 	//	1, false)
@@ -107,10 +108,10 @@ func Test_RefreshAccount(t *testing.T) {
 	//result, _, _, _ := api.CancelOrder(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200925`,
 	//	model.OrderTypeStop, `5264638`)
 	//fmt.Println(result)
-	order2 := api.QueryOrderById(``, ``, model.Ftx, `eosusd_p`, ``,
-		model.OrderTypeStop, `6771160`)
-	fmt.Println(order2.OrderId)
-	api.RefreshAccount(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, model.OKFUTURE)
+	//order2 := api.QueryOrderById(``, ``, model.Ftx, `eosusd_p`, ``,
+	//	model.OrderTypeStop, `6771160`)
+	//fmt.Println(order2.OrderId)
+	//api.RefreshAccount(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.HuobiDM)
 	//carry.GetTurtleData(model.Bitmex, `btcusd_p`)
 	//rate, ts := api.GetFundingRate(model.Ftx, `btcusd_p`)
 	//fmt.Println(fmt.Sprintf(`%f %d`, rate, ts))

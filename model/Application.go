@@ -33,6 +33,7 @@ const OKEX = "okex"
 const OKFUTURE = `okfuture`
 const OKSwap = `okswap`
 const Huobi = "huobi"
+const HuobiDM = `huobiDM`
 const Binance = "binance"
 const Fcoin = "fcoin"
 const Fmex = `fmex`
@@ -511,6 +512,7 @@ func NewConfig() {
 	AppConfig.RestUrls = make(map[string]string)
 	//AppConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
 	AppConfig.WSUrls[Huobi] = `wss://api-aws.huobi.pro/feed`
+	AppConfig.WSUrls[HuobiDM] = `wss://api.hbdm.com/`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
 	AppConfig.WSUrls[Fcoin] = "wss://api.fcoin.com/v2/ws"
 	AppConfig.WSUrls[Ftx] = `wss://ftx.com/ws`
@@ -541,6 +543,7 @@ func NewConfig() {
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
 	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
+	AppConfig.RestUrls[HuobiDM] = `api.hbdm.com`
 	AppConfig.RestUrls[OKSwap] = `https://www.okex.com`
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com`
 	AppConfig.RestUrls[Binance] = "https://api.binance.com"

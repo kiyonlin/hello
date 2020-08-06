@@ -1,14 +1,10 @@
 package api
 
 import (
-	"crypto/ecdsa"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"hello/model"
 	"hello/util"
@@ -102,53 +98,30 @@ func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan stru
 		GetWSSubscribes(model.Huobi, model.SubscribeDepth), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
-func SignedRequestHuobi(method, path string, data map[string]string) []byte {
-	urlValues := &url.Values{}
-	urlValues.Set("AccessKeyId", model.AppConfig.HuobiKey)
-	urlValues.Set("SignatureMethod", "HmacSHA256")
-	urlValues.Set("SignatureVersion", "2")
-	urlValues.Set("Timestamp", time.Now().UTC().Format("2006-01-02T15:04:05"))
-	if method == `GET` && data != nil {
+func SignedRequestHuobi(method, path string, data map[string]interface{}) []byte {
+	param := map[string]interface{}{"AccessKeyId": model.AppConfig.HuobiKey, "SignatureMethod": "HmacSHA256",
+		"SignatureVersion": "2", `Timestamp`: url.QueryEscape(time.Now().UTC().Format("2006-01-02T15:04:05"))}
+	strData := ``
+	if method == `GET` {
 		for key, value := range data {
-			urlValues.Set(key, value)
+			param[key] = value
 		}
+	} else if method == `POST` && data != nil {
+		strData = string(util.JsonEncodeMapToByte(data))
 	}
-	domain := strings.Replace(model.AppConfig.RestUrls[model.Huobi], "https://", "",
-		len(model.AppConfig.RestUrls[model.Huobi]))
-	payload := fmt.Sprintf("%s\n%s\n%s\n%s", method, domain, path, urlValues.Encode())
+	strParam := util.ComposeParams(param)
+	toBeSign := fmt.Sprintf("%s\n%s\n%s\n%s",
+		method, model.AppConfig.RestUrls[model.HuobiDM], path, strParam)
 	hash := hmac.New(sha256.New, []byte(model.AppConfig.HuobiSecret))
-	hash.Write([]byte(payload))
-	sign := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-	urlValues.Set("Signature", sign)
-	var pemBytes = `-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIJUh+m2GyS9GKsEZ0/5WqM3owjYGtttQXPl9pR8nks+moAoGCCqGSM49
-AwEHoUQDQgAEF+5o7rybYv7/40CSReXKr2jxiW9iVE1+l/6vjnDSkyK8mCw220QM
-J2k98epEs68Y+OjaRp0uP8821WkP5tLM1Q==
------END EC PRIVATE KEY-----`
-	block, _ := pem.Decode([]byte(pemBytes))
-	ecdsaPk, _ := x509.ParseECPrivateKey(block.Bytes)
-	digest := sha256.Sum256([]byte(sign))
-	r, s, _ := ecdsa.Sign(rand.Reader, ecdsaPk, digest[:])
-	//	encode the signature {R, S}
-	params := ecdsaPk.Curve.Params()
-	curveByteSize := params.P.BitLen() / 8
-	rBytes, sBytes := r.Bytes(), s.Bytes()
-	privateSign := make([]byte, curveByteSize*2)
-	copy(privateSign[curveByteSize-len(rBytes):], rBytes)
-	copy(privateSign[curveByteSize*2-len(sBytes):], sBytes)
-	urlValues.Set(`PrivateSignature`, base64.StdEncoding.EncodeToString(privateSign))
-	requestUrl := model.AppConfig.RestUrls[model.Huobi] + path + "?" + urlValues.Encode()
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded",
+	hash.Write([]byte(toBeSign))
+	sign := url.QueryEscape(base64.StdEncoding.EncodeToString(hash.Sum(nil)))
+	param["Signature"] = sign
+	requestUrl := fmt.Sprintf(`https://%s%s?%s`, model.AppConfig.RestUrls[model.HuobiDM], path, util.ComposeParams(param))
+	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	var postBody = ``
-	if method == `POST` && data != nil {
-		for key, value := range data {
-			urlValues.Set(key, value)
-		}
-		headers = map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn"}
-		postBody = util.ToJson(urlValues)
-	}
-	responseBody, _ := util.HttpRequest(method, requestUrl, postBody, headers, 60)
+	//param = map[string]interface{}{"order_id":"2","symbol":"btc"}
+	responseBody, _ := util.HttpRequest(method, requestUrl, strData, headers, 60)
+	util.SocketInfo(fmt.Sprintf(`%s %s %s`, requestUrl, strData, string(responseBody)))
 	return responseBody
 }
 
@@ -187,7 +160,7 @@ func placeOrderHuobi(order *model.Order, orderSide, orderType, symbol, price, am
 		model.HuobiAccountId, _ = GetSpotAccountId()
 	}
 	path := "/v1/order/orders/place"
-	postData := make(map[string]string)
+	postData := make(map[string]interface{})
 	postData["account-id"] = model.HuobiAccountId
 	postData["amount"] = amount
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
@@ -254,7 +227,7 @@ func getAccountHuobi(accounts *model.Accounts) {
 		model.HuobiAccountId, _ = GetSpotAccountId()
 	}
 	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountId)
-	postData := make(map[string]string)
+	postData := make(map[string]interface{})
 	postData["accountId-id"] = model.HuobiAccountId
 	responseBody := SignedRequestHuobi(`GET`, path, postData)
 	balanceJson, err := util.NewJSON(responseBody)

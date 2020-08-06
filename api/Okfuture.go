@@ -12,32 +12,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
-
-var okfutureLock sync.Mutex
-var okFutureInstrument = make(map[string]map[string]string) // symbol - (quarter;bi_quarter) - instrument
-
-func GetOkFuturesInstrument(symbol, alias string) (instrument string) {
-	if okFutureInstrument == nil || okFutureInstrument[symbol] == nil {
-		SetInstrumentOkFuture()
-	}
-	if okFutureInstrument == nil || okFutureInstrument[symbol] == nil {
-		util.Notice(`fatal error: can not get okfuture instrument`)
-		return ``
-	}
-	return okFutureInstrument[symbol][alias]
-}
-
-func SetOkFuturesInstrument(symbol, alias, instrument string) {
-	okfutureLock.Lock()
-	defer okfutureLock.Unlock()
-	if okFutureInstrument[symbol] == nil {
-		okFutureInstrument[symbol] = make(map[string]string)
-	}
-	okFutureInstrument[symbol][alias] = instrument
-}
 
 var subscribeHandlerOKFuture = func(subscribes []interface{}, subType string) (err error) {
 	subscribe := ``
@@ -126,31 +102,6 @@ func WsDepthServeOKFuture(markets *model.Markets, errHandler ErrHandler) (chan s
 		GetWSSubscribes(model.OKFUTURE, ``), subscribeHandlerOKFuture, wsHandler, errHandler)
 }
 
-func getCurrentInstrumentOkfuture(symbol string) (currentInstrument string) {
-	instrument := GetOkFuturesInstrument(symbol, `quarter`)
-	instrumentNext := GetOkFuturesInstrument(symbol, `bi_quarter`)
-	index := strings.LastIndex(instrument, `-`)
-	if index == -1 {
-		return ``
-	}
-	year, _ := strconv.ParseInt(`20`+instrument[index+1:index+3], 10, 64)
-	month, _ := strconv.ParseInt(instrument[index+3:index+5], 10, 64)
-	day, _ := strconv.ParseInt(instrument[index+5:index+7], 10, 64)
-	today := time.Now().In(time.UTC)
-	duration, _ := time.ParseDuration(`312h`)
-	days13 := today.Add(duration)
-	date := time.Date(int(year), time.Month(month), int(day), 0, 0, 0, 0, today.Location())
-	if today.After(date) {
-		util.Notice(`future go cross ` + symbol + date.String())
-		SetInstrumentOkFuture()
-	}
-	if days13.Before(date) {
-		return instrument
-	} else {
-		return instrumentNext
-	}
-}
-
 func depthHandlerOkFuture(markets *model.Markets, data map[string]interface{}) {
 	bidAsks, symbol := parseTickByOkFuture(data)
 	if bidAsks == nil {
@@ -168,7 +119,7 @@ func depthHandlerOkFuture(markets *model.Markets, data map[string]interface{}) {
 	}
 }
 
-func SetInstrumentOkFuture() {
+func querySetInstrumentsOkFuture() {
 	responseBody := SignedRequestOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, `GET`,
 		`/api/futures/v3/instruments`, nil)
 	instrumentJson, err := util.NewJSON(responseBody)
@@ -177,7 +128,7 @@ func SetInstrumentOkFuture() {
 		for _, item := range instrumentJson.MustArray() {
 			future := item.(map[string]interface{})
 			if future[`underlying`] != nil && future[`alias`] != nil {
-				SetOkFuturesInstrument(strings.ToLower(future[`underlying`].(string)),
+				setInstrument(model.OKFUTURE, strings.ToLower(future[`underlying`].(string)),
 					future[`alias`].(string), future[`instrument_id`].(string))
 			}
 		}
@@ -185,6 +136,7 @@ func SetInstrumentOkFuture() {
 }
 
 func parseAccountOkfuture(account *model.Account, data map[string]interface{}) {
+	// 账户权益
 	if data[`equity`] != nil {
 		account.Free, _ = strconv.ParseFloat(data[`equity`].(string), 64)
 	}
@@ -219,7 +171,7 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 		}
 		data := value.(map[string]interface{})
 		parseAccountOkfuture(account, data)
-		instrument := getCurrentInstrumentOkfuture(account.Currency)
+		instrument := GetCurrentInstrument(model.OKFUTURE, account.Currency)
 		holding := getHoldingOkfuture(instrument)
 		account.Holding = holding
 		accounts.SetAccount(model.OKFUTURE, account.Currency, account)

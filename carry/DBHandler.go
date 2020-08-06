@@ -182,6 +182,8 @@ func createMarketDepthServer(markets *model.Markets, market string) chan struct{
 	switch market {
 	case model.Huobi:
 		channel, err = api.WsDepthServeHuobi(markets, WSErrHandler)
+	case model.HuobiDM:
+		channel, err = api.WsDepthServeHuobiDM(markets, WSErrHandler)
 	case model.OKEX:
 		channel, err = api.WsDepthServeOkex(markets, WSErrHandler)
 	case model.OKFUTURE:

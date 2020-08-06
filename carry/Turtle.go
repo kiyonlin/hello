@@ -56,9 +56,9 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 		case `htusd_p`, `okbusd_p`, `bnbusd_p`, `btmxusd_p`:
 			amount *= 0.5
 		}
-	case model.OKFUTURE:
-		api.RefreshAccount(``, ``, model.OKFUTURE)
-		account := model.AppAccounts.GetAccount(model.OKFUTURE, symbol)
+	case model.OKFUTURE, model.HuobiDM:
+		api.RefreshAccount(``, ``, market)
+		account := model.AppAccounts.GetAccount(market, symbol)
 		if account != nil {
 			p := account.Free * price
 			if strings.Contains(strings.ToLower(symbol), `btc`) {
@@ -73,7 +73,7 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 
 func getTurtleToday(market string) (today time.Time, strToday string) {
 	today = time.Now().In(time.UTC)
-	if market == model.OKFUTURE {
+	if market == model.OKFUTURE || market == model.HuobiDM {
 		today = util.GetNow()
 	}
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
@@ -114,9 +114,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	cross := false
-	if (setting.Market == model.OKFUTURE && orderShort != nil && orderShort.Instrument != `` &&
-		instrument != orderShort.Instrument) || (setting.Market == model.OKFUTURE &&
-		orderLong != nil && orderLong.Instrument != `` && instrument != orderLong.Instrument) {
+	if (setting.Market == model.OKFUTURE || setting.Market == model.HuobiDM) && ((orderShort != nil && orderShort.Instrument != `` && instrument != orderShort.Instrument) || (orderLong != nil && orderLong.Instrument != `` && instrument != orderLong.Instrument)) {
 		util.Notice(fmt.Sprintf(`go cross %s %s => %s`, orderLong.Instrument,
 			orderShort.Instrument, instrument))
 		cross = true
@@ -401,7 +399,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 				`limit平空 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
 				setting.Market, setting.Symbol, setting.Chance, amountLong, currentN, priceShort,
 				priceLong, setting.PriceX, turtleData.n))
-			if setting.Market == model.OKFUTURE {
+			if setting.Market == model.OKFUTURE || setting.Market == model.HuobiDM {
 				orderSide = model.OrderSideLiquidateShort
 			}
 		}
@@ -443,7 +441,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 				`limit平多 %s %s chance:%f amount:%f currentN:%f short-long:%f %f px:%f n:%f`,
 				setting.Market, setting.Symbol, setting.Chance, amountShort, currentN, priceShort,
 				priceLong, setting.PriceX, turtleData.n))
-			if setting.Market == model.OKFUTURE {
+			if setting.Market == model.OKFUTURE || setting.Market == model.HuobiDM {
 				orderSide = model.OrderSideLiquidateLong
 			}
 		}

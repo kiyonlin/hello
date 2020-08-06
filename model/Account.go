@@ -21,6 +21,7 @@ type Account struct {
 	Free                         float64
 	Frozen                       float64
 	Holding                      float64 // 当前净持仓
+	LeverRate                    int64   // 杠杆倍数
 	PriceInUsdt                  float64
 	ProfitReal                   float64
 	ProfitUnreal                 float64
