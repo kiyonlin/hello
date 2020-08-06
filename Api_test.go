@@ -93,6 +93,7 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	api.GetCurrentInstrument(model.OKFUTURE, `btc-usd`)
 	api.GetDayCandle(``, ``, model.HuobiDM, `btc_cq`, ``, time.Now())
 	//api.PlaceOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OrderSideBuy, model.OrderTypeStop,
 	//	model.HuobiDM, `btc_cq`, `BTC200925`, ``, ``, `5`, model.FunctionTurtle,

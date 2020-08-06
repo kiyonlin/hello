@@ -324,12 +324,14 @@ func GetCurrentInstrument(market, symbol string) (currentInstrument string) {
 		querySetter = querySetInstrumentsHuobiDM
 		nextType = `next_quarter`
 		symbol = symbol[0:strings.Index(symbol, `_`)]
+	default:
+		return ``
 	}
 	if instruments == nil || instruments[market] == nil || instruments[market][symbol] == nil {
 		querySetter()
 	}
 	if instruments == nil || instruments[market] == nil || instruments[market][symbol] == nil {
-		util.Notice(`fatal error: can not get okfuture instrument`)
+		util.Notice(fmt.Sprintf(`fatal error: can not get instrument %s %s`, market, symbol))
 		return ``
 	}
 	instrument := instruments[market][symbol][currentType]
