@@ -186,8 +186,7 @@ func getHoldingHuobiDM(accounts *model.Accounts) {
 	}
 }
 
-func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode string,
-	lever, price, triggerPrice, size string) {
+func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, lever, price, triggerPrice, size string) {
 	if orderType != model.OrderTypeStop {
 		return
 	}

@@ -767,7 +767,12 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 	case model.Huobi:
 		placeOrderHuobi(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.HuobiDM:
-		placeOrderHuobiDM(order, orderSide, orderType, instrument, orderParam, strPrice, strTriggerPrice, strAmount)
+		account := model.AppAccounts.GetAccount(market, symbol)
+		lever := `5`
+		if account != nil {
+			lever = strconv.FormatInt(account.LeverRate, 10)
+		}
+		placeOrderHuobiDM(order, orderSide, orderType, instrument, lever, strPrice, strTriggerPrice, strAmount)
 	case model.OKEX:
 		placeOrderOkex(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
