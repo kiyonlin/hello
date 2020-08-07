@@ -59,6 +59,13 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 	case model.OKFUTURE, model.HuobiDM:
 		api.RefreshAccount(``, ``, market)
 		account := model.AppAccounts.GetAccount(market, symbol)
+		if market == model.HuobiDM {
+			currency := symbol
+			if strings.Contains(symbol, `_`) {
+				currency = symbol[0:strings.Index(symbol, `_`)]
+			}
+			account = model.AppAccounts.GetAccount(market, currency)
+		}
 		if account != nil {
 			p := account.Free * price
 			if strings.Contains(strings.ToLower(symbol), `btc`) {
