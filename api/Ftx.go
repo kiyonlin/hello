@@ -273,7 +273,7 @@ func queryOpenTriggerOrders(key, secret, symbol, triggerId string) (status strin
 	status = model.CarryStatusWorking
 	if err == nil {
 		result := orderJson.Get(`result`)
-		if result != nil {
+		if result != nil && orderJson.Get(`success`).MustBool() {
 			status = model.CarryStatusFail
 			orders := result.MustArray()
 			for _, order := range orders {

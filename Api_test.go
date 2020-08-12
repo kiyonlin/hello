@@ -99,11 +99,14 @@ func Test_RefreshAccount(t *testing.T) {
 	//api.PlaceOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OrderSideBuy, model.OrderTypeStop,
 	//	model.HuobiDM, `btc_cq`, `BTC200925`, ``, ``, `5`, model.FunctionTurtle,
 	//	12110.2345, 12100, 1.4, true)
-	api.CancelOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.HuobiDM, `btc_cq`,
-		``, model.OrderTypeStop, "9")
-	order := api.QueryOrderById(``, ``, model.HuobiDM, `btc_cq`, `BTC200925`, model.OrderTypeStop, `11`)
-	fmt.Println(order.Status)
-	fmt.Println(api.GetCurrentInstrument(model.HuobiDM, `btc_cq`))
+	order2 := api.QueryOrderById(``, ``, model.Ftx, `eosusd_p`, ``,
+		model.OrderTypeStop, `6771160`)
+	fmt.Println(order2.Status)
+	//api.CancelOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.HuobiDM, `btc_cq`,
+	//	``, model.OrderTypeStop, "9")
+	//order := api.QueryOrderById(``, ``, model.HuobiDM, `btc_cq`, `BTC200925`, model.OrderTypeStop, `11`)
+	//fmt.Println(order.Status)
+	//fmt.Println(api.GetCurrentInstrument(model.HuobiDM, `btc_cq`))
 	//order1 := api.PlaceOrder(``, ``, model.OrderSideBuy, model.OrderTypeStop, model.OKFUTURE, `btc-usd`,
 	//	`BTC-USD-200626`, ``, model.AccountTypeLever, ``, ``, 9000.4,
 	//	1, false)
@@ -111,8 +114,6 @@ func Test_RefreshAccount(t *testing.T) {
 	//result, _, _, _ := api.CancelOrder(``, ``, model.OKFUTURE, `btc-usd`, `BTC-USD-200925`,
 	//	model.OrderTypeStop, `5264638`)
 	//fmt.Println(result)
-	//order2 := api.QueryOrderById(``, ``, model.Ftx, `eosusd_p`, ``,
-	//	model.OrderTypeStop, `6771160`)
 	//fmt.Println(order2.OrderId)
 	//api.RefreshAccount(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.HuobiDM)
 	//rate, ts := api.GetFundingRate(model.Ftx, `btcusd_p`)
