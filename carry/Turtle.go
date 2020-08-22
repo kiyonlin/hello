@@ -374,12 +374,12 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 
 func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 	currentN, priceShort, priceLong, amountShort, amountLong float64, tick *model.BidAsk) (short, long float64) {
-	if setting.Chance > 0 && turtleData.end1/turtleData.highDays20 < 0.87 {
+	if setting.Chance > 0 && turtleData.end1/turtleData.highDays20 < 0.87 && turtleData.orderShort == nil {
 		priceShort = math.Max(turtleData.lowDays5, setting.PriceX-2*turtleData.n)
 		util.Notice(fmt.Sprintf(`提前止盈 chance:%f, end1:%f h20:%f`,
 			setting.Chance, turtleData.end1, turtleData.highDays20))
 	}
-	if setting.Chance < 0 && turtleData.end1/turtleData.lowDays20 > 1.13 {
+	if setting.Chance < 0 && turtleData.end1/turtleData.lowDays20 > 1.13 && turtleData.orderShort == nil {
 		priceLong = math.Min(turtleData.highDays5, setting.PriceX+2*turtleData.n)
 		util.Notice(fmt.Sprintf(`提前止盈 chance: %f, end1:%f l20:%f`,
 			setting.Chance, turtleData.end1, turtleData.lowDays20))
