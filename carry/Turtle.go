@@ -412,7 +412,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderLong.Instrument, turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
 	}
-	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit && setting.Chance < setting.AmountLimit {
+	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit && setting.Chance > -1*setting.AmountLimit {
 		orderSide := model.OrderSideSell
 		typeShort := model.OrderTypeStop
 		if setting.Chance > 0 {
@@ -446,7 +446,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.orderShort = order
 			turtleData.shorts = append(turtleData.shorts, order)
 		}
-	} else if turtleData.orderShort != nil && (currentN <= -1*setting.AmountLimit || setting.Chance >= setting.AmountLimit) {
+	} else if turtleData.orderShort != nil && (currentN <= -1*setting.AmountLimit || setting.Chance < -1*setting.AmountLimit) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
 	}
