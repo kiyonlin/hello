@@ -301,7 +301,7 @@ func queryOrderOkfuture(instrument, orderType, orderId string) (dealAmount, deal
 		if err != nil {
 			return 0, -1, err.Error()
 		}
-		//fmt.Println(string(responseBody))
+		util.Notice(fmt.Sprintf(`%s %s %s return: %s`, instrument, orderType, orderId, string(responseBody)))
 		value := orderJson.MustArray()
 		for _, item := range value {
 			data := item.(map[string]interface{})

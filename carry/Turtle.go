@@ -343,7 +343,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 						short.Instrument, short.OrderType, short.OrderId, true)
 				}
 			}
-			util.Notice(fmt.Sprintf(`clear shorts %d`, len(turtleData.shorts)))
+			util.Notice(fmt.Sprintf(`clear %s %s shorts %d`, setting.Market, setting.Symbol, len(turtleData.shorts)))
 			turtleData.shorts = []*model.Order{}
 		} else {
 			for _, long := range turtleData.longs {
@@ -354,7 +354,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 						long.Instrument, long.OrderType, long.OrderId, true)
 				}
 			}
-			util.Notice(fmt.Sprintf(`clear longs %d`, len(turtleData.longs)))
+			util.Notice(fmt.Sprintf(`clear %s %s longs %d`, setting.Market, setting.Symbol, len(turtleData.longs)))
 			turtleData.longs = []*model.Order{}
 		}
 	}
@@ -407,10 +407,10 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.orderLong = order
 			turtleData.longs = append(turtleData.longs, order)
 		}
-	} else if turtleData.orderLong != nil && (currentN >= setting.AmountLimit ||
-		setting.Chance >= setting.AmountLimit) {
+	} else if turtleData.orderLong != nil && (currentN >= setting.AmountLimit || setting.Chance >= setting.AmountLimit) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderLong.Instrument, turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
+		turtleData.orderLong = nil
 	}
 	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit && setting.Chance > -1*setting.AmountLimit {
 		orderSide := model.OrderSideSell
@@ -446,9 +446,10 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.orderShort = order
 			turtleData.shorts = append(turtleData.shorts, order)
 		}
-	} else if turtleData.orderShort != nil && (currentN <= -1*setting.AmountLimit || setting.Chance < -1*setting.AmountLimit) {
+	} else if turtleData.orderShort != nil && (currentN <= -1*setting.AmountLimit || setting.Chance <= -1*setting.AmountLimit) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
+		turtleData.orderShort = nil
 	}
 	return priceShort, priceLong
 }
