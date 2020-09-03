@@ -364,6 +364,7 @@ func cancelOrderOkfuture(instrument string, orderId string, orderType string) (r
 		responseBody = SignedRequestOKSwap(``, ``, `POST`,
 			fmt.Sprintf(`/api/futures/v3/cancel_order/%s/%s`, instrument, orderId), nil)
 	}
+	util.SocketInfo(string(responseBody))
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		result, _ = orderJson.Get(`result`).Bool()
