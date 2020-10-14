@@ -312,7 +312,7 @@ func QueryOrders(key, secret, market, symbol, instrument, states, accountTypes s
 	return nil
 }
 
-func GetCurrentInstrument(market, symbol string) (currentInstrument string) {
+func GetCurrentInstrument(market, symbol string) (currentInstrument string, isNext bool) {
 	querySetter := querySetInstrumentsHuobiDM
 	currentType := `quarter`
 	nextType := `bi_quarter`
@@ -325,14 +325,14 @@ func GetCurrentInstrument(market, symbol string) (currentInstrument string) {
 		nextType = `next_quarter`
 		symbol = symbol[0:strings.Index(symbol, `_`)]
 	default:
-		return ``
+		return ``, false
 	}
 	if instruments == nil || instruments[market] == nil || instruments[market][symbol] == nil {
 		querySetter()
 	}
 	if instruments == nil || instruments[market] == nil || instruments[market][symbol] == nil {
 		util.Notice(fmt.Sprintf(`fatal error: can not get instrument %s %s`, market, symbol))
-		return ``
+		return ``, false
 	}
 	instrument := instruments[market][symbol][currentType]
 	instrumentNext := instruments[market][symbol][nextType]
@@ -352,9 +352,9 @@ func GetCurrentInstrument(market, symbol string) (currentInstrument string) {
 		querySetter()
 	}
 	if days13.Before(date) {
-		return instrument
+		return instrument, false
 	} else {
-		return instrumentNext
+		return instrumentNext, true
 	}
 }
 
@@ -895,7 +895,8 @@ func GetWSSubscribe(market, symbol, subType string) (subscribe interface{}) {
 		return "ok_sub_spot_" + symbol + "_depth_5"
 	case model.OKFUTURE:
 		// btc-usd futures/ticker:BTC-USD-170310
-		return `futures/depth5:` + GetCurrentInstrument(market, symbol)
+		instrument, _ := GetCurrentInstrument(market, symbol)
+		return `futures/depth5:` + instrument
 	case model.Binance: // xrp_btc: xrpbtc@depth5
 		if len(symbol) > 4 && symbol[0:4] == `bch_` {
 			symbol = `bchabc_` + symbol[4:]

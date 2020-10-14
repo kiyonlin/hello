@@ -171,7 +171,7 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 		}
 		data := value.(map[string]interface{})
 		parseAccountOkfuture(account, data)
-		instrument := GetCurrentInstrument(model.OKFUTURE, account.Currency)
+		instrument, _ := GetCurrentInstrument(model.OKFUTURE, account.Currency)
 		holding := getHoldingOkfuture(instrument)
 		account.Holding = holding
 		accounts.SetAccount(model.OKFUTURE, account.Currency, account)

@@ -117,9 +117,11 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 			orderShort = order
 		}
 	}
-	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
+	instrument, isNext := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	cross := false
-	if (setting.Market == model.OKFUTURE || setting.Market == model.HuobiDM) && ((orderShort != nil && orderShort.Instrument != `` && instrument != orderShort.Instrument) || (orderLong != nil && orderLong.Instrument != `` && instrument != orderLong.Instrument)) {
+	if (setting.Market == model.OKFUTURE || setting.Market == model.HuobiDM) && isNext &&
+		((orderShort != nil && orderShort.Instrument != `` && instrument != orderShort.Instrument) ||
+			(orderLong != nil && orderLong.Instrument != `` && instrument != orderLong.Instrument)) {
 		if orderLong != nil {
 			util.Notice(fmt.Sprintf(`go cross %s => %s`, orderLong.Instrument, instrument))
 		}
@@ -341,6 +343,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			setting.PriceX = order.DealPrice
 		} else {
 			setting.PriceX = price
+			return false
 		}
 		priceBreak = true
 		turtleData.orderLong = nil
@@ -384,7 +387,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		//util.Notice(fmt.Sprintf(`提前止盈 chance: %f, end1:%f l20:%f`,
 		//	setting.Chance, turtleData.end1, turtleData.lowDays20))
 	}
-	instrument := api.GetCurrentInstrument(setting.Market, setting.Symbol)
+	instrument, _ := api.GetCurrentInstrument(setting.Market, setting.Symbol)
 	if turtleData.orderLong == nil && currentN < setting.AmountLimit && setting.Chance < setting.AmountLimit {
 		orderSide := model.OrderSideBuy
 		typeLong := model.OrderTypeStop

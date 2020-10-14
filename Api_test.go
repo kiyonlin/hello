@@ -39,7 +39,8 @@ func Test_initTurtleN(t *testing.T) {
 	fmt.Println(today.String())
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	symbol := `ETH-USD-200605`
-	api.GetDayCandle(``, ``, model.OKFUTURE, symbol, api.GetCurrentInstrument(model.OKFUTURE, symbol), today)
+	instrument, _ := api.GetCurrentInstrument(model.OKFUTURE, symbol)
+	api.GetDayCandle(``, ``, model.OKFUTURE, symbol, instrument, today)
 	for i := 100; i > 0; i-- {
 		d, _ := time.ParseDuration(fmt.Sprintf(`%dh`, -24*i))
 		index := today.Add(d)
