@@ -217,7 +217,8 @@ func MustCancel(key, secret, market, symbol, instrument, orderType, orderId stri
 		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, instrument, orderType, orderId)
 		res = result
 		order = cancelOrder
-		util.Notice(fmt.Sprintf(`[cancel] %s for %d times, return %t `, orderId, i, result))
+		util.Notice(fmt.Sprintf(`[cancel] %s %s %s %s for %d times, return %t `,
+			market, symbol, orderType, orderId, i, result))
 		if result || !mustCancel || errCode == `0` {
 			return result, cancelOrder
 		}
@@ -751,13 +752,6 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 		order.OrderId = fmt.Sprintf(`%s%s%d`, market, symbol, util.GetNow().UnixNano())
 		order.DealPrice = price
 		order.DealAmount = amount
-		account := model.AppAccounts.GetAccount(market, symbol)
-		if orderSide == model.OrderSideSell {
-			account.Free -= amount
-		} else {
-			account.Free += amount
-		}
-		model.AppAccounts.SetAccount(market, symbol, account)
 		if saveDB {
 			go model.AppDB.Save(&order)
 		}
@@ -825,8 +819,8 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 	end := util.GetNowUnixMillion()
 	util.Notice(fmt.Sprintf(`...%s %s %s return order at %d distance %d %s`,
 		orderSide, market, symbol, end, end-start, order.Status))
+	order.RefreshType = refreshType
 	if saveDB {
-		order.RefreshType = refreshType
 		go model.AppDB.Save(&order)
 	}
 	return

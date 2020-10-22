@@ -6,6 +6,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"sync"
 )
 
 type GridPos struct {
@@ -18,11 +19,14 @@ type GridPos struct {
 
 var dayGridPos = make(map[string]*GridPos) // dateStr - gridPos
 var simpleGriding = false
+var simpleGridLock sync.Mutex
 
 const posLength = 7
 const posMiddle = 3
 
 func setSimpleGriding(value bool) {
+	simpleGridLock.Lock()
+	defer simpleGridLock.Unlock()
 	turtling = value
 }
 
@@ -32,7 +36,7 @@ func calcGridAmount(market, symbol string, price float64) (amount float64) {
 		value := api.GetUSDBalance(``, ``, market)
 		switch symbol {
 		case `btcusd_p`:
-			amount = math.Round(10 * value / price / 2)
+			amount = math.Round(10 * value / price / 3)
 			amount = amount / 10
 		}
 	}
@@ -90,9 +94,9 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	}
 	amount := 0.0
 	orderSide := model.OrderSideSell
+	amount = gridPos.amount
 	for i := 0; i < len(gridPos.pos) && initial; i++ {
 		if i < posMiddle {
-			amount = gridPos.amount
 			orderSide = model.OrderSideBuy
 		} else if i == posMiddle {
 			amount = math.Min(gridPos.amount, math.Abs(setting.GridAmount)-2*gridPos.amount)
@@ -102,8 +106,7 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 				orderSide = model.OrderSideBuy
 			}
 		} else if i > posMiddle {
-			amount = gridPos.amount
-			orderSide = model.OrderSideBuy
+			orderSide = model.OrderSideSell
 		}
 		if amount > 0 {
 			order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, model.OrderTypeLimit,
