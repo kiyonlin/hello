@@ -119,6 +119,8 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 				order.GridPos = -1
 				gridPos.orderLiquidate = order
 			}
+			util.Notice(fmt.Sprintf(`init grid %s %s %s at %d index %d pos %s %s %f %f`,
+				setting.Market, setting.Symbol, orderSide, i, order.GridPos, order.OrderId, order.Status, order.Price, order.Amount))
 			model.AppDB.Save(order)
 		}
 	}
