@@ -94,10 +94,10 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	}
 	amount := 0.0
 	orderSide := model.OrderSideSell
-	amount = gridPos.amount
 	for i := 0; i < len(gridPos.pos) && initial; i++ {
 		if i < posMiddle {
 			orderSide = model.OrderSideBuy
+			amount = gridPos.amount
 		} else if i == posMiddle {
 			amount = math.Min(gridPos.amount, math.Abs(setting.GridAmount)-2*gridPos.amount)
 			if setting.GridAmount > 0 {
@@ -107,6 +107,7 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 			}
 		} else if i > posMiddle {
 			orderSide = model.OrderSideSell
+			amount = gridPos.amount
 		}
 		if amount > 0 {
 			order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, model.OrderTypeLimit,
