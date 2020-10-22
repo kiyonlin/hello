@@ -219,7 +219,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 	}
 	currentN := model.GetCurrentN(setting)
 	showMsg := fmt.Sprintf("%s_%s_%s", model.FunctionTurtle, setting.Market, setting.Symbol)
-	model.SetCarryInfo(showMsg, fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%d 当前已经持仓数量:%f 上一次开仓的价格:%f"+
+	model.SetCarryInfo(showMsg, fmt.Sprintf("[海龟参数]%s %s 加仓次数限制:%f 当前已经持仓数量:%f 上一次开仓的价格:%f"+
 		"20日:%f-%f 10日:%f-%f n:%f 数量:%f %s持仓数:%d 总持仓数%d",
 		turtleData.turtleTime.String()[0:10], showMsg, setting.AmountLimit, setting.GridAmount, setting.PriceX,
 		turtleData.lowDays20, turtleData.highDays20, turtleData.lowDays10, turtleData.highDays10, turtleData.n,
@@ -379,7 +379,8 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		//	setting.Chance, turtleData.end1, turtleData.lowDays20))
 	}
 	instrument, _ := api.GetCurrentInstrument(setting.Market, setting.Symbol)
-	if turtleData.orderLong == nil && currentN < setting.AmountLimit && setting.Chance < setting.AmountLimit {
+	amountLimit := int64(setting.AmountLimit)
+	if turtleData.orderLong == nil && currentN < amountLimit && setting.Chance < amountLimit {
 		orderSide := model.OrderSideBuy
 		typeLong := model.OrderTypeStop
 		if setting.Chance < 0 {
@@ -401,7 +402,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 				priceLong, tick.Asks[0].Price))
 			typeLong = model.OrderTypeLimit
 		}
-		util.Notice(fmt.Sprintf(`%s %s place stop long chance:%d amount:%f price:%f currentN-limit:%d %d 
+		util.Notice(fmt.Sprintf(`%s %s place stop long chance:%d amount:%f price:%f currentN-limit:%d %f
 			orderSide:%s end1:%f h20:%f h10:%f h5:%f l20:%f l10:%f l5%f`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
@@ -413,12 +414,12 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.orderLong = order
 			turtleData.longs = append(turtleData.longs, order)
 		}
-	} else if turtleData.orderLong != nil && (currentN >= setting.AmountLimit || setting.Chance >= setting.AmountLimit) {
+	} else if turtleData.orderLong != nil && (currentN >= amountLimit || setting.Chance >= amountLimit) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderLong.Instrument, turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
 		turtleData.orderLong = nil
 	}
-	if turtleData.orderShort == nil && currentN > -1*setting.AmountLimit && setting.Chance > -1*setting.AmountLimit {
+	if turtleData.orderShort == nil && currentN > -1*amountLimit && setting.Chance > -1*amountLimit {
 		orderSide := model.OrderSideSell
 		typeShort := model.OrderTypeStop
 		if setting.Chance > 0 {
@@ -440,7 +441,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 				priceShort, tick.Bids[0].Price))
 			typeShort = model.OrderTypeLimit
 		}
-		util.Notice(fmt.Sprintf(`%s %s place stop short chance:%d amount:%f price:%f currentN-limit:%d %d 
+		util.Notice(fmt.Sprintf(`%s %s place stop short chance:%d amount:%f price:%f currentN-limit:%d %f 
 			orderSide:%s end1:%f h20:%f h10:%f h5:%f l20:%f l10:%f l5%f`,
 			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
@@ -452,7 +453,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.orderShort = order
 			turtleData.shorts = append(turtleData.shorts, order)
 		}
-	} else if turtleData.orderShort != nil && (currentN <= -1*setting.AmountLimit || setting.Chance <= -1*setting.AmountLimit) {
+	} else if turtleData.orderShort != nil && (currentN <= -1*amountLimit || setting.Chance <= -1*amountLimit) {
 		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
 		turtleData.orderShort = nil

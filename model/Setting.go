@@ -23,7 +23,7 @@ type Setting struct {
 	Chance            int64   // arbitrary future use
 	GridAmount        float64
 	GridPriceDistance float64
-	AmountLimit       int64
+	AmountLimit       float64
 	RefreshLimit      float64
 	RefreshLimitLow   float64
 	BinanceDisMin     float64
