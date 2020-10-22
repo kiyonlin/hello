@@ -11,6 +11,7 @@ type Order struct {
 	Fee         float64
 	FeeIncome   float64
 	Function    string
+	GridPos     int64
 	Instrument  string
 	Market      string
 	OrderId     string

@@ -8,6 +8,7 @@ import (
 	"hello/util"
 	"strings"
 	"sync"
+	"time"
 )
 
 var HandlerMap = make(map[string]CarryHandler)
@@ -567,6 +568,26 @@ func (config *Config) SetUpdatePriceTime(symbol string, updateTime int64) {
 	config.lock.Lock()
 	defer config.lock.Unlock()
 	config.UpdatePriceTime[symbol] = updateTime
+}
+
+func GetMarketYesterday(market string) (yesterday time.Time, strYesterday string) {
+	yesterday = time.Now().In(time.UTC)
+	if market == OKFUTURE || market == HuobiDM {
+		yesterday = util.GetNow()
+	}
+	duration, _ := time.ParseDuration(`-24h`)
+	yesterday = yesterday.Add(duration)
+	yesterday = time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
+	return yesterday, yesterday.String()[0:10]
+}
+
+func GetMarketToday(market string) (today time.Time, strToday string) {
+	today = time.Now().In(time.UTC)
+	if market == OKFUTURE || market == HuobiDM {
+		today = util.GetNow()
+	}
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	return today, today.String()[0:10]
 }
 
 func (config *Config) ToString() string {

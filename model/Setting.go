@@ -20,10 +20,10 @@ type Setting struct {
 	PriceX            float64
 	OpenShortMargin   float64 // arbitrary future use
 	CloseShortMargin  float64 // arbitrary future use
-	Chance            float64 // arbitrary future use
+	Chance            int64   // arbitrary future use
 	GridAmount        float64
 	GridPriceDistance float64
-	AmountLimit       float64
+	AmountLimit       int64
 	RefreshLimit      float64
 	RefreshLimitLow   float64
 	BinanceDisMin     float64
@@ -43,7 +43,7 @@ func GetSetting(function, market, symbol string) []*Setting {
 	return marketSymbolSetting[function][market][symbol]
 }
 
-func GetCurrentN(setting *Setting) (currentN float64) {
+func GetCurrentN(setting *Setting) (currentN int64) {
 	if setting == nil || marketSymbolSetting[setting.Function] == nil ||
 		marketSymbolSetting[setting.Function][setting.Market] == nil {
 		return 0

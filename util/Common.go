@@ -25,12 +25,14 @@ func UnGzip(byte []byte) []byte {
 	}
 	return undatas
 }
-func ToJson(params *url.Values) string {
-	parammap := make(map[string]string)
+
+// ToJson
+func _(params *url.Values) string {
+	paramMap := make(map[string]string)
 	for k, v := range *params {
-		parammap[k] = v[0]
+		paramMap[k] = v[0]
 	}
-	jsonData, _ := json.Marshal(parammap)
+	jsonData, _ := json.Marshal(paramMap)
 	return string(jsonData)
 }
 
@@ -41,11 +43,13 @@ func NewJSON(data []byte) (j *simplejson.Json, err error) {
 	}
 	return j, nil
 }
+
 func JsonDecodeByte(bytes []byte) map[string]interface{} {
 	jsonMap := make(map[string]interface{})
 	_ = json.Unmarshal(bytes, &jsonMap)
 	return jsonMap
 }
+
 func JsonEncodeMapToByte(stringMap map[string]interface{}) []byte {
 	jsonBytes, err := json.Marshal(stringMap)
 	if err != nil {

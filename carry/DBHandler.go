@@ -262,7 +262,7 @@ func Maintain() {
 		util.Notice(err.Error())
 		return
 	}
-	model.HandlerMap[model.FunctionGrid] = ProcessGrid
+	model.HandlerMap[model.FunctionGrid] = ProcessSimpleGrid
 	model.HandlerMap[model.FunctionRefresh] = ProcessRefresh
 	model.HandlerMap[model.FunctionTurtle] = ProcessTurtle
 	model.HandlerMap[model.FunctionCarry] = ProcessCarrySameTime

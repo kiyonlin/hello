@@ -12,7 +12,7 @@ import (
 )
 
 var marketSymbolGrid = make(map[string]map[string]*grid)
-var snycGrid = make(chan interface{}, 10)
+var syncGrid = make(chan interface{}, 10)
 var gridLock sync.Mutex
 
 type grid struct {
@@ -108,7 +108,7 @@ func placeGridOrder(key, secret, orderSide, market, symbol, accountType string, 
 	if order.OrderSide == model.OrderSideSell {
 		grid.sellOrder = order
 	}
-	snycGrid <- struct{}{}
+	syncGrid <- struct{}{}
 }
 
 func handleOrderDeal(key, secret string, grid *grid, order *model.Order, setting *model.Setting,
@@ -137,7 +137,8 @@ func handleOrderDeal(key, secret string, grid *grid, order *model.Order, setting
 	}
 }
 
-var ProcessGrid = func(setting *model.Setting) {
+// ProcessGrid
+var _ = func(setting *model.Setting) {
 	grid := getGrid(setting.Market, setting.Symbol)
 	if grid.griding || model.AppConfig.Handle != `1` || model.AppPause {
 		return
@@ -156,7 +157,7 @@ var ProcessGrid = func(setting *model.Setting) {
 	if grid.sellOrder == nil || grid.buyOrder == nil {
 		if placeGridOrders(``, ``, setting, tick) {
 			for true {
-				<-snycGrid
+				<-syncGrid
 				if grid.sellOrder != nil && grid.buyOrder != nil {
 					break
 				}
