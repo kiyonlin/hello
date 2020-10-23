@@ -94,12 +94,18 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
+	success, code, msg, _ := api.CancelOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OKFUTURE, `btc_cq`,
+		`BTC-USD-201225`, model.OrderTypeStop, "5809530485588992")
+	fmt.Println(fmt.Sprintf(`result: %v code: %s msg: %s`, success, code, msg))
 	//setting := &model.Setting{Market: model.HuobiDM, Symbol: `BTC_CQ`}
 	//carry.GetTurtleData(setting)
 	//api.GetDayCandle(``, ``, model.HuobiDM, `btc_cq`, ``, time.Now())
 	//api.PlaceOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OrderSideBuy, model.OrderTypeStop,
 	//	model.HuobiDM, `btc_cq`, `BTC200925`, ``, ``, `5`, model.FunctionTurtle,
 	//	12110.2345, 12100, 1.4, true)
+	if success {
+		return
+	}
 	order2 := api.QueryOrderById(``, ``, model.Ftx, `eosusd_p`, ``,
 		model.OrderTypeStop, `6771160`)
 	fmt.Println(order2.Status)

@@ -27,7 +27,7 @@ const posMiddle = 3
 func setSimpleGriding(value bool) {
 	simpleGridLock.Lock()
 	defer simpleGridLock.Unlock()
-	turtling = value
+	simpleGriding = value
 }
 
 func calcGridAmount(market, symbol string, price float64) (amount float64) {
