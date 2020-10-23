@@ -422,7 +422,7 @@ func parseOrderFtx(order *model.Order, item map[string]interface{}) {
 	}
 	if item[`status`] != nil {
 		order.Status = model.GetOrderStatus(model.Ftx, item[`status`].(string))
-		if order.DealAmount == 0 {
+		if order.DealAmount == 0 && order.Status == model.CarryStatusSuccess {
 			order.Status = model.CarryStatusFail
 		}
 	}
