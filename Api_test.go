@@ -95,7 +95,7 @@ func Test_RefreshAccount(t *testing.T) {
 		return
 	}
 	success, code, msg, _ := api.CancelOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OKFUTURE, `btc_cq`,
-		`BTC-USD-201225`, model.OrderTypeStop, "5809530485588992")
+		`BTC-USD-201225`, model.OrderTypeStop, "5809530485457920")
 	fmt.Println(fmt.Sprintf(`result: %v code: %s msg: %s`, success, code, msg))
 	//setting := &model.Setting{Market: model.HuobiDM, Symbol: `BTC_CQ`}
 	//carry.GetTurtleData(setting)
