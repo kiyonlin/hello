@@ -211,7 +211,7 @@ func GetWalletHistoryFtx(key, secret string) (history string) {
 
 func getUSDBalanceFtx(key, secret string) (balance float64) {
 	response := SignedRequestFtx(key, secret, `GET`, `/wallet/balances`, nil, nil)
-	util.Notice(`get usd balance ftx: ` + string(response))
+	util.SocketInfo(`get usd balance ftx: ` + string(response))
 	balanceJson, err := util.NewJSON(response)
 	if err == nil {
 		items := balanceJson.Get(`result`).MustArray()
@@ -305,7 +305,7 @@ func queryOrderFtx(key, secret, orderId string) (order *model.Order) {
 func getAccountFtx(key, secret string, accounts *model.Accounts) {
 	postData := make(map[string]interface{})
 	response := SignedRequestFtx(key, secret, `GET`, `/positions`, nil, postData)
-	util.Notice(`get account ftx ` + fmt.Sprintf(string(response)))
+	util.SocketInfo(`get account ftx ` + fmt.Sprintf(string(response)))
 	positionJson, err := util.NewJSON(response)
 	if err == nil {
 		positionJson = positionJson.Get(`result`)

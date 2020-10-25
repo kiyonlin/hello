@@ -202,7 +202,7 @@ func getHoldingOkfuture(instrument string) (amount float64) {
 			short, _ = strconv.ParseFloat(holding[`short_qty`].(string), 64)
 		}
 	}
-	util.Notice(fmt.Sprintf(`get okfuture %s holding %f`, instrument, long-short))
+	util.SocketInfo(fmt.Sprintf(`get okfuture %s holding %f`, instrument, long-short))
 	return long - short
 }
 
@@ -283,7 +283,7 @@ func queryOrdersOkfuture(key, secret, instrument string) (orders []*model.Order)
 			continue
 		}
 		result, code, msg := cancelOrderOkfuture(instrument, id, model.OrderTypeStop)
-		util.Notice(fmt.Sprintf(`queryOrdersOkfuture cancel algo id %v %s %s`, result, code, msg))
+		util.SocketInfo(fmt.Sprintf(`queryOrdersOkfuture cancel algo id %v %s %s`, result, code, msg))
 		time.Sleep(time.Second)
 	}
 	return
@@ -301,7 +301,7 @@ func queryOrderOkfuture(instrument, orderType, orderId string) (dealAmount, deal
 		if err != nil {
 			return 0, -1, err.Error()
 		}
-		util.Notice(fmt.Sprintf(`%s %s %s return: %s`, instrument, orderType, orderId, string(responseBody)))
+		util.SocketInfo(fmt.Sprintf(`%s %s %s return: %s`, instrument, orderType, orderId, string(responseBody)))
 		value := orderJson.MustArray()
 		for _, item := range value {
 			data := item.(map[string]interface{})

@@ -7,7 +7,6 @@ import (
 	"hello/util"
 	"math"
 	"sync"
-	"time"
 )
 
 type GridPos struct {
@@ -166,17 +165,11 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 				orderR.OrderSide, orderR.OrderId, orderR.GridPos, orderR.Amount))
 		}
 	}
-	doLog := false
-	if time.Now().Second() == 0 {
-		doLog = true
-	}
 	for i := setting.Chance + 1; i < int64(len(gridPos.pos)); i++ {
 		order := gridPos.orders[i]
-		if order != nil && doLog {
-			util.Notice(fmt.Sprintf(`sell check chance:%d [%d] len: %d price %f %f`,
-				setting.Chance, order.GridPos, len(gridPos.orders), tick.Asks[0].Price, order.Price))
-		}
 		if order != nil && order.Price < tick.Asks[0].Price {
+			util.Notice(fmt.Sprintf(`check sell %d chance: %d order pos: %d ask0: %f order price %f`,
+				len(gridPos.pos), setting.Chance, order.GridPos, tick.Asks[0].Price, order.Price))
 			orderS := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeLimit,
 				setting.Market, setting.Symbol, ``, ``, ``, ``,
 				model.FunctionGrid, gridPos.pos[setting.Chance], gridPos.pos[setting.Chance], gridPos.amount, false)

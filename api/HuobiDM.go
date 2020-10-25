@@ -181,7 +181,7 @@ func getHoldingHuobiDM(accounts *model.Accounts) {
 			if holding[`lever_rate`] != nil { // 杠杆倍数
 				account.LeverRate, _ = holding[`lever_rate`].(json.Number).Int64()
 			}
-			util.Notice(fmt.Sprintf(`get huobiDB %s holding %f`, account.Direction, account.Holding))
+			util.SocketInfo(fmt.Sprintf(`get huobiDB %s holding %f`, account.Direction, account.Holding))
 			accounts.SetAccount(model.HuobiDM, account.Currency, account)
 		}
 	}
