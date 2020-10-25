@@ -203,7 +203,7 @@ func revertCancelOrder(key, secret, market, symbol, accountType string, tick *mo
 func CancelNonHang(market, symbol string) {
 	orders := api.QueryOrders(model.KeyDefault, model.SecretDefault, market, symbol, ``, ``, ``, 0, 0)
 	ordersBids, orderAsks := hangFarOrders.getFarOrders(symbol)
-	util.Notice(fmt.Sprintf(`=query orders cancel non-hang= open:%d need:%d revert:%d bid:%d ask:%d`,
+	util.SocketInfo(fmt.Sprintf(`=query orders cancel non-hang= open:%d need:%d revert:%d bid:%d ask:%d`,
 		len(orders), len(hangFarOrders.needRevertOrders), len(hangFarOrders.revertOrders),
 		len(ordersBids), len(orderAsks)))
 	for _, order := range orders {

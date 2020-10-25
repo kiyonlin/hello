@@ -338,7 +338,7 @@ func queryOrderBybit(key, secret, symbol, orderId string) (orders []*model.Order
 	postData[`symbol`] = model.GetDialectSymbol(model.Bybit, symbol)
 	postData[`order_id`] = orderId
 	response := SignedRequestBybit(key, secret, `GET`, `/open-api/order/list`, postData)
-	util.Notice(`query orders: ` + string(response))
+	util.SocketInfo(`query orders: ` + string(response))
 	orderJson, err := util.NewJSON(response)
 	if err == nil {
 		orderJson = orderJson.GetPath(`result`, `data`)

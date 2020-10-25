@@ -292,7 +292,7 @@ func queryOpenTriggerOrders(key, secret, symbol, triggerId string) (status strin
 
 func queryOrderFtx(key, secret, orderId string) (order *model.Order) {
 	response := SignedRequestFtx(key, secret, `GET`, fmt.Sprintf(`/orders/%s`, orderId), nil, nil)
-	util.Notice(fmt.Sprintf(`query orders ftx: %s`, string(response)))
+	util.SocketInfo(fmt.Sprintf(`query orders ftx: %s`, string(response)))
 	orderJson, err := util.NewJSON(response)
 	if err == nil && orderJson.Get(`success`).MustBool() {
 		data, _ := orderJson.Get(`result`).Map()
