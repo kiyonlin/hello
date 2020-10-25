@@ -87,9 +87,6 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 		}
 	}
 	initial := true
-	if setting.Chance != posMiddle {
-		initial = false
-	}
 	for _, order := range gridPos.orders {
 		if order != nil {
 			initial = false
