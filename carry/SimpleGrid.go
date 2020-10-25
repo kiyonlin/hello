@@ -172,9 +172,9 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 	}
 	for i := setting.Chance + 1; i < int64(len(gridPos.pos)); i++ {
 		order := gridPos.orders[i]
-		if doLog {
-			util.Notice(fmt.Sprintf(`sell check chance:%d len: %d price %f %f`,
-				setting.Chance, len(gridPos.orders), tick.Asks[0].Price, order.Price))
+		if order != nil && doLog {
+			util.Notice(fmt.Sprintf(`sell check chance:%d [%d] len: %d price %f %f`,
+				setting.Chance, order.GridPos, len(gridPos.orders), tick.Asks[0].Price, order.Price))
 		}
 		if order != nil && order.Price < tick.Asks[0].Price {
 			orderS := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeLimit,
