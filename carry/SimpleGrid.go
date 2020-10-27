@@ -221,5 +221,6 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 		}
 	}
 	model.SetCarryInfo(fmt.Sprintf(`%s_%s_%s`, setting.Market, setting.Symbol, model.FunctionGrid),
-		fmt.Sprintf(`[Grid] chance:%d last price:%f info:%s`, setting.Chance, setting.PriceX, showMsg))
+		fmt.Sprintf(`[Grid] chance:%d last price:%f holding:%f info:%s`,
+			setting.Chance, setting.PriceX, setting.GridAmount, showMsg))
 }
