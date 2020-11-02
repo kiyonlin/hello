@@ -214,8 +214,8 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 			model.AppDB.Save(order)
 			model.AppDB.Save(setting)
 			gridPos.orders[i] = nil
-			util.Notice(fmt.Sprintf(`order success %s %s %s %s at %d %f with %f, new order %s %s at %d %f`,
-				order.Market, order.Symbol, order.OrderSide, order.OrderId, i, order.Price, order.Amount,
+			util.Notice(fmt.Sprintf(`order success %s %s %s %s %s at %d %f with %f, new order %s %s at %d %f`,
+				order.Status, order.Market, order.Symbol, order.OrderSide, order.OrderId, i, order.Price, order.Amount,
 				orderS.OrderSide, orderS.OrderId, orderS.GridPos, orderS.Amount))
 		}
 	}
