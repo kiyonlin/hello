@@ -7,6 +7,7 @@ import (
 	"hello/util"
 	"math"
 	"sync"
+	"time"
 )
 
 type GridPos struct {
@@ -19,6 +20,7 @@ type GridPos struct {
 var dayGridPos = make(map[string]*GridPos) // dateStr - gridPos
 var simpleGriding = false
 var simpleGridLock sync.Mutex
+var gridCheckTime = util.GetNow()
 
 const posLength = 7
 const posMiddle = 3
@@ -142,11 +144,26 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 	defer setSimpleGriding(false)
 	gridPos := getGridPos(setting)
 	showMsg := ``
-	for i := setting.Chance - 1; i >= 0; i-- {
+	duration, _ := time.ParseDuration(`-180s`)
+	checkTime := util.GetNow().Add(duration)
+	checkOrder := false
+	if checkTime.After(gridCheckTime) {
+		checkOrder = true
+		checkTime = util.GetNow()
+	}
+	if setting.Chance-1 >= 0 {
+		i := setting.Chance - 1
 		order := gridPos.orders[i]
-		showMsg += fmt.Sprintf("%d %s %d %f %s %s %s %f\n",
-			i, order.OrderSide, order.GridPos, order.Price, order.Market, order.Symbol, order.OrderId, order.Amount)
-		if order != nil && order.Price > tick.Bids[0].Price {
+		if checkOrder && order != nil {
+			tempOrder := api.QueryOrderById(model.KeyDefault, model.SecretDefault, order.Market, order.Symbol, order.Instrument,
+				order.OrderType, order.OrderId)
+			if tempOrder != nil {
+				order.Status = tempOrder.Status
+				showMsg += fmt.Sprintf("%s %d %s %d %f %s %s %s %f\n",
+					order.Status, i, order.OrderSide, order.GridPos, order.Price, order.Market, order.Symbol, order.OrderId, order.Amount)
+			}
+		}
+		if order != nil && (order.Price > tick.Bids[0].Price || order.Status == model.CarryStatusSuccess) {
 			orderR := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideSell, model.OrderTypeLimit,
 				setting.Market, setting.Symbol, ``, ``, ``, ``,
 				model.FunctionGrid, gridPos.pos[setting.Chance], gridPos.pos[setting.Chance], gridPos.amount, false)
@@ -162,16 +179,24 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 			model.AppDB.Save(order)
 			model.AppDB.Save(setting)
 			gridPos.orders[i] = nil
-			util.Notice(fmt.Sprintf(`order success %s %s %s %s at %d %f with %f, new order %s %s at %d %f`,
-				order.Market, order.Symbol, order.OrderSide, order.OrderId, i, order.Price, order.Amount,
+			util.Notice(fmt.Sprintf(`order success %s %s %s %s %s at %d %f with %f, new order %s %s at %d %f`,
+				order.Status, order.Market, order.Symbol, order.OrderSide, order.OrderId, i, order.Price, order.Amount,
 				orderR.OrderSide, orderR.OrderId, orderR.GridPos, orderR.Amount))
 		}
 	}
-	for i := setting.Chance + 1; i < int64(len(gridPos.pos)); i++ {
+	if setting.Chance+1 < int64(len(gridPos.pos)) {
+		i := setting.Chance + 1
 		order := gridPos.orders[i]
-		showMsg += fmt.Sprintf("%d %s %d %f %s %s %s %f\n",
-			i, order.OrderSide, order.GridPos, order.Price, order.Market, order.Symbol, order.OrderId, order.Amount)
-		if order != nil && order.Price < tick.Asks[0].Price {
+		if checkOrder && order != nil {
+			tempOrder := api.QueryOrderById(model.KeyDefault, model.SecretDefault, order.Market, order.Symbol, order.Instrument,
+				order.OrderType, order.OrderId)
+			if tempOrder != nil {
+				order.Status = tempOrder.Status
+				showMsg += fmt.Sprintf("%s %d %s %d %f %s %s %s %f\n",
+					order.Status, i, order.OrderSide, order.GridPos, order.Price, order.Market, order.Symbol, order.OrderId, order.Amount)
+			}
+		}
+		if order != nil && (order.Price < tick.Asks[0].Price || order.Status == model.CarryStatusSuccess) {
 			util.Notice(fmt.Sprintf(`check sell %d chance: %d order pos: %d ask0: %f order price %f`,
 				len(gridPos.pos), setting.Chance, order.GridPos, tick.Asks[0].Price, order.Price))
 			orderS := api.PlaceOrder(model.KeyDefault, model.SecretDefault, model.OrderSideBuy, model.OrderTypeLimit,
