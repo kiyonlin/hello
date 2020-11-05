@@ -100,7 +100,7 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 			orderSide = model.OrderSideBuy
 			amount = gridPos.amount
 		} else if i == posMiddle {
-			amount = math.Min(gridPos.amount, math.Abs(setting.GridAmount)-2*gridPos.amount)
+			amount = math.Min(gridPos.amount, math.Abs(setting.GridAmount)-gridPos.amount)
 			if setting.GridAmount > 0 {
 				orderSide = model.OrderSideSell
 			} else if setting.GridAmount < 0 {
