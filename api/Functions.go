@@ -30,7 +30,6 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 		}
 		delay = float64(now - int64(bidAsk.Ts))
 		if float64(now-int64(bidAsk.Ts)) < model.AppConfig.Delay {
-			//util.Notice(market + ` no need to reconnect`)
 			numRand := rand.Intn(100)
 			if numRand == 0 && len(bidAsk.Bids) > 0 && len(bidAsk.Asks) > 0 {
 				util.SocketInfo(fmt.Sprintf(`%s bidask time %d len %d %d price %f %f amount %f %f`,
