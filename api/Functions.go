@@ -5,6 +5,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"math"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,6 +31,12 @@ func RequireDepthChanReset(markets *model.Markets, market string) bool {
 		delay = float64(now - int64(bidAsk.Ts))
 		if float64(now-int64(bidAsk.Ts)) < model.AppConfig.Delay {
 			//util.Notice(market + ` no need to reconnect`)
+			numRand := rand.Intn(100)
+			if numRand == 0 && len(bidAsk.Bids) > 0 && len(bidAsk.Asks) > 0 {
+				util.SocketInfo(fmt.Sprintf(`%s bidask time %d len %d %d price %f %f amount %f %f`,
+					symbol, bidAsk.Ts, bidAsk.Bids.Len(), bidAsk.Asks.Len(), bidAsk.Bids[0].Price,
+					bidAsk.Asks[0].Price, bidAsk.Bids[0].Amount, bidAsk.Asks[0].Amount))
+			}
 			needReset = false
 		}
 	}

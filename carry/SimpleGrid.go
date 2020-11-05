@@ -149,7 +149,7 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 	checkOrder := false
 	if checkTime.After(gridCheckTime) {
 		checkOrder = true
-		checkTime = util.GetNow()
+		gridCheckTime = util.GetNow()
 	}
 	if setting.Chance-1 >= 0 {
 		i := setting.Chance - 1

@@ -335,6 +335,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 			setting.PriceX = order.DealPrice
 		} else {
 			setting.PriceX = price
+			util.Notice(`query order not break`)
 			return false
 		}
 		priceBreak = true
