@@ -70,9 +70,21 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	util.Notice(fmt.Sprintf(`grid pos absent load orders %d from %s`, len(orders), yesterdayStr))
 	for _, order := range orders {
 		if order.OrderTime.Before(today) {
-			util.Notice(fmt.Sprintf(`cancel old grid order %s at %s`, order.OrderId, order.OrderTime))
-			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``,
-				order.OrderType, order.OrderId, true)
+			tempOrder := api.QueryOrderById(model.KeyDefault, model.SecretDefault, order.Market, order.Symbol,
+				order.Instrument, order.OrderType, order.OrderId)
+			if tempOrder != nil {
+				order = tempOrder
+				if order.OrderSide == model.OrderSideBuy {
+					setting.GridAmount += math.Abs(order.DealAmount)
+				} else {
+					setting.GridAmount -= math.Abs(order.DealAmount)
+				}
+			}
+			if order.Status == model.CarryStatusWorking {
+				util.Notice(fmt.Sprintf(`cancel old grid order %s at %s`, order.OrderId, order.OrderTime))
+				api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``,
+					order.OrderType, order.OrderId, true)
+			}
 			continue
 		}
 		if ((order.OrderSide == model.OrderSideSell && order.GridPos > setting.Chance) ||
