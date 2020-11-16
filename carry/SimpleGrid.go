@@ -42,29 +42,17 @@ func calcGridAmount(market, symbol string, price float64) (amount float64) {
 	return amount
 }
 
-func getAvgCandleN(setting *model.Setting, days int) (avgN float64) {
-	today, _ := model.GetMarketToday(setting.Market)
-	duration, _ := time.ParseDuration(`-24h`)
-	for i := 0; i < days; i++ {
-		today = today.Add(duration)
-		candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``, today)
-		avgN += candle.N
-	}
-	return avgN / float64(days)
-}
-
 func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	today, _ := model.GetMarketToday(setting.Market)
 	yesterday, yesterdayStr := model.GetMarketYesterday(setting.Market)
 	if dayGridPos[yesterdayStr] != nil {
 		return dayGridPos[yesterdayStr]
 	}
-	avgN := getAvgCandleN(setting, 20)
 	candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``, yesterday)
 	p := (candle.PriceHigh + candle.PriceLow + candle.PriceClose) / 3
 	util.Notice(fmt.Sprintf(`%s %s yesterday:%s get new grid pos with avgN:%f n:%f`,
-		setting.Market, setting.Symbol, yesterdayStr, avgN, candle.N))
-	if candle.N < avgN*2/3 {
+		setting.Market, setting.Symbol, yesterdayStr, candle.PriceHigh-candle.PriceLow, candle.N))
+	if candle.PriceHigh-candle.PriceLow < candle.N*2/3 {
 		gridPos = &GridPos{orders: make([]*model.Order, 3), pos: make([]float64, 3), posLength: 3, posMiddle: 1}
 		gridPos.pos[0] = p - candle.PriceHigh + candle.PriceLow
 		gridPos.pos[1] = p
