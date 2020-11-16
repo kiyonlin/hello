@@ -171,8 +171,6 @@ func getCandlesFtx(key, secret, symbol, binSize string, start, end time.Time, co
 	param[`limit`] = fmt.Sprintf(`%d`, count)
 	param[`start_time`] = fmt.Sprintf(`%d`, start.Unix())
 	param[`end_time`] = fmt.Sprintf(`%d`, end.Unix())
-	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
-	end = time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
 	response := SignedRequestFtx(key, secret, `GET`,
 		fmt.Sprintf(`/markets/%s/candles`, symbolNew), param, nil)
 	candleJson, err := util.NewJSON(response)

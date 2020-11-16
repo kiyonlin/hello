@@ -11,19 +11,17 @@ import (
 )
 
 type GridPos struct {
-	orders         []*model.Order // pos - orderId - order
-	pos            []float64
-	amount         float64
-	orderLiquidate *model.Order
+	orders               []*model.Order // pos - orderId - order
+	pos                  []float64
+	amount               float64
+	orderLiquidate       *model.Order
+	posLength, posMiddle int
 }
 
 var dayGridPos = make(map[string]*GridPos) // dateStr - gridPos
 var simpleGriding = false
 var simpleGridLock sync.Mutex
 var gridCheckTime = util.GetNow()
-
-const posLength = 7
-const posMiddle = 3
 
 func setSimpleGriding(value bool) {
 	simpleGridLock.Lock()
@@ -44,25 +42,45 @@ func calcGridAmount(market, symbol string, price float64) (amount float64) {
 	return amount
 }
 
+func getAvgCandleN(setting *model.Setting, days int) (avgN float64) {
+	today, _ := model.GetMarketToday(setting.Market)
+	duration, _ := time.ParseDuration(`-24h`)
+	for i := 0; i < days; i++ {
+		today = today.Add(duration)
+		candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``, today)
+		avgN += candle.N
+	}
+	return avgN / float64(days)
+}
+
 func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	today, _ := model.GetMarketToday(setting.Market)
 	yesterday, yesterdayStr := model.GetMarketYesterday(setting.Market)
 	if dayGridPos[yesterdayStr] != nil {
 		return dayGridPos[yesterdayStr]
 	}
-	dayGridPos[yesterdayStr] = &GridPos{orders: make([]*model.Order, posLength), pos: make([]float64, posLength)}
-	gridPos = dayGridPos[yesterdayStr]
+	avgN := getAvgCandleN(setting, 20)
 	candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``, yesterday)
 	p := (candle.PriceHigh + candle.PriceLow + candle.PriceClose) / 3
+	util.Notice(fmt.Sprintf(`%s %s yesterday:%s get new grid pos with avgN:%f n:%f`,
+		setting.Market, setting.Symbol, yesterdayStr, avgN, candle.N))
+	if candle.N < avgN*2/3 {
+		gridPos = &GridPos{orders: make([]*model.Order, 3), pos: make([]float64, 3), posLength: 3, posMiddle: 1}
+		gridPos.pos[0] = p - candle.PriceHigh + candle.PriceLow
+		gridPos.pos[1] = p
+		gridPos.pos[2] = p + candle.PriceHigh - candle.PriceLow
+	} else {
+		gridPos = &GridPos{orders: make([]*model.Order, 7), pos: make([]float64, 7), posLength: 7, posMiddle: 3}
+		gridPos.pos[0] = candle.PriceLow - 2*(candle.PriceHigh-p)
+		gridPos.pos[1] = p - candle.PriceHigh + candle.PriceLow
+		gridPos.pos[2] = 2*p - candle.PriceHigh
+		gridPos.pos[3] = p
+		gridPos.pos[4] = 2*p - candle.PriceLow
+		gridPos.pos[5] = p + candle.PriceHigh - candle.PriceLow
+		gridPos.pos[6] = candle.PriceHigh - 2*(candle.PriceLow-p)
+	}
 	gridPos.amount = calcGridAmount(setting.Market, setting.Symbol, p)
-	gridPos.pos[0] = candle.PriceLow - 2*(candle.PriceHigh-p)
-	gridPos.pos[1] = p - candle.PriceHigh + candle.PriceLow
-	gridPos.pos[2] = 2*p - candle.PriceHigh
-	gridPos.pos[3] = p
-	gridPos.pos[4] = 2*p - candle.PriceLow
-	gridPos.pos[5] = p + candle.PriceHigh - candle.PriceLow
-	gridPos.pos[6] = candle.PriceHigh - 2*(candle.PriceLow-p)
-	gridPos.orders = make([]*model.Order, posLength)
+	dayGridPos[yesterdayStr] = gridPos
 	// load orders
 	var orders []*model.Order
 	model.AppDB.Where("market= ? and symbol= ? and refresh_type= ? and status=? and order_time>?",
@@ -103,22 +121,22 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 			return
 		}
 	}
-	setting.Chance = posMiddle
+	setting.Chance = int64(gridPos.posMiddle)
 	model.AppDB.Save(setting)
 	amount := 0.0
 	orderSide := model.OrderSideSell
 	for i := 0; i < len(gridPos.pos); i++ {
-		if i < posMiddle {
+		if i < gridPos.posMiddle {
 			orderSide = model.OrderSideBuy
 			amount = gridPos.amount
-		} else if i == posMiddle {
+		} else if i == gridPos.posMiddle {
 			amount = math.Min(gridPos.amount, math.Abs(setting.GridAmount)-gridPos.amount)
 			if setting.GridAmount > 0 {
 				orderSide = model.OrderSideSell
 			} else if setting.GridAmount < 0 {
 				orderSide = model.OrderSideBuy
 			}
-		} else if i > posMiddle {
+		} else if i > gridPos.posMiddle {
 			orderSide = model.OrderSideSell
 			amount = gridPos.amount
 		}
@@ -126,7 +144,7 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 			order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, model.OrderTypeLimit,
 				setting.Market, setting.Symbol, ``, ``, ``, ``,
 				model.FunctionGrid, gridPos.pos[i], gridPos.pos[i], amount, false)
-			if i != posMiddle {
+			if i != gridPos.posMiddle {
 				order.GridPos = int64(i)
 				dayGridPos[yesterdayStr].orders[i] = order
 			} else {
