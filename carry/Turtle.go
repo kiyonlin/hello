@@ -235,6 +235,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 		if tick.Asks[0].Price >= priceLong {
 			if handleBreak(setting, turtleData, model.OrderSideBuy, priceLong) {
 				setting.Chance = 1
+				setting.GridAmount = turtleData.amount
 				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
 					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
@@ -403,7 +404,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		}
 		util.Notice(fmt.Sprintf(`%s %s place stop long chance:%d amount:%f price:%f currentN-limit:%d %f
 			orderSide:%s end1:%f h20:%f h10:%f h5:%f l20:%f l10:%f l5%f`,
-			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
+			setting.Market, setting.Symbol, setting.Chance, amount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
 			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeLong, setting.Market,
@@ -439,7 +440,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 		}
 		util.Notice(fmt.Sprintf(`%s %s place stop short chance:%d amount:%f price:%f currentN-limit:%d %f 
 			orderSide:%s end1:%f h20:%f h10:%f h5:%f l20:%f l10:%f l5%f`,
-			setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, setting.PriceX, currentN,
+			setting.Market, setting.Symbol, setting.Chance, amount, setting.PriceX, currentN,
 			setting.AmountLimit, orderSide, turtleData.end1, turtleData.highDays20, turtleData.highDays10,
 			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeShort, setting.Market,

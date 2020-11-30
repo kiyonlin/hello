@@ -204,6 +204,7 @@ func getCandlesFtx(key, secret, symbol, binSize string, start, end time.Time, co
 func GetWalletHistoryFtx(key, secret string) (history string) {
 	history = string(SignedRequestFtx(key, secret, `GET`, `/wallet/deposits`, nil, nil))
 	history += string(SignedRequestFtx(key, secret, `GET`, `/wallet/withdrawals`, nil, nil))
+	util.SocketInfo(`wallet history:` + history)
 	return
 }
 

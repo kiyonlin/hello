@@ -34,9 +34,10 @@ func calcGridAmount(market, symbol string, price float64) (amount float64) {
 	case model.Ftx:
 		value := api.GetUSDBalance(``, ``, market)
 		switch symbol {
-		case `btcusd_p`:
-			amount = math.Round(10 * value / price / 3)
-			amount = amount / 10
+		case `btcusd_p`: //使用三分之一的资本
+			amount = math.Round(10*value/price/3) / 10
+		case `linkusd_p`: // 使用五分之一的资本
+			amount = math.Round(value/price/5/100) * 100
 		}
 	}
 	return amount

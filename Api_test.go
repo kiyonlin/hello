@@ -35,6 +35,9 @@ func Test_initTurtleN(t *testing.T) {
 		return
 	}
 	model.AppDB.AutoMigrate(&model.Candle{})
+	order := api.QueryOrderById(``, ``, model.OKFUTURE, `btcusd_p`, `BTC-USD-201225`,
+		model.OrderTypeStop, `6024698277970944`)
+	fmt.Println(order.Status)
 	today := time.Now().In(time.UTC)
 	fmt.Println(today.String())
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())

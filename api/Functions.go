@@ -223,8 +223,8 @@ func MustCancel(key, secret, market, symbol, instrument, orderType, orderId stri
 		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, instrument, orderType, orderId)
 		res = result
 		order = cancelOrder
-		util.Notice(fmt.Sprintf(`[cancel] %s %s %s %s for %d times, return %t `,
-			market, symbol, orderType, orderId, i, result))
+		util.Notice(fmt.Sprintf(`[cancel] %s %s %s %s %s for %d times, return %t `,
+			market, symbol, instrument, orderType, orderId, i, result))
 		if result || !mustCancel || errCode == `0` {
 			return result, cancelOrder
 		}
