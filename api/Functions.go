@@ -219,7 +219,8 @@ func GetAmountDecimal(market, symbol string) float64 {
 
 func MustCancel(key, secret, market, symbol, instrument, orderType, orderId string, mustCancel bool) (
 	res bool, order *model.Order) {
-	for i := 0; i < 7; i++ {
+	sleepTime := 1
+	for i := 0; i < 20; i++ {
 		result, errCode, _, cancelOrder := CancelOrder(key, secret, market, symbol, instrument, orderType, orderId)
 		res = result
 		order = cancelOrder
@@ -236,13 +237,8 @@ func MustCancel(key, secret, market, symbol, instrument, orderType, orderId stri
 		//} else if errCode == `429` || errCode == `4003` {
 		//	util.Notice(`调用次数繁忙`)
 		//}
-		if i < 2 {
-			time.Sleep(time.Second)
-		} else if i >= 2 && i < 5 {
-			time.Sleep(time.Second * 3)
-		} else if i == 5 {
-			time.Sleep(time.Second * 10)
-		}
+		time.Sleep(time.Second * time.Duration(sleepTime))
+		sleepTime *= 2
 	}
 	return res, order
 }

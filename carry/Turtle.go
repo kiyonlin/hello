@@ -127,7 +127,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	if orderLong != nil && orderLong.OrderId != `` {
 		if !cross || setting.Chance >= 0 {
-			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+			go api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 				orderLong.Instrument, orderLong.OrderType, orderLong.OrderId, true)
 		} else {
 			util.Notice(fmt.Sprintf(`%s %s keep quarter long when chance %d`,
@@ -136,7 +136,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	if orderShort != nil && orderShort.OrderId != `` {
 		if !cross || setting.Chance <= 0 {
-			api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+			go api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 				orderShort.Instrument, orderShort.OrderType, orderShort.OrderId, true)
 		} else {
 			util.Notice(fmt.Sprintf(`%s %s keep quarter short when chance %d`,
@@ -145,6 +145,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	if cross {
 		setting.Chance = 0
+		go util.SendMail("haoweizh@qq.com", `跨期交割`, setting.Market+instrument)
 		channel := model.AppMarkets.GetDepthChan(setting.Market, 0)
 		if channel == nil {
 			ResetChannel(setting.Market, channel)
@@ -276,12 +277,14 @@ var ProcessTurtle = func(setting *model.Setting) {
 		} // 平多
 		if tick.Bids[0].Price <= priceShort {
 			if handleBreak(setting, turtleData, model.OrderSideSell, priceShort) {
+				go util.SendMail(`haoweizh@qq.com`, `平多`+setting.Market+setting.Symbol,
+					fmt.Sprintf(`止盈止损at%f 仓位%d 数量 %f`, priceShort, setting.Chance, setting.GridAmount))
 				setting.Chance = 0
 				setting.GridAmount = 0
 				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 					setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
 					`price_x`: setting.PriceX, `chance`: setting.Chance, `grid_amount`: setting.GridAmount})
-				util.Notice(fmt.Sprintf(`平多 %s %s chance:%d amount:%f currentN:%d short-long:%f %f px:%f n:%f`,
+				util.Notice(fmt.Sprintf(`liquidate long %s %s chance:%d amount:%f currentN:%d short-long:%f %f px:%f n:%f`,
 					setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort, priceLong,
 					setting.PriceX, turtleData.n))
 			}
@@ -305,6 +308,8 @@ var ProcessTurtle = func(setting *model.Setting) {
 		} // liquidate short
 		if tick.Asks[0].Price >= priceLong {
 			if handleBreak(setting, turtleData, model.OrderSideBuy, priceLong) {
+				go util.SendMail(`haoweizh@qq.com`, `平空`+setting.Market+setting.Symbol,
+					fmt.Sprintf(`止盈止损at%f 仓位%d 数量 %f`, priceLong, setting.Chance, setting.GridAmount))
 				setting.Chance = 0
 				setting.GridAmount = 0
 				model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
@@ -347,7 +352,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 				short = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, short.Instrument,
 					short.OrderType, short.OrderId)
 				if short.Status == model.CarryStatusWorking {
-					api.MustCancel(model.KeyDefault, model.SecretDefault, short.Market, short.Symbol,
+					go api.MustCancel(model.KeyDefault, model.SecretDefault, short.Market, short.Symbol,
 						short.Instrument, short.OrderType, short.OrderId, true)
 				}
 			}
@@ -358,7 +363,7 @@ func handleBreak(setting *model.Setting, turtleData *TurtleData, orderSide strin
 				long = api.QueryOrderById(``, ``, setting.Market, setting.Symbol, long.Instrument,
 					long.OrderType, long.OrderId)
 				if long.Status == model.CarryStatusWorking {
-					api.MustCancel(model.KeyDefault, model.SecretDefault, long.Market, long.Symbol,
+					go api.MustCancel(model.KeyDefault, model.SecretDefault, long.Market, long.Symbol,
 						long.Instrument, long.OrderType, long.OrderId, true)
 				}
 			}
@@ -415,7 +420,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.longs = append(turtleData.longs, order)
 		}
 	} else if turtleData.orderLong != nil && (currentN >= amountLimit || setting.Chance >= amountLimit) {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+		go api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderLong.Instrument, turtleData.orderLong.OrderType, turtleData.orderLong.OrderId, true)
 		turtleData.orderLong = nil
 	}
@@ -451,7 +456,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.shorts = append(turtleData.shorts, order)
 		}
 	} else if turtleData.orderShort != nil && (currentN <= -1*amountLimit || setting.Chance <= -1*amountLimit) {
-		api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
+		go api.MustCancel(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol,
 			turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
 		turtleData.orderShort = nil
 	}
