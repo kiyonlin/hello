@@ -94,15 +94,14 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 			}
 			continue
 		}
-		if ((order.OrderSide == model.OrderSideSell && order.GridPos > setting.Chance) ||
+		if order.GridPos == -1 {
+			gridPos.orderLiquidate = order
+		} else if ((order.OrderSide == model.OrderSideSell && order.GridPos > setting.Chance) ||
 			(order.OrderSide == model.OrderSideBuy && order.GridPos < setting.Chance)) &&
 			(gridPos.orders[order.GridPos] == nil || gridPos.orders[order.GridPos].OrderTime.Before(order.OrderTime)) {
 			gridPos.orders[order.GridPos] = order
 			util.Notice(fmt.Sprintf(`load orders[%d] add %s %s %s`,
 				len(orders), order.OrderSide, order.OrderId, order.OrderTime.String()))
-		}
-		if order.GridPos == -1 {
-			gridPos.orderLiquidate = order
 		}
 	}
 	for _, order := range gridPos.orders {
