@@ -112,6 +112,10 @@ func LoadSettings() {
 	for _, setting := range relatedSettings {
 		AppSettings = append(AppSettings, *setting)
 	}
+	for _, setting := range AppSettings {
+		util.Notice(fmt.Sprintf(`load setting %s %s %s %v`,
+			setting.Market, setting.Symbol, setting.Function, setting.Valid))
+	}
 }
 
 func GetMarketSymbols(market string) map[string]bool {
