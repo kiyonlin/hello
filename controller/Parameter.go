@@ -192,7 +192,7 @@ func GetBalance(c *gin.Context) {
 	}
 	amountBybit, msgBybit := api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret)
 	msg = fmt.Sprintf("%s\n[bybit] %f \n%s", msg, amountBybit, msgBybit)
-	msg = fmt.Sprintf(`%s\n%s`, msg, api.GetWalletHistoryFtx(model.AppConfig.FtxKey, model.AppConfig.FtxSecret))
+	msg = fmt.Sprintf("%s\n%s", msg, api.GetWalletHistoryFtx(model.AppConfig.FtxKey, model.AppConfig.FtxSecret))
 	c.String(http.StatusOK, msg)
 }
 

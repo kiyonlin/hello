@@ -13,7 +13,7 @@ import (
 type GridPos struct {
 	orders               []*model.Order // pos - orderId - order
 	pos                  []float64
-	amount               float64
+	amount, n            float64
 	orderLiquidate       *model.Order
 	posLength, posMiddle int
 }
@@ -68,6 +68,7 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 		gridPos.pos[5] = p + candle.PriceHigh - candle.PriceLow
 		gridPos.pos[6] = candle.PriceHigh - 2*(candle.PriceLow-p)
 	}
+	gridPos.n = candle.N
 	gridPos.amount = calcGridAmount(setting.Market, setting.Symbol, p)
 	dayGridPos[yesterdayStr] = gridPos
 	// load orders
@@ -264,6 +265,6 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 		}
 	}
 	model.SetCarryInfo(fmt.Sprintf(`[Grid]%s_%s_%s`, setting.Market, setting.Symbol, model.FunctionGrid),
-		fmt.Sprintf(` chance:%d last price:%f holding:%f \n%s`,
-			setting.Chance, setting.PriceX, setting.GridAmount, showMsg))
+		fmt.Sprintf(" chance:%d last price:%f holding:%f n值：%f\n%s",
+			setting.Chance, setting.PriceX, setting.GridAmount, gridPos.n, showMsg))
 }
