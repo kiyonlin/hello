@@ -71,7 +71,7 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	}
 	gridPos.n = candle.N
 	gridPos.amount = calcGridAmount(setting.Market, setting.Symbol, p)
-	if dayGridPos == nil {
+	if dayGridPos[yesterdayStr] == nil {
 		dayGridPos[yesterdayStr] = make(map[string]map[string]*GridPos)
 	}
 	if dayGridPos[yesterdayStr][setting.Market] == nil {
