@@ -18,7 +18,7 @@ type GridPos struct {
 	posLength, posMiddle int
 }
 
-var dayGridPos = make(map[string]*GridPos) // dateStr - gridPos
+var dayGridPos = make(map[string]map[string]map[string]*GridPos) // dateStr - market - symbol - gridPos
 var simpleGriding = false
 var simpleGridLock sync.Mutex
 var gridCheckTime = util.GetNow()
@@ -46,8 +46,9 @@ func calcGridAmount(market, symbol string, price float64) (amount float64) {
 func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	today, _ := model.GetMarketToday(setting.Market)
 	yesterday, yesterdayStr := model.GetMarketYesterday(setting.Market)
-	if dayGridPos[yesterdayStr] != nil {
-		return dayGridPos[yesterdayStr]
+	if dayGridPos[yesterdayStr] != nil && dayGridPos[yesterdayStr][setting.Market] != nil &&
+		dayGridPos[yesterdayStr][setting.Market][setting.Symbol] != nil {
+		return dayGridPos[yesterdayStr][setting.Market][setting.Symbol]
 	}
 	candle := api.GetDayCandle(model.KeyDefault, model.SecretDefault, setting.Market, setting.Symbol, ``, yesterday)
 	p := (candle.PriceHigh + candle.PriceLow + candle.PriceClose) / 3
@@ -70,7 +71,13 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 	}
 	gridPos.n = candle.N
 	gridPos.amount = calcGridAmount(setting.Market, setting.Symbol, p)
-	dayGridPos[yesterdayStr] = gridPos
+	if dayGridPos == nil {
+		dayGridPos[yesterdayStr] = make(map[string]map[string]*GridPos)
+	}
+	if dayGridPos[yesterdayStr][setting.Market] == nil {
+		dayGridPos[yesterdayStr][setting.Market] = make(map[string]*GridPos)
+	}
+	dayGridPos[yesterdayStr][setting.Market][setting.Symbol] = gridPos
 	// load orders
 	var orders []*model.Order
 	model.AppDB.Where("market= ? and symbol= ? and refresh_type= ? and status=? and order_time>?",
@@ -135,7 +142,7 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 				model.FunctionGrid, gridPos.pos[i], gridPos.pos[i], amount, false)
 			if i != gridPos.posMiddle {
 				order.GridPos = int64(i)
-				dayGridPos[yesterdayStr].orders[i] = order
+				dayGridPos[yesterdayStr][setting.Market][setting.Symbol].orders[i] = order
 			} else {
 				order.GridPos = -1
 				gridPos.orderLiquidate = order
