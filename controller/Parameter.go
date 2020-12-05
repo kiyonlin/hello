@@ -183,16 +183,8 @@ func GetCode(c *gin.Context) {
 func GetBalance(c *gin.Context) {
 	amount, transfer := api.GetWalletHistoryBitmex(model.AppConfig.BitmexKey, model.AppConfig.BitmexSecret)
 	msg := fmt.Sprintf("[bitmex]\n%f \n%s\n", amount, transfer)
-	balance := api.GetWalletOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret)
-	for symbol, amount := range balance {
-		if amount > 0 {
-			info := api.GetWalletHistoryOKSwap(model.AppConfig.OkexKey, model.AppConfig.OkexSecret, symbol)
-			msg = fmt.Sprintf("%s\n[okswap] %s %f\n%s", msg, symbol, amount, info)
-		}
-	}
 	amountBybit, msgBybit := api.GetWalletBybit(model.AppConfig.BybitKey, model.AppConfig.BybitSecret)
 	msg = fmt.Sprintf("%s\n[bybit] %f \n%s", msg, amountBybit, msgBybit)
-	msg = fmt.Sprintf("%s\n%s", msg, api.GetWalletHistoryFtx(model.AppConfig.FtxKey, model.AppConfig.FtxSecret))
 	c.String(http.StatusOK, msg)
 }
 

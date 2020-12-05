@@ -80,12 +80,8 @@ var AppSettings []Setting
 var AppConfig *Config
 var AppMarkets = NewMarkets()
 var AppAccounts = NewAccounts()
-var HuobiAccountId = ""
+var HuobiAccountIds = make(map[string]string)
 var AppPause = false
-
-//var CarryChannel = make(chan Carry, 50)
-//var InnerCarryChannel = make(chan Carry, 50)
-var AccountChannel = make(chan map[string]*Account, 50)
 
 type Config struct {
 	lock            sync.Mutex
@@ -119,6 +115,7 @@ type Config struct {
 	FcoinSecret     string
 	AmountRate      float64 // 刷单填写数量比率
 	PreDealDis      float64
+	Phase           string
 	BinanceOrderDis float64
 	Handle          string // 0 不执行处理程序，1执行处理程序
 	Mail            string
@@ -511,7 +508,6 @@ func NewConfig() {
 	}
 	AppConfig.WSUrls = make(map[string]string)
 	AppConfig.RestUrls = make(map[string]string)
-	//AppConfig.WSUrls[Huobi] = "wss://api.huobi.pro/ws"
 	AppConfig.WSUrls[Huobi] = `wss://api-aws.huobi.pro/feed`
 	AppConfig.WSUrls[HuobiDM] = `wss://api.hbdm.com/`
 	AppConfig.WSUrls[Binance] = "wss://stream.binance.com:9443/stream?streams="
@@ -543,7 +539,7 @@ func NewConfig() {
 	//config.RestUrls[Huobi] = "https://api.huobipro.com/v1"
 	//AppConfig.RestUrls[Huobi] = "https://api.huobi.pro"
 	AppConfig.RestUrls[Fcoin] = "https://api.fcoin.com/v2"
-	AppConfig.RestUrls[Huobi] = `https://api.huobi.br.com`
+	AppConfig.RestUrls[Huobi] = `api-aws.huobi.pro`
 	AppConfig.RestUrls[HuobiDM] = `api.hbdm.com`
 	AppConfig.RestUrls[OKSwap] = `https://www.okex.com`
 	AppConfig.RestUrls[OKFUTURE] = `https://www.okex.com`

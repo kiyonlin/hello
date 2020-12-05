@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"hello/model"
 	"hello/util"
+	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
@@ -98,7 +99,7 @@ func WsDepthServeHuobi(markets *model.Markets, errHandler ErrHandler) (chan stru
 		GetWSSubscribes(model.Huobi, model.SubscribeDepth), subscribeHandlerHuobi, wsHandler, errHandler)
 }
 
-func SignedRequestHuobi(method, path string, data map[string]interface{}) []byte {
+func SignedRequestHuobi(market, method, path string, data map[string]interface{}) []byte {
 	param := map[string]interface{}{"AccessKeyId": model.AppConfig.HuobiKey, "SignatureMethod": "HmacSHA256",
 		"SignatureVersion": "2", `Timestamp`: url.QueryEscape(time.Now().UTC().Format("2006-01-02T15:04:05"))}
 	strData := ``
@@ -111,34 +112,33 @@ func SignedRequestHuobi(method, path string, data map[string]interface{}) []byte
 	}
 	strParam := util.ComposeParams(param)
 	toBeSign := fmt.Sprintf("%s\n%s\n%s\n%s",
-		method, model.AppConfig.RestUrls[model.HuobiDM], path, strParam)
+		method, model.AppConfig.RestUrls[market], path, strParam)
 	hash := hmac.New(sha256.New, []byte(model.AppConfig.HuobiSecret))
 	hash.Write([]byte(toBeSign))
 	sign := url.QueryEscape(base64.StdEncoding.EncodeToString(hash.Sum(nil)))
 	param["Signature"] = sign
-	requestUrl := fmt.Sprintf(`https://%s%s?%s`, model.AppConfig.RestUrls[model.HuobiDM], path, util.ComposeParams(param))
+	requestUrl := fmt.Sprintf(`https://%s%s?%s`, model.AppConfig.RestUrls[market], path, util.ComposeParams(param))
 	headers := map[string]string{"Content-Type": "application/json", "Accept-Language": "zh-cn",
 		"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36"}
-	//param = map[string]interface{}{"order_id":"2","symbol":"btc"}
 	responseBody, _ := util.HttpRequest(method, requestUrl, strData, headers, 60)
 	util.SocketInfo(fmt.Sprintf(`%s %s %s`, requestUrl, strData, string(responseBody)))
 	return responseBody
 }
 
-func GetSpotAccountId() (accountId string, err error) {
-	responseBody := SignedRequestHuobi(`GET`, "/v1/account/accounts", nil)
+func GetAccountIdsHuobi() (accountIds map[string]string, err error) {
+	responseBody := SignedRequestHuobi(model.Huobi, `GET`, "/v1/account/accounts", nil)
+	util.SocketInfo(`get huobi accounts: ` + string(responseBody))
 	accountJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		accounts, _ := accountJson.Get("data").Array()
+		accountIds = make(map[string]string)
 		for _, value := range accounts {
 			account := value.(map[string]interface{})
 			typeName := account["type"].(string)
-			if typeName == "spot" {
-				accountId = account["id"].(json.Number).String()
-			}
+			accountIds[typeName] = account["id"].(json.Number).String()
 		}
 	}
-	return accountId, err
+	return accountIds, err
 }
 
 // orderType: buy-market：市价买, sell-market：市价卖, buy-limit：限价买, sell-limit：限价卖
@@ -156,19 +156,19 @@ func placeOrderHuobi(order *model.Order, orderSide, orderType, symbol, price, am
 	} else {
 		util.Notice(fmt.Sprintf(`[parameter error] order side: %s order type: %s`, orderSide, orderType))
 	}
-	if model.HuobiAccountId == `` {
-		model.HuobiAccountId, _ = GetSpotAccountId()
+	if model.HuobiAccountIds == nil || model.HuobiAccountIds[`spot`] == `` {
+		model.HuobiAccountIds, _ = GetAccountIdsHuobi()
 	}
 	path := "/v1/order/orders/place"
 	postData := make(map[string]interface{})
-	postData["account-id"] = model.HuobiAccountId
+	postData["account-id"] = model.HuobiAccountIds[`spot`]
 	postData["amount"] = amount
 	postData["symbol"] = strings.ToLower(strings.Replace(symbol, "_", "", 1))
 	postData["type"] = orderParam
 	if orderType == model.OrderTypeLimit {
 		postData["price"] = price
 	}
-	responseBody := SignedRequestHuobi(`POST`, path, postData)
+	responseBody := SignedRequestHuobi(model.Huobi, `POST`, path, postData)
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ := orderJson.Get("status").String()
@@ -184,7 +184,7 @@ func placeOrderHuobi(order *model.Order, orderSide, orderType, symbol, price, am
 
 func cancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 	path := fmt.Sprintf("/v1/order/orders/%s/submitcancel", orderId)
-	responseBody := SignedRequestHuobi(`POST`, path, nil)
+	responseBody := SignedRequestHuobi(model.Huobi, `POST`, path, nil)
 	orderJson, err := util.NewJSON(responseBody)
 	util.Notice("huobi cancel order" + orderId + string(responseBody))
 	if err == nil {
@@ -204,7 +204,7 @@ func cancelOrderHuobi(orderId string) (result bool, errCode, msg string) {
 
 func queryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status string) {
 	path := fmt.Sprintf("/v1/order/orders/%s", orderId)
-	responseBody := SignedRequestHuobi(`GET`, path, nil)
+	responseBody := SignedRequestHuobi(model.Huobi, `GET`, path, nil)
 	orderJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		status, _ = orderJson.GetPath("data", "state").String()
@@ -222,14 +222,119 @@ func queryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status stri
 	return dealAmount, dealPrice, status
 }
 
-func getAccountHuobi(accounts *model.Accounts) {
-	if model.HuobiAccountId == `` {
-		model.HuobiAccountId, _ = GetSpotAccountId()
+func parseBalanceHuobi(data map[string]interface{}) (balance *model.Balance) {
+	if data == nil || data[`id`] == nil {
+		return nil
 	}
-	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountId)
+	balance = &model.Balance{
+		AccountId: model.AppConfig.HuobiKey,
+		Market:    model.Huobi,
+	}
+	balance.ID = model.Huobi + `_` + data[`id`].(json.Number).String()
+	if data[`type`] != nil {
+		if data[`type`].(string) == `deposit` {
+			balance.Action = 1
+		} else if data[`type`].(string) == `withdraw` {
+			balance.Action = -1
+		}
+	}
+	if data[`currency`] != nil {
+		balance.Coin = strings.ToLower(data[`currency`].(string))
+	}
+	if data[`amount`] != nil {
+		balance.Amount, _ = data[`amount`].(json.Number).Float64()
+	}
+	if data[`address`] != nil {
+		balance.Address, _ = data[`address`].(string)
+	}
+	if data[`fee`] != nil {
+		balance.Fee = data[`fee`].(json.Number).String()
+	}
+	if data[`state`] != nil {
+		balance.Status, _ = data[`state`].(string)
+	}
+	if data[`updated-at`] != nil {
+		seconds, _ := data[`updated-at`].(json.Number).Int64()
+		balance.BalanceTime = time.Unix(seconds/1000, 0)
+		fmt.Println(balance.BalanceTime.String())
+	}
+	return balance
+}
+
+func getTransactionHuobi() (balances []*model.Balance) {
+	data := map[string]interface{}{`type`: `deposit`}
+	response := SignedRequestHuobi(model.Huobi, http.MethodGet, `/v1/query/deposit-withdraw`, data)
+	responseJson, err := util.NewJSON(response)
+	if err == nil && responseJson != nil && responseJson.Get(`data`) != nil {
+		items := responseJson.Get(`data`).MustArray()
+		for _, item := range items {
+			balance := parseBalanceHuobi(item.(map[string]interface{}))
+			if balance != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
+	data = map[string]interface{}{`type`: `withdraw`}
+	response = SignedRequestHuobi(model.Huobi, http.MethodGet, `/v1/query/deposit-withdraw`, data)
+	responseJson, err = util.NewJSON(response)
+	if err == nil && responseJson != nil && responseJson.Get(`data`) != nil {
+		items := responseJson.Get(`data`).MustArray()
+		for _, item := range items {
+			balance := parseBalanceHuobi(item.(map[string]interface{}))
+			if balances != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
+	return balances
+}
+
+func getBalanceHuobi() (balances []*model.Balance) {
+	if model.HuobiAccountIds == nil || len(model.HuobiAccountIds) == 0 {
+		model.HuobiAccountIds, _ = GetAccountIdsHuobi()
+	}
+	balances = make([]*model.Balance, 0)
+	for _, accountId := range model.HuobiAccountIds {
+		path := fmt.Sprintf("/v1/account/accounts/%s/balance", accountId)
+		response := SignedRequestHuobi(model.Huobi, http.MethodGet, path, nil)
+		responseJson, err := util.NewJSON(response)
+		if err == nil {
+			balanceArray := responseJson.GetPath(`data`, `list`).MustArray()
+			for _, item := range balanceArray {
+				value := item.(map[string]interface{})
+				balance := &model.Balance{
+					AccountId:   accountId,
+					BalanceTime: util.GetNow(),
+					Market:      model.Huobi,
+				}
+				if value[`currency`] != nil {
+					balance.Coin = value[`currency`].(string)
+				}
+				if value[`type`] != nil {
+					balance.Status = value[`type`].(string)
+				}
+				if value[`balance`] != nil {
+					balance.Amount, _ = strconv.ParseFloat(value[`balance`].(string), 64)
+				}
+				if balance.Amount > 0 {
+					balance.ID = fmt.Sprintf(`%s_%s_%s_%s`,
+						balance.Market, balance.Coin, balance.Status, balance.BalanceTime.String()[0:10])
+					balances = append(balances, balance)
+				}
+			}
+		}
+	}
+	return
+}
+
+func getAccountHuobiSpot(accounts *model.Accounts) {
+	if model.HuobiAccountIds == nil || model.HuobiAccountIds[`spot`] == `` {
+		model.HuobiAccountIds, _ = GetAccountIdsHuobi()
+	}
+	path := fmt.Sprintf("/v1/account/accounts/%s/balance", model.HuobiAccountIds[`spot`])
 	postData := make(map[string]interface{})
-	postData["accountId-id"] = model.HuobiAccountId
-	responseBody := SignedRequestHuobi(`GET`, path, postData)
+	postData["accountId-id"] = model.HuobiAccountIds[`spot`]
+	responseBody := SignedRequestHuobi(model.Huobi, `GET`, path, postData)
 	balanceJson, err := util.NewJSON(responseBody)
 	if err == nil {
 		accountType, _ := balanceJson.GetPath("data", "type").String()

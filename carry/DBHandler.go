@@ -12,33 +12,9 @@ import (
 	"time"
 )
 
-var accountServing = false
-
 var WSErrHandler = func(err error) {
 	print(err)
 	util.SocketInfo(`get error ` + err.Error())
-}
-
-func AccountHandlerServe() {
-	for true {
-		accounts := <-model.AccountChannel
-		if accountServing {
-			continue
-		}
-		accountServing = true
-		cleared := false
-		for _, value := range accounts {
-			current := util.GetNow()
-			if !cleared {
-				//util.Info(`remove accounts ` + value.Market + util.GetNow().Format("2006-01-02"))
-				model.AppDB.Delete(model.Account{}, "market = ? AND date(created_at) > ?",
-					value.Market, current.Format("2006-01-02"))
-				cleared = true
-			}
-			model.AppDB.Create(value)
-		}
-		accountServing = false
-	}
 }
 
 //CancelAllOrders
@@ -134,6 +110,24 @@ func getBalance(key, secret, market, symbol, accountType string) (
 //}
 
 var feeIndex int
+
+func MaintainBalance() {
+	for true {
+		markets := model.GetMarkets()
+		balances := make([]*model.Balance, 0)
+		for _, market := range markets {
+			balances = append(balances, api.GetTransfers(``, ``, market)...)
+			balances = append(balances, api.GetBalance(``, ``, market)...)
+			util.Notice(fmt.Sprintf(`get balances %s %d`, market, len(balances)))
+		}
+		for _, balance := range balances {
+			if balance.Amount > 1 {
+				model.AppDB.Save(&balance)
+			}
+		}
+		time.Sleep(time.Hour * 12)
+	}
+}
 
 func MaintainTransFee(key, secret string) {
 	for true {
@@ -277,14 +271,15 @@ func Maintain() {
 		model.AppDB.AutoMigrate(&model.Order{})
 		model.AppDB.AutoMigrate(&model.Score{})
 		model.AppDB.AutoMigrate(&model.Candle{})
+		model.AppDB.AutoMigrate(&model.Balance{})
 	}
 	model.LoadSettings()
-	go AccountHandlerServe()
 	//go CheckPastRefresh()
 	go MaintainTransFee(model.KeyDefault, model.SecretDefault)
 	//go util.StartMidNightTimer(CancelAllOrders)
 	for true {
 		go MaintainMarketChan()
+		go MaintainBalance()
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
 	}
 }

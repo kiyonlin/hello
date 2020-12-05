@@ -28,6 +28,8 @@ func Test_chan(t *testing.T) {
 func Test_initTurtleN(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
+	balances := api.GetBalance(``, ``, model.OKEX)
+	balances = append(balances, api.GetTransfers(``, ``, model.OKEX)...)
 	var err error
 	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	if err != nil {

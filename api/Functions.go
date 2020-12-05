@@ -444,10 +444,38 @@ func GetDayCandle(key, secret, market, symbol, instrument string, timeCandle tim
 	return candle
 }
 
-func GetUSDBalance(key, secret, market string) (balance float64) {
+func GetBalance(key, secret, market string) (balances []*model.Balance) {
 	switch market {
 	case model.Ftx:
-		balance = getUSDBalanceFtx(key, secret)
+		return getBalanceFtx(key, secret)
+	case model.OKEX, model.OKSwap, model.OKFUTURE:
+		return getBalanceOK(key, secret)
+	case model.HuobiDM, model.Huobi:
+		return getBalanceHuobi()
+	}
+	return
+}
+
+func GetTransfers(key, secret, market string) (balances []*model.Balance) {
+	switch market {
+	case model.Ftx:
+		return getTransactionFtx(key, secret)
+	case model.OKEX, model.OKSwap, model.OKFUTURE:
+		return getTransferOK(key, secret)
+	case model.Huobi, model.HuobiDM:
+		return getTransactionHuobi()
+	}
+	return balances
+}
+
+func GetUSDBalance(key, secret, market string) (balance float64) {
+	balance = 0
+	switch market {
+	case model.Ftx:
+		balances := getBalanceFtx(key, secret)
+		for _, item := range balances {
+			balance += item.UsdValue * 0.9
+		}
 		//case model.OKFUTURE:
 		//	balance = getUSDBalanceOkfuture(key, secret)
 	}
@@ -635,7 +663,7 @@ func RefreshAccount(key, secret, market string) {
 	model.AppAccounts.ClearAccounts(market)
 	switch market {
 	case model.Huobi:
-		getAccountHuobi(model.AppAccounts)
+		getAccountHuobiSpot(model.AppAccounts)
 	case model.HuobiDM:
 		_ = getAccountHuobiDM(model.AppAccounts)
 		getHoldingHuobiDM(model.AppAccounts)

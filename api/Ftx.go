@@ -201,27 +201,110 @@ func getCandlesFtx(key, secret, symbol, binSize string, start, end time.Time, co
 	return
 }
 
-func GetWalletHistoryFtx(key, secret string) (history string) {
-	history = string(SignedRequestFtx(key, secret, `GET`, `/wallet/deposits`, nil, nil))
-	history += string(SignedRequestFtx(key, secret, `GET`, `/wallet/withdrawals`, nil, nil))
-	util.SocketInfo(`wallet history:` + history)
+func parseBalanceFtx(data map[string]interface{}) (balance *model.Balance) {
+	if data[`coin`] == nil {
+		return nil
+	}
+	coin := strings.ToLower(data[`coin`].(string))
+	balance = &model.Balance{
+		Market:      model.Ftx,
+		Coin:        coin,
+		ID:          model.Ftx + `_` + coin + `_` + util.GetNow().Format(time.RFC3339)[0:10],
+		BalanceTime: util.GetNow(),
+		AccountId:   model.AppConfig.FtxKey}
+	if data[`availableWithoutBorrow`] != nil {
+		balance.Amount, _ = data[`availableWithoutBorrow`].(json.Number).Float64()
+	}
+	if data[`usdValue`] != nil {
+		balance.UsdValue, _ = data[`usdValue`].(json.Number).Float64()
+	}
+	if balance.Amount > 0 {
+		return balance
+	}
+	return nil
+}
+
+func parseTransactionFtx(data map[string]interface{}, action float64) (balance *model.Balance) {
+	if data[`id`] == nil {
+		return nil
+	}
+	balance = &model.Balance{
+		Market:    model.Ftx,
+		ID:        model.Ftx + `_` + data[`id`].(json.Number).String(),
+		Action:    action,
+		AccountId: model.AppConfig.FtxKey}
+	if data[`notes`] != nil {
+		balance.Notes = data[`notes`].(string)
+	}
+	if data[`coin`] != nil {
+		balance.Coin = strings.ToLower(data[`coin`].(string))
+	}
+	if data[`fee`] != nil {
+		balance.Fee = data[`fee`].(json.Number).String()
+	}
+	if data[`size`] != nil {
+		balance.Amount, _ = data[`size`].(json.Number).Float64()
+	}
+	if data[`time`] != nil {
+		balance.BalanceTime, _ = time.Parse(time.RFC3339Nano, data[`time`].(string))
+		fmt.Println(balance.BalanceTime)
+	}
+	if data[`status`] != nil {
+		balance.Status, _ = data[`status`].(string)
+	}
+	if data[`address`] != nil {
+		if action == 1 {
+			address := data[`address`].(map[string]interface{})
+			if address != nil {
+				balance.Address = address[`address`].(string)
+			}
+		} else if action == -1 {
+			balance.Address = data[`address`].(string)
+		}
+	}
+	if data[`txid`] != nil {
+		balance.TransactionId, _ = data[`txid`].(string)
+	}
+	return balance
+}
+
+func getTransactionFtx(key, secret string) (balances []*model.Balance) {
+	balances = make([]*model.Balance, 0)
+	response := SignedRequestFtx(key, secret, `GET`, `/wallet/deposits`, nil, nil)
+	util.SocketInfo(`ftx deposit: ` + string(response))
+	deposit, err := util.NewJSON(response)
+	if err == nil && deposit != nil {
+		for _, item := range deposit.Get(`result`).MustArray() {
+			balance := parseTransactionFtx(item.(map[string]interface{}), 1)
+			if balance != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
+	response = SignedRequestFtx(key, secret, `GET`, `/wallet/withdrawals`, nil, nil)
+	util.SocketInfo(`ftx withdraw ` + string(response))
+	withdraw, err := util.NewJSON(response)
+	if err == nil && withdraw != nil {
+		for _, item := range withdraw.Get(`result`).MustArray() {
+			balance := parseTransactionFtx(item.(map[string]interface{}), -1)
+			if balance != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
 	return
 }
 
-func getUSDBalanceFtx(key, secret string) (balance float64) {
+func getBalanceFtx(key, secret string) (balances []*model.Balance) {
+	balances = make([]*model.Balance, 0)
 	response := SignedRequestFtx(key, secret, `GET`, `/wallet/balances`, nil, nil)
 	util.SocketInfo(`get usd balance ftx: ` + string(response))
 	balanceJson, err := util.NewJSON(response)
-	if err == nil {
-		items := balanceJson.Get(`result`).MustArray()
-		for _, item := range items {
-			data := item.(map[string]interface{})
-			if data[`usdValue`] != nil {
-				num, _ := data[`usdValue`].(json.Number).Float64()
-				if data[`coin`] != `USD` {
-					num *= 0.9
-				}
-				balance += num
+	if err == nil && balanceJson != nil {
+		for _, item := range balanceJson.Get(`result`).MustArray() {
+			balance := parseBalanceFtx(item.(map[string]interface{}))
+			if balance != nil {
+				balances = append(balances, balance)
 			}
 		}
 	}

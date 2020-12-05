@@ -12,6 +12,7 @@ import (
 	"hello/util"
 	"io"
 	"math"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -219,7 +220,8 @@ func SignedRequestOKSwap(key, secret, method, path string, body map[string]inter
 	epoch := time.Now().UnixNano() / int64(time.Millisecond)
 	timestamp := fmt.Sprintf(`%d.%d`, epoch/1000, epoch%1000)
 	toBeSign := fmt.Sprintf(`%s%s%s`, timestamp, method, path)
-	headers := map[string]string{`OK-ACCESS-KEY`: key, `OK-ACCESS-PASSPHRASE`: `zerg538`, "OK-ACCESS-TIMESTAMP": timestamp}
+	headers := map[string]string{`OK-ACCESS-KEY`: key, `OK-ACCESS-PASSPHRASE`: model.AppConfig.Phase,
+		"OK-ACCESS-TIMESTAMP": timestamp}
 	if method == `POST` {
 		toBeSign = toBeSign + string(util.JsonEncodeMapToByte(body))
 		headers["Content-Type"] = "application/json"
@@ -376,7 +378,7 @@ func cancelOrderOKSwap(key, secret, symbol, orderId string) (result bool) {
 	return
 }
 
-func GetWalletOKSwap(key, secret string) (balance map[string]float64) {
+func _(key, secret string) (balance map[string]float64) {
 	response := SignedRequestOKSwap(key, secret, `GET`, `/api/swap/v3/accounts`, nil)
 	orderJson, err := util.NewJSON(response)
 	util.Notice(`okswap wallet: ` + string(response))
@@ -417,7 +419,105 @@ func parseTransferAmount(response []byte) (info string) {
 	return
 }
 
-func GetWalletHistoryOKSwap(key, secret, symbol string) (info string) {
+func parseBalanceOK(data map[string]interface{}) (balance *model.Balance) {
+	balance = &model.Balance{AccountId: model.AppConfig.OkexKey, Market: model.OKEX}
+	if data[`deposit_id`] != nil {
+		balance.ID = model.OKEX + `_` + data[`deposit_id`].(string)
+		balance.Action = 1
+		if data[`from`] != nil {
+			balance.Address, _ = data[`from`].(string)
+		}
+	} else if data[`withdrawal_id`] != nil {
+		balance.ID = model.OKEX + `_` + data[`withdrawal_id`].(string)
+		balance.Action = -1
+		if data[`to`] != nil {
+			balance.Address, _ = data[`to`].(string)
+		}
+	} else {
+		return nil
+	}
+	if data[`currency`] != nil {
+		balance.Coin = strings.ToLower(data[`currency`].(string))
+	}
+	if data[`amount`] != nil {
+		balance.Amount, _ = strconv.ParseFloat(data[`currency`].(string), 64)
+	}
+	if data[`txid`] != nil {
+		balance.TransactionId, _ = data[`txid`].(string)
+	}
+	if data[`fee`] != nil {
+		balance.Fee, _ = data[`fee`].(string)
+	}
+	if data[`status`] != nil {
+		balance.Status, _ = data[`status`].(string)
+	}
+	if data[`timestamp`] != nil {
+		balance.BalanceTime, _ = time.Parse(time.RFC3339, data[`timestamp`].(string))
+		fmt.Println(balance.BalanceTime.String())
+	}
+	return balance
+}
+
+func getTransferOK(key, secret string) (balances []*model.Balance) {
+	response := SignedRequestOKSwap(key, secret, http.MethodGet, `/api/account/v3/withdrawal/history`, nil)
+	responseJson, err := util.NewJSON(response)
+	balances = make([]*model.Balance, 0)
+	if err == nil && responseJson != nil {
+		transfers := responseJson.MustArray()
+		for _, transfer := range transfers {
+			data := transfer.(map[string]interface{})
+			balance := parseBalanceOK(data)
+			if balance != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
+	response = SignedRequestOKSwap(key, secret, http.MethodGet, `/api/account/v3/withdrawal/history`, nil)
+	responseJson, err = util.NewJSON(response)
+	if err == nil && responseJson != nil {
+		transfers := responseJson.MustArray()
+		for _, transfer := range transfers {
+			data := transfer.(map[string]interface{})
+			balance := parseBalanceOK(data)
+			if balance != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
+	return balances
+}
+
+func getBalanceOK(key, secret string) (balances []*model.Balance) {
+	response := SignedRequestOKSwap(key, secret, http.MethodGet, `/api/account/v3/wallet`, nil)
+	util.SocketInfo(`ok get balance: ` + string(response))
+	responseJson, err := util.NewJSON(response)
+	if err == nil {
+		balances = make([]*model.Balance, 0)
+		balanceArray := responseJson.MustArray()
+		for _, item := range balanceArray {
+			data := item.(map[string]interface{})
+			if data[`currency`] != nil {
+				balance := &model.Balance{
+					AccountId:   model.AppConfig.OkexKey,
+					BalanceTime: util.GetNow(),
+					Coin:        strings.ToLower(data[`currency`].(string)),
+					Market:      model.OKEX,
+				}
+				if data[`balance`] != nil {
+					balance.Amount, _ = strconv.ParseFloat(data[`balance`].(string), 64)
+				}
+				balance.ID = model.OKEX + `_` + balance.Coin + `_` + util.GetNow().String()[0:10]
+				if balance.Amount > 0 {
+					balances = append(balances, balance)
+				}
+			}
+		}
+	}
+	return balances
+}
+
+//GetWalletHistoryOKSwap
+func _(key, secret, symbol string) (info string) {
 	postData := make(map[string]interface{})
 	postData[`type`] = `5`
 	symbol = model.GetDialectSymbol(model.OKSwap, symbol)
