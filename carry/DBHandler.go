@@ -126,7 +126,7 @@ func MaintainBalance() {
 			}
 		}
 		util.Notice(fmt.Sprintf(`get markets %d balances %d`, len(markets), len(balances)))
-		time.Sleep(time.Second * 36000)
+		time.Sleep(time.Hour * 12)
 	}
 }
 
@@ -278,9 +278,9 @@ func Maintain() {
 	//go CheckPastRefresh()
 	go MaintainTransFee(model.KeyDefault, model.SecretDefault)
 	//go util.StartMidNightTimer(CancelAllOrders)
+	go MaintainBalance()
 	for true {
 		go MaintainMarketChan()
-		go MaintainBalance()
 		time.Sleep(time.Duration(model.AppConfig.ChannelSlot) * time.Millisecond)
 	}
 }
