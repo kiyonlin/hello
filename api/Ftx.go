@@ -268,7 +268,7 @@ func parseTransactionFtx(data map[string]interface{}, action float64) (balance *
 	return balance
 }
 
-func getTransactionFtx(key, secret string) (balances []*model.Balance) {
+func getTransferFtx(key, secret string) (balances []*model.Balance) {
 	balances = make([]*model.Balance, 0)
 	response := SignedRequestFtx(key, secret, `GET`, `/wallet/deposits`, nil, nil)
 	util.SocketInfo(`ftx deposit: ` + string(response))

@@ -171,6 +171,7 @@ func parseAccountOkfuture(account *model.Account, data map[string]interface{}) (
 
 func getBalanceOkfuture(accounts *model.Accounts) (balances []*model.Balance) {
 	responseBody := SignedRequestOKSwap(``, ``, `GET`, "/api/futures/v3/accounts", nil)
+	util.SocketInfo(`get okfuture balance: ` + string(responseBody))
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return nil

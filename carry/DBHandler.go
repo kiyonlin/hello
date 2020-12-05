@@ -125,7 +125,8 @@ func MaintainBalance() {
 				model.AppDB.Save(&balance)
 			}
 		}
-		time.Sleep(time.Hour * 12)
+		util.Notice(fmt.Sprintf(`get markets %d balances %d`, len(markets), len(balances)))
+		time.Sleep(time.Second * 36000)
 	}
 }
 

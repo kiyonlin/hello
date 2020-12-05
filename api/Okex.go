@@ -259,7 +259,7 @@ func getTransferOK(key, secret string) (balances []*model.Balance) {
 		transfers := responseJson.MustArray()
 		for _, transfer := range transfers {
 			data := transfer.(map[string]interface{})
-			balance := parseBalanceOK(data)
+			balance := parseBalanceOK(data, model.Huobi)
 			if balance != nil {
 				balances = append(balances, balance)
 			}
@@ -271,7 +271,7 @@ func getTransferOK(key, secret string) (balances []*model.Balance) {
 		transfers := responseJson.MustArray()
 		for _, transfer := range transfers {
 			data := transfer.(map[string]interface{})
-			balance := parseBalanceOK(data)
+			balance := parseBalanceOK(data, model.Huobi)
 			if balance != nil {
 				balances = append(balances, balance)
 			}

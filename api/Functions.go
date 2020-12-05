@@ -461,11 +461,11 @@ func GetBalance(key, secret, market string) (balances []*model.Balance) {
 func GetTransfers(key, secret, market string) (balances []*model.Balance) {
 	switch market {
 	case model.Ftx:
-		return getTransactionFtx(key, secret)
+		return getTransferFtx(key, secret)
 	case model.OKEX, model.OKSwap, model.OKFUTURE:
 		return getTransferOK(key, secret)
 	case model.Huobi, model.HuobiDM:
-		return getTransactionHuobi()
+		return getTransferHuobi()
 	}
 	return balances
 }

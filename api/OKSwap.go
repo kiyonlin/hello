@@ -420,8 +420,8 @@ func parseTransferAmount(response []byte) (info string) {
 	return
 }
 
-func parseBalanceOK(data map[string]interface{}) (balance *model.Balance) {
-	balance = &model.Balance{AccountId: model.AppConfig.OkexKey, Market: model.OKEX}
+func parseBalanceOK(data map[string]interface{}, market string) (balance *model.Balance) {
+	balance = &model.Balance{AccountId: model.AppConfig.OkexKey, Market: market}
 	if data[`deposit_id`] != nil {
 		balance.ID = model.OKEX + `_` + data[`deposit_id`].(string)
 		balance.Action = 1

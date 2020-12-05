@@ -122,6 +122,7 @@ func parseAccountHuobiDM(account *model.Account, data map[string]interface{}) (b
 
 func getBalanceHuobiDM(accounts *model.Accounts) (balances []*model.Balance) {
 	responseBody := SignedRequestHuobi(model.HuobiDM, `POST`, "/api/v1/contract_account_info", nil)
+	util.SocketInfo(`get huobidm balance: ` + string(responseBody))
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
 		return nil

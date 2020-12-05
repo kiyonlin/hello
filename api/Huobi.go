@@ -222,14 +222,11 @@ func queryOrderHuobi(orderId string) (dealAmount, dealPrice float64, status stri
 	return dealAmount, dealPrice, status
 }
 
-func parseBalanceHuobi(data map[string]interface{}) (balance *model.Balance) {
+func parseBalanceHuobi(data map[string]interface{}, market string) (balance *model.Balance) {
 	if data == nil || data[`id`] == nil {
 		return nil
 	}
-	balance = &model.Balance{
-		AccountId: model.AppConfig.HuobiKey,
-		Market:    model.Huobi,
-	}
+	balance = &model.Balance{AccountId: model.AppConfig.HuobiKey, Market: market}
 	balance.ID = model.Huobi + `_` + data[`id`].(json.Number).String()
 	if data[`type`] != nil {
 		if data[`type`].(string) == `deposit` {
@@ -261,14 +258,15 @@ func parseBalanceHuobi(data map[string]interface{}) (balance *model.Balance) {
 	return balance
 }
 
-func getTransactionHuobi() (balances []*model.Balance) {
+func getTransferHuobi() (balances []*model.Balance) {
 	data := map[string]interface{}{`type`: `deposit`}
 	response := SignedRequestHuobi(model.Huobi, http.MethodGet, `/v1/query/deposit-withdraw`, data)
+	util.SocketInfo(`query huobi deposit: ` + string(response))
 	responseJson, err := util.NewJSON(response)
 	if err == nil && responseJson != nil && responseJson.Get(`data`) != nil {
 		items := responseJson.Get(`data`).MustArray()
 		for _, item := range items {
-			balance := parseBalanceHuobi(item.(map[string]interface{}))
+			balance := parseBalanceHuobi(item.(map[string]interface{}), model.Huobi)
 			if balance != nil {
 				balances = append(balances, balance)
 			}
@@ -276,11 +274,12 @@ func getTransactionHuobi() (balances []*model.Balance) {
 	}
 	data = map[string]interface{}{`type`: `withdraw`}
 	response = SignedRequestHuobi(model.Huobi, http.MethodGet, `/v1/query/deposit-withdraw`, data)
+	util.SocketInfo(`query huobi withdraw: ` + string(response))
 	responseJson, err = util.NewJSON(response)
 	if err == nil && responseJson != nil && responseJson.Get(`data`) != nil {
 		items := responseJson.Get(`data`).MustArray()
 		for _, item := range items {
-			balance := parseBalanceHuobi(item.(map[string]interface{}))
+			balance := parseBalanceHuobi(item.(map[string]interface{}), model.Huobi)
 			if balances != nil {
 				balances = append(balances, balance)
 			}
