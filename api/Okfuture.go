@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+// 交割合约API
+
 var subscribeHandlerOKFuture = func(subscribes []interface{}, subType string) (err error) {
 	subscribe := ``
 	for _, item := range subscribes {
@@ -135,13 +137,14 @@ func querySetInstrumentsOkFuture() {
 	}
 }
 
-func parseAccountOkfuture(account *model.Account, data map[string]interface{}) {
+func parseAccountOkfuture(account *model.Account, data map[string]interface{}) (balance *model.Balance) {
+	if data[`currency`] == nil {
+		return
+	}
+	account.Currency = strings.ToLower(data[`currency`].(string))
 	// 账户权益
 	if data[`equity`] != nil {
 		account.Free, _ = strconv.ParseFloat(data[`equity`].(string), 64)
-	}
-	if data[`currency`] != nil {
-		account.Currency = data[`currency`].(string)
 	}
 	if data[`margin`] != nil {
 		account.Margin, _ = strconv.ParseFloat(data[`margin`].(string), 64)
@@ -155,14 +158,24 @@ func parseAccountOkfuture(account *model.Account, data map[string]interface{}) {
 	if data[`underlying`] != nil {
 		account.Currency = strings.ToLower(data[`underlying`].(string))
 	}
+	return &model.Balance{
+		AccountId:   model.AppConfig.OkexKey,
+		Action:      0,
+		Amount:      account.Free,
+		BalanceTime: util.GetNow(),
+		Coin:        account.Currency,
+		Market:      model.OKFUTURE,
+		ID:          model.OKFUTURE + `_` + account.Currency + `_` + util.GetNow().String()[0:10],
+	}
 }
 
-func GetAccountOkfuture(accounts *model.Accounts) (err error) {
+func getBalanceOkfuture(accounts *model.Accounts) (balances []*model.Balance) {
 	responseBody := SignedRequestOKSwap(``, ``, `GET`, "/api/futures/v3/accounts", nil)
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
-		return err
+		return nil
 	}
+	balances = make([]*model.Balance, 0)
 	items := accountJson.Get(`info`).MustMap()
 	for key, value := range items {
 		account := accounts.GetAccount(model.OKFUTURE, key)
@@ -170,13 +183,16 @@ func GetAccountOkfuture(accounts *model.Accounts) (err error) {
 			account = &model.Account{Market: model.OKFUTURE, Ts: util.GetNowUnixMillion()}
 		}
 		data := value.(map[string]interface{})
-		parseAccountOkfuture(account, data)
+		balance := parseAccountOkfuture(account, data)
+		if balance != nil {
+			balances = append(balances, balance)
+		}
 		instrument, _ := GetCurrentInstrument(model.OKFUTURE, account.Currency)
 		holding := getHoldingOkfuture(instrument)
 		account.Holding = holding
 		accounts.SetAccount(model.OKFUTURE, account.Currency, account)
 	}
-	return nil
+	return balances
 }
 
 func getHoldingOkfuture(instrument string) (amount float64) {

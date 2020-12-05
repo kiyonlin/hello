@@ -10,6 +10,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"io"
+	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
@@ -248,6 +249,65 @@ func getAccountOkex(accounts *model.Accounts) {
 			account.Frozen = balance
 		}
 	}
+}
+
+func getTransferOK(key, secret string) (balances []*model.Balance) {
+	response := SignedRequestOKSwap(key, secret, http.MethodGet, `/api/account/v3/withdrawal/history`, nil)
+	responseJson, err := util.NewJSON(response)
+	balances = make([]*model.Balance, 0)
+	if err == nil && responseJson != nil {
+		transfers := responseJson.MustArray()
+		for _, transfer := range transfers {
+			data := transfer.(map[string]interface{})
+			balance := parseBalanceOK(data)
+			if balance != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
+	response = SignedRequestOKSwap(key, secret, http.MethodGet, `/api/account/v3/withdrawal/history`, nil)
+	responseJson, err = util.NewJSON(response)
+	if err == nil && responseJson != nil {
+		transfers := responseJson.MustArray()
+		for _, transfer := range transfers {
+			data := transfer.(map[string]interface{})
+			balance := parseBalanceOK(data)
+			if balance != nil {
+				balances = append(balances, balance)
+			}
+		}
+	}
+	return balances
+}
+
+//资金账户，非币币账户
+func getBalanceOKEX(key, secret string) (balances []*model.Balance) {
+	response := SignedRequestOKSwap(key, secret, http.MethodGet, `/api/account/v3/wallet`, nil)
+	util.SocketInfo(`ok get balance: ` + string(response))
+	responseJson, err := util.NewJSON(response)
+	if err == nil {
+		balances = make([]*model.Balance, 0)
+		balanceArray := responseJson.MustArray()
+		for _, item := range balanceArray {
+			data := item.(map[string]interface{})
+			if data[`currency`] != nil {
+				balance := &model.Balance{
+					AccountId:   model.AppConfig.OkexKey,
+					BalanceTime: util.GetNow(),
+					Coin:        strings.ToLower(data[`currency`].(string)),
+					Market:      model.OKEX,
+				}
+				if data[`balance`] != nil {
+					balance.Amount, _ = strconv.ParseFloat(data[`balance`].(string), 64)
+				}
+				balance.ID = model.OKEX + `_` + balance.Coin + `_` + util.GetNow().String()[0:10]
+				if balance.Amount > 0 {
+					balances = append(balances, balance)
+				}
+			}
+		}
+	}
+	return balances
 }
 
 //func MustFundTransferOkex(symbol string, amount float64, from, to string) (result bool, errCode string) {

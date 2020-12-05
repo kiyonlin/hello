@@ -448,10 +448,12 @@ func GetBalance(key, secret, market string) (balances []*model.Balance) {
 	switch market {
 	case model.Ftx:
 		return getBalanceFtx(key, secret)
-	case model.OKEX, model.OKSwap, model.OKFUTURE:
-		return getBalanceOK(key, secret)
-	case model.HuobiDM, model.Huobi:
-		return getBalanceHuobi()
+	case model.OKEX:
+		return getBalanceOKEX(key, secret)
+	case model.OKFUTURE:
+		return getBalanceOkfuture(model.AppAccounts)
+	case model.HuobiDM:
+		return getBalanceHuobiDM(model.AppAccounts)
 	}
 	return
 }
@@ -665,15 +667,12 @@ func RefreshAccount(key, secret, market string) {
 	case model.Huobi:
 		getAccountHuobiSpot(model.AppAccounts)
 	case model.HuobiDM:
-		_ = getAccountHuobiDM(model.AppAccounts)
+		getBalanceHuobiDM(model.AppAccounts)
 		getHoldingHuobiDM(model.AppAccounts)
 	case model.OKEX:
 		getAccountOkex(model.AppAccounts)
 	case model.OKFUTURE:
-		err := GetAccountOkfuture(model.AppAccounts)
-		if err != nil {
-			util.Notice(err.Error())
-		}
+		getBalanceOkfuture(model.AppAccounts)
 	case model.OKSwap:
 		//getAccountOKSwap(key, secret, `btcusd_p`, model.AppAccounts)
 		symbols := model.GetMarketSymbols(model.OKSwap)

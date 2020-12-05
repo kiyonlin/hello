@@ -87,10 +87,11 @@ func WsDepthServeHuobiDM(markets *model.Markets, errHandler ErrHandler) (chan st
 		GetWSSubscribes(model.HuobiDM, model.SubscribeDepth), subscribeHandlerHuobiDM, wsHandler, errHandler)
 }
 
-func parseAccountHuobiDM(account *model.Account, data map[string]interface{}) {
-	if data[`symbol`] != nil {
-		account.Currency = strings.ToLower(data[`symbol`].(string))
+func parseAccountHuobiDM(account *model.Account, data map[string]interface{}) (balance *model.Balance) {
+	if data[`symbol`] == nil {
+		return nil
 	}
+	account.Currency = strings.ToLower(data[`symbol`].(string))
 	if data[`margin_balance`] != nil { // 账户权益
 		account.Free, _ = data[`margin_balance`].(json.Number).Float64()
 	}
@@ -109,22 +110,34 @@ func parseAccountHuobiDM(account *model.Account, data map[string]interface{}) {
 	if data[`lever_rate`] != nil { // 杠杆倍数
 		account.LeverRate, _ = data[`lever_rate`].(json.Number).Int64()
 	}
+	return &model.Balance{
+		AccountId:   model.AppConfig.HuobiKey,
+		Amount:      account.Free,
+		BalanceTime: util.GetNow(),
+		Coin:        account.Currency,
+		Market:      model.HuobiDM,
+		ID:          model.HuobiDM + `_` + account.Currency + `_` + util.GetNow().String()[0:10],
+	}
 }
 
-func getAccountHuobiDM(accounts *model.Accounts) (err error) {
+func getBalanceHuobiDM(accounts *model.Accounts) (balances []*model.Balance) {
 	responseBody := SignedRequestHuobi(model.HuobiDM, `POST`, "/api/v1/contract_account_info", nil)
 	accountJson, err := util.NewJSON(responseBody)
 	if err != nil {
-		return err
+		return nil
 	}
+	balances = make([]*model.Balance, 0)
 	items := accountJson.Get(`data`).MustArray()
 	for _, value := range items {
 		account := &model.Account{Market: model.HuobiDM, Ts: util.GetNowUnixMillion()}
 		data := value.(map[string]interface{})
-		parseAccountHuobiDM(account, data)
+		balance := parseAccountHuobiDM(account, data)
+		if balance != nil {
+			balances = append(balances, balance)
+		}
 		accounts.SetAccount(model.HuobiDM, account.Currency, account)
 	}
-	return nil
+	return balances
 }
 
 func getHoldingHuobiDM(accounts *model.Accounts) {

@@ -289,7 +289,8 @@ func getTransactionHuobi() (balances []*model.Balance) {
 	return balances
 }
 
-func getBalanceHuobi() (balances []*model.Balance) {
+// 资产账户 getBalanceHuobi
+func _() (balances []*model.Balance) {
 	if model.HuobiAccountIds == nil || len(model.HuobiAccountIds) == 0 {
 		model.HuobiAccountIds, _ = GetAccountIdsHuobi()
 	}
