@@ -158,7 +158,7 @@ func parseAccountOkfuture(account *model.Account, data map[string]interface{}) (
 	if data[`underlying`] != nil {
 		account.Currency = strings.ToLower(data[`underlying`].(string))
 	}
-	return &model.Balance{
+	balance = &model.Balance{
 		AccountId:   model.AppConfig.OkexKey,
 		Action:      0,
 		Amount:      account.Free,
@@ -167,6 +167,10 @@ func parseAccountOkfuture(account *model.Account, data map[string]interface{}) (
 		Market:      model.OKFUTURE,
 		ID:          model.OKFUTURE + `_` + account.Currency + `_` + util.GetNow().String()[0:10],
 	}
+	if data[`currency`] != nil {
+		balance.Coin = strings.ToLower(data[`currency`].(string))
+	}
+	return balance
 }
 
 func getBalanceOkfuture(accounts *model.Accounts) (balances []*model.Balance) {
