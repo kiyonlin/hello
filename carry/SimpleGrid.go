@@ -56,9 +56,9 @@ func getGridPos(setting *model.Setting) (gridPos *GridPos) {
 		setting.Market, setting.Symbol, yesterdayStr, candle.PriceHigh-candle.PriceLow, candle.N))
 	if candle.PriceHigh-candle.PriceLow < candle.N*2/3 {
 		gridPos = &GridPos{orders: make([]*model.Order, 3), pos: make([]float64, 3), posLength: 3, posMiddle: 1}
-		gridPos.pos[0] = p - candle.PriceHigh + candle.PriceLow
+		gridPos.pos[0] = candle.PriceLow - 2*(candle.PriceHigh-p)
 		gridPos.pos[1] = p
-		gridPos.pos[2] = p + candle.PriceHigh - candle.PriceLow
+		gridPos.pos[2] = candle.PriceHigh - 2*(candle.PriceLow-p)
 	} else {
 		gridPos = &GridPos{orders: make([]*model.Order, 7), pos: make([]float64, 7), posLength: 7, posMiddle: 3}
 		gridPos.pos[0] = candle.PriceLow - 2*(candle.PriceHigh-p)
