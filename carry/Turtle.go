@@ -28,6 +28,8 @@ type TurtleData struct {
 	shorts     []*model.Order
 }
 
+const turtleTriggerDelta = 0.003
+
 var turtling = false
 var turtleLock sync.Mutex
 
@@ -414,7 +416,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeLong, setting.Market,
 			setting.Symbol, instrument, ``, setting.AccountType, ``, model.FunctionTurtle,
-			priceLong*1.003, priceLong, amount, true)
+			priceLong*(1+turtleTriggerDelta), priceLong, amount, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderLong = order
 			turtleData.longs = append(turtleData.longs, order)
@@ -450,7 +452,7 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.highDays5, turtleData.lowDays20, turtleData.lowDays10, turtleData.lowDays5))
 		order := api.PlaceOrder(model.KeyDefault, model.SecretDefault, orderSide, typeShort, setting.Market,
 			setting.Symbol, instrument, ``, setting.AccountType, ``, model.FunctionTurtle,
-			priceShort*0.997, priceShort, amount, true)
+			priceShort*(1-turtleTriggerDelta), priceShort, amount, true)
 		if order != nil && order.OrderId != `` && order.Status != model.CarryStatusFail {
 			turtleData.orderShort = order
 			turtleData.shorts = append(turtleData.shorts, order)
@@ -460,5 +462,5 @@ func placeTurtleOrders(turtleData *TurtleData, setting *model.Setting,
 			turtleData.orderShort.Instrument, turtleData.orderShort.OrderType, turtleData.orderShort.OrderId, true)
 		turtleData.orderShort = nil
 	}
-	return priceShort, priceLong
+	return priceShort * (1 - turtleTriggerDelta), priceLong * (1 + turtleTriggerDelta)
 }
