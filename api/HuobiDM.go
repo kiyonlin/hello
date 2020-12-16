@@ -226,9 +226,9 @@ func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, s
 		getHoldingHuobiDM(model.AppAccounts)
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
 		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, symbol).Holding)
+		util.Notice(fmt.Sprintf(`holding huobiDM size %s to %f`, size, holding))
 		if holding < sizeFloat {
 			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.HuobiDM, symbol))
-			util.Notice(fmt.Sprintf(`holding not enough huobiDM size %s to %s`, size, strAmount))
 			size = strAmount
 		}
 	case model.OrderSideLiquidateLong:
@@ -238,9 +238,9 @@ func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, s
 		getHoldingHuobiDM(model.AppAccounts)
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
 		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, symbol).Holding)
+		util.Notice(fmt.Sprintf(`holding huobiDM size %s to %f`, size, holding))
 		if holding < sizeFloat {
 			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.HuobiDM, symbol))
-			util.Notice(fmt.Sprintf(`holding not enough huobiDM size %s to %s`, size, strAmount))
 			size = strAmount
 		}
 	}

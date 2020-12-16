@@ -242,9 +242,9 @@ func placeOrderOkfuture(order *model.Order, orderSide, orderType, symbol, instru
 		holding := getHoldingOkfuture(instrument)
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
 		if holding < sizeFloat {
+			util.Notice(fmt.Sprintf(`holding okfuture size %s to %f`, size, holding))
 			if holding > 0 {
 				_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
-				util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
 				size = strAmount
 			} else {
 				size = `0`
@@ -255,9 +255,9 @@ func placeOrderOkfuture(order *model.Order, orderSide, orderType, symbol, instru
 		holding := math.Abs(getHoldingOkfuture(instrument))
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
 		if holding < sizeFloat {
+			util.Notice(fmt.Sprintf(`holding okfuture size %s to %f`, size, holding))
 			if holding > 0 {
 				_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
-				util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
 				size = strAmount
 			} else {
 				holding = 0
