@@ -239,21 +239,29 @@ func placeOrderOkfuture(order *model.Order, orderSide, orderType, symbol, instru
 		orderSide = `2`
 	case model.OrderSideLiquidateLong:
 		orderSide = `3`
-		holding := math.Abs(getHoldingOkfuture(instrument))
+		holding := getHoldingOkfuture(instrument)
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
 		if holding < sizeFloat {
-			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
-			util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
-			size = strAmount
+			if holding > 0 {
+				_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
+				util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
+				size = strAmount
+			} else {
+				size = `0`
+			}
 		}
 	case model.OrderSideLiquidateShort:
 		orderSide = `4`
 		holding := math.Abs(getHoldingOkfuture(instrument))
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
 		if holding < sizeFloat {
-			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
-			util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
-			size = strAmount
+			if holding > 0 {
+				_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
+				util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
+				size = strAmount
+			} else {
+				holding = 0
+			}
 		}
 	default:
 		util.Notice(`wrong order side for placeOrderOkfuture ` + orderSide)

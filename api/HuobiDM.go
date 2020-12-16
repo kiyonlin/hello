@@ -206,11 +206,7 @@ func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, s
 	if orderType != model.OrderTypeStop {
 		return
 	}
-	currency := symbol
 	// special for huobiDM contract
-	if strings.Contains(symbol, `_`) {
-		currency = strings.Split(symbol, `_`)[0]
-	}
 	triggerType := `ge`
 	direction := `buy`
 	offset := `close`
@@ -229,7 +225,7 @@ func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, s
 		offset = `close`
 		getHoldingHuobiDM(model.AppAccounts)
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
-		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, currency).Holding)
+		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, symbol).Holding)
 		if holding < sizeFloat {
 			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.HuobiDM, symbol))
 			util.Notice(fmt.Sprintf(`holding not enough huobiDM size %s to %s`, size, strAmount))
@@ -241,7 +237,7 @@ func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, s
 		offset = `close`
 		getHoldingHuobiDM(model.AppAccounts)
 		sizeFloat, _ := strconv.ParseFloat(size, 64)
-		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, currency).Holding)
+		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, symbol).Holding)
 		if holding < sizeFloat {
 			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.HuobiDM, symbol))
 			util.Notice(fmt.Sprintf(`holding not enough huobiDM size %s to %s`, size, strAmount))
