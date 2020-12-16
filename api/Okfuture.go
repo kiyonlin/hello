@@ -7,6 +7,7 @@ import (
 	"hello/model"
 	"hello/util"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sort"
@@ -230,7 +231,7 @@ func getHoldingOkfuture(instrument string) (amount float64) {
 // orderSide:  1:开多 2:开空 3:平多 4:平空
 // orderType: 是否为对手价 0:不是 1:是
 // price == `0` 市价单， != `0` 限价单
-func placeOrderOkfuture(order *model.Order, orderSide, orderType, instrument, price, triggerPrice, size string) {
+func placeOrderOkfuture(order *model.Order, orderSide, orderType, symbol, instrument, price, triggerPrice, size string) {
 	switch orderSide {
 	case model.OrderSideBuy:
 		orderSide = `1`
@@ -238,8 +239,22 @@ func placeOrderOkfuture(order *model.Order, orderSide, orderType, instrument, pr
 		orderSide = `2`
 	case model.OrderSideLiquidateLong:
 		orderSide = `3`
+		holding := math.Abs(getHoldingOkfuture(instrument))
+		sizeFloat, _ := strconv.ParseFloat(size, 64)
+		if holding < sizeFloat {
+			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
+			util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
+			size = strAmount
+		}
 	case model.OrderSideLiquidateShort:
 		orderSide = `4`
+		holding := math.Abs(getHoldingOkfuture(instrument))
+		sizeFloat, _ := strconv.ParseFloat(size, 64)
+		if holding < sizeFloat {
+			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.OKFUTURE, symbol))
+			util.Notice(fmt.Sprintf(`holding not enough okfuture size %s to %s`, size, strAmount))
+			size = strAmount
+		}
 	default:
 		util.Notice(`wrong order side for placeOrderOkfuture ` + orderSide)
 		return

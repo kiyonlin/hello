@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hello/model"
 	"hello/util"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -201,9 +202,14 @@ func getHoldingHuobiDM(accounts *model.Accounts) {
 	}
 }
 
-func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, lever, price, triggerPrice, size string) {
+func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, symbol, lever, price, triggerPrice, size string) {
 	if orderType != model.OrderTypeStop {
 		return
+	}
+	currency := symbol
+	// special for huobiDM contract
+	if strings.Contains(symbol, `_`) {
+		currency = strings.Split(symbol, `_`)[0]
 	}
 	triggerType := `ge`
 	direction := `buy`
@@ -221,10 +227,26 @@ func placeOrderHuobiDM(order *model.Order, orderSide, orderType, contractCode, l
 		triggerType = `ge`
 		direction = `buy`
 		offset = `close`
+		getHoldingHuobiDM(model.AppAccounts)
+		sizeFloat, _ := strconv.ParseFloat(size, 64)
+		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, currency).Holding)
+		if holding < sizeFloat {
+			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.HuobiDM, symbol))
+			util.Notice(fmt.Sprintf(`holding not enough huobiDM size %s to %s`, size, strAmount))
+			size = strAmount
+		}
 	case model.OrderSideLiquidateLong:
 		triggerType = `le`
 		direction = `sell`
 		offset = `close`
+		getHoldingHuobiDM(model.AppAccounts)
+		sizeFloat, _ := strconv.ParseFloat(size, 64)
+		holding := math.Abs(model.AppAccounts.GetAccount(model.HuobiDM, currency).Holding)
+		if holding < sizeFloat {
+			_, strAmount := util.FormatNum(holding, GetAmountDecimal(model.HuobiDM, symbol))
+			util.Notice(fmt.Sprintf(`holding not enough huobiDM size %s to %s`, size, strAmount))
+			size = strAmount
+		}
 	}
 	param := map[string]interface{}{`contract_code`: contractCode, `trigger_type`: triggerType,
 		`trigger_price`: triggerPrice, `order_price`: price, `volume`: size,

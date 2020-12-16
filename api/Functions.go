@@ -795,11 +795,11 @@ func PlaceOrder(key, secret, orderSide, orderType, market, symbol, instrument, a
 		if account != nil {
 			lever = strconv.FormatInt(account.LeverRate, 10)
 		}
-		placeOrderHuobiDM(order, orderSide, orderType, instrument, lever, strPrice, strTriggerPrice, strAmount)
+		placeOrderHuobiDM(order, orderSide, orderType, instrument, symbol, lever, strPrice, strTriggerPrice, strAmount)
 	case model.OKEX:
 		placeOrderOkex(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.OKFUTURE:
-		placeOrderOkfuture(order, orderSide, orderType, instrument, strPrice, strTriggerPrice, strAmount)
+		placeOrderOkfuture(order, orderSide, orderType, symbol, instrument, strPrice, strTriggerPrice, strAmount)
 	case model.Binance:
 		placeOrderBinance(order, orderSide, orderType, symbol, strPrice, strAmount)
 	case model.Fcoin:
