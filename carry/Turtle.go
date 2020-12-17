@@ -57,6 +57,12 @@ func calcTurtleAmount(market, symbol string, price, n float64) (amount float64) 
 		switch symbol {
 		case `btcusd_p`, `ethusd_p`, `eosusd_p`:
 			amount *= 2
+			if symbol == `btcusd_p` {
+				amount, _ = util.FormatNum(amount, 4)
+			}
+			if symbol == `ethusd_p` {
+				amount, _ = util.FormatNum(amount, 3)
+			}
 		case `htusd_p`, `okbusd_p`, `bnbusd_p`, `btmxusd_p`:
 			amount *= 1
 		}
@@ -188,11 +194,6 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 		if i == 1 {
 			turtleData.n = candle.N
 			turtleData.amount = calcTurtleAmount(setting.Market, setting.Symbol, candle.PriceOpen, turtleData.n)
-			if turtleData.amount > 0 {
-				turtleData.amount = math.Floor(turtleData.amount)
-			} else {
-				turtleData.amount = math.Ceil(turtleData.amount)
-			}
 		}
 	}
 	if turtleData.amount > 0 && turtleData.n > 0 {
@@ -268,7 +269,8 @@ var ProcessTurtle = func(setting *model.Setting) {
 		priceShort = math.Max(turtleData.lowDays10, setting.PriceX-2*turtleData.n)
 		priceShort, priceLong = placeTurtleOrders(turtleData, setting, currentN, priceShort, priceLong, tick)
 		// 加仓一个单位
-		if tick.Asks[0].Price >= priceLong && setting.Chance < int64(setting.AmountLimit) {
+		if tick.Asks[0].Price >= priceLong && setting.Chance < int64(setting.AmountLimit) &&
+			currentN < int64(setting.AmountLimit) {
 			handleBreak(setting, turtleData, model.OrderSideBuy, priceLong)
 			setting.Chance = setting.Chance + 1
 			setting.GridAmount = setting.GridAmount + turtleData.amount
@@ -297,7 +299,8 @@ var ProcessTurtle = func(setting *model.Setting) {
 		priceShort = math.Min(turtleData.lowDays20, setting.PriceX-turtleData.n/2)
 		priceShort, priceLong = placeTurtleOrders(turtleData, setting, currentN, priceShort, priceLong, tick)
 		// 加仓一个单位
-		if tick.Bids[0].Price <= priceShort && math.Abs(float64(setting.Chance)) < setting.AmountLimit {
+		if tick.Bids[0].Price <= priceShort && math.Abs(float64(setting.Chance)) < setting.AmountLimit &&
+			currentN > int64(-1*setting.AmountLimit) {
 			handleBreak(setting, turtleData, model.OrderSideSell, priceShort)
 			setting.Chance = setting.Chance - 1
 			setting.GridAmount = setting.GridAmount + turtleData.amount
