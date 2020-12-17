@@ -265,7 +265,9 @@ var ProcessTurtle = func(setting *model.Setting) {
 		// 加仓一个单位
 		if tick.Asks[0].Price >= priceLong {
 			handleBreak(setting, turtleData, model.OrderSideBuy, priceLong)
-			setting.Chance = setting.Chance + 1
+			if setting.Chance < int64(setting.AmountLimit) {
+				setting.Chance = setting.Chance + 1
+			}
 			setting.GridAmount = setting.GridAmount + turtleData.amount
 			model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 				setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
@@ -294,7 +296,9 @@ var ProcessTurtle = func(setting *model.Setting) {
 		// 加仓一个单位
 		if tick.Bids[0].Price <= priceShort {
 			handleBreak(setting, turtleData, model.OrderSideSell, priceShort)
-			setting.Chance = setting.Chance - 1
+			if math.Abs(float64(setting.Chance)) < setting.AmountLimit {
+				setting.Chance = setting.Chance - 1
+			}
 			setting.GridAmount = setting.GridAmount + turtleData.amount
 			model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",
 				setting.Market, setting.Symbol, model.FunctionTurtle).Updates(map[string]interface{}{
