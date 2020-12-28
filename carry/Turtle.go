@@ -241,7 +241,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 	priceShort := turtleData.lowDays20
 	if setting.Chance == 0 { // 开初始仓
 		priceShort, priceLong = placeTurtleOrders(turtleData, setting, currentN, priceShort, priceLong, tick)
-		if tick.Asks[0].Price >= priceLong {
+		if tick.Asks[0].Price >= priceLong && currentN < int64(setting.AmountLimit) {
 			handleBreak(setting, turtleData, model.OrderSideBuy, priceLong)
 			setting.Chance = 1
 			setting.GridAmount = turtleData.amount
@@ -253,7 +253,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 				setting.Market, setting.Symbol, setting.Chance, setting.GridAmount, currentN, priceShort,
 				priceLong, setting.PriceX, turtleData.n))
 		}
-		if tick.Bids[0].Price <= priceShort {
+		if tick.Bids[0].Price <= priceShort && currentN > -1*int64(setting.AmountLimit) {
 			handleBreak(setting, turtleData, model.OrderSideSell, priceShort)
 			setting.Chance = -1
 			model.AppDB.Model(&setting).Where("market= ? and symbol= ? and function= ?",

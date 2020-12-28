@@ -101,21 +101,14 @@ func Test_RefreshAccount(t *testing.T) {
 		util.Notice(err.Error())
 		return
 	}
-	orderIds := []string{"13106661", `13115868`, `13116383`, `13116594`, `13116604`, `13116610`, `13116613`, `13116616`, `13116618`, `13116626`, `13116627`, `13116629`,
-		`13116600`, `13116601`, `13116602`, `13116603`, `13116605`, `13116606`, `13116607`, `13116608`, `13116609`, `13116611`, `13116612`, `13116614`, `13116615`, `13116617`}
-	for _, id := range orderIds {
-		success, code, msg, _ := api.CancelOrder(model.AppConfig.FtxKey, model.AppConfig.FtxSecret, model.Ftx, `btc_cq`,
-			`btcusd_p`, model.OrderTypeStop, id)
-		fmt.Println(fmt.Sprintf(`result: %v code: %s msg: %s orderId:%s`, success, code, msg, id))
-	}
 	//setting := &model.Setting{Market: model.HuobiDM, Symbol: `BTC_CQ`}
 	//carry.GetTurtleData(setting)
 	//api.GetDayCandle(``, ``, model.HuobiDM, `btc_cq`, ``, time.Now())
 	//api.PlaceOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.OrderSideBuy, model.OrderTypeStop,
 	//	model.HuobiDM, `btc_cq`, `BTC200925`, ``, ``, `5`, model.FunctionTurtle,
 	//	12110.2345, 12100, 1.4, true)
-	order2 := api.QueryOrderById(``, ``, model.Ftx, `eosusd_p`, ``,
-		model.OrderTypeStop, `6771160`)
+	order2 := api.QueryOrderById(``, ``, model.Ftx, `ethusd_p`, ``,
+		model.OrderTypeStop, `18700063`)
 	fmt.Println(order2.Status)
 	//api.CancelOrder(model.AppConfig.HuobiKey, model.AppConfig.HuobiSecret, model.HuobiDM, `btc_cq`,
 	//	``, model.OrderTypeStop, "9")
