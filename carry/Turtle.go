@@ -33,6 +33,12 @@ const turtleTriggerDelta = 0.003
 var turtling = false
 var turtleLock sync.Mutex
 
+func getTurtling() (value bool) {
+	turtleLock.Lock()
+	defer turtleLock.Unlock()
+	return turtling
+}
+
 func setTurtling(value bool) {
 	turtleLock.Lock()
 	defer turtleLock.Unlock()
@@ -215,7 +221,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 		model.AppPause || now-int64(tick.Ts) > 1000 {
 		return
 	}
-	if setting == nil || turtling {
+	if setting == nil || getTurtling() {
 		return
 	}
 	if setting.Chance != 0 && setting.PriceX == 0 {
