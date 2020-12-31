@@ -29,6 +29,12 @@ func setSimpleGriding(value bool) {
 	simpleGriding = value
 }
 
+func getSimpleGriding() (value bool) {
+	simpleGridLock.Lock()
+	defer simpleGridLock.Unlock()
+	return simpleGriding
+}
+
 func calcGridAmount(market, symbol string, price float64) (amount float64) {
 	switch market {
 	case model.Ftx:
@@ -163,7 +169,7 @@ var ProcessSimpleGrid = func(setting *model.Setting) {
 		model.AppPause || now-int64(tick.Ts) > 1000 {
 		return
 	}
-	if setting == nil || simpleGriding {
+	if setting == nil || getSimpleGriding() {
 		return
 	}
 	setSimpleGriding(true)

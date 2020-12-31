@@ -165,7 +165,7 @@ func GetCode(c *gin.Context) {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 		rnd = rand.New(rand.NewSource(rnd.Int63()))
 		code = fmt.Sprintf("%06v", rnd.Int31n(1000000))
-		err := util.SendMail(model.AppConfig.Mail, `启动验证码`, `验证码是`+code)
+		err := util.SendMail(model.AppConfig.FromMail, model.AppConfig.FromMailAuth, model.AppConfig.Mail, `启动验证码`, `验证码是`+code)
 		//auth := smtp.PlainAuth("", "94764906@qq.com", "urszfnsnanxebjga",
 		//	"smtp.qq.com")
 		//msg := []byte("To: " + strings.Join(to, ",") + "\r\nFrom: 刷单系统<" + user +

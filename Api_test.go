@@ -95,6 +95,8 @@ func Test_initTurtleN(t *testing.T) {
 func Test_RefreshAccount(t *testing.T) {
 	model.NewConfig()
 	_ = configor.Load(model.AppConfig, "./config.yml")
+	fmt.Println(model.AppConfig.FromMail)
+	fmt.Println(model.AppConfig.FromMailAuth)
 	var err error
 	model.AppDB, err = gorm.Open("postgres", model.AppConfig.DBConnection)
 	if err != nil {
