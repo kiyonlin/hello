@@ -119,6 +119,8 @@ type Config struct {
 	BinanceOrderDis float64
 	Handle          string // 0 不执行处理程序，1执行处理程序
 	Mail            string
+	FromMail        string
+	FromMailAuth    string
 	Port            string
 	SymbolPrice     map[string]float64 // symbol - price
 	UpdatePriceTime map[string]int64   // symbol -time

@@ -159,7 +159,7 @@ func GetTurtleData(setting *model.Setting) (turtleData *TurtleData) {
 	}
 	if cross {
 		setting.Chance = 0
-		go util.SendMail("haoweizh@qq.com", `跨期交割`, setting.Market+instrument)
+		go util.SendMail(model.AppConfig.FromMail, model.AppConfig.FromMailAuth, "haoweizh@qq.com", `跨期交割`, setting.Market+instrument)
 		channel := model.AppMarkets.GetDepthChan(setting.Market, 0)
 		if channel == nil {
 			ResetChannel(setting.Market, channel)
@@ -289,7 +289,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 		} // 平多
 		if tick.Bids[0].Price <= priceShort {
 			handleBreak(setting, turtleData, model.OrderSideSell, priceShort)
-			go util.SendMail(`haoweizh@qq.com`, `平多`+setting.Market+setting.Symbol,
+			go util.SendMail(model.AppConfig.FromMail, model.AppConfig.FromMailAuth, `haoweizh@qq.com`, `平多`+setting.Market+setting.Symbol,
 				fmt.Sprintf(`止盈止损at%f 仓位%d 数量 %f`, priceShort, setting.Chance, setting.GridAmount))
 			setting.Chance = 0
 			setting.GridAmount = 0
@@ -319,7 +319,7 @@ var ProcessTurtle = func(setting *model.Setting) {
 		} // liquidate short
 		if tick.Asks[0].Price >= priceLong {
 			handleBreak(setting, turtleData, model.OrderSideBuy, priceLong)
-			go util.SendMail(`haoweizh@qq.com`, `平空`+setting.Market+setting.Symbol,
+			go util.SendMail(model.AppConfig.FromMail, model.AppConfig.FromMailAuth, `haoweizh@qq.com`, `平空`+setting.Market+setting.Symbol,
 				fmt.Sprintf(`止盈止损at%f 仓位%d 数量 %f`, priceLong, setting.Chance, setting.GridAmount))
 			setting.Chance = 0
 			setting.GridAmount = 0

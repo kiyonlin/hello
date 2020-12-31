@@ -99,9 +99,8 @@ func HttpRequest(method string, reqUrl string, body string, requestHeaders map[s
 	return bodyData, nil
 }
 
-func SendMail(toAddress, subject, body string) (err error) {
-	fromMail := "94764906@qq.com"
-	from := mail.Address{Address: fromMail}
+func SendMail(fromAddress, mailAuth, toAddress, subject, body string) (err error) {
+	from := mail.Address{Address: fromAddress}
 	to := mail.Address{Address: toAddress}
 	headers := make(map[string]string)
 	headers["From"] = from.String()
@@ -114,7 +113,7 @@ func SendMail(toAddress, subject, body string) (err error) {
 	message += "\r\n" + body
 	servername := "smtp.qq.com:465"
 	host, _, _ := net.SplitHostPort(servername)
-	auth := smtp.PlainAuth("", fromMail, "urszfnsnanxebjga", host)
+	auth := smtp.PlainAuth("", fromAddress, mailAuth, host)
 	tlsconfig := &tls.Config{
 		InsecureSkipVerify: true,
 		ServerName:         host,
